@@ -92,4 +92,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-12 — SPEC-002 creada en estado `draft`.*
+*Última actualización de este tracker: 2026-08-12 — SPEC-001 y SPEC-002 en estado `pending_release` (v0.1.0 publicada).*
