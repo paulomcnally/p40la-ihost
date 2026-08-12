@@ -1,7 +1,7 @@
 ---
 title: "Infraestructura de Despliegue en SONOFF iHost: Docker, Volumen de Datos y Multi-Arquitectura"
 id: "SPEC-001"
-status: "in_progress"
+status: "pending_release"
 author: "p40la-ihost-team"
 created: "2026-08-12"
 updated: "2026-08-12"
@@ -270,3 +270,4 @@ Guía de instalación paso a paso en iHost, incluyendo creación de volumen, pue
 |-------|-------|-------------|
 | 2026-08-12 | p40la-ihost-team | Creación inicial de la especificación |
 | 2026-08-12 | p40la-ihost-team | Refuerza versionado semántico y elimina referencias externas |
+| 2026-08-12 | p40la-ihost-team | v0.1.0 implementada: Dockerfile, docker-compose, scripts y publicación multi-arch a Docker Hub (`paulomcnally/p40la-ihost:0.1.0`)

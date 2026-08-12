@@ -1,7 +1,7 @@
 ---
 title: "Configuración de usuario y login"
 id: "SPEC-002"
-status: "in_progress"
+status: "pending_release"
 author: "p40la-ihost-team"
 created: "2026-08-12"
 updated: "2026-08-12"
@@ -375,3 +375,4 @@ Con cookie `session` expirada.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-08-12 | p40la-ihost-team | Creación inicial de la especificación |
+| 2026-08-12 | p40la-ihost-team | v0.1.0 implementada: wizard, autenticación bcrypt, sesiones HMAC y dashboard protegido
