@@ -10,8 +10,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
-| **Pending release** | 2 🟠 |
-| **Released** | 0 🟢 |
+| **Pending release** | 0 🟠 |
+| **Released** | 2 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-002 |
 
@@ -21,8 +21,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | ID | Título | Estado | Fecha Creación | Autor |
 |----|--------|--------|----------------|-------|
-| SPEC-001 | Infraestructura de Despliegue en SONOFF iHost: Docker, Volumen de Datos y Multi-Arquitectura | pending_release | 2026-08-12 | p40la-ihost-team |
-| SPEC-002 | Configuración de usuario y login | pending_release | 2026-08-12 | p40la-ihost-team |
+| SPEC-001 | Infraestructura de Despliegue en SONOFF iHost: Docker, Volumen de Datos y Multi-Arquitectura | released | 2026-08-12 | p40la-ihost-team |
+| SPEC-002 | Configuración de usuario y login | released | 2026-08-12 | p40la-ihost-team |
 
 ---
 
@@ -92,4 +92,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-12 — SPEC-001 y SPEC-002 en estado `pending_release` (v0.1.0 publicada).*
+*Última actualización de este tracker: 2026-08-12 — SPEC-001 y SPEC-002 en estado `released` (merge a `main`, tag `v0.1.0`).*

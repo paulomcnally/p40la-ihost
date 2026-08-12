@@ -1,7 +1,7 @@
 ---
 title: "Configuración de usuario y login"
 id: "SPEC-002"
-status: "pending_release"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-12"
 updated: "2026-08-12"
