@@ -13,13 +13,12 @@ FROM gcr.io/distroless/static-debian12
 WORKDIR /app
 
 ENV DATA_DIR=/app/data
-ENV PORT=8000
+ENV PORT=8088
 
 COPY --from=builder /app/server /app/server
 COPY --from=builder /app/public /app/public
 COPY --from=builder /app/migrations /app/migrations
-
-EXPOSE 8000
+EXPOSE 8088
 VOLUME ["/app/data"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

@@ -5,14 +5,14 @@ services:
     container_name: p40la-ihost
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8088:8088"
     volumes:
       - p40la-ihost-data:/app/data
     environment:
-      - PORT=8000
+      - PORT=8088
       - DATA_DIR=/app/data
       - LOG_LEVEL=info
-      - VERSION=0.1.0
+      - VERSION=0.1.1
 
 volumes:
   p40la-ihost-data:

@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 export DATA_DIR="${DATA_DIR:-${ROOT_DIR}/data}"
-export PORT="${PORT:-8000}"
+export PORT="${PORT:-8088}"
 export LOG_LEVEL="${LOG_LEVEL:-info}"
 export VERSION="${VERSION:-dev}"
 
