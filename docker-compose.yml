@@ -1,0 +1,18 @@
+services:
+  p40la-ihost:
+    build: .
+    image: paulomcnally/p40la-ihost:latest
+    container_name: p40la-ihost
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - p40la-ihost-data:/app/data
+    environment:
+      - PORT=8000
+      - DATA_DIR=/app/data
+      - LOG_LEVEL=info
+      - VERSION=0.1.0
+
+volumes:
+  p40la-ihost-data:

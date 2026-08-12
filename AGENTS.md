@@ -2,7 +2,7 @@
 
 > **Última actualización**: 2026-08-12  
 > **Proyecto**: p40la-ihost  
-> **Sistema de specs**: v1.0
+> **Sistema de specs**: v1.1
 
 ---
 
@@ -109,11 +109,18 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 - **JAMÁS** mergear a `main` directamente desde una rama de feature.
 - **JAMÁS** ejecutar `--force` o `--force-with-lease` en `main` o ramas de release.
 
+### Pruebas locales obligatorias
+
+- **Todo cambio significativo debe probarse en local** (tests, build, ejecución básica) antes de intentar commits o push.
+- **No se realiza commit** de código que no compile, que falle los tests o que no haya sido validado en el entorno de desarrollo local.
+- Antes de solicitar confirmación para merge/push, el agente debe verificar que la aplicación levanta correctamente con la base de datos SQLite y que los criterios de aceptación del spec pasan en local.
+
 ### Flujo permitido
 
 1. Desarrollar en rama `feature/SPEC-XXX-*` (local).
-2. Cuando todo esté listo, solicitar confirmación al usuario para merge/push.
-3. Solo el usuario puede aprobar deploys a producción/iHost.
+2. Ejecutar pruebas locales (tests, build y validación manual mínima).
+3. Cuando todo esté listo, solicitar confirmación al usuario para merge/push.
+4. Solo el usuario puede aprobar deploys a producción/iHost.
 
 ---
 
