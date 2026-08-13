@@ -20,14 +20,14 @@ La primera vez que el contenedor arranca sin usuarios registrados, mostrará un 
 4. En **Container Name**, escribe: `p40la-ihost`.
 5. En **Restart Policy**, selecciona `unless-stopped`.
 6. Configura el puerto:
-   - Host: `8000`
-   - Container: `8000`
+   - Host: `8088`
+   - Container: `8088`
 7. Crea un volumen para persistir datos:
    - Host path: elige o crea una carpeta, por ejemplo `/userdata/p40la-ihost/data`.
    - Container path: `/app/data`
 8. (Opcional) Cambia **Network** a `host` si necesitas que el add-on alcance otros servicios locales sin configurar IPs.
 9. Pulsa **Done** para iniciar el contenedor.
-10. Abre un navegador en `http://<ip-del-ihost>:8000` y completa el wizard.
+10. Abre un navegador en `http://<ip-del-ihost>:8088` y completa el wizard.
 
 ## Actualización
 
@@ -39,7 +39,7 @@ La primera vez que el contenedor arranca sin usuarios registrados, mostrará un 
 
 | Variable | Valor por defecto | Descripción |
 |----------|-------------------|-------------|
-| `PORT` | `8000` | Puerto HTTP del servidor |
+| `PORT` | `8088` | Puerto HTTP del servidor |
 | `DATA_DIR` | `/app/data` | Directorio de datos persistentes |
 | `LOG_LEVEL` | `info` | Nivel de log (`debug`, `info`, `warn`, `error`) |
 | `BCRYPT_COST` | `10` | Coste de bcrypt para hash de contraseñas |
@@ -48,6 +48,6 @@ La primera vez que el contenedor arranca sin usuarios registrados, mostrará un 
 
 ## Solución de problemas
 
-- Si el puerto `8000` está ocupado, cambia el mapeo de puertos en el host.
+- Si el puerto `8088` está ocupado, cambia el mapeo de puertos en el host o usa la variable `PORT`.
 - Si los datos no persisten, verifica que el volumen esté montado en `/app/data`.
 - Para debug, usa la variable `LOG_LEVEL=debug`.

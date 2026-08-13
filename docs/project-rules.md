@@ -93,7 +93,7 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 ## 6. Consideraciones de iHost
 
 - Imagen Docker base: `gcr.io/distroless/static` o `alpine:latest` si se necesita shell.
-- Puerto por defecto: `8080` (configurable vía `PORT`).
+- Puerto por defecto: `8088` (configurable vía `PORT`).
 - SQLite debe persistir en volumen montado (no dentro del contenedor).
 - Health check ligero: `GET /health`.
 - Sin dependencias de red externa obligatorias.

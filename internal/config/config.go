@@ -24,7 +24,7 @@ type Config struct {
 
 // Load lee la configuración desde variables de entorno con valores por defecto.
 func Load() (*Config, error) {
-	port := getEnv("PORT", "8000")
+	port := getEnv("PORT", "8088")
 	dataDir := getEnv("DATA_DIR", "./data")
 	logLevel, err := parseLogLevel(getEnv("LOG_LEVEL", "info"))
 	if err != nil {
