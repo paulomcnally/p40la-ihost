@@ -1,0 +1,109 @@
+{
+  "app": {
+    "title": "p40la",
+    "loading": "Loading...",
+    "empty": "No records",
+    "add": "Add",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Are you sure?",
+    "search": "Search",
+    "filter": "Filter"
+  },
+  "menu": {
+    "home": "Home",
+    "services": "Services",
+    "settings": "Settings"
+  },
+  "home": {
+    "title": "Home",
+    "subtitle": "Manage your homes",
+    "name": "Name",
+    "address": "Address",
+    "create": "New home",
+    "edit": "Edit home",
+    "empty": "You haven't created any home yet.",
+    "select": "Select home"
+  },
+  "services": {
+    "title": "Services",
+    "subtitle": "Recurring payment services",
+    "create": "New service",
+    "edit": "Edit service",
+    "empty": "No services registered.",
+    "empty_no_home": "You need to create a home first.",
+    "name": "Name",
+    "institution": "Institution",
+    "currency": "Currency",
+    "frequency": "Frequency",
+    "suggested_amount": "Suggested amount",
+    "active": "Active",
+    "icon": "Icon",
+    "home": "Home",
+    "all_homes": "All homes",
+    "bills": "Bills"
+  },
+  "frequency": {
+    "monthly": "Monthly",
+    "yearly": "Yearly"
+  },
+  "bills": {
+    "title": "Bills",
+    "create": "New bill",
+    "edit": "Edit bill",
+    "year": "Year",
+    "month": "Month",
+    "amount": "Amount",
+    "invoice_number": "Invoice number",
+    "status": "Status",
+    "drive_url": "Google Drive link",
+    "status_pending": "Pending",
+    "status_paid": "Paid",
+    "empty": "No bills registered."
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Application settings",
+    "section_general": "General",
+    "section_currencies": "Currencies",
+    "language": {
+      "title": "Language",
+      "subtitle": "Language for the entire app",
+      "es": "Español",
+      "en": "English"
+    },
+    "currencies": {
+      "title": "Currencies",
+      "subtitle": "Manage available currencies",
+      "code": "Code",
+      "name": "Name",
+      "symbol": "Symbol",
+      "create": "Add currency"
+    }
+  },
+  "months": {
+    "1": "January",
+    "2": "February",
+    "3": "March",
+    "4": "April",
+    "5": "May",
+    "6": "June",
+    "7": "July",
+    "8": "August",
+    "9": "September",
+    "10": "October",
+    "11": "November",
+    "12": "December"
+  },
+  "errors": {
+    "required": "This field is required",
+    "no_homes": "You must create at least one home before registering services.",
+    "invalid_drive": "The Google Drive link is not valid",
+    "drive_required": "Google Drive link is required to mark as paid",
+    "generic": "An error occurred. Please try again."
+  }
+}

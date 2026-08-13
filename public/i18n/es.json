@@ -1,0 +1,109 @@
+{
+  "app": {
+    "title": "p40la",
+    "loading": "Cargando...",
+    "empty": "No hay registros",
+    "add": "Agregar",
+    "create": "Crear",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "confirm": "¿Estás seguro?",
+    "search": "Buscar",
+    "filter": "Filtrar"
+  },
+  "menu": {
+    "home": "Casa",
+    "services": "Servicios",
+    "settings": "Configuración"
+  },
+  "home": {
+    "title": "Casa",
+    "subtitle": "Administra tus hogares",
+    "name": "Nombre",
+    "address": "Dirección",
+    "create": "Nueva casa",
+    "edit": "Editar casa",
+    "empty": "No has creado ninguna casa todavía.",
+    "select": "Seleccionar casa"
+  },
+  "services": {
+    "title": "Servicios",
+    "subtitle": "Servicios de pago recurrentes",
+    "create": "Nuevo servicio",
+    "edit": "Editar servicio",
+    "empty": "No hay servicios registrados.",
+    "empty_no_home": "Primero debes crear una casa.",
+    "name": "Nombre",
+    "institution": "Institución",
+    "currency": "Moneda",
+    "frequency": "Frecuencia",
+    "suggested_amount": "Monto sugerido",
+    "active": "Activo",
+    "icon": "Icono",
+    "home": "Casa",
+    "all_homes": "Todas las casas",
+    "bills": "Facturas"
+  },
+  "frequency": {
+    "monthly": "Mensual",
+    "yearly": "Anual"
+  },
+  "bills": {
+    "title": "Facturas",
+    "create": "Nueva factura",
+    "edit": "Editar factura",
+    "year": "Año",
+    "month": "Mes",
+    "amount": "Monto",
+    "invoice_number": "Número de factura",
+    "status": "Estado",
+    "drive_url": "Enlace de Google Drive",
+    "status_pending": "Pendiente",
+    "status_paid": "Pagada",
+    "empty": "No hay facturas registradas."
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Ajustes de la aplicación",
+    "section_general": "General",
+    "section_currencies": "Monedas",
+    "language": {
+      "title": "Idioma",
+      "subtitle": "Idioma de toda la aplicación",
+      "es": "Español",
+      "en": "English"
+    },
+    "currencies": {
+      "title": "Monedas",
+      "subtitle": "Administra las monedas disponibles",
+      "code": "Código",
+      "name": "Nombre",
+      "symbol": "Símbolo",
+      "create": "Agregar moneda"
+    }
+  },
+  "months": {
+    "1": "Enero",
+    "2": "Febrero",
+    "3": "Marzo",
+    "4": "Abril",
+    "5": "Mayo",
+    "6": "Junio",
+    "7": "Julio",
+    "8": "Agosto",
+    "9": "Septiembre",
+    "10": "Octubre",
+    "11": "Noviembre",
+    "12": "Diciembre"
+  },
+  "errors": {
+    "required": "Este campo es requerido",
+    "no_homes": "Debe crear al menos una casa antes de registrar servicios.",
+    "invalid_drive": "El enlace de Google Drive no es válido",
+    "drive_required": "El enlace de Google Drive es obligatorio para marcar como pagada",
+    "generic": "Ocurrió un error. Intenta de nuevo."
+  }
+}
