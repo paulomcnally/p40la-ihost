@@ -1,7 +1,7 @@
 ---
 title: "Dashboard con Sidebar, Header, i18n, Settings estilo iOS, Iconos, Home/Casa y Módulo de Servicios con Facturas"
 id: "SPEC-004"
-status: "in_progress"
+status: "pending_release"
 author: "p40la-ihost-team"
 created: "2026-08-12"
 updated: "2026-08-12"
@@ -457,3 +457,4 @@ Todas las decisiones técnicas priorizan las restricciones del iHost: bajo consu
 |-------|-------|-------------|
 | 2026-08-12 | p40la-ihost-team | Creación inicial de la especificación |
 | 2026-08-12 | p40la-ihost-team | Mover a `in_progress` para iniciar desarrollo |
+| 2026-08-12 | p40la-ihost-team | Implementación completa y tests exitosos; mover a `pending_release` |

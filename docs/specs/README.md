@@ -9,8 +9,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 4 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 1 🟣 |
-| **Pending release** | 0 🟠 |
+| **In progress** | 0 🟣 |
+| **Pending release** | 1 🟠 |
 | **Released** | 3 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-004 |
@@ -24,7 +24,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-001 | Infraestructura de Despliegue en SONOFF iHost: Docker, Volumen de Datos y Multi-Arquitectura | released | 2026-08-12 | p40la-ihost-team |
 | SPEC-002 | Configuración de usuario y login | released | 2026-08-12 | p40la-ihost-team |
 | SPEC-003 | Cambio de puerto por defecto a 8088 | released | 2026-08-12 | p40la-ihost-team |
-| SPEC-004 | Dashboard con Sidebar, Header, i18n, Settings estilo iOS, Iconos, Home/Casa y Módulo de Servicios con Facturas | in_progress | 2026-08-12 | p40la-ihost-team |
+| SPEC-004 | Dashboard con Sidebar, Header, i18n, Settings estilo iOS, Iconos, Home/Casa y Módulo de Servicios con Facturas | pending_release | 2026-08-12 | p40la-ihost-team |
 
 ---
 
