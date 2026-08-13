@@ -1,7 +1,7 @@
 ---
 title: "Cambio de puerto por defecto a 8088"
 id: "SPEC-003"
-status: "in_progress"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-12"
 updated: "2026-08-12"
@@ -134,3 +134,4 @@ Ninguna nueva.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-08-12 | p40la-ihost-team | Creación inicial de la especificación |
+| 2026-08-12 | p40la-ihost-team | v0.1.1 implementada: puerto por defecto cambiado a 8088, imagen publicada en Docker Hub
