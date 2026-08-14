@@ -10,12 +10,31 @@ import (
 
 // Handler agrupa los handlers HTTP de la aplicación.
 type Handler struct {
-	auth *services.AuthService
+	auth     *services.AuthService
+	settings *SettingsHandlers
+	currency *CurrencyHandlers
+	home     *HomeHandlers
+	service  *ServiceHandlers
+	bill     *BillHandlers
 }
 
 // NewHandler crea un nuevo Handler.
-func NewHandler(auth *services.AuthService) *Handler {
-	return &Handler{auth: auth}
+func NewHandler(
+	auth *services.AuthService,
+	settings *SettingsHandlers,
+	currency *CurrencyHandlers,
+	home *HomeHandlers,
+	service *ServiceHandlers,
+	bill *BillHandlers,
+) *Handler {
+	return &Handler{
+		auth:     auth,
+		settings: settings,
+		currency: currency,
+		home:     home,
+		service:  service,
+		bill:     bill,
+	}
 }
 
 type setupStatusResponse struct {

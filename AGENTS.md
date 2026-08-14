@@ -1,8 +1,8 @@
 # AGENTS.md - Reglas del Repositorio
 
-> **Última actualización**: 2026-08-12  
+> **Última actualización**: 2026-08-13  
 > **Proyecto**: p40la-ihost  
-> **Sistema de specs**: v1.1
+> **Sistema de specs**: v1.2
 
 ---
 
@@ -47,6 +47,11 @@ Cualquier cambio que toque lógica de negocio, base de datos, APIs, eventos, con
 - **Paso 2 y 3**: Se crea la spec, se documenta todo (requerimientos, diseño, criterios de aceptación).
 - **Paso 4**: Solo entonces se escribe código. Nunca a la inversa.
 - Si se detecta algo no previsto durante el desarrollo → volver al paso 2, actualizar la spec, luego continuar.
+- Si durante la evaluación manual local el usuario solicita cambios (incluso pequeños), el agente debe:
+  1. Actualizar la spec para reflejar los cambios solicitados.
+  2. Crear/actualizar la lista de tareas (`todo`) con cada cambio pendiente.
+  3. Implementar los cambios y volver a dejar la app corriendo en local para reevaluación.
+  4. Solo cuando el usuario confirme, se considera el spec cerrado.
 
 ### 4. Documentación mínima
 
@@ -90,8 +95,10 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 
 1. Pasar criterios de aceptación
 2. Code review
-3. QA/Testing
-4. Estado: `pending_release`
+3. QA/Testing (tests automáticos + pruebas manuales locales)
+4. El agente debe correr la aplicación en local y dejarla disponible para evaluación del usuario
+5. El usuario confirma que los cambios están correctos tras probar manualmente
+6. Estado: `pending_release`
 
 ### Fase 5: Release
 
@@ -119,8 +126,10 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 
 1. Desarrollar en rama `feature/SPEC-XXX-*` (local).
 2. Ejecutar pruebas locales (tests, build y validación manual mínima).
-3. Cuando todo esté listo, solicitar confirmación al usuario para merge/push.
-4. Solo el usuario puede aprobar deploys a producción/iHost.
+3. Correr la aplicación en local para que el usuario evalúe los cambios manualmente.
+4. El usuario confirma que todo está correcto; solo entonces se considera el spec listo para cerrar/publicar.
+5. Solicitar confirmación al usuario para merge/push.
+6. Solo el usuario puede aprobar deploys a producción/iHost.
 
 ---
 

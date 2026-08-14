@@ -62,8 +62,25 @@ func main() {
 
 	userStorage := storage.NewUserStorage(database)
 	settingsStorage := storage.NewSettingsStorage(database)
+	currencyStorage := storage.NewCurrencyStorage(database)
+	homeStorage := storage.NewHomeStorage(database)
+	serviceStorage := storage.NewServiceStorage(database)
+	billStorage := storage.NewBillStorage(database)
+
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
-	handler := api.NewHandler(authService)
+	appSettingsService := services.NewAppSettingsService(settingsStorage)
+	currencyService := services.NewCurrencyService(currencyStorage)
+	homeService := services.NewHomeService(homeStorage)
+	serviceService := services.NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
+	billService := services.NewBillService(billStorage, serviceStorage)
+
+	settingsHandlers := api.NewSettingsHandlers(appSettingsService)
+	currencyHandlers := api.NewCurrencyHandlers(currencyService)
+	homeHandlers := api.NewHomeHandlers(homeService)
+	serviceHandlers := api.NewServiceHandlers(serviceService, homeService)
+	billHandlers := api.NewBillHandlers(billService)
+
+	handler := api.NewHandler(authService, settingsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers)
 
 	router := api.BuildRouter(handler, authService, "./public")
 
