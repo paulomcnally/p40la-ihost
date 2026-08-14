@@ -3,3 +3,5 @@
 data/
 server
 
+frontend/node_modules/
+frontend/dist/

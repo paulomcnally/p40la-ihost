@@ -1,23 +1,37 @@
-# Build stage
-FROM golang:1.23-alpine AS builder
+# Stage 1: Build frontend (React + Vite + Tailwind)
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ .
+RUN npm run build
+
+# Stage 2: Build backend (Go)
+FROM golang:1.23-alpine AS backend-builder
 WORKDIR /app
 
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+
+# Copiar el build del frontend al public/ del backend
+COPY --from=frontend-builder /app/public ./public
+
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o server ./cmd/server
 
-# Runtime stage
+# Stage 3: Runtime (distroless)
 FROM gcr.io/distroless/static-debian12
 WORKDIR /app
 
 ENV DATA_DIR=/app/data
 ENV PORT=8088
 
-COPY --from=builder /app/server /app/server
-COPY --from=builder /app/public /app/public
-COPY --from=builder /app/migrations /app/migrations
+COPY --from=backend-builder /app/server /app/server
+COPY --from=backend-builder /app/public /app/public
+COPY --from=backend-builder /app/migrations /app/migrations
 EXPOSE 8088
 VOLUME ["/app/data"]
 
