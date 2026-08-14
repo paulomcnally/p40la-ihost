@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 4 |
+| **Total de specs** | 5 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 0 🟣 |
+| **In progress** | 1 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 4 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-004 |
+| **Último ID usado** | SPEC-005 |
 
 ---
 
@@ -25,6 +25,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-002 | Configuración de usuario y login | released | 2026-08-12 | p40la-ihost-team |
 | SPEC-003 | Cambio de puerto por defecto a 8088 | released | 2026-08-12 | p40la-ihost-team |
 | SPEC-004 | Dashboard con Sidebar, Header, i18n, Settings estilo iOS, Iconos, Home/Casa y Módulo de Servicios con Facturas | released | 2026-08-12 | p40la-ihost-team |
+| SPEC-005 | Migración del Frontend a React + Tailwind CSS | in_progress | 2026-08-13 | p40la-ihost-team |
 
 ---
 

@@ -2,6 +2,8 @@ package api
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 )
@@ -52,86 +54,29 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/bills/{id}", authMiddleware(http.HandlerFunc(handler.bill.UpdateBill)))
 	mux.Handle("DELETE /api/bills/{id}", authMiddleware(http.HandlerFunc(handler.bill.DeleteBill)))
 
-	// Páginas HTML
-	mux.HandleFunc("GET /setup", setupPageHandler(auth, staticDir))
-	mux.HandleFunc("GET /login", loginPageHandler(auth, staticDir))
-	mux.HandleFunc("GET /dashboard", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/home", http.StatusTemporaryRedirect)
-	})
+	// Assets estáticos (JS/CSS bundles del build de Vite)
+	assetsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "assets")))
+	mux.Handle("GET /assets/{file...}", http.StripPrefix("/assets/", assetsFS))
 
-	// Rutas del dashboard SPA — auth manejada por dashboardPageHandler
-	spaPaths := []string{"/home", "/home/{path...}", "/services", "/services/{path...}", "/settings", "/settings/{path...}", "/bills", "/bills/{path...}"}
-	for _, pattern := range spaPaths {
-		mux.Handle("GET "+pattern, http.HandlerFunc(dashboardPageHandler(auth, staticDir)))
-	}
+	// i18n JSON files
+	i18nFS := http.FileServer(http.Dir(filepath.Join(staticDir, "i18n")))
+	mux.Handle("GET /i18n/{file...}", http.StripPrefix("/i18n/", i18nFS))
 
-	// Assets estáticos
-	fs := http.FileServer(http.Dir(staticDir))
-	mux.Handle("GET /css/", http.StripPrefix("/css/", http.FileServer(http.Dir(staticDir+"/css"))))
-	mux.Handle("GET /js/", http.StripPrefix("/js/", http.FileServer(http.Dir(staticDir+"/js"))))
-	mux.Handle("GET /i18n/", http.StripPrefix("/i18n/", http.FileServer(http.Dir(staticDir+"/i18n"))))
-
-	// Raíz con lógica de redirección
-	mux.Handle("GET /{$}", EntryRedirectMiddleware(auth)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Este handler nunca se ejecuta porque el middleware redirige siempre.
-		http.NotFound(w, r)
-	})))
-
-	// Cualquier otra ruta sirve archivos estáticos (index.html fallback opcional)
-	mux.Handle("GET /", fs)
+	// SPA fallback — sirve index.html para cualquier ruta no-API no-asset
+	mux.Handle("GET /{path...}", spaHandler(staticDir))
 
 	return mux
 }
 
-func setupPageHandler(auth *services.AuthService, staticDir string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		setup, err := auth.IsSetupComplete(r.Context())
-		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-		if setup {
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-			return
-		}
-		http.ServeFile(w, r, staticDir+"/setup.html")
-	}
-}
+func spaHandler(staticDir string) http.HandlerFunc {
+	indexFile := filepath.Join(staticDir, "index.html")
 
-func loginPageHandler(auth *services.AuthService, staticDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		setup, err := auth.IsSetupComplete(r.Context())
-		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
+		staticPath := filepath.Join(staticDir, r.URL.Path)
+		if info, err := os.Stat(staticPath); err == nil && !info.IsDir() {
+			http.ServeFile(w, r, staticPath)
 			return
 		}
-		if !setup {
-			http.Redirect(w, r, "/setup", http.StatusTemporaryRedirect)
-			return
-		}
-		if isAuthenticated(r, auth) {
-			http.Redirect(w, r, "/dashboard", http.StatusTemporaryRedirect)
-			return
-		}
-		http.ServeFile(w, r, staticDir+"/login.html")
+		http.ServeFile(w, r, indexFile)
 	}
-}
-
-func dashboardPageHandler(auth *services.AuthService, staticDir string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !isAuthenticated(r, auth) {
-			http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
-			return
-		}
-		http.ServeFile(w, r, staticDir+"/dashboard.html")
-	}
-}
-
-func isAuthenticated(r *http.Request, auth *services.AuthService) bool {
-	cookie, err := r.Cookie("session")
-	if err != nil {
-		return false
-	}
-	user, err := auth.ValidateSession(r.Context(), cookie.Value)
-	return err == nil && user != nil
 }

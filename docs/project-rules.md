@@ -14,11 +14,11 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 | **Lenguaje** | Go | Binario nativo, bajo consumo de RAM, stdlib robusta |
 | **Base de datos** | SQLite | Sin proceso separado, zero-config, ideal para iHost |
 | **HTTP server** | `net/http` de Go | Incluido en stdlib, suficiente para API simple |
-| **Frontend** | HTML + CSS + JS vanilla | Mínimo peso, sin build step ni dependencias pesadas |
+| **Frontend** | React + Tailwind CSS (build estático con Vite) | Componentes reutilizables, DX superior, build fuera del iHost |
 | **Migraciones DB** | `golang-migrate` o scripts SQL manuales | Ligero y predecible |
 | **Deploy** | Add-on Docker para iHost | Empaquetado como contenedor ligero |
 
-**Regla**: Ningún framework pesado (Echo, Gin, Next.js, React, etc.) sin aprobación explícita y actualización de esta regla.
+**Nota**: El build de React+Tailwind se realiza fuera del iHost (CI/CD o máquina de desarrollo). El iHost solo sirve archivos estáticos pre-build (HTML + JS bundle + CSS), sin Node.js en runtime.
 
 ---
 
@@ -36,10 +36,14 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 │   ├── models/              # Entidades y structs de dominio
 │   ├── services/            # Lógica de negocio
 │   └── storage/             # SQLite queries y abstracción DB
-├── public/                  # Frontend estático servido por el backend
+├── frontend/                # Código fuente React (build fuera del iHost)
+│   ├── src/                 # Componentes, páginas, stores
+│   ├── package.json
+│   └── vite.config.ts
+├── public/                  # Frontend estático servido por el backend (output del build)
 │   ├── index.html
-│   ├── css/
-│   └── js/
+│   ├── assets/
+│   └── i18n/
 ├── docs/
 │   ├── specs/               # Especificaciones técnicas
 │   ├── project-rules.md     # Este archivo
@@ -68,11 +72,30 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - Lógica de negocio en handlers.
 - Queries SQL directamente desde services o handlers.
 - Dependencias pesadas sin justificación en una spec.
-- Frontend con framework SPA (React, Vue, etc.) salvo que una spec lo autorice.
+- Node.js en runtime del iHost (solo para build en CI/CD o dev machine).
 
 ---
 
-## 4. Convenciones de Código Go
+## 4. Reglas de UI
+
+### 4.1 Patrón de creación
+
+- **Todas** las páginas con acción de crear deben usar el componente `CreateMenu` (ícono de 3 puntos verticales) en el header.
+- El menú despliega un dropdown con las opciones de creación disponibles.
+- **Nunca** usar botones directos de "Crear" o "+" en el header.
+- El componente `CreateMenu` se importa desde `frontend/src/components/CreateMenu.tsx`.
+
+### 4.2 Estilo general
+
+- Diseño inspirado en iOS: bordes redondeados (`rounded-ios`), sombras suaves (`shadow-ios`), colores del sistema Apple.
+- Sidebar fijo a la izquierda con navegación por secciones.
+- Header sticky con título de página y acciones a la derecha (settings, logout, create menu).
+- Cards con hover effect y menú de acciones (3 puntos) que aparece al hacer hover.
+- Modales de confirmación para acciones destructivas (eliminar).
+
+---
+
+## 5. Convenciones de Código Go
 
 - Usar `gofmt` siempre.
 - Nombres en inglés para código, español para specs y documentación.
@@ -82,7 +105,7 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 
 ---
 
-## 5. Base de Datos
+## 6. Base de Datos
 
 - SQLite con `journal_mode=WAL` para mejor concurrencia.
 - Migraciones en `migrations/` con naming `NNNN_descripcion.up.sql` / `.down.sql`.
@@ -90,7 +113,7 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 
 ---
 
-## 6. Consideraciones de iHost
+## 7. Consideraciones de iHost
 
 - Imagen Docker base: `gcr.io/distroless/static` o `alpine:latest` si se necesita shell.
 - Puerto por defecto: `8088` (configurable vía `PORT`).
