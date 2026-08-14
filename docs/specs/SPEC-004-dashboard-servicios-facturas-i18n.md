@@ -1,7 +1,7 @@
 ---
 title: "Dashboard con Sidebar, Header, i18n, Settings estilo iOS, Iconos, Home/Casa y Módulo de Servicios con Facturas"
 id: "SPEC-004"
-status: "pending_release"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-12"
 updated: "2026-08-12"
@@ -47,17 +47,26 @@ Todas las decisiones técnicas priorizan las restricciones del iHost: bajo consu
 14. **REQ-014**: Las facturas creadas automáticamente inician en estado **Pendiente** con el monto sugerido del servicio.
 15. **REQ-015**: Registrar o actualizar una factura como **Pagada** requiere obligatoriamente un enlace de Google Drive válido.
 16. **REQ-016**: Mejorar el tracker de migraciones con tabla `schema_migrations` para controlar qué migraciones ya fueron aplicadas.
+17. **REQ-017**: Los estados vacíos (empty states) deben mostrarse como una card centrada con título, subtítulo y botón de acción clara.
+18. **REQ-018**: El botón principal de creación en empty states (ej. "Nueva casa") debe tener un estilo de card atractivo, sin fondo gris plano.
+19. **REQ-019**: Los botones de acción deben incluir un icono que represente su función (crear, editar, eliminar, guardar, cancelar, facturas, etc.).
+20. **REQ-020**: El botón principal de creación en cada página no debe mostrarse como botón tradicional, sino como un icono de tres puntos (⋮) alineado a la derecha que despliega un dropdown personalizado (no nativo del OS) con la opción de crear un registro. Aplica para Home, Servicios y futuras páginas.
+21. **REQ-021**: Cada card debe incluir un icono de tres puntos (⋮) en la esquina superior derecha que despliegue un dropdown personalizado con las opciones "Editar" y "Eliminar", cada una con su icono de referencia.
+22. **REQ-022**: La acción de eliminar siempre debe desplegar un modal de confirmación que advierta sobre la acción, con un campo de texto donde el usuario debe escribir "confirmo" para habilitar el botón de eliminar, y una opción de cancelar.
+23. **REQ-023**: La navegación entre páginas debe actualizar la URL mediante la API History de HTML5, de forma que al refrescar el navegador en una página específica se cargue esa misma página y no se vuelva al inicio.
+24. **REQ-024**: Nunca usar dropdowns nativos del sistema operativo; todos los selectores y menús desplegables deben ser componentes custom implementados con CSS.
+25. **REQ-025**: Los formularios de CRUD (crear/editar) deben ser páginas completas, no modales. Los modales solo se usarán cuando el usuario lo solicite explícitamente.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
-17. **REQ-017**: Edición del monto sugerido y datos de facturas generadas automáticamente cuando llega el documento real de la empresa.
-18. **REQ-018**: Visualización del historial de facturas dentro del detalle de cada servicio.
-19. **REQ-019**: Indicador visual de servicios con facturas pendientes.
+26. **REQ-026**: Edición del monto sugerido y datos de facturas generadas automáticamente cuando llega el documento real de la empresa.
+27. **REQ-027**: Visualización del historial de facturas dentro del detalle de cada servicio.
+28. **REQ-028**: Indicador visual de servicios con facturas pendientes.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
-20. **REQ-020**: Filtro de servicios activos/inactivos.
-21. **REQ-021**: Dashboard inicial con resumen de facturas pendientes por Home.
+29. **REQ-029**: Filtro de servicios activos/inactivos.
+30. **REQ-030**: Dashboard inicial con resumen de facturas pendientes por Home.
 
 ### 2.4 Requerimientos No Funcionales
 
@@ -388,6 +397,15 @@ Todas las decisiones técnicas priorizan las restricciones del iHost: bajo consu
 - [ ] **CA-012**: Dado una factura pendiente, cuando ingresa un link de Drive válido y marca pagada, entonces el estado cambia a `paid`.
 - [ ] **CA-013**: Dado el listado de servicios, cuando selecciona un Home del filtro, entonces solo se muestran servicios de ese Home.
 - [ ] **CA-014**: Dado un servicio eliminado, cuando se consulta el listado, entonces no aparece (soft delete).
+- [ ] **CA-015**: Dado una sección sin registros, cuando se muestra el empty state, entonces aparece como una card centrada con título, subtítulo y botón de acción.
+- [ ] **CA-016**: Dado un empty state, cuando se visualiza el botón de creación, entonces tiene estilo de card atractivo (no fondo gris plano).
+- [ ] **CA-017**: Dado cualquier botón de acción, cuando se visualiza, entonces incluye un icono representativo de su función.
+- [ ] **CA-018**: Dado una página de listado, cuando se visualiza el encabezado, entonces la acción de crear se muestra como un icono de tres puntos con dropdown personalizado.
+- [ ] **CA-019**: Dado una card, cuando se hace clic en los tres puntos superiores derechos, entonces se despliega un dropdown con las opciones Editar y Eliminar con sus iconos.
+- [ ] **CA-020**: Dado que se selecciona eliminar, cuando se abre el modal de confirmación, entonces el botón de eliminar permanece deshabilitado hasta que el usuario escriba "confirmo".
+- [ ] **CA-021**: Dado que se navega a una página, cuando se observa la URL, entonces refleja la página actual y al refrescar se mantiene la misma página.
+- [ ] **CA-022**: Dado cualquier selector o menú desplegable, cuando se interactúa con él, entonces es un componente custom de CSS y no el dropdown nativo del OS.
+- [ ] **CA-023**: Dado que se crea o edita un registro, cuando se muestra el formulario, entonces se renderiza como una página completa y no como un modal.
 
 ### 5.2 No funcionales
 
@@ -449,6 +467,20 @@ Todas las decisiones técnicas priorizan las restricciones del iHost: bajo consu
 - Template de specs: `docs/specs/templates/spec-template.md`
 - Patrón de almacenamiento actual: `internal/storage/user.go`
 
+### 8.1 Lecciones aprendidas (UI/Frontend)
+
+| Problema | Causa | Solución |
+|----------|-------|----------|
+| Empty state no centrado en grid | `margin: auto` no funciona dentro de CSS grid | Usar `place-self: center` + `grid-column: 1 / -1` |
+| Empty state sin fondo blanco | Clase `.empty-card` no aplicada cuando `inline: true` | Eliminar `inline`; empty state siempre es card completa |
+| Formulario sin contenedor card | `.form-page` solo tenía `max-width` y `margin` | Agregar `background`, `border-radius`, `box-shadow`, `padding` |
+| Menú de crear no funcionaba | `renderCreateMenu()` generaba HTML pero nunca se llamaba `attachCreateMenu()` | Siempre llamar `attachCreateMenu(options)` después de `setHeaderActions()` |
+| Dropdown de card se cortaba | Posicionamiento `absolute` dentro de card con `overflow` | Usar `position: fixed` calculado desde `getBoundingClientRect()` |
+| Subtítulo duplicado en empty state | Se pasaba la misma key para título y subtítulo | Usar keys separadas: `titleKey` + `subtitleKey` |
+| Modal de eliminar texto redundante | `<br>${I18n.get('app.confirm')}` duplicaba el título | Dejar solo `subtitle` descriptivo del elemento a eliminar |
+| AuthMiddleware rompía rutas SPA | Middleware devolvía 401 texto plano en vez de redirigir | Quitar middleware de rutas SPA; `dashboardPageHandler` ya valida auth |
+| Caché de navegador ocultaba cambios | Hard refresh necesario tras cambios JS/CSS | Documentar: siempre hard refresh (`Ctrl+Shift+R`) al probar |
+
 ---
 
 ## 9. Historial de Cambios
@@ -457,4 +489,6 @@ Todas las decisiones técnicas priorizan las restricciones del iHost: bajo consu
 |-------|-------|-------------|
 | 2026-08-12 | p40la-ihost-team | Creación inicial de la especificación |
 | 2026-08-12 | p40la-ihost-team | Mover a `in_progress` para iniciar desarrollo |
-| 2026-08-12 | p40la-ihost-team | Implementación completa y tests exitosos; mover a `pending_release` |
+| 2026-08-13 | p40la-ihost-team | Solicitud de cambios: empty state como card centrada; menús de 3 puntos; confirmación de eliminación; iconos en botones; navegación por URL; dropdowns custom; formularios como páginas |
+| 2026-08-13 | p40la-ihost-team | Correcciones UI: centrado de empty cards, fondo blanco en formularios, posicionamiento de dropdowns, lecciones documentadas |
+| 2026-08-13 | p40la-ihost-team | Spec cerrada y marcada como released |

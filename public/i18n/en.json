@@ -53,6 +53,7 @@
   },
   "bills": {
     "title": "Bills",
+    "subtitle": "Service payment history",
     "create": "New bill",
     "edit": "Edit bill",
     "year": "Year",

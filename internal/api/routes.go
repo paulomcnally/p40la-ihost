@@ -55,12 +55,21 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	// Páginas HTML
 	mux.HandleFunc("GET /setup", setupPageHandler(auth, staticDir))
 	mux.HandleFunc("GET /login", loginPageHandler(auth, staticDir))
-	mux.HandleFunc("GET /dashboard", dashboardPageHandler(auth, staticDir))
+	mux.HandleFunc("GET /dashboard", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/home", http.StatusTemporaryRedirect)
+	})
+
+	// Rutas del dashboard SPA — auth manejada por dashboardPageHandler
+	spaPaths := []string{"/home", "/home/{path...}", "/services", "/services/{path...}", "/settings", "/settings/{path...}", "/bills", "/bills/{path...}"}
+	for _, pattern := range spaPaths {
+		mux.Handle("GET "+pattern, http.HandlerFunc(dashboardPageHandler(auth, staticDir)))
+	}
 
 	// Assets estáticos
 	fs := http.FileServer(http.Dir(staticDir))
 	mux.Handle("GET /css/", http.StripPrefix("/css/", http.FileServer(http.Dir(staticDir+"/css"))))
 	mux.Handle("GET /js/", http.StripPrefix("/js/", http.FileServer(http.Dir(staticDir+"/js"))))
+	mux.Handle("GET /i18n/", http.StripPrefix("/i18n/", http.FileServer(http.Dir(staticDir+"/i18n"))))
 
 	// Raíz con lógica de redirección
 	mux.Handle("GET /{$}", EntryRedirectMiddleware(auth)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -53,6 +53,7 @@
   },
   "bills": {
     "title": "Facturas",
+    "subtitle": "Historial de pagos del servicio",
     "create": "Nueva factura",
     "edit": "Editar factura",
     "year": "Año",
