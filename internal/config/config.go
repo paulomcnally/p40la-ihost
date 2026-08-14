@@ -12,14 +12,14 @@ import (
 
 // Config agrupa toda la configuración de la aplicación.
 type Config struct {
-	Port           string
-	DataDir        string
-	LogLevel       slog.Level
-	BcryptCost     int
-	SessionSecret  string
+	Port            string
+	DataDir         string
+	LogLevel        slog.Level
+	BcryptCost      int
+	SessionSecret   string
 	SessionDuration time.Duration
-	SecureCookie   bool
-	Version        string
+	SecureCookie    bool
+	Version         string
 }
 
 // Load lee la configuración desde variables de entorno con valores por defecto.
