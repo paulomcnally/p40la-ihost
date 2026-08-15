@@ -4,7 +4,8 @@ id: "SPEC-003"
 status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-12"
-updated: "2026-08-12"
+updated: "2026-08-15"
+github_issue: 4
 ---
 
 # Cambio de puerto por defecto a 8088

@@ -4,7 +4,8 @@ id: "SPEC-001"
 status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-12"
-updated: "2026-08-12"
+updated: "2026-08-15"
+github_issue: 2
 ---
 
 # Infraestructura de Despliegue en SONOFF iHost: Docker, Volumen de Datos y Multi-Arquitectura

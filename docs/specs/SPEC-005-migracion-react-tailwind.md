@@ -1,10 +1,11 @@
 ---
 title: "Migración del Frontend a React + Tailwind CSS"
 id: "SPEC-005"
-status: "in_progress"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-13"
-updated: "2026-08-13"
+updated: "2026-08-15"
+github_issue: 6
 ---
 
 # Migración del Frontend a React + Tailwind CSS
