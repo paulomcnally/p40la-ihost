@@ -7,40 +7,52 @@ import (
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
+	"github.com/paulomcnally/p40la-ihost/internal/storage"
 )
 
 // ServiceHandlers agrupa los handlers de servicios.
 type ServiceHandlers struct {
-	service *services.ServiceService
-	homes   *services.HomeService
+	service      *services.ServiceService
+	homes        *services.HomeService
+	institutions *storage.InstitutionStorage
 }
 
 // NewServiceHandlers crea un nuevo ServiceHandlers.
-func NewServiceHandlers(service *services.ServiceService, homes *services.HomeService) *ServiceHandlers {
-	return &ServiceHandlers{service: service, homes: homes}
+func NewServiceHandlers(service *services.ServiceService, homes *services.HomeService, institutions *storage.InstitutionStorage) *ServiceHandlers {
+	return &ServiceHandlers{service: service, homes: homes, institutions: institutions}
 }
 
 type serviceRequest struct {
-	HomeID          int64   `json:"home_id"`
-	Name            string  `json:"name"`
-	Institution     string  `json:"institution"`
-	CurrencyID      int64   `json:"currency_id"`
-	Frequency       string  `json:"frequency"`
-	SuggestedAmount float64 `json:"suggested_amount"`
-	Active          bool    `json:"active"`
-	IconKey         string  `json:"icon_key"`
+	HomeID                int64   `json:"home_id"`
+	Name                  string  `json:"name"`
+	Institution           string  `json:"institution"`
+	CurrencyID            int64   `json:"currency_id"`
+	Frequency             string  `json:"frequency"`
+	SuggestedAmount       float64 `json:"suggested_amount"`
+	Active                bool    `json:"active"`
+	IconKey               string  `json:"icon_key"`
+	BillingType           string  `json:"billing_type"`
+	BillingDay            int     `json:"billing_day"`
+	AutoGenerate          bool    `json:"auto_generate"`
+	InstitutionID         *int64  `json:"institution_id,omitempty"`
+	InstitutionAnalyzerID *int64  `json:"institution_analyzer_id,omitempty"`
 }
 
 func (h *ServiceHandlers) toModel(req serviceRequest) *models.Service {
 	return &models.Service{
-		HomeID:          req.HomeID,
-		Name:            req.Name,
-		Institution:     req.Institution,
-		CurrencyID:      req.CurrencyID,
-		Frequency:       req.Frequency,
-		SuggestedAmount: req.SuggestedAmount,
-		Active:          req.Active,
-		IconKey:         req.IconKey,
+		HomeID:                req.HomeID,
+		Name:                  req.Name,
+		Institution:           req.Institution,
+		CurrencyID:            req.CurrencyID,
+		Frequency:             req.Frequency,
+		SuggestedAmount:       req.SuggestedAmount,
+		Active:                req.Active,
+		IconKey:               req.IconKey,
+		BillingType:           req.BillingType,
+		BillingDay:            req.BillingDay,
+		AutoGenerate:          req.AutoGenerate,
+		InstitutionID:         req.InstitutionID,
+		InstitutionAnalyzerID: req.InstitutionAnalyzerID,
 	}
 }
 
@@ -97,6 +109,16 @@ func (h *ServiceHandlers) CreateService(w http.ResponseWriter, r *http.Request) 
 	}
 	if count == 0 {
 		respondError(w, http.StatusPreconditionFailed, "NO_HOMES", "Debe crear al menos un Home/Casa antes de registrar servicios.")
+		return
+	}
+
+	instCount, err := h.institutions.Count(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	if instCount == 0 {
+		respondError(w, http.StatusPreconditionFailed, "NO_INSTITUTIONS", "Debe crear al menos una Institución antes de registrar servicios.")
 		return
 	}
 

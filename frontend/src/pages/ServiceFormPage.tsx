@@ -7,7 +7,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import IconPickerModal from '../components/IconPickerModal'
 import Select from '../components/Select'
-import type { Service } from '../types'
+import type { Service, Institution, AnalyzerInfo } from '../types'
 
 export default function ServiceFormPage() {
   const navigate = useNavigate()
@@ -25,13 +25,51 @@ export default function ServiceFormPage() {
     suggested_amount: '0.00',
     active: true,
     icon_key: 'other',
+    billing_type: 'variable' as 'fixed' | 'variable',
+    billing_day: 1,
+    auto_generate: false,
+    institution_id: 0,
+    institution_analyzer_id: 0,
   })
+  const [institutions, setInstitutions] = useState<Institution[]>([])
+  const [analyzerOptions, setAnalyzerOptions] = useState<{id: number, analyzer_id: string, analyzer_name: string}[]>([])
   const [loading, setLoading] = useState(false)
   const [showIconPicker, setShowIconPicker] = useState(false)
+  const [noInstitutions, setNoInstitutions] = useState(false)
 
   useEffect(() => {
     loadAll()
+    loadInstitutions()
   }, [])
+
+  const loadInstitutions = async () => {
+    try {
+      const list = await api.institutions.list()
+      setInstitutions(list || [])
+      if (!list || list.length === 0) {
+        setNoInstitutions(true)
+      }
+    } catch {
+      setNoInstitutions(true)
+    }
+  }
+
+  useEffect(() => {
+    if (formData.institution_id) {
+      loadAnalyzerOptions(formData.institution_id)
+    } else {
+      setAnalyzerOptions([])
+    }
+  }, [formData.institution_id])
+
+  const loadAnalyzerOptions = async (institutionId: number) => {
+    try {
+      const options = await api.services.getAnalyzerOptions(institutionId)
+      setAnalyzerOptions(options || [])
+    } catch {
+      setAnalyzerOptions([])
+    }
+  }
 
   useEffect(() => {
     if (isEdit && homes.length > 0) {
@@ -47,6 +85,11 @@ export default function ServiceFormPage() {
             suggested_amount: String(svc.suggested_amount),
             active: svc.active,
             icon_key: svc.icon_key || 'other',
+            billing_type: svc.billing_type || 'variable',
+            billing_day: svc.billing_day || 1,
+            auto_generate: svc.auto_generate || false,
+            institution_id: svc.institution_id || 0,
+            institution_analyzer_id: svc.institution_analyzer_id || 0,
           })
         }
       }
@@ -61,8 +104,27 @@ export default function ServiceFormPage() {
   }, [id, isEdit, homes, currencies])
 
   if (homes.length === 0) {
-    navigate('/home/new')
-    return null
+    return (
+      <DependencyWarning
+        icon="home"
+        title="Primero debes crear una casa."
+        subtitle="Los servicios pertenecen a una casa. Crea una casa antes de continuar."
+        actionLabel="Nueva casa"
+        onAction={() => navigate('/home/new')}
+      />
+    )
+  }
+
+  if (noInstitutions) {
+    return (
+      <DependencyWarning
+        icon="building"
+        title="Primero debes crear una institución."
+        subtitle="Los servicios requieren una institución asociada. Crea una institución antes de continuar."
+        actionLabel="Nueva institución"
+        onAction={() => navigate('/institutions/new')}
+      />
+    )
   }
 
   const handleChange = (field: string, value: string | number | boolean) => {
@@ -82,6 +144,11 @@ export default function ServiceFormPage() {
         suggested_amount: parseFloat(formData.suggested_amount) || 0,
         active: formData.active,
         icon_key: formData.icon_key,
+        billing_type: formData.billing_type,
+        billing_day: formData.billing_day,
+        auto_generate: formData.auto_generate,
+        institution_id: formData.institution_id || undefined,
+        institution_analyzer_id: formData.institution_analyzer_id || undefined,
       }
       if (isEdit) {
         await api.services.update(Number(id), data)
@@ -123,13 +190,27 @@ export default function ServiceFormPage() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">{t('services.institution')}</label>
-          <input
-            type="text"
-            value={formData.institution}
-            onChange={(e) => handleChange('institution', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+          <Select
+            options={institutions.map(i => ({ value: i.id, label: i.name }))}
+            value={formData.institution_id}
+            onChange={(v) => {
+              handleChange('institution_id', v as number)
+              handleChange('institution_analyzer_id', 0)
+            }}
+            searchable
+            placeholder="Seleccionar institución"
           />
         </div>
+        {analyzerOptions.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Analizador</label>
+            <Select
+              options={analyzerOptions.map(a => ({ value: a.id, label: a.analyzer_name }))}
+              value={formData.institution_analyzer_id}
+              onChange={(v) => handleChange('institution_analyzer_id', v as number)}
+            />
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">{t('services.currency')}</label>
@@ -162,6 +243,42 @@ export default function ServiceFormPage() {
             className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
             required
           />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('services.billing_type')}</label>
+            <Select
+              options={[
+                { value: 'variable', label: t('billing_type.variable') },
+                { value: 'fixed', label: t('billing_type.fixed') },
+              ]}
+              value={formData.billing_type}
+              onChange={(v) => handleChange('billing_type', v as 'fixed' | 'variable')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('services.billing_day')}</label>
+            <input
+              type="number"
+              min="1"
+              max="31"
+              value={formData.billing_day}
+              onChange={(e) => handleChange('billing_day', parseInt(e.target.value) || 1)}
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.auto_generate}
+              onChange={(e) => handleChange('auto_generate', e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
+          </label>
+          <span className="text-sm font-medium">{t('services.auto_generate')}</span>
         </div>
         <div>
           <label className="block text-sm font-medium mb-2">{t('services.icon')}</label>
@@ -212,6 +329,27 @@ export default function ServiceFormPage() {
           </button>
         </div>
       </form>
+    </div>
+  )
+}
+
+function DependencyWarning({ icon, title, subtitle, actionLabel, onAction }: {
+  icon: string; title: string; subtitle: string; actionLabel: string; onAction: () => void
+}) {
+  return (
+    <div className="bg-card rounded-ios shadow-ios p-12 text-center max-w-md mx-auto mt-8">
+      <div className="w-16 h-16 mx-auto mb-5 text-amber-500 opacity-80">
+        <Icon name={icon} className="w-full h-full" />
+      </div>
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-text-secondary mb-6">{subtitle}</p>
+      <button
+        onClick={onAction}
+        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-card border-2 border-dashed border-border rounded-ios text-primary font-semibold hover:border-primary hover:bg-primary/5 transition-colors min-w-48"
+      >
+        <Icon name="plus" className="w-5 h-5" />
+        {actionLabel}
+      </button>
     </div>
   )
 }

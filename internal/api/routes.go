@@ -26,6 +26,10 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("GET /api/settings", authMiddleware(http.HandlerFunc(handler.settings.GetSettings)))
 	mux.Handle("POST /api/settings/language", authMiddleware(http.HandlerFunc(handler.settings.SetLanguage)))
 
+	// APIs de system settings
+	mux.Handle("GET /api/system-settings", authMiddleware(http.HandlerFunc(handler.systemSettings.GetSystemSettings)))
+	mux.Handle("PUT /api/system-settings", authMiddleware(http.HandlerFunc(handler.systemSettings.UpdateSystemSettings)))
+
 	// APIs de monedas
 	mux.Handle("GET /api/currencies", authMiddleware(http.HandlerFunc(handler.currency.ListCurrencies)))
 	mux.Handle("POST /api/currencies", authMiddleware(http.HandlerFunc(handler.currency.CreateCurrency)))
@@ -53,6 +57,23 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("POST /api/bills", authMiddleware(http.HandlerFunc(handler.bill.CreateBill)))
 	mux.Handle("PUT /api/bills/{id}", authMiddleware(http.HandlerFunc(handler.bill.UpdateBill)))
 	mux.Handle("DELETE /api/bills/{id}", authMiddleware(http.HandlerFunc(handler.bill.DeleteBill)))
+
+	// APIs de documentos
+	mux.Handle("POST /api/services/{service_id}/bills/upload", authMiddleware(http.HandlerFunc(handler.document.UploadAndAnalyze)))
+	mux.Handle("POST /api/services/{service_id}/bills/from-extracted", authMiddleware(http.HandlerFunc(handler.document.CreateBillFromExtracted)))
+
+	// APIs de instituciones
+	mux.Handle("GET /api/institutions", authMiddleware(http.HandlerFunc(handler.institution.ListInstitutions)))
+	mux.Handle("GET /api/institutions/{id}", authMiddleware(http.HandlerFunc(handler.institution.GetInstitution)))
+	mux.Handle("POST /api/institutions", authMiddleware(http.HandlerFunc(handler.institution.CreateInstitution)))
+	mux.Handle("PUT /api/institutions/{id}", authMiddleware(http.HandlerFunc(handler.institution.UpdateInstitution)))
+	mux.Handle("DELETE /api/institutions/{id}", authMiddleware(http.HandlerFunc(handler.institution.DeleteInstitution)))
+	mux.Handle("PUT /api/institutions/{id}/analyzers", authMiddleware(http.HandlerFunc(handler.institution.SetAnalyzers)))
+	mux.Handle("GET /api/institutions/{id}/analyzers", authMiddleware(http.HandlerFunc(handler.institution.GetAnalyzers)))
+
+	// APIs de analyzers
+	mux.Handle("GET /api/analyzers", authMiddleware(http.HandlerFunc(handler.institution.ListAnalyzers)))
+	mux.Handle("GET /api/services/{id}/analyzer-options", authMiddleware(http.HandlerFunc(handler.institution.GetAnalyzerOptions)))
 
 	// Assets estáticos (JS/CSS bundles del build de Vite)
 	assetsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "assets")))

@@ -1,17 +1,48 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from '../components/Icons'
+import { api } from '../api'
+import { useToast } from '../components/Toast'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { currencies, loadCurrencies } = useAppStore()
   const { t, lang } = useI18nStore()
+  const { showToast } = useToast()
+  const [billingHour, setBillingHour] = useState(0)
 
   useEffect(() => {
     loadCurrencies()
+    loadBillingHour()
   }, [])
+
+  const loadBillingHour = async () => {
+    try {
+      const data = await api.systemSettings.get()
+      if (data) {
+        setBillingHour(data.billing_generation_hour ?? 0)
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleBillingHourChange = async (hour: number) => {
+    try {
+      await api.systemSettings.update({ billing_generation_hour: hour })
+      setBillingHour(hour)
+      showToast('Hora de facturación actualizada', 'success')
+    } catch {
+      showToast('Error al actualizar', 'error')
+    }
+  }
+
+  const hours = Array.from({ length: 24 }, (_, i) => ({
+    value: i,
+    label: `${String(i).padStart(2, '0')}:00`,
+  }))
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -35,6 +66,27 @@ export default function SettingsPage() {
               <Icon name="chevron" className="w-4 h-4" />
             </div>
           </button>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <div className="text-xs uppercase text-text-secondary font-semibold mb-2 ml-3">
+          Facturación automática
+        </div>
+        <div className="bg-card rounded-ios shadow-ios overflow-hidden">
+          <div className="px-4 py-3.5 border-b border-border">
+            <div className="font-medium">Hora de generación</div>
+            <div className="text-sm text-text-secondary mb-3">Hora del día para generar facturas automáticamente</div>
+            <select
+              value={billingHour}
+              onChange={(e) => handleBillingHourChange(Number(e.target.value))}
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-white"
+            >
+              {hours.map(h => (
+                <option key={h.value} value={h.value}>{h.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

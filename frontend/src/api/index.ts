@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, AnalyzerInfo } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -46,6 +46,7 @@ export const api = {
     create: (body: Partial<Service>) => post<Service>('/api/services', body),
     update: (id: number, body: Partial<Service>) => put<Service>(`/api/services/${id}`, body),
     delete: (id: number) => del(`/api/services/${id}`),
+    getAnalyzerOptions: (id: number) => get<Array<{id: number, institution_id: number, analyzer_id: string, analyzer_name: string}>>(`/api/services/${id}/analyzer-options`),
   },
   bills: {
     list: (serviceId: number) => get<Bill[]>(`/api/services/${serviceId}/bills`),
@@ -62,5 +63,21 @@ export const api = {
       request('/api/setup', { method: 'POST', body: JSON.stringify({ email, password, password_confirm }) }),
     setupStatus: () => get<{ setup: boolean }>('/api/setup-status'),
     me: () => get('/api/me'),
+  },
+  systemSettings: {
+    get: () => get<{ billing_generation_hour: number }>('/api/system-settings'),
+    update: (body: { billing_generation_hour: number }) => put<{ billing_generation_hour: number }>('/api/system-settings', body),
+  },
+  institutions: {
+    list: () => get<Institution[]>('/api/institutions'),
+    get: (id: number) => get<Institution>(`/api/institutions/${id}`),
+    create: (body: { name: string }) => post<Institution>('/api/institutions', body),
+    update: (id: number, body: { name: string }) => put<Institution>(`/api/institutions/${id}`, body),
+    delete: (id: number) => del(`/api/institutions/${id}`),
+    setAnalyzers: (id: number, analyzer_ids: string[]) => put(`/api/institutions/${id}/analyzers`, { analyzer_ids }),
+    getAnalyzers: (id: number) => get<Array<{ id: number; institution_id: number; analyzer_id: string; created_at: string }>>(`/api/institutions/${id}/analyzers`),
+  },
+  analyzers: {
+    list: () => get<AnalyzerInfo[]>('/api/analyzers'),
   },
 }

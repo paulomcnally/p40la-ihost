@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 7 |
-| **En draft** | 2 🟡 |
+| **Total de specs** | 11 |
+| **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
-| **Pending release** | 0 🟠 |
-| **Released** | 4 🟢 |
+| **Pending release** | 2 🟠 |
+| **Released** | 7 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-007 |
+| **Último ID usado** | SPEC-011 |
 
 ---
 
@@ -25,9 +25,13 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-002 | Configuración de usuario y login | released | 2026-08-12 | p40la-ihost-team |
 | SPEC-003 | Cambio de puerto por defecto a 8088 | released | 2026-08-12 | p40la-ihost-team |
 | SPEC-004 | Dashboard con Sidebar, Header, i18n, Settings estilo iOS, Iconos, Home/Casa y Módulo de Servicios con Facturas | released | 2026-08-12 | p40la-ihost-team |
-| SPEC-005 | Migración del Frontend a React + Tailwind CSS | in_progress | 2026-08-13 | p40la-ihost-team |
-| SPEC-006 | Corrección de validación de iconos y selector modal con búsqueda para servicios | draft | 2026-08-15 | p40la-ihost-team |
-| SPEC-007 | Formulario de facturas: ocultar mes para servicios anuales | draft | 2026-08-15 | p40la-ihost-team |
+| SPEC-005 | Migración del Frontend a React + Tailwind CSS | released | 2026-08-13 | p40la-ihost-team |
+| SPEC-006 | Corrección de validación de iconos y selector modal con búsqueda para servicios | released | 2026-08-15 | p40la-ihost-team |
+| SPEC-007 | Formulario de facturas: ocultar mes para servicios anuales | released | 2026-08-15 | p40la-ihost-team |
+| SPEC-008 | Sistema de facturación automática: monto fijo/variable y generación programada | released | 2026-08-15 | p40la-ihost-team |
+| SPEC-009 | Módulo de Instituciones, Analizadores de Documentos y Extracción Automática de Facturas | released | 2026-08-15 | p40la-ihost-team |
+| SPEC-010 | Integración de Specs con GitHub Issues para Gestión Asíncrona y Multi-Agente | in_progress | 2026-08-15 | paulomcnally |
+| SPEC-011 | Soporte Responsive para Dispositivos Móviles | draft | 2026-08-15 | paulomcnally |
 
 ---
 
@@ -97,4 +101,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-15 — SPEC-005 `in_progress`, SPEC-006 y SPEC-007 `draft`.*
+*Última actualización de este tracker: 2026-08-15 — SPEC-011 creada (responsive mobile).*

@@ -151,6 +151,17 @@ func (s *ServiceService) validate(ctx context.Context, svc *models.Service) erro
 	svc.Institution = strings.TrimSpace(svc.Institution)
 	svc.Frequency = strings.ToLower(strings.TrimSpace(svc.Frequency))
 	svc.IconKey = strings.ToLower(strings.TrimSpace(svc.IconKey))
+	svc.BillingType = strings.ToLower(strings.TrimSpace(svc.BillingType))
+
+	if svc.BillingType == "" {
+		svc.BillingType = "variable"
+	}
+	if svc.BillingType != "fixed" && svc.BillingType != "variable" {
+		return fmt.Errorf("el tipo de facturación debe ser 'fixed' o 'variable'")
+	}
+	if svc.BillingDay < 1 || svc.BillingDay > 31 {
+		svc.BillingDay = 1
+	}
 
 	if svc.Name == "" {
 		return fmt.Errorf("el nombre del servicio es requerido")

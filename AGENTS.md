@@ -23,6 +23,12 @@ Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, 
 
 ## 📋 Reglas Fundamentales
 
+### 0. Reglas críticas (aprendidas de errores)
+
+- **NUNCA ejecutar `rm -f data/app.db` ni ningún comando que elimine la base de datos del usuario.** La DB local es producción. Si se necesitan pruebas limpias, usar `/tmp/test-app.db`.
+- **Seguir siempre el patrón de UI existente.** Para páginas de listado: cards con menú de acciones (3 puntos) + EmptyCard (título, descripción, botón) cuando no hay registros. Nunca formularios inline en listados. Referencia: `HomesPage.tsx`.
+- **Validar prerequisitos en backend Y frontend.** Si una entidad depende de otra (ej: servicios → instituciones), validar en ambos lados y redirigir al formulario de la dependencia si no existe.
+
 ### 1. Cero código sin spec
 
 - **No se escribe una sola línea de código sin que exista una spec que lo defina.**
@@ -130,6 +136,18 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 - **Todo cambio significativo debe probarse en local** (tests, build, ejecución básica) antes de intentar commits o push.
 - **No se realiza commit** de código que no compile, que falle los tests o que no haya sido validado en el entorno de desarrollo local.
 - Antes de solicitar confirmación para merge/push, el agente debe verificar que la aplicación levanta correctamente con la base de datos SQLite y que los criterios de aceptación del spec pasan en local.
+
+### Flujo de pruebas con el usuario
+
+1. **Después de implementar cambios de un spec, preguntar SIEMPRE:** 🤖 *"¿Querés que corra el server en local para que hagas pruebas?"*
+2. **NO marcar tareas como completadas** hasta que el usuario confirme que las pruebas manuales fueron satisfactorias.
+3. **Preguntar explícitamente:** 🤖 *"¿Las pruebas fueron satisfactorias? ¿Puedo cerrar el spec?"*
+4. **Solo después de confirmación del usuario** se marcan los criterios de aceptación como pass y se cambia el estado del spec.
+5. **Si el usuario reporta errores**, no cerrar el spec. Corregir, volver a preguntar, repetir.
+
+### Convención de comunicación
+
+- 🤖 **Icono de robot**: Se usa ANTES de cualquier pregunta que sea parte del flujo de interacción (correr server, confirmar implementación, cerrar spec, etc.). Esto indica al usuario que es una pregunta de flujo, no información técnica.
 
 ### Flujo permitido
 

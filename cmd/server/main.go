@@ -12,6 +12,7 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/api"
 	"github.com/paulomcnally/p40la-ihost/internal/config"
 	"github.com/paulomcnally/p40la-ihost/internal/db"
+	_ "github.com/paulomcnally/p40la-ihost/internal/analyzers/all"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
 )
@@ -62,25 +63,37 @@ func main() {
 
 	userStorage := storage.NewUserStorage(database)
 	settingsStorage := storage.NewSettingsStorage(database)
+	systemSettingsStorage := storage.NewSystemSettingsStorage(database)
 	currencyStorage := storage.NewCurrencyStorage(database)
 	homeStorage := storage.NewHomeStorage(database)
 	serviceStorage := storage.NewServiceStorage(database)
 	billStorage := storage.NewBillStorage(database)
+	institutionStorage := storage.NewInstitutionStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
+	systemSettingsService := services.NewSystemSettingsService(systemSettingsStorage)
 	currencyService := services.NewCurrencyService(currencyStorage)
 	homeService := services.NewHomeService(homeStorage)
 	serviceService := services.NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
 	billService := services.NewBillService(billStorage, serviceStorage)
+	institutionService := services.NewInstitutionService(institutionStorage)
+	documentService := services.NewDocumentService(serviceStorage, billStorage, institutionStorage)
+
+	billingScheduler := services.NewBillingScheduler(serviceStorage, billStorage, systemSettingsService)
+	billingScheduler.Start()
+	defer billingScheduler.Stop()
 
 	settingsHandlers := api.NewSettingsHandlers(appSettingsService)
+	systemSettingsHandlers := api.NewSystemSettingsHandlers(systemSettingsService)
 	currencyHandlers := api.NewCurrencyHandlers(currencyService)
 	homeHandlers := api.NewHomeHandlers(homeService)
-	serviceHandlers := api.NewServiceHandlers(serviceService, homeService)
+	serviceHandlers := api.NewServiceHandlers(serviceService, homeService, institutionStorage)
 	billHandlers := api.NewBillHandlers(billService)
+	institutionHandlers := api.NewInstitutionHandlers(institutionService, documentService)
+	documentHandlers := api.NewDocumentHandlers(documentService)
 
-	handler := api.NewHandler(authService, settingsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers)
 
 	router := api.BuildRouter(handler, authService, "./public")
 
