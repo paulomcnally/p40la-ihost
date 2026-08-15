@@ -45,7 +45,13 @@
     "icon": "Icono",
     "home": "Casa",
     "all_homes": "Todas las casas",
-    "bills": "Facturas"
+    "bills": "Facturas",
+    "select_icon": "Seleccionar icono",
+    "search_icon": "Buscar icono...",
+    "all": "Todos",
+    "no_icons_found": "No se encontraron iconos",
+    "icons_available": "iconos disponibles",
+    "saved_success": "Servicio guardado correctamente"
   },
   "frequency": {
     "monthly": "Mensual",
@@ -58,13 +64,15 @@
     "edit": "Editar factura",
     "year": "Año",
     "month": "Mes",
+    "annual": "Anual",
     "amount": "Monto",
     "invoice_number": "Número de factura",
     "status": "Estado",
     "drive_url": "Enlace de Google Drive",
     "status_pending": "Pendiente",
     "status_paid": "Pagada",
-    "empty": "No hay facturas registradas."
+    "empty": "No hay facturas registradas.",
+    "saved_success": "Factura guardada correctamente"
   },
   "settings": {
     "title": "Configuración",

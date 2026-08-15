@@ -18,15 +18,41 @@ const (
 
 // Predefined service icon keys.
 var AllowedIconKeys = map[string]bool{
-	"internet":    true,
-	"trash":       true,
-	"water":       true,
-	"electricity": true,
-	"phone":       true,
-	"tv":          true,
-	"gas":         true,
-	"home":        true,
-	"other":       true,
+	// Utilidades
+	"internet": true, "water": true, "electricity": true, "gas": true,
+	"phone": true, "tv": true, "trash": true, "delete": true, "recycling": true,
+	"sewer": true, "wifi": true, "cable": true, "satellite": true,
+	// Hogar
+	"home": true, "apartment": true, "building": true, "key": true,
+	"lock": true, "door": true, "window": true, "garden": true,
+	"garage": true, "parking": true, "pool": true, "roof": true,
+	// Seguridad
+	"shield": true, "alarm": true, "camera": true, "fire": true,
+	"smoke": true, "extinguisher": true,
+	// Limpieza
+	"cleaning": true, "broom": true, "mop": true, "laundry": true,
+	"dishwasher": true, "vacuum": true,
+	// Mantenimiento
+	"wrench": true, "hammer": true, "screwdriver": true, "paint": true,
+	"plumbing": true, "electrical": true, "pest": true,
+	// Salud
+	"health": true, "hospital": true, "pharmacy": true, "ambulance": true,
+	"medical": true, "dental": true, "vision": true,
+	// Educación
+	"school": true, "university": true, "library": true, "books": true,
+	// Transporte
+	"bus": true, "taxi": true, "car": true, "motorcycle": true,
+	"bicycle": true, "fuel": true, "toll": true, "insurance_car": true,
+	// Finanzas
+	"bank": true, "insurance": true, "credit": true, "tax": true,
+	"pension": true, "investment": true, "savings": true,
+	// Comunicación
+	"mail": true, "newspaper": true, "radio": true, "podcast": true,
+	// Otros
+	"other": true, "star": true, "heart": true, "calendar": true,
+	"clock": true, "bell": true, "search": true, "user": true,
+	"group": true, "gift": true, "coffee": true, "restaurant": true,
+	"shopping": true, "pet": true, "baby": true, "elderly": true,
 }
 
 // ServiceService contiene la lógica de negocio para servicios.
@@ -170,7 +196,7 @@ func (s *ServiceService) generateCurrentBill(ctx context.Context, svc *models.Se
 	month := int(now.Month())
 
 	if svc.Frequency == FrequencyYearly {
-		month = 1
+		month = 0
 	}
 
 	existing, err := s.bills.FindByServicePeriod(ctx, svc.ID, year, month)

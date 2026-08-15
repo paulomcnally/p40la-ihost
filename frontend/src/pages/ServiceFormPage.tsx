@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { useToast } from '../components/Toast'
 import { api } from '../api'
-import { Icon, iconNames } from '../components/Icons'
+import { Icon } from '../components/Icons'
+import IconPickerModal from '../components/IconPickerModal'
 import Select from '../components/Select'
 import type { Service } from '../types'
 
@@ -12,6 +14,7 @@ export default function ServiceFormPage() {
   const { id } = useParams()
   const { homes, currencies, loadAll } = useAppStore()
   const { t } = useI18nStore()
+  const { showToast } = useToast()
   const isEdit = !!id
   const [formData, setFormData] = useState({
     home_id: 0,
@@ -24,6 +27,7 @@ export default function ServiceFormPage() {
     icon_key: 'other',
   })
   const [loading, setLoading] = useState(false)
+  const [showIconPicker, setShowIconPicker] = useState(false)
 
   useEffect(() => {
     loadAll()
@@ -84,9 +88,11 @@ export default function ServiceFormPage() {
       } else {
         await api.services.create(data)
       }
+      showToast(t('services.saved_success') || 'Servicio guardado', 'success')
       navigate('/services')
-    } catch {
-      // handled
+    } catch (err: unknown) {
+      const message = (err as { message?: string })?.message || t('errors.generic')
+      showToast(message, 'error')
     } finally {
       setLoading(false)
     }
@@ -159,23 +165,22 @@ export default function ServiceFormPage() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-2">{t('services.icon')}</label>
-          <div className="grid grid-cols-5 gap-2">
-            {iconNames().map(key => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handleChange('icon_key', key)}
-                className={`w-12 h-12 rounded-ios-sm border-2 flex items-center justify-center transition-colors ${
-                  formData.icon_key === key
-                    ? 'border-primary text-primary bg-primary/10'
-                    : 'border-border text-text-secondary hover:border-primary/50'
-                }`}
-              >
-                <Icon name={key} className="w-5 h-5" />
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowIconPicker(true)}
+            className="flex items-center gap-3 px-4 py-3 border border-border rounded-ios-sm hover:border-primary/50 transition-colors w-full"
+          >
+            <Icon name={formData.icon_key} className="w-6 h-6 text-primary" />
+            <span className="text-sm text-text-secondary">{t('services.select_icon')}</span>
+            <Icon name="chevron" className="w-4 h-4 ml-auto text-text-secondary" />
+          </button>
         </div>
+        <IconPickerModal
+          isOpen={showIconPicker}
+          selectedIcon={formData.icon_key}
+          onSelect={(key) => setFormData(prev => ({ ...prev, icon_key: key }))}
+          onClose={() => setShowIconPicker(false)}
+        />
         <div className="flex items-center gap-3">
           <label className="relative inline-flex items-center cursor-pointer">
             <input

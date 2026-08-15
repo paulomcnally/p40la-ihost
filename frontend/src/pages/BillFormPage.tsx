@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import Select from '../components/Select'
@@ -13,6 +14,7 @@ export default function BillFormPage() {
   const [searchParams] = useSearchParams()
   const serviceId = searchParams.get('service')
   const { t } = useI18nStore()
+  const { showToast } = useToast()
   const { currencies } = useAppStore()
   const isEdit = !!id
   const [service, setService] = useState<Service | null>(null)
@@ -63,7 +65,7 @@ export default function BillFormPage() {
       const data: Partial<Bill> = {
         service_id: Number(serviceId),
         year: formData.year,
-        month: formData.month,
+        month: service?.frequency === 'yearly' ? 0 : formData.month,
         amount: parseFloat(formData.amount) || 0,
         invoice_number: formData.invoice_number,
         status: formData.status,
@@ -74,22 +76,25 @@ export default function BillFormPage() {
       } else {
         await api.bills.create(data)
       }
+      showToast(t('bills.saved_success') || 'Factura guardada', 'success')
       navigate(`/services/bills/${serviceId}`)
-    } catch {
-      // handled
+    } catch (err: unknown) {
+      const message = (err as { message?: string })?.message || t('errors.generic')
+      showToast(message, 'error')
     } finally {
       setLoading(false)
     }
   }
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
+  const isYearly = service?.frequency === 'yearly'
 
   return (
     <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-6">
       <h2 className="text-xl font-bold mb-2">{t(isEdit ? 'bills.edit' : 'bills.create')}</h2>
       {service && <p className="text-text-secondary text-sm mb-6">{service.name}</p>}
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="grid grid-cols-2 gap-4">
+        <div className={isYearly ? '' : 'grid grid-cols-2 gap-4'}>
           <div>
             <label className="block text-sm font-medium mb-1">{t('bills.year')}</label>
             <input
@@ -100,15 +105,22 @@ export default function BillFormPage() {
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('bills.month')}</label>
-            <Select
-              options={months.map(m => ({ value: m, label: t(`months.${m}`, String(m)) }))}
-              value={formData.month}
-              onChange={(v) => setFormData(prev => ({ ...prev, month: v as number }))}
-              searchable
-            />
-          </div>
+          {!isYearly && (
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('bills.month')}</label>
+              <Select
+                options={months.map(m => ({ value: m, label: t(`months.${m}`, String(m)) }))}
+                value={formData.month}
+                onChange={(v) => setFormData(prev => ({ ...prev, month: v as number }))}
+                searchable
+              />
+            </div>
+          )}
+          {isYearly && (
+            <div className="flex items-center px-3 py-2 bg-bg rounded-ios-sm border border-border">
+              <span className="text-sm text-text-secondary">{t('bills.annual')}</span>
+            </div>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">{t('bills.amount')}</label>
