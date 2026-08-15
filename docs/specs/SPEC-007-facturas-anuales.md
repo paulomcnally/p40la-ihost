@@ -1,10 +1,11 @@
 ---
 title: "Formulario de facturas: ocultar mes para servicios anuales"
 id: "SPEC-007"
-status: "draft"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-15"
 updated: "2026-08-15"
+github_issue: 8
 ---
 
 # Formulario de facturas: ocultar mes para servicios anuales

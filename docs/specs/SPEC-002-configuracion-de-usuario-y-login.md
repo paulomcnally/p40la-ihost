@@ -4,7 +4,8 @@ id: "SPEC-002"
 status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-12"
-updated: "2026-08-12"
+updated: "2026-08-15"
+github_issue: 3
 ---
 
 # Configuración de usuario y login

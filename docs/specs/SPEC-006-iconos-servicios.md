@@ -1,10 +1,11 @@
 ---
 title: "Corrección de validación de iconos y selector modal con búsqueda para servicios"
 id: "SPEC-006"
-status: "draft"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-15"
 updated: "2026-08-15"
+github_issue: 7
 ---
 
 # Corrección de validación de iconos y selector modal con búsqueda para servicios

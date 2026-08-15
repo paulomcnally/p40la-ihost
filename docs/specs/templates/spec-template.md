@@ -5,6 +5,7 @@ status: "draft"
 author: ""
 created: "YYYY-MM-DD"
 updated: "YYYY-MM-DD"
+github_issue: null
 ---
 
 # {{title}}
