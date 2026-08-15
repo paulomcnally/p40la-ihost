@@ -102,7 +102,7 @@ export default function BillsPage() {
               {bills.map(bill => (
                 <tr key={bill.id} className="border-b border-border last:border-b-0 hover:bg-bg/50">
                   <td className="px-4 py-3 text-sm">{bill.year}</td>
-                  <td className="px-4 py-3 text-sm">{t(`months.${bill.month}`, MONTHS[bill.month])}</td>
+                  <td className="px-4 py-3 text-sm">{bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])}</td>
                   <td className="px-4 py-3 text-sm font-medium">{currency?.symbol}{bill.amount.toFixed(2)}</td>
                   <td className="px-4 py-3 text-sm">{bill.invoice_number || '-'}</td>
                   <td className="px-4 py-3">

@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 5 |
-| **En draft** | 0 🟡 |
+| **Total de specs** | 7 |
+| **En draft** | 2 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 4 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-005 |
+| **Último ID usado** | SPEC-007 |
 
 ---
 
@@ -26,6 +26,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-003 | Cambio de puerto por defecto a 8088 | released | 2026-08-12 | p40la-ihost-team |
 | SPEC-004 | Dashboard con Sidebar, Header, i18n, Settings estilo iOS, Iconos, Home/Casa y Módulo de Servicios con Facturas | released | 2026-08-12 | p40la-ihost-team |
 | SPEC-005 | Migración del Frontend a React + Tailwind CSS | in_progress | 2026-08-13 | p40la-ihost-team |
+| SPEC-006 | Corrección de validación de iconos y selector modal con búsqueda para servicios | draft | 2026-08-15 | p40la-ihost-team |
+| SPEC-007 | Formulario de facturas: ocultar mes para servicios anuales | draft | 2026-08-15 | p40la-ihost-team |
 
 ---
 
@@ -95,4 +97,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-12 — SPEC-003 en estado `released` (merge a `main`, tag `v0.1.1`, imagen publicada).*
+*Última actualización de este tracker: 2026-08-15 — SPEC-005 `in_progress`, SPEC-006 y SPEC-007 `draft`.*

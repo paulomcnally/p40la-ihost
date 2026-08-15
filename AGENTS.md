@@ -108,13 +108,22 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 
 ---
 
-## 🚫 Restricciones de Despliegue (Agentes)
+##  Restricciones de Despliegue (Agentes)
 
 ### Reglas absolutas
 
 - **JAMÁS** ejecutar `git push` a ramas protegidas sin confirmación explícita del usuario.
 - **JAMÁS** mergear a `main` directamente desde una rama de feature.
 - **JAMÁS** ejecutar `--force` o `--force-with-lease` en `main` o ramas de release.
+
+### ️ Regla CRÍTICA: Arquitectura Multi-Arch (iHost + desarrollo)
+
+- **El SONOFF iHost usa procesador ARM64 (aarch64).**
+- **TODAS** las imágenes Docker DEBEN ser **multi-arch con 3 plataformas**: `linux/amd64` + `linux/arm/v7` + `linux/arm64`.
+- Las versiones 0.1.x tenían estas 3 arquitecturas. **NUNCA** romper esto en 0.2.x o posteriores.
+- Comando obligatorio: `docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64 --push .`
+- Verificar con `docker buildx imagetools inspect <image>` que existan los 3 manifests.
+- Esta regla aplica a CUALQUIER imagen Docker del proyecto, sin excepciones.
 
 ### Pruebas locales obligatorias
 

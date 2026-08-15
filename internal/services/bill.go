@@ -68,15 +68,6 @@ func (s *BillService) validate(ctx context.Context, bill *models.Bill, isNew boo
 	if bill.Year < 1900 || bill.Year > 2100 {
 		return fmt.Errorf("año inválido")
 	}
-	if bill.Month < 1 || bill.Month > 12 {
-		return fmt.Errorf("mes inválido")
-	}
-	if bill.Amount < 0 {
-		return fmt.Errorf("el monto no puede ser negativo")
-	}
-	if bill.Status != "pending" && bill.Status != "paid" {
-		return fmt.Errorf("el estado debe ser pendiente o pagada")
-	}
 
 	svc, err := s.services.GetByID(ctx, bill.ServiceID)
 	if err != nil {
@@ -84,6 +75,23 @@ func (s *BillService) validate(ctx context.Context, bill *models.Bill, isNew boo
 	}
 	if svc == nil {
 		return fmt.Errorf("el servicio no existe")
+	}
+
+	if svc.Frequency == FrequencyYearly {
+		if bill.Month != 0 {
+			return fmt.Errorf("los servicios anuales no requieren mes")
+		}
+	} else {
+		if bill.Month < 1 || bill.Month > 12 {
+			return fmt.Errorf("mes inválido")
+		}
+	}
+
+	if bill.Amount < 0 {
+		return fmt.Errorf("el monto no puede ser negativo")
+	}
+	if bill.Status != "pending" && bill.Status != "paid" {
+		return fmt.Errorf("el estado debe ser pendiente o pagada")
 	}
 
 	if bill.Status == "paid" {

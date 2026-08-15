@@ -45,7 +45,13 @@
     "icon": "Icon",
     "home": "Home",
     "all_homes": "All homes",
-    "bills": "Bills"
+    "bills": "Bills",
+    "select_icon": "Select icon",
+    "search_icon": "Search icon...",
+    "all": "All",
+    "no_icons_found": "No icons found",
+    "icons_available": "icons available",
+    "saved_success": "Service saved successfully"
   },
   "frequency": {
     "monthly": "Monthly",
@@ -58,6 +64,7 @@
     "edit": "Edit bill",
     "year": "Year",
     "month": "Month",
+    "annual": "Annual",
     "amount": "Amount",
     "invoice_number": "Invoice number",
     "status": "Status",
