@@ -51,11 +51,18 @@
     "all": "All",
     "no_icons_found": "No icons found",
     "icons_available": "icons available",
-    "saved_success": "Service saved successfully"
+    "saved_success": "Service saved successfully",
+    "billing_type": "Billing type",
+    "billing_day": "Billing day",
+    "auto_generate": "Auto generation"
   },
   "frequency": {
     "monthly": "Monthly",
     "yearly": "Yearly"
+  },
+  "billing_type": {
+    "fixed": "Fixed",
+    "variable": "Variable"
   },
   "bills": {
     "title": "Bills",

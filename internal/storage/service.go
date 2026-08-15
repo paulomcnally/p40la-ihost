@@ -8,24 +8,22 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 )
 
-// ServiceStorage encapsula el acceso a la tabla services.
 type ServiceStorage struct {
 	db *sql.DB
 }
 
-// NewServiceStorage crea un nuevo ServiceStorage.
 func NewServiceStorage(db *sql.DB) *ServiceStorage {
 	return &ServiceStorage{db: db}
 }
 
-// List devuelve los servicios no eliminados, opcionalmente filtrados por home_id.
+const serviceColumns = `
+	id, home_id, name, institution, currency_id, frequency,
+	suggested_amount, active, icon_key, billing_type, billing_day, auto_generate,
+	institution_id, institution_analyzer_id, deleted_at, created_at, updated_at
+`
+
 func (s *ServiceStorage) List(ctx context.Context, homeID *int64) ([]models.Service, error) {
-	query := `
-		SELECT id, home_id, name, institution, currency_id, frequency,
-		       suggested_amount, active, icon_key, deleted_at, created_at, updated_at
-		FROM services
-		WHERE deleted_at IS NULL
-	`
+	query := "SELECT " + serviceColumns + " FROM services WHERE deleted_at IS NULL"
 	var args []any
 	if homeID != nil {
 		query += " AND home_id = ?"
@@ -42,18 +40,13 @@ func (s *ServiceStorage) List(ctx context.Context, homeID *int64) ([]models.Serv
 	return scanServices(rows)
 }
 
-// GetByID busca un servicio por su ID.
 func (s *ServiceStorage) GetByID(ctx context.Context, id int64) (*models.Service, error) {
-	row := s.db.QueryRowContext(ctx, `
-		SELECT id, home_id, name, institution, currency_id, frequency,
-		       suggested_amount, active, icon_key, deleted_at, created_at, updated_at
-		FROM services
-		WHERE id = ? AND deleted_at IS NULL
-	`, id)
+	row := s.db.QueryRowContext(ctx,
+		"SELECT "+serviceColumns+" FROM services WHERE id = ? AND deleted_at IS NULL", id,
+	)
 	return scanService(row)
 }
 
-// Count devuelve la cantidad de servicios no eliminados, opcionalmente filtrados por home_id.
 func (s *ServiceStorage) Count(ctx context.Context, homeID *int64) (int64, error) {
 	query := "SELECT COUNT(*) FROM services WHERE deleted_at IS NULL"
 	var args []any
@@ -69,12 +62,11 @@ func (s *ServiceStorage) Count(ctx context.Context, homeID *int64) (int64, error
 	return count, nil
 }
 
-// Create inserta un nuevo servicio.
 func (s *ServiceStorage) Create(ctx context.Context, svc *models.Service) (*models.Service, error) {
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO services (home_id, name, institution, currency_id, frequency, suggested_amount, active, icon_key)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, svc.HomeID, svc.Name, svc.Institution, svc.CurrencyID, svc.Frequency, svc.SuggestedAmount, svc.Active, svc.IconKey)
+		INSERT INTO services (home_id, name, institution, currency_id, frequency, suggested_amount, active, icon_key, billing_type, billing_day, auto_generate, institution_id, institution_analyzer_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, svc.HomeID, svc.Name, svc.Institution, svc.CurrencyID, svc.Frequency, svc.SuggestedAmount, svc.Active, svc.IconKey, svc.BillingType, svc.BillingDay, svc.AutoGenerate, svc.InstitutionID, svc.InstitutionAnalyzerID)
 	if err != nil {
 		return nil, fmt.Errorf("insertar servicio: %w", err)
 	}
@@ -85,27 +77,23 @@ func (s *ServiceStorage) Create(ctx context.Context, svc *models.Service) (*mode
 	return s.GetByID(ctx, id)
 }
 
-// Update actualiza un servicio existente.
 func (s *ServiceStorage) Update(ctx context.Context, svc *models.Service) (*models.Service, error) {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE services
 		SET home_id = ?, name = ?, institution = ?, currency_id = ?, frequency = ?,
-		    suggested_amount = ?, active = ?, icon_key = ?, updated_at = CURRENT_TIMESTAMP
+		    suggested_amount = ?, active = ?, icon_key = ?, billing_type = ?, billing_day = ?, auto_generate = ?, institution_id = ?, institution_analyzer_id = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND deleted_at IS NULL
 	`, svc.HomeID, svc.Name, svc.Institution, svc.CurrencyID, svc.Frequency,
-		svc.SuggestedAmount, svc.Active, svc.IconKey, svc.ID)
+		svc.SuggestedAmount, svc.Active, svc.IconKey, svc.BillingType, svc.BillingDay, svc.AutoGenerate, svc.InstitutionID, svc.InstitutionAnalyzerID, svc.ID)
 	if err != nil {
 		return nil, fmt.Errorf("actualizar servicio: %w", err)
 	}
 	return s.GetByID(ctx, svc.ID)
 }
 
-// SoftDelete marca un servicio como eliminado.
 func (s *ServiceStorage) SoftDelete(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `
-		UPDATE services
-		SET deleted_at = CURRENT_TIMESTAMP
-		WHERE id = ? AND deleted_at IS NULL
+		UPDATE services SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL
 	`, id)
 	if err != nil {
 		return fmt.Errorf("eliminar servicio: %w", err)
@@ -116,9 +104,10 @@ func (s *ServiceStorage) SoftDelete(ctx context.Context, id int64) error {
 func scanService(row *sql.Row) (*models.Service, error) {
 	var svc models.Service
 	var deletedAt sql.NullTime
+	var institutionID, institutionAnalyzerID sql.NullInt64
 	if err := row.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
-		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &deletedAt,
-		&svc.CreatedAt, &svc.UpdatedAt); err != nil {
+		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &svc.BillingDay, &svc.AutoGenerate,
+		&institutionID, &institutionAnalyzerID, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -126,6 +115,12 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	}
 	if deletedAt.Valid {
 		svc.DeletedAt = &deletedAt.Time
+	}
+	if institutionID.Valid {
+		svc.InstitutionID = &institutionID.Int64
+	}
+	if institutionAnalyzerID.Valid {
+		svc.InstitutionAnalyzerID = &institutionAnalyzerID.Int64
 	}
 	return &svc, nil
 }
@@ -135,13 +130,20 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 	for rows.Next() {
 		var svc models.Service
 		var deletedAt sql.NullTime
+		var institutionID, institutionAnalyzerID sql.NullInt64
 		if err := rows.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
-			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &deletedAt,
-			&svc.CreatedAt, &svc.UpdatedAt); err != nil {
+			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &svc.BillingDay, &svc.AutoGenerate,
+			&institutionID, &institutionAnalyzerID, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear servicio: %w", err)
 		}
 		if deletedAt.Valid {
 			svc.DeletedAt = &deletedAt.Time
+		}
+		if institutionID.Valid {
+			svc.InstitutionID = &institutionID.Int64
+		}
+		if institutionAnalyzerID.Valid {
+			svc.InstitutionAnalyzerID = &institutionAnalyzerID.Int64
 		}
 		services = append(services, svc)
 	}

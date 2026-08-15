@@ -21,6 +21,30 @@ export interface Service {
   suggested_amount: number
   active: boolean
   icon_key: string
+  billing_type: 'fixed' | 'variable'
+  billing_day: number
+  auto_generate: boolean
+  institution_id?: number
+  institution_analyzer_id?: number
+}
+
+export interface Institution {
+  id: number
+  name: string
+  created_at: string
+  updated_at: string
+}
+
+export interface InstitutionAnalyzer {
+  id: number
+  institution_id: number
+  analyzer_id: string
+  created_at: string
+}
+
+export interface AnalyzerInfo {
+  id: string
+  name: string
 }
 
 export interface Bill {

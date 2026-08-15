@@ -51,11 +51,18 @@
     "all": "Todos",
     "no_icons_found": "No se encontraron iconos",
     "icons_available": "iconos disponibles",
-    "saved_success": "Servicio guardado correctamente"
+    "saved_success": "Servicio guardado correctamente",
+    "billing_type": "Tipo de facturación",
+    "billing_day": "Día de facturación",
+    "auto_generate": "Generación automática"
   },
   "frequency": {
     "monthly": "Mensual",
     "yearly": "Anual"
+  },
+  "billing_type": {
+    "fixed": "Fijo",
+    "variable": "Variable"
   },
   "bills": {
     "title": "Facturas",

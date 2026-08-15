@@ -9,6 +9,7 @@ export default function Sidebar({ activeBase }: { activeBase: string }) {
   const items = [
     { key: 'home', icon: 'home', label: t('menu.home') },
     { key: 'services', icon: 'services', label: t('menu.services') },
+    { key: 'institutions', icon: 'building', label: 'Instituciones' },
   ]
 
   return (
