@@ -13,7 +13,7 @@ type Service struct {
 	Active                bool       `json:"active"`
 	IconKey               string     `json:"icon_key"`
 	BillingType           string     `json:"billing_type"`
-	BillingDay            int        `json:"billing_day"`
+	BillingDay            *int       `json:"billing_day"`
 	AutoGenerate          bool       `json:"auto_generate"`
 	InstitutionID         *int64     `json:"institution_id,omitempty"`
 	InstitutionAnalyzerID *int64     `json:"institution_analyzer_id,omitempty"`

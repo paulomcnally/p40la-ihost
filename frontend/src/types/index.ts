@@ -22,7 +22,7 @@ export interface Service {
   active: boolean
   icon_key: string
   billing_type: 'fixed' | 'variable'
-  billing_day: number
+  billing_day: number | null
   auto_generate: boolean
   institution_id?: number
   institution_analyzer_id?: number

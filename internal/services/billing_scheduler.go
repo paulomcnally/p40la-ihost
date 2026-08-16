@@ -119,7 +119,10 @@ func (s *BillingScheduler) generateBillForService(ctx context.Context, svc *mode
 			return nil
 		}
 	} else {
-		targetDay := svc.BillingDay
+		if svc.BillingDay == nil {
+			return nil
+		}
+		targetDay := *svc.BillingDay
 		lastDay := daysInMonth(year, month)
 		if targetDay > lastDay {
 			targetDay = lastDay

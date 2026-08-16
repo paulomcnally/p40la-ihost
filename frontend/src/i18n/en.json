@@ -54,6 +54,7 @@
     "saved_success": "Service saved successfully",
     "billing_type": "Billing type",
     "billing_day": "Billing day",
+    "billing_day_required": "Billing day is required for automatic billing",
     "auto_generate": "Auto generation"
   },
   "frequency": {
