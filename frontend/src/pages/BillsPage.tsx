@@ -97,24 +97,26 @@ export default function BillsPage() {
                     { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget(bill.id) },
                   ]}
                 />
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2">
                   <span className="text-sm text-text-secondary">
                     {bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])} {bill.year}
                   </span>
+                </div>
+                <p className="text-xl font-semibold mb-2">{currency?.symbol}{bill.amount.toFixed(2)}</p>
+                <div className="flex items-center justify-between text-sm text-text-secondary">
+                  <div className="flex items-center gap-4">
+                    {bill.invoice_number && <span>#{bill.invoice_number}</span>}
+                    {bill.drive_url && (
+                      <a href={bill.drive_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        Drive ↗
+                      </a>
+                    )}
+                  </div>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                     bill.status === 'paid' ? 'bg-success/20 text-green-800' : 'bg-warning/20 text-yellow-800'
                   }`}>
                     {t(`bills.status_${bill.status}`)}
                   </span>
-                </div>
-                <p className="text-xl font-semibold mb-2">{currency?.symbol}{bill.amount.toFixed(2)}</p>
-                <div className="flex items-center gap-4 text-sm text-text-secondary">
-                  {bill.invoice_number && <span>#{bill.invoice_number}</span>}
-                  {bill.drive_url && (
-                    <a href={bill.drive_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      Drive ↗
-                    </a>
-                  )}
                 </div>
               </div>
             ))}
