@@ -1,7 +1,7 @@
 ---
 title: "Sobrescribir bill existente cuando el analizador extrae datos"
 id: "SPEC-021"
-status: "in_progress"
+status: "pending_release"
 author: "p40la-ihost-team"
 created: "2026-08-15"
 updated: "2026-08-15"
