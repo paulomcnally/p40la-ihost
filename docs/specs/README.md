@@ -10,8 +10,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **En draft** | 0  |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
-| **Pending release** | 4 🟠 |
-| **Released** | 15 🟢 |
+| **Pending release** | 3 🟠 |
+| **Released** | 16 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-020 |
 
@@ -40,7 +40,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-017 | Responsive BillsPage: tabla en desktop, cards en móvil | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-018 | Estado de pago dinámico en cards de servicios | pending_release | 2026-08-15 | paulomcnally |
 | SPEC-019 | Analizador de facturas DISNORTE-DISSUR | released | 2026-08-15 | paulomcnally |
-| SPEC-020 | Fix posición del label de estado en cards de Bills | pending_release | 2026-08-15 | p40la-ihost-team |
+| SPEC-020 | Fix posición del label de estado en cards de Bills | released | 2026-08-15 | p40la-ihost-team |
 
 ---
 
