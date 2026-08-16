@@ -1,6 +1,6 @@
 
 # Runtime & build artifacts
-data/
+/data/
 server
 
 frontend/node_modules/
