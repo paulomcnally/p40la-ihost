@@ -9,11 +9,15 @@ import (
 )
 
 type autoRequest struct {
-	Year  int64  `json:"year"`
-	Model string `json:"model"`
-	Brand string `json:"brand"`
-	Color string `json:"color"`
-	Icon  string `json:"icon"`
+	Year   int64  `json:"year"`
+	Model  string `json:"model"`
+	Brand  string `json:"brand"`
+	Color  string `json:"color"`
+	Icon   string `json:"icon"`
+	Motor  string `json:"motor"`
+	Chasis string `json:"chasis"`
+	VIN    string `json:"vin"`
+	Placa  string `json:"placa"`
 }
 
 // AutoHandlers agrupa los handlers de autos.
@@ -62,7 +66,7 @@ func (h *AutoHandlers) CreateAuto(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	auto, err := h.service.Create(r.Context(), req.Year, req.Model, req.Brand, req.Color, req.Icon)
+	auto, err := h.service.Create(r.Context(), req.Year, req.Model, req.Brand, req.Color, req.Icon, req.Motor, req.Chasis, req.VIN, req.Placa)
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return
@@ -82,7 +86,7 @@ func (h *AutoHandlers) UpdateAuto(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	auto, err := h.service.Update(r.Context(), id, req.Year, req.Model, req.Brand, req.Color, req.Icon)
+	auto, err := h.service.Update(r.Context(), id, req.Year, req.Model, req.Brand, req.Color, req.Icon, req.Motor, req.Chasis, req.VIN, req.Placa)
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return

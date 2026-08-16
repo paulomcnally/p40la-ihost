@@ -19,8 +19,11 @@ func NewAutoServiceHandlers(service *services.AutoServiceService) *AutoServiceHa
 }
 
 type autoServiceRequest struct {
-	ServiceID    int64  `json:"service_id"`
-	CoverageType string `json:"coverage_type"`
+	ServiceID     int64  `json:"service_id"`
+	CoverageType  string `json:"coverage_type"`
+	PolicyNumber  string `json:"policy_number"`
+	Certificate   string `json:"certificate"`
+	InsurerNumber string `json:"insurer_number"`
 }
 
 // ListAutoServices responde con los seguros de un auto.
@@ -50,7 +53,7 @@ func (h *AutoServiceHandlers) CreateAutoService(w http.ResponseWriter, r *http.R
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	as, err := h.service.Create(r.Context(), autoID, req.ServiceID, req.CoverageType)
+	as, err := h.service.Create(r.Context(), autoID, req.ServiceID, req.CoverageType, req.PolicyNumber, req.Certificate, req.InsurerNumber)
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return

@@ -30,11 +30,15 @@ func (s *AutoService) GetByID(ctx context.Context, id int64) (*models.Auto, erro
 }
 
 // Create crea un nuevo auto.
-func (s *AutoService) Create(ctx context.Context, year int64, model, brand, color, icon string) (*models.Auto, error) {
+func (s *AutoService) Create(ctx context.Context, year int64, model, brand, color, icon, motor, chasis, vin, placa string) (*models.Auto, error) {
 	model = strings.TrimSpace(model)
 	brand = strings.TrimSpace(brand)
 	color = strings.TrimSpace(color)
 	icon = strings.TrimSpace(icon)
+	motor = strings.TrimSpace(motor)
+	chasis = strings.TrimSpace(chasis)
+	vin = strings.TrimSpace(vin)
+	placa = strings.TrimSpace(placa)
 
 	if model == "" {
 		return nil, fmt.Errorf("el modelo es requerido")
@@ -45,6 +49,18 @@ func (s *AutoService) Create(ctx context.Context, year int64, model, brand, colo
 	if color == "" {
 		return nil, fmt.Errorf("el color es requerido")
 	}
+	if motor == "" {
+		return nil, fmt.Errorf("el motor es requerido")
+	}
+	if chasis == "" {
+		return nil, fmt.Errorf("el chasis es requerido")
+	}
+	if vin == "" {
+		return nil, fmt.Errorf("el VIN es requerido")
+	}
+	if placa == "" {
+		return nil, fmt.Errorf("la placa es requerida")
+	}
 	if year < 1900 || year > 2100 {
 		return nil, fmt.Errorf("el año debe estar entre 1900 y 2100")
 	}
@@ -52,15 +68,19 @@ func (s *AutoService) Create(ctx context.Context, year int64, model, brand, colo
 		icon = "vehicle"
 	}
 
-	return s.storage.Create(ctx, year, model, brand, color, icon)
+	return s.storage.Create(ctx, year, model, brand, color, icon, motor, chasis, vin, placa)
 }
 
 // Update actualiza un auto existente.
-func (s *AutoService) Update(ctx context.Context, id int64, year int64, model, brand, color, icon string) (*models.Auto, error) {
+func (s *AutoService) Update(ctx context.Context, id int64, year int64, model, brand, color, icon, motor, chasis, vin, placa string) (*models.Auto, error) {
 	model = strings.TrimSpace(model)
 	brand = strings.TrimSpace(brand)
 	color = strings.TrimSpace(color)
 	icon = strings.TrimSpace(icon)
+	motor = strings.TrimSpace(motor)
+	chasis = strings.TrimSpace(chasis)
+	vin = strings.TrimSpace(vin)
+	placa = strings.TrimSpace(placa)
 
 	if model == "" {
 		return nil, fmt.Errorf("el modelo es requerido")
@@ -71,6 +91,18 @@ func (s *AutoService) Update(ctx context.Context, id int64, year int64, model, b
 	if color == "" {
 		return nil, fmt.Errorf("el color es requerido")
 	}
+	if motor == "" {
+		return nil, fmt.Errorf("el motor es requerido")
+	}
+	if chasis == "" {
+		return nil, fmt.Errorf("el chasis es requerido")
+	}
+	if vin == "" {
+		return nil, fmt.Errorf("el VIN es requerido")
+	}
+	if placa == "" {
+		return nil, fmt.Errorf("la placa es requerida")
+	}
 	if year < 1900 || year > 2100 {
 		return nil, fmt.Errorf("el año debe estar entre 1900 y 2100")
 	}
@@ -78,7 +110,7 @@ func (s *AutoService) Update(ctx context.Context, id int64, year int64, model, b
 		icon = "vehicle"
 	}
 
-	return s.storage.Update(ctx, id, year, model, brand, color, icon)
+	return s.storage.Update(ctx, id, year, model, brand, color, icon, motor, chasis, vin, placa)
 }
 
 // Delete elimina un auto.

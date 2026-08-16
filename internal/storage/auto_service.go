@@ -23,6 +23,7 @@ func (s *AutoServiceStorage) ListByAuto(ctx context.Context, autoID int64) ([]mo
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT
 			asv.id, asv.auto_id, asv.service_id, asv.coverage_type,
+			asv.policy_number, asv.certificate, asv.insurer_number,
 			svc.name, COALESCE(inst.name, ''), svc.institution_id,
 			svc.suggested_amount, svc.frequency, svc.icon_key, svc.active,
 			svc.start_date, svc.end_date, svc.is_recurring,
@@ -42,10 +43,11 @@ func (s *AutoServiceStorage) ListByAuto(ctx context.Context, autoID int64) ([]mo
 	for rows.Next() {
 		var d models.AutoServiceDetail
 		var institutionID sql.NullInt64
-		var startDate, endDate sql.NullString
+		var startDate, endDate, certificate sql.NullString
 		var createdAt sql.NullTime
 		if err := rows.Scan(
 			&d.ID, &d.AutoID, &d.ServiceID, &d.CoverageType,
+			&d.PolicyNumber, &certificate, &d.InsurerNumber,
 			&d.ServiceName, &d.InstitutionName, &institutionID,
 			&d.SuggestedAmount, &d.Frequency, &d.IconKey, &d.Active,
 			&startDate, &endDate, &d.IsRecurring,
@@ -55,6 +57,9 @@ func (s *AutoServiceStorage) ListByAuto(ctx context.Context, autoID int64) ([]mo
 		}
 		if institutionID.Valid {
 			d.InstitutionID = &institutionID.Int64
+		}
+		if certificate.Valid {
+			d.Certificate = &certificate.String
 		}
 		if startDate.Valid {
 			d.StartDate = &startDate.String
@@ -71,10 +76,14 @@ func (s *AutoServiceStorage) ListByAuto(ctx context.Context, autoID int64) ([]mo
 }
 
 // Create asocia un servicio a un auto como seguro.
-func (s *AutoServiceStorage) Create(ctx context.Context, autoID, serviceID int64, coverageType string) (*models.AutoService, error) {
+func (s *AutoServiceStorage) Create(ctx context.Context, autoID, serviceID int64, coverageType, policyNumber, certificate, insurerNumber string) (*models.AutoService, error) {
+	var certPtr *string
+	if certificate != "" {
+		certPtr = &certificate
+	}
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO auto_services (auto_id, service_id, coverage_type) VALUES (?, ?, ?)
-	`, autoID, serviceID, coverageType)
+		INSERT INTO auto_services (auto_id, service_id, coverage_type, policy_number, certificate, insurer_number) VALUES (?, ?, ?, ?, ?, ?)
+	`, autoID, serviceID, coverageType, policyNumber, certPtr, insurerNumber)
 	if err != nil {
 		return nil, fmt.Errorf("asociar seguro: %w", err)
 	}
@@ -82,7 +91,7 @@ func (s *AutoServiceStorage) Create(ctx context.Context, autoID, serviceID int64
 	if err != nil {
 		return nil, fmt.Errorf("obtener id de seguro: %w", err)
 	}
-	return &models.AutoService{ID: id, AutoID: autoID, ServiceID: serviceID, CoverageType: coverageType}, nil
+	return &models.AutoService{ID: id, AutoID: autoID, ServiceID: serviceID, CoverageType: coverageType, PolicyNumber: policyNumber, Certificate: certPtr, InsurerNumber: insurerNumber}, nil
 }
 
 // Delete elimina la asociación de un seguro.

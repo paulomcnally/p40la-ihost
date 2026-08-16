@@ -73,7 +73,7 @@ export default function AutosPage() {
               <Icon name={auto.icon} className="w-6 h-6" />
             </div>
             <h3 className="font-semibold text-base">{auto.brand} {auto.model}</h3>
-            <p className="text-sm text-text-secondary mt-1">{auto.year} - {auto.color}</p>
+            <p className="text-sm text-text-secondary mt-1">{auto.year} · {auto.color} · {auto.placa}</p>
           </div>
         ))}
       </div>

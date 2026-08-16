@@ -69,7 +69,12 @@ export default function AutoShowPage() {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl sm:text-2xl font-bold">{auto.brand} {auto.model}</h2>
-            <p className="text-text-secondary mt-1">{auto.year} · {auto.color}</p>
+            <p className="text-text-secondary mt-1">{auto.year} · {auto.color} · {auto.placa}</p>
+            <div className="mt-3 space-y-1 text-sm text-text-secondary">
+              <p><span className="font-medium">Motor:</span> {auto.motor}</p>
+              <p><span className="font-medium">Chasis:</span> {auto.chasis}</p>
+              <p><span className="font-medium">VIN:</span> {auto.vin}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -119,12 +124,17 @@ export default function AutoShowPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{item.service_name}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                               item.coverage_type === 'full_cover' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                             }`}>
                               {item.coverage_type === 'full_cover' ? 'Full Cover' : 'Daños a terceros'}
                             </span>
+                            <span className="text-xs text-text-secondary">Póliza: {item.policy_number}</span>
+                            <span className="text-xs text-text-secondary">Aseguradora: {item.insurer_number}</span>
+                            {item.certificate && (
+                              <span className="text-xs text-text-secondary">Certificado: {item.certificate}</span>
+                            )}
                             {!item.active && (
                               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
                                 Inactivo

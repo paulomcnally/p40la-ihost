@@ -14,6 +14,9 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
   const [search, setSearch] = useState('')
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null)
   const [coverageType, setCoverageType] = useState<'daños_a_terceros' | 'full_cover'>('daños_a_terceros')
+  const [policyNumber, setPolicyNumber] = useState('')
+  const [certificate, setCertificate] = useState('')
+  const [insurerNumber, setInsurerNumber] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -32,7 +35,13 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
     if (!selectedServiceId) return
     setSubmitting(true)
     try {
-      await api.autos.addService(autoId, { service_id: selectedServiceId, coverage_type: coverageType })
+      await api.autos.addService(autoId, {
+        service_id: selectedServiceId,
+        coverage_type: coverageType,
+        policy_number: policyNumber,
+        certificate: certificate || undefined,
+        insurer_number: insurerNumber
+      })
       onAdd()
     } catch {
       setSubmitting(false)
@@ -105,6 +114,40 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
               >
                 Full Cover
               </button>
+            </div>
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Número de póliza</label>
+                <input
+                  type="text"
+                  value={policyNumber}
+                  onChange={e => setPolicyNumber(e.target.value)}
+                  placeholder="Ej: POL-2026-001"
+                  className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Certificado (opcional)</label>
+                <input
+                  type="text"
+                  value={certificate}
+                  onChange={e => setCertificate(e.target.value)}
+                  placeholder="Ej: CERT-123456"
+                  className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Número de aseguradora</label>
+                <input
+                  type="text"
+                  value={insurerNumber}
+                  onChange={e => setInsurerNumber(e.target.value)}
+                  placeholder="Ej: ASEG-987654"
+                  className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+                  required
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-3">
               <button

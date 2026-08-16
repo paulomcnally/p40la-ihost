@@ -21,7 +21,7 @@ func NewAutoStorage(db *sql.DB) *AutoStorage {
 // List devuelve todos los autos.
 func (s *AutoStorage) List(ctx context.Context) ([]models.Auto, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, year, model, brand, color, icon, created_at, updated_at
+		SELECT id, year, model, brand, color, icon, motor, chasis, vin, placa, created_at, updated_at
 		FROM autos
 		ORDER BY brand, model
 	`)
@@ -36,7 +36,7 @@ func (s *AutoStorage) List(ctx context.Context) ([]models.Auto, error) {
 // GetByID busca un auto por su ID.
 func (s *AutoStorage) GetByID(ctx context.Context, id int64) (*models.Auto, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, year, model, brand, color, icon, created_at, updated_at
+		SELECT id, year, model, brand, color, icon, motor, chasis, vin, placa, created_at, updated_at
 		FROM autos
 		WHERE id = ?
 	`, id)
@@ -44,10 +44,10 @@ func (s *AutoStorage) GetByID(ctx context.Context, id int64) (*models.Auto, erro
 }
 
 // Create inserta un nuevo auto.
-func (s *AutoStorage) Create(ctx context.Context, year int64, model, brand, color, icon string) (*models.Auto, error) {
+func (s *AutoStorage) Create(ctx context.Context, year int64, model, brand, color, icon, motor, chasis, vin, placa string) (*models.Auto, error) {
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO autos (year, model, brand, color, icon) VALUES (?, ?, ?, ?, ?)
-	`, year, model, brand, color, icon)
+		INSERT INTO autos (year, model, brand, color, icon, motor, chasis, vin, placa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, year, model, brand, color, icon, motor, chasis, vin, placa)
 	if err != nil {
 		return nil, fmt.Errorf("insertar auto: %w", err)
 	}
@@ -59,12 +59,12 @@ func (s *AutoStorage) Create(ctx context.Context, year int64, model, brand, colo
 }
 
 // Update actualiza un auto existente.
-func (s *AutoStorage) Update(ctx context.Context, id int64, year int64, model, brand, color, icon string) (*models.Auto, error) {
+func (s *AutoStorage) Update(ctx context.Context, id int64, year int64, model, brand, color, icon, motor, chasis, vin, placa string) (*models.Auto, error) {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE autos
-		SET year = ?, model = ?, brand = ?, color = ?, icon = ?, updated_at = CURRENT_TIMESTAMP
+		SET year = ?, model = ?, brand = ?, color = ?, icon = ?, motor = ?, chasis = ?, vin = ?, placa = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
-	`, year, model, brand, color, icon, id)
+	`, year, model, brand, color, icon, motor, chasis, vin, placa, id)
 	if err != nil {
 		return nil, fmt.Errorf("actualizar auto: %w", err)
 	}
@@ -84,7 +84,7 @@ func (s *AutoStorage) Delete(ctx context.Context, id int64) error {
 
 func scanAuto(row *sql.Row) (*models.Auto, error) {
 	var a models.Auto
-	if err := row.Scan(&a.ID, &a.Year, &a.Model, &a.Brand, &a.Color, &a.Icon, &a.CreatedAt, &a.UpdatedAt); err != nil {
+	if err := row.Scan(&a.ID, &a.Year, &a.Model, &a.Brand, &a.Color, &a.Icon, &a.Motor, &a.Chasis, &a.VIN, &a.Placa, &a.CreatedAt, &a.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -97,7 +97,7 @@ func scanAutos(rows *sql.Rows) ([]models.Auto, error) {
 	var autos []models.Auto
 	for rows.Next() {
 		var a models.Auto
-		if err := rows.Scan(&a.ID, &a.Year, &a.Model, &a.Brand, &a.Color, &a.Icon, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.Year, &a.Model, &a.Brand, &a.Color, &a.Icon, &a.Motor, &a.Chasis, &a.VIN, &a.Placa, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear auto: %w", err)
 		}
 		autos = append(autos, a)
