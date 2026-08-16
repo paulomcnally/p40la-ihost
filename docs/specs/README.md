@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 26 |
+| **Total de specs** | 27 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
 | **Pending release** | 6 🟠 |
-| **Released** | 19 🟢 |
+| **Released** | 20 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-026 |
+| **Último ID usado** | SPEC-027 |
 
 ---
 
@@ -47,6 +47,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-024 | Módulo CRUD de Autos | pending_release | 2026-08-16 | p40la-ihost-team |
 | SPEC-025 | Página Show de Autos con Seguros + Vigencia y Estado en Servicios | pending_release | 2026-08-16 | p40la-ihost-team |
 | SPEC-026 | Categorías de Instituciones con Seed y Filtro de Seguros | pending_release | 2026-08-16 | paulomcnally |
+| SPEC-027 | Script de release automático para Docker Hub con bump de versión | released | 2026-08-16 | paulomcnally |
 
 ---
 
@@ -116,4 +117,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-16 — SPEC-025 created.*
+*Última actualización de este tracker: 2026-08-16 — SPEC-027 released.*
