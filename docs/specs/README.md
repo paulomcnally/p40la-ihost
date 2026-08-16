@@ -10,8 +10,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **En draft** | 0  |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
-| **Pending release** | 4 🟠 |
-| **Released** | 18 🟢 |
+| **Pending release** | 3 🟠 |
+| **Released** | 19 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-023 |
 
@@ -43,7 +43,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-020 | Fix posición del label de estado en cards de Bills | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-021 | Sobrescribir bill existente cuando el analizador extrae datos | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-022 | Loading states en listas de casas y servicios | released | 2026-08-15 | p40la-ihost-team |
-| SPEC-023 | Modal del analizador: deshabilitar cierre al hacer click fuera | pending_release | 2026-08-15 | p40la-ihost-team |
+| SPEC-023 | Modal del analizador: deshabilitar cierre al hacer click fuera | released | 2026-08-15 | p40la-ihost-team |
 
 ---
 

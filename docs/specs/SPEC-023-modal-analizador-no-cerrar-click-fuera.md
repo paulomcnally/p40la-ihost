@@ -1,7 +1,7 @@
 ---
 title: "Modal del analizador: deshabilitar cierre al hacer click fuera"
 id: "SPEC-023"
-status: "pending_release"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-15"
 updated: "2026-08-15"
@@ -11,7 +11,7 @@ github_issue: 23
 # Modal del analizador: deshabilitar cierre al hacer click fuera
 
 **ID**: SPEC-023  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: p40la-ihost-team  
 **Creado**: 2026-08-15  
 **Actualizado**: 2026-08-15
@@ -151,3 +151,4 @@ Se identificaron los siguientes modales en el frontend:
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-08-15 | p40la-ihost-team | Creación inicial de la especificación |
+| 2026-08-15 | p40la-ihost-team | Implementación: removido backdrop click y Escape de UploadBillModal y AnalyzerPickerModal |
