@@ -86,53 +86,89 @@ export default function BillsPage() {
           </button>
         </div>
       ) : (
-        <div className="bg-card rounded-ios shadow-ios overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.year')}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.month')}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.amount')}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.invoice_number')}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.status')}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.drive_url')}</th>
-                <th className="w-10"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {bills.map(bill => (
-                <tr key={bill.id} className="border-b border-border last:border-b-0 hover:bg-bg/50">
-                  <td className="px-4 py-3 text-sm">{bill.year}</td>
-                  <td className="px-4 py-3 text-sm">{bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])}</td>
-                  <td className="px-4 py-3 text-sm font-medium">{currency?.symbol}{bill.amount.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-sm">{bill.invoice_number || '-'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                      bill.status === 'paid' ? 'bg-success/20 text-green-800' : 'bg-warning/20 text-yellow-800'
-                    }`}>
-                      {t(`bills.status_${bill.status}`)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {bill.drive_url ? (
-                      <a href={bill.drive_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        Drive
-                      </a>
-                    ) : '-'}
-                  </td>
-                  <td className="px-4 py-3 relative">
-                    <CardMenu
-                      options={[
-                        { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/bills/edit/${bill.id}?service=${serviceId}`) },
-                        { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget(bill.id) },
-                      ]}
-                    />
-                  </td>
+        <>
+          {/* Mobile: cards */}
+          <div className="sm:hidden space-y-3">
+            {bills.map(bill => (
+              <div key={bill.id} className="bg-card rounded-ios shadow-ios p-4 relative">
+                <CardMenu
+                  options={[
+                    { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/bills/edit/${bill.id}?service=${serviceId}`) },
+                    { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget(bill.id) },
+                  ]}
+                />
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-text-secondary">
+                    {bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])} {bill.year}
+                  </span>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    bill.status === 'paid' ? 'bg-success/20 text-green-800' : 'bg-warning/20 text-yellow-800'
+                  }`}>
+                    {t(`bills.status_${bill.status}`)}
+                  </span>
+                </div>
+                <p className="text-xl font-semibold mb-2">{currency?.symbol}{bill.amount.toFixed(2)}</p>
+                <div className="flex items-center gap-4 text-sm text-text-secondary">
+                  {bill.invoice_number && <span>#{bill.invoice_number}</span>}
+                  {bill.drive_url && (
+                    <a href={bill.drive_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Drive ↗
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: tabla */}
+          <div className="hidden sm:block bg-card rounded-ios shadow-ios overflow-x-auto">
+            <table className="w-full min-w-[600px]">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.year')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.month')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.amount')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.invoice_number')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.status')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.drive_url')}</th>
+                  <th className="w-10"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {bills.map(bill => (
+                  <tr key={bill.id} className="border-b border-border last:border-b-0 hover:bg-bg/50">
+                    <td className="px-4 py-3 text-sm">{bill.year}</td>
+                    <td className="px-4 py-3 text-sm">{bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])}</td>
+                    <td className="px-4 py-3 text-sm font-medium">{currency?.symbol}{bill.amount.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm">{bill.invoice_number || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                        bill.status === 'paid' ? 'bg-success/20 text-green-800' : 'bg-warning/20 text-yellow-800'
+                      }`}>
+                        {t(`bills.status_${bill.status}`)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {bill.drive_url ? (
+                        <a href={bill.drive_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          Drive
+                        </a>
+                      ) : '-'}
+                    </td>
+                    <td className="px-4 py-3 relative">
+                      <CardMenu
+                        options={[
+                          { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/bills/edit/${bill.id}?service=${serviceId}`) },
+                          { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget(bill.id) },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
       {deleteTarget && (
         <DeleteModal
