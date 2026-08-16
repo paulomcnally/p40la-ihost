@@ -1,7 +1,7 @@
 ---
 title: "Fix posición del label de estado en cards de Bills"
 id: "SPEC-020"
-status: "pending_release"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-15"
 updated: "2026-08-15"
