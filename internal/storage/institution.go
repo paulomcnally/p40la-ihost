@@ -18,7 +18,7 @@ func NewInstitutionStorage(db *sql.DB) *InstitutionStorage {
 
 func (s *InstitutionStorage) List(ctx context.Context) ([]models.Institution, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, name, created_at, updated_at FROM institutions ORDER BY name
+		SELECT id, name, category_id, created_at, updated_at FROM institutions ORDER BY name
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("listar instituciones: %w", err)
@@ -28,8 +28,12 @@ func (s *InstitutionStorage) List(ctx context.Context) ([]models.Institution, er
 	var institutions []models.Institution
 	for rows.Next() {
 		var inst models.Institution
-		if err := rows.Scan(&inst.ID, &inst.Name, &inst.CreatedAt, &inst.UpdatedAt); err != nil {
+		var categoryID sql.NullInt64
+		if err := rows.Scan(&inst.ID, &inst.Name, &categoryID, &inst.CreatedAt, &inst.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear institución: %w", err)
+		}
+		if categoryID.Valid {
+			inst.CategoryID = &categoryID.Int64
 		}
 		institutions = append(institutions, inst)
 	}
@@ -38,20 +42,24 @@ func (s *InstitutionStorage) List(ctx context.Context) ([]models.Institution, er
 
 func (s *InstitutionStorage) GetByID(ctx context.Context, id int64) (*models.Institution, error) {
 	var inst models.Institution
+	var categoryID sql.NullInt64
 	if err := s.db.QueryRowContext(ctx,
-		"SELECT id, name, created_at, updated_at FROM institutions WHERE id = ?", id,
-	).Scan(&inst.ID, &inst.Name, &inst.CreatedAt, &inst.UpdatedAt); err != nil {
+		"SELECT id, name, category_id, created_at, updated_at FROM institutions WHERE id = ?", id,
+	).Scan(&inst.ID, &inst.Name, &categoryID, &inst.CreatedAt, &inst.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("obtener institución: %w", err)
+	}
+	if categoryID.Valid {
+		inst.CategoryID = &categoryID.Int64
 	}
 	return &inst, nil
 }
 
 func (s *InstitutionStorage) Create(ctx context.Context, inst *models.Institution) (*models.Institution, error) {
 	result, err := s.db.ExecContext(ctx,
-		"INSERT INTO institutions (name) VALUES (?)", inst.Name,
+		"INSERT INTO institutions (name, category_id) VALUES (?, ?)", inst.Name, inst.CategoryID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("crear institución: %w", err)
@@ -65,7 +73,8 @@ func (s *InstitutionStorage) Create(ctx context.Context, inst *models.Institutio
 
 func (s *InstitutionStorage) Update(ctx context.Context, inst *models.Institution) (*models.Institution, error) {
 	_, err := s.db.ExecContext(ctx,
-		"UPDATE institutions SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", inst.Name, inst.ID,
+		"UPDATE institutions SET name = ?, category_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+		inst.Name, inst.CategoryID, inst.ID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("actualizar institución: %w", err)
@@ -82,11 +91,51 @@ func (s *InstitutionStorage) Delete(ctx context.Context, id int64) error {
 }
 
 func (s *InstitutionStorage) SetAnalyzers(ctx context.Context, institutionID int64, analyzerIDs []string) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM institution_analyzers WHERE institution_id = ?", institutionID)
+	current, err := s.GetAnalyzers(ctx, institutionID)
 	if err != nil {
-		return fmt.Errorf("limpiar analyzers: %w", err)
+		return fmt.Errorf("obtener analyzers actuales: %w", err)
 	}
+
+	currentMap := make(map[string]int64, len(current))
+	for _, a := range current {
+		currentMap[a.AnalyzerID] = a.ID
+	}
+	wantedMap := make(map[string]bool, len(analyzerIDs))
 	for _, aid := range analyzerIDs {
+		wantedMap[aid] = true
+	}
+
+	var toRemove []int64
+	for aid, id := range currentMap {
+		if !wantedMap[aid] {
+			toRemove = append(toRemove, id)
+		}
+	}
+	var toAdd []string
+	for _, aid := range analyzerIDs {
+		if _, exists := currentMap[aid]; !exists {
+			toAdd = append(toAdd, aid)
+		}
+	}
+
+	if len(toRemove) > 0 {
+		for _, id := range toRemove {
+			_, err := s.db.ExecContext(ctx,
+				"UPDATE services SET institution_analyzer_id = NULL WHERE institution_analyzer_id = ?", id,
+			)
+			if err != nil {
+				return fmt.Errorf("limpiar servicios vinculados a analyzer %d: %w", id, err)
+			}
+			_, err = s.db.ExecContext(ctx,
+				"DELETE FROM institution_analyzers WHERE id = ?", id,
+			)
+			if err != nil {
+				return fmt.Errorf("eliminar analyzer %d: %w", id, err)
+			}
+		}
+	}
+
+	for _, aid := range toAdd {
 		_, err := s.db.ExecContext(ctx,
 			"INSERT INTO institution_analyzers (institution_id, analyzer_id) VALUES (?, ?)", institutionID, aid,
 		)

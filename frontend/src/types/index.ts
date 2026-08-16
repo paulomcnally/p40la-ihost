@@ -26,12 +26,44 @@ export interface Service {
   auto_generate: boolean
   institution_id?: number
   institution_analyzer_id?: number
+  start_date?: string
+  end_date?: string
+  is_recurring: boolean
   latest_bill_status: 'paid' | 'pending' | null
+}
+
+export interface AutoService {
+  id: number
+  auto_id: number
+  service_id: number
+  coverage_type: 'daños_a_terceros' | 'full_cover'
+  service_name: string
+  institution_name: string
+  institution_id?: number
+  suggested_amount: number
+  frequency: string
+  icon_key: string
+  active: boolean
+  start_date?: string
+  end_date?: string
+  is_recurring: boolean
+  created_at: string
+}
+
+export interface InstitutionCategory {
+  id: number
+  key: string
+  name: string
+  description: string
+  icon_key: string
+  created_at: string
+  updated_at: string
 }
 
 export interface Institution {
   id: number
   name: string
+  category_id?: number
   created_at: string
   updated_at: string
 }

@@ -19,6 +19,7 @@ import InstitutionsPage from './pages/InstitutionsPage'
 import InstitutionFormPage from './pages/InstitutionFormPage'
 import AutosPage from './pages/AutosPage'
 import AutoFormPage from './pages/AutoFormPage'
+import AutoShowPage from './pages/AutoShowPage'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -83,6 +84,7 @@ function App() {
                   <Route path="autos" element={<AutosPage />} />
                   <Route path="autos/new" element={<AutoFormPage />} />
                   <Route path="autos/edit/:id" element={<AutoFormPage />} />
+                  <Route path="autos/:id" element={<AutoShowPage />} />
                 </Route>
               </Routes>
             </AuthGuard>

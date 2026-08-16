@@ -105,11 +105,14 @@ export default function ServicesPage() {
           {services.map((svc) => {
             const currency = currencies.find(c => c.id === svc.currency_id)
             const home = homes.find(h => h.id === svc.home_id)
+            const isExpired = svc.is_recurring && svc.end_date && new Date(svc.end_date) < new Date()
             return (
               <div
                 key={svc.id}
                 onClick={() => navigate(`/services/bills/${svc.id}`)}
-                className="bg-card rounded-ios shadow-ios p-4 relative cursor-pointer hover:shadow-ios-lg transition-shadow"
+                className={`rounded-ios shadow-ios p-4 relative cursor-pointer hover:shadow-ios-lg transition-shadow ${
+                  svc.active ? 'bg-card' : 'bg-gray-100 opacity-60'
+                }`}
               >
                 <CardMenu
                   options={[
@@ -118,7 +121,9 @@ export default function ServicesPage() {
                   ]}
                 />
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center">
+                  <div className={`w-11 h-11 rounded-ios flex items-center justify-center ${
+                    svc.active ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400'
+                  }`}>
                     <Icon name={svc.icon_key || 'other'} className="w-6 h-6" />
                   </div>
                 </div>
@@ -126,6 +131,23 @@ export default function ServicesPage() {
                 <p className="text-sm text-text-secondary mt-1">
                   {svc.institution && `${svc.institution} · `}{home?.name || ''}
                 </p>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  {!svc.active && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                      Inactivo
+                    </span>
+                  )}
+                  {isExpired && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                      Vencido
+                    </span>
+                  )}
+                  {svc.is_recurring && svc.start_date && (
+                    <span className="text-xs text-text-secondary">
+                      {svc.start_date}{svc.end_date ? ` → ${svc.end_date}` : ' → ∞'}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-xs text-text-secondary">
                     {currency?.symbol}{svc.suggested_amount.toFixed(2)} · {t(`frequency.${svc.frequency}`)}

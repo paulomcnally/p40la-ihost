@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, AnalyzerInfo, Auto } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -87,11 +87,18 @@ export const api = {
   institutions: {
     list: () => get<Institution[]>('/api/institutions'),
     get: (id: number) => get<Institution>(`/api/institutions/${id}`),
-    create: (body: { name: string }) => post<Institution>('/api/institutions', body),
-    update: (id: number, body: { name: string }) => put<Institution>(`/api/institutions/${id}`, body),
+    create: (body: { name: string; category_id?: number | null }) => post<Institution>('/api/institutions', body),
+    update: (id: number, body: { name: string; category_id?: number | null }) => put<Institution>(`/api/institutions/${id}`, body),
     delete: (id: number) => del(`/api/institutions/${id}`),
     setAnalyzers: (id: number, analyzer_ids: string[]) => put(`/api/institutions/${id}/analyzers`, { analyzer_ids }),
     getAnalyzers: (id: number) => get<Array<{ id: number; institution_id: number; analyzer_id: string; created_at: string }>>(`/api/institutions/${id}/analyzers`),
+  },
+  institutionCategories: {
+    list: () => get<InstitutionCategory[]>('/api/institution-categories'),
+    get: (id: number) => get<InstitutionCategory>(`/api/institution-categories/${id}`),
+    create: (body: { key: string; name: string; description: string; icon_key: string }) => post<InstitutionCategory>('/api/institution-categories', body),
+    update: (id: number, body: { name: string; description: string; icon_key: string }) => put<InstitutionCategory>(`/api/institution-categories/${id}`, body),
+    delete: (id: number) => del(`/api/institution-categories/${id}`),
   },
   analyzers: {
     list: () => get<AnalyzerInfo[]>('/api/analyzers'),
@@ -102,5 +109,9 @@ export const api = {
     create: (body: Partial<Auto>) => post<Auto>('/api/autos', body),
     update: (id: number, body: Partial<Auto>) => put<Auto>(`/api/autos/${id}`, body),
     delete: (id: number) => del(`/api/autos/${id}`),
+    listServices: (id: number) => get<AutoService[]>(`/api/autos/${id}/services`),
+    addService: (id: number, body: { service_id: number; coverage_type: string }) => post(`/api/autos/${id}/services`, body),
+    removeService: (id: number, serviceId: number) => del(`/api/autos/${id}/services/${serviceId}`),
+    availableServices: (id: number) => get<Service[]>(`/api/autos/${id}/available-services`),
   },
 }
