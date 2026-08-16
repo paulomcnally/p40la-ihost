@@ -75,6 +75,13 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("GET /api/analyzers", authMiddleware(http.HandlerFunc(handler.institution.ListAnalyzers)))
 	mux.Handle("GET /api/services/{id}/analyzer-options", authMiddleware(http.HandlerFunc(handler.institution.GetAnalyzerOptions)))
 
+	// APIs de autos
+	mux.Handle("GET /api/autos", authMiddleware(http.HandlerFunc(handler.auto.ListAutos)))
+	mux.Handle("GET /api/autos/{id}", authMiddleware(http.HandlerFunc(handler.auto.GetAuto)))
+	mux.Handle("POST /api/autos", authMiddleware(http.HandlerFunc(handler.auto.CreateAuto)))
+	mux.Handle("PUT /api/autos/{id}", authMiddleware(http.HandlerFunc(handler.auto.UpdateAuto)))
+	mux.Handle("DELETE /api/autos/{id}", authMiddleware(http.HandlerFunc(handler.auto.DeleteAuto)))
+
 	// Assets estáticos (JS/CSS bundles del build de Vite)
 	assetsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "assets")))
 	mux.Handle("GET /assets/{file...}", http.StripPrefix("/assets/", assetsFS))

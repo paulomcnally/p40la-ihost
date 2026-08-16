@@ -16,6 +16,7 @@ export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
     { key: 'home', icon: 'home', label: t('menu.home') },
     { key: 'services', icon: 'services', label: t('menu.services') },
     { key: 'institutions', icon: 'building', label: 'Instituciones' },
+    { key: 'autos', icon: 'vehicle', label: 'Autos' },
   ]
 
   const handleNavigate = (key: string) => {
