@@ -81,8 +81,18 @@ export const api = {
     me: () => get('/api/me'),
   },
   systemSettings: {
-    get: () => get<{ billing_generation_hour: number }>('/api/system-settings'),
-    update: (body: { billing_generation_hour: number }) => put<{ billing_generation_hour: number }>('/api/system-settings', body),
+    get: () => get<{
+      billing_generation_hour: number
+      smtp_host: string
+      smtp_port: number
+      smtp_user: string
+      smtp_from_email: string
+      smtp_from_name: string
+      smtp_configured: boolean
+      alert_emails: string
+    }>('/api/system-settings'),
+    update: (body: Record<string, unknown>) => put<{ billing_generation_hour: number; smtp_configured: boolean }>('/api/system-settings', body),
+    testEmail: () => post<{ message: string; recipients: string }>('/api/system-settings/test-email', {}),
   },
   institutions: {
     list: () => get<Institution[]>('/api/institutions'),

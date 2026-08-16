@@ -29,6 +29,7 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	// APIs de system settings
 	mux.Handle("GET /api/system-settings", authMiddleware(http.HandlerFunc(handler.systemSettings.GetSystemSettings)))
 	mux.Handle("PUT /api/system-settings", authMiddleware(http.HandlerFunc(handler.systemSettings.UpdateSystemSettings)))
+	mux.Handle("POST /api/system-settings/test-email", authMiddleware(http.HandlerFunc(handler.systemSettings.TestEmail)))
 
 	// APIs de monedas
 	mux.Handle("GET /api/currencies", authMiddleware(http.HandlerFunc(handler.currency.ListCurrencies)))

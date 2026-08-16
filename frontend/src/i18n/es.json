@@ -101,6 +101,30 @@
       "name": "Nombre",
       "symbol": "Símbolo",
       "create": "Agregar moneda"
+    },
+    "email_alerts": {
+      "title": "Alertas por Email",
+      "subtitle": "Recibir alertas de seguros de autos por email",
+      "recipients": "Destinatarios",
+      "recipients_hint": "Separados por coma (ej: a@x.com,b@y.com)",
+      "test_email": "Enviar email de prueba",
+      "smtp": "Configuración SMTP",
+      "smtp_subtitle": "Servidor de correo saliente",
+      "smtp_host": "Servidor SMTP",
+      "smtp_port": "Puerto",
+      "smtp_user": "Usuario",
+      "smtp_password": "Contraseña",
+      "smtp_from_email": "Email remitente",
+      "smtp_from_name": "Nombre remitente",
+      "configured": "Configurado",
+      "not_configured": "No configurado",
+      "saved": "Configuración de email guardada",
+      "save_error": "Error al guardar configuración",
+      "test_sent": "Email de prueba enviado",
+      "test_error": "Error al enviar email de prueba",
+      "show": "Mostrar",
+      "hide": "Ocultar",
+      "leave_blank": "Dejar vacío para mantener el valor actual"
     }
   },
   "months": {
