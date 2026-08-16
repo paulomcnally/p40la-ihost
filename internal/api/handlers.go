@@ -19,6 +19,7 @@ type Handler struct {
 	bill           *BillHandlers
 	institution    *InstitutionHandlers
 	document       *DocumentHandlers
+	auto           *AutoHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -32,6 +33,7 @@ func NewHandler(
 	bill *BillHandlers,
 	institution *InstitutionHandlers,
 	document *DocumentHandlers,
+	auto *AutoHandlers,
 ) *Handler {
 	return &Handler{
 		auth:           auth,
@@ -43,6 +45,7 @@ func NewHandler(
 		bill:           bill,
 		institution:    institution,
 		document:       document,
+		auto:           auto,
 	}
 }
 

@@ -17,6 +17,8 @@ import LanguagePage from './pages/LanguagePage'
 import CurrencyFormPage from './pages/CurrencyFormPage'
 import InstitutionsPage from './pages/InstitutionsPage'
 import InstitutionFormPage from './pages/InstitutionFormPage'
+import AutosPage from './pages/AutosPage'
+import AutoFormPage from './pages/AutoFormPage'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -78,6 +80,9 @@ function App() {
                   <Route path="institutions" element={<InstitutionsPage />} />
                   <Route path="institutions/new" element={<InstitutionFormPage />} />
                   <Route path="institutions/edit/:id" element={<InstitutionFormPage />} />
+                  <Route path="autos" element={<AutosPage />} />
+                  <Route path="autos/new" element={<AutoFormPage />} />
+                  <Route path="autos/edit/:id" element={<AutoFormPage />} />
                 </Route>
               </Routes>
             </AuthGuard>

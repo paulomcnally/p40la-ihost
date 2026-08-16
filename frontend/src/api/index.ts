@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, AnalyzerInfo } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, AnalyzerInfo, Auto } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -95,5 +95,12 @@ export const api = {
   },
   analyzers: {
     list: () => get<AnalyzerInfo[]>('/api/analyzers'),
+  },
+  autos: {
+    list: () => get<Auto[]>('/api/autos'),
+    get: (id: number) => get<Auto>(`/api/autos/${id}`),
+    create: (body: Partial<Auto>) => post<Auto>('/api/autos', body),
+    update: (id: number, body: Partial<Auto>) => put<Auto>(`/api/autos/${id}`, body),
+    delete: (id: number) => del(`/api/autos/${id}`),
   },
 }

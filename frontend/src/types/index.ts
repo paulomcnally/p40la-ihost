@@ -62,3 +62,14 @@ export interface Bill {
 export interface Settings {
   language: string
 }
+
+export interface Auto {
+  id: number
+  year: number
+  model: string
+  brand: string
+  color: string
+  icon: string
+  created_at: string
+  updated_at: string
+}
