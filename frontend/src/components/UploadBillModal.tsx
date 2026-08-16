@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { api } from '../api'
 import { Icon } from './Icons'
+import { useToast } from './Toast'
 
 interface UploadBillModalProps {
   isOpen: boolean
@@ -13,6 +14,7 @@ interface UploadBillModalProps {
 type ModalState = 'select' | 'analyzing' | 'result' | 'error'
 
 export default function UploadBillModal({ isOpen, serviceId, frequency, onClose, onSaved }: UploadBillModalProps) {
+  const { showToast } = useToast()
   const [state, setState] = useState<ModalState>('select')
   const [file, setFile] = useState<File | null>(null)
   const [analyzerUsed, setAnalyzerUsed] = useState('')
@@ -120,12 +122,13 @@ export default function UploadBillModal({ isOpen, serviceId, frequency, onClose,
         throw new Error('Año inválido')
       }
       const month = frequency === 'yearly' ? 0 : formData.month
-      await api.bills.createBillFromExtracted(serviceId, {
+      const result = await api.bills.createBillFromExtracted(serviceId, {
         amount,
         invoice_number: formData.invoice_number,
         year: formData.year,
         month,
       })
+      showToast(result?.updated ? 'Factura actualizada con datos del analizador' : 'Factura guardada', 'success')
       onSaved()
       onClose()
     } catch (err: unknown) {

@@ -8,6 +8,7 @@ import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import Select from '../components/Select'
 import DeleteModal from '../components/DeleteModal'
+import LoadingSpinner from '../components/LoadingSpinner'
 import type { Service } from '../types'
 
 export default function ServicesPage() {
@@ -17,9 +18,10 @@ export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([])
   const [homeFilter, setHomeFilter] = useState<number | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadAll()
+    loadAll().finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -37,6 +39,10 @@ export default function ServicesPage() {
     const list = await api.services.list(homeFilter ?? undefined)
     setServices(list || [])
   }, [deleteTarget, homeFilter])
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
 
   if (homes.length === 0) {
     return (

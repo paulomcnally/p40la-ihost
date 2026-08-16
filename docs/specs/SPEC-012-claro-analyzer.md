@@ -1,7 +1,7 @@
 ---
 title: "Analizador de facturas Claro: internet residencial e internet móvil"
 id: "SPEC-012"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-15"
 updated: "2026-08-15"
@@ -11,7 +11,7 @@ github_issue: 13
 # Analizador de facturas Claro: internet residencial e internet móvil
 
 **ID**: SPEC-012  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-15  
 **Actualizado**: 2026-08-15 (implementación completa y tests exitosos)
@@ -294,3 +294,4 @@ var monthMap = map[string]int{
 | 2026-08-15 | paulomcnally | Creación inicial de la especificación |
 | 2026-08-15 | paulomcnally | Implementación completa: analyzer claro para formatos residencial y móvil, tests unitarios, build verificado |
 | 2026-08-15 | paulomcnally | Implementación iniciada |
+| 2026-08-15 | paulomcnally | Spec released |

@@ -115,6 +115,7 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 3. Documentar commit/versión en la spec
 4. Estado: `released`
 5. **Cerrar el spec SIEMPRE implica commitear y pushear los cambios.** No cerrar un spec con cambios sin commitear.
+6. **Actualizar SIEMPRE el label de GitHub al estado final.** Al cambiar el estado de una spec, ejecutar `gh issue edit <number> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"`. Si el estado es `released` o `cancelled`, además cerrar el issue con `gh issue close <number>`. **No cerrar un issue sin antes actualizar su label al estado correcto.**
 
 ---
 
@@ -125,6 +126,7 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 - **JAMÁS** ejecutar `git push` a ramas protegidas sin confirmación explícita del usuario.
 - **JAMÁS** mergear a `main` directamente desde una rama de feature.
 - **JAMÁS** ejecutar `--force` o `--force-with-lease` en `main` o ramas de release.
+- **Solo usar labels de spec definidos en la skill.** Los labels válidos son: `spec/draft`, `spec/pending-execution`, `spec/in-progress`, `spec/pending-release`, `spec/released`, `spec/cancelled`. **NUNCA** agregar labels genéricos como `spec` o cualquier otro que no esté en esta lista. Solo se agregan labels cuando el flujo de specs lo requiere explícitamente.
 
 ### ️ Regla CRÍTICA: Arquitectura Multi-Arch (iHost + desarrollo)
 

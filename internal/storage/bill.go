@@ -87,6 +87,19 @@ func (s *BillStorage) Update(ctx context.Context, bill *models.Bill) (*models.Bi
 	return s.GetByID(ctx, bill.ID)
 }
 
+// UpdateFromExtracted actualiza solo los campos provistos por el analizador.
+func (s *BillStorage) UpdateFromExtracted(ctx context.Context, billID int64, amount float64, invoiceNumber string) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE bills
+		SET amount = ?, invoice_number = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND deleted_at IS NULL
+	`, amount, invoiceNumber, billID)
+	if err != nil {
+		return fmt.Errorf("actualizar factura desde analizador: %w", err)
+	}
+	return nil
+}
+
 // SoftDelete marca una factura como eliminada.
 func (s *BillStorage) SoftDelete(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `

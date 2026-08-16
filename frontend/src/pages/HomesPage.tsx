@@ -7,15 +7,17 @@ import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function HomesPage() {
   const navigate = useNavigate()
   const { homes, loadHomes } = useAppStore()
   const { t } = useI18nStore()
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadHomes()
+    loadHomes().finally(() => setLoading(false))
   }, [])
 
   const handleDelete = useCallback(async () => {
@@ -24,6 +26,10 @@ export default function HomesPage() {
     setDeleteTarget(null)
     loadHomes()
   }, [deleteTarget])
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
 
   if (homes.length === 0) {
     return (

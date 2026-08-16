@@ -69,7 +69,7 @@ export const api = {
         })
     },
     createBillFromExtracted: (serviceId: number, body: { amount: number; invoice_number: string; year: number; month: number }) =>
-      post<Bill>(`/api/services/${serviceId}/bills/from-extracted`, body),
+      post<Bill & { updated?: boolean }>(`/api/services/${serviceId}/bills/from-extracted`, body),
   },
   auth: {
     login: (email: string, password: string, remember: boolean) =>
