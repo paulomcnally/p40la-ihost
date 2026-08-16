@@ -54,6 +54,22 @@ export const api = {
     create: (body: Partial<Bill>) => post<Bill>('/api/bills', body),
     update: (id: number, body: Partial<Bill>) => put<Bill>(`/api/bills/${id}`, body),
     delete: (id: number) => del(`/api/bills/${id}`),
+    uploadAndAnalyze: (serviceId: number, file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return fetch(`/api/services/${serviceId}/bills/upload`, { method: 'POST', body: form })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}))
+          if (res.status === 401) {
+            window.location.href = '/login'
+            return null
+          }
+          if (!res.ok) throw new Error(data.message || 'Error al analizar el documento')
+          return data
+        })
+    },
+    createBillFromExtracted: (serviceId: number, body: { amount: number; invoice_number: string; year: number; month: number }) =>
+      post<Bill>(`/api/services/${serviceId}/bills/from-extracted`, body),
   },
   auth: {
     login: (email: string, password: string, remember: boolean) =>

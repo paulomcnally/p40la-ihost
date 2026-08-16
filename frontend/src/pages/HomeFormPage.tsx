@@ -46,8 +46,8 @@ export default function HomeFormPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-6">
-      <h2 className="text-xl font-bold mb-6">{t(isEdit ? 'home.edit' : 'home.create')}</h2>
+    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">{t(isEdit ? 'home.edit' : 'home.create')}</h2>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-sm font-medium mb-1">{t('home.name')}</label>
@@ -55,7 +55,7 @@ export default function HomeFormPage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             required
           />
         </div>
@@ -65,14 +65,14 @@ export default function HomeFormPage() {
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
           />
         </div>
         <div className="flex justify-end gap-3 pt-4 border-t border-border">
           <button
             type="button"
             onClick={() => navigate('/home')}
-            className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2 min-h-[44px]"
           >
             <Icon name="cancel" className="w-4 h-4" />
             {t('app.cancel')}
@@ -80,7 +80,7 @@ export default function HomeFormPage() {
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2 min-h-[44px]"
           >
             <Icon name="save" className="w-4 h-4" />
             {t('app.save')}

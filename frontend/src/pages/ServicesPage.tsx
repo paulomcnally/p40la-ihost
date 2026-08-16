@@ -40,11 +40,11 @@ export default function ServicesPage() {
 
   if (homes.length === 0) {
     return (
-      <div className="bg-card rounded-ios shadow-ios p-12 text-center max-w-md mx-auto mt-8">
+      <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto mt-8">
         <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
           <Icon name="home" className="w-full h-full" />
         </div>
-        <h3 className="text-xl font-semibold mb-2">{t('services.empty_no_home')}</h3>
+        <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('services.empty_no_home')}</h3>
         <p className="text-text-secondary mb-6">{t('services.subtitle')}</p>
         <button
           onClick={() => navigate('/home/new')}
@@ -63,11 +63,11 @@ export default function ServicesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-2xl font-bold">{t('services.title')}</h2>
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
+        <h2 className="text-xl sm:text-2xl font-bold">{t('services.title')}</h2>
         <CreateMenu options={createOptions} />
       </div>
-      <div className="mb-5 max-w-xs">
+      <div className="mb-4 sm:mb-5 max-w-xs">
         <Select
           options={[
             { value: '', label: t('services.all_homes') },
@@ -80,11 +80,11 @@ export default function ServicesPage() {
         />
       </div>
       {services.length === 0 ? (
-        <div className="bg-card rounded-ios shadow-ios p-12 text-center max-w-md mx-auto">
+        <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
             <Icon name="services" className="w-full h-full" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">{t('services.empty')}</h3>
+          <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('services.empty')}</h3>
           <p className="text-text-secondary mb-6">{t('services.subtitle')}</p>
           <button
             onClick={() => navigate('/services/new')}
@@ -95,7 +95,7 @@ export default function ServicesPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {services.map((svc) => {
             const currency = currencies.find(c => c.id === svc.currency_id)
             const home = homes.find(h => h.id === svc.home_id)

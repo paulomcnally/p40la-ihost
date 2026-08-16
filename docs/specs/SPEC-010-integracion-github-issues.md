@@ -1,7 +1,7 @@
 ---
 title: "Integración de Specs con GitHub Issues para Gestión Asíncrona y Multi-Agente"
 id: "SPEC-010"
-status: "in_progress"
+status: "pending_release"
 author: "paulomcnally"
 created: "2026-08-15"
 updated: "2026-08-15"
@@ -11,10 +11,10 @@ github_issue: 11
 # Integración de Specs con GitHub Issues para Gestión Asíncrona y Multi-Agente
 
 **ID**: SPEC-010  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-15  
-**Actualizado**: 2026-08-15
+**Actualizado**: 2026-08-15 (implementación completa: labels, issues, SKILL.md, template)
 
 ---
 

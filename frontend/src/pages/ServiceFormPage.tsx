@@ -166,8 +166,8 @@ export default function ServiceFormPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-6">
-      <h2 className="text-xl font-bold mb-6">{t(isEdit ? 'services.edit' : 'services.create')}</h2>
+    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">{t(isEdit ? 'services.edit' : 'services.create')}</h2>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-sm font-medium mb-1">{t('services.home')}</label>
@@ -184,7 +184,7 @@ export default function ServiceFormPage() {
             type="text"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             required
           />
         </div>
@@ -211,7 +211,7 @@ export default function ServiceFormPage() {
             />
           </div>
         )}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">{t('services.currency')}</label>
             <Select
@@ -240,11 +240,11 @@ export default function ServiceFormPage() {
             step="0.01"
             value={formData.suggested_amount}
             onChange={(e) => handleChange('suggested_amount', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             required
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">{t('services.billing_type')}</label>
             <Select
@@ -264,7 +264,7 @@ export default function ServiceFormPage() {
               max="31"
               value={formData.billing_day}
               onChange={(e) => handleChange('billing_day', parseInt(e.target.value) || 1)}
-              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             />
           </div>
         </div>
@@ -314,7 +314,7 @@ export default function ServiceFormPage() {
           <button
             type="button"
             onClick={() => navigate('/services')}
-            className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2 min-h-[44px]"
           >
             <Icon name="cancel" className="w-4 h-4" />
             {t('app.cancel')}
@@ -322,7 +322,7 @@ export default function ServiceFormPage() {
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2 min-h-[44px]"
           >
             <Icon name="save" className="w-4 h-4" />
             {t('app.save')}
