@@ -1,17 +1,17 @@
 ---
 title: "Sistema de Envío de Mails y Alertas Diarias de Seguros Vencidos"
 id: "SPEC-029"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-16"
-updated: "2026-08-16 (v4: pending_release, CAs pass)"
+updated: "2026-08-16 (v5: released)"
 github_issue: 29
 ---
 
 # Sistema de Envío de Mails y Alertas Diarias de Seguros Vencidos
 
 **ID**: SPEC-029  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-16  
 **Actualizado**: 2026-08-16 (v2: eliminadas credenciales hardcoded, reforzada seguridad)
@@ -567,3 +567,4 @@ El `{{CONTENT}}` del email de alerta se construye dinámicamente:
 | 2026-08-16 | paulomcnally | Eliminadas credenciales hardcoded de Mailgun. Eliminado seed de defaults (REQ-015 original). ADR-001 actualizado: cero credenciales en repositorio. Reforzada protección de info sensible: smtp_user y smtp_password nunca se exponen en API ni logs. Agregados SMTPConfigPublic (sin credenciales) y métodos separados Get/GetPublic. Nuevos CAs sobre no-exposición en logs. |
 | 2026-08-16 | paulomcnally | Estado a `in_progress`. Desarrollo iniciado en rama `feature/SPEC-029-email-alerts`. |
 | 2026-08-16 | paulomcnally | Desarrollo completado: EmailService, AlertScheduler, queries de alerta, API handlers, frontend Settings UI, tests. Criterios de aceptación verificados en local (tests + validación manual del usuario). Estado a `pending_release`. |
+| 2026-08-16 | paulomcnally | **Released**: commit `cca11bd` mergeado a `main` y pusheado. Commit feature: `8ef8b4e`. Estado a `released`. |
