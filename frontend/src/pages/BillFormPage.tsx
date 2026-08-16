@@ -90,18 +90,18 @@ export default function BillFormPage() {
   const isYearly = service?.frequency === 'yearly'
 
   return (
-    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-6">
-      <h2 className="text-xl font-bold mb-2">{t(isEdit ? 'bills.edit' : 'bills.create')}</h2>
+    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-bold mb-2">{t(isEdit ? 'bills.edit' : 'bills.create')}</h2>
       {service && <p className="text-text-secondary text-sm mb-6">{service.name}</p>}
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className={isYearly ? '' : 'grid grid-cols-2 gap-4'}>
+        <div className={isYearly ? '' : 'grid grid-cols-1 sm:grid-cols-2 gap-4'}>
           <div>
             <label className="block text-sm font-medium mb-1">{t('bills.year')}</label>
             <input
               type="number"
               value={formData.year}
               onChange={(e) => setFormData(prev => ({ ...prev, year: Number(e.target.value) }))}
-              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
               required
             />
           </div>

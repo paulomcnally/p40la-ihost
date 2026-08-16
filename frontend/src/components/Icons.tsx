@@ -1,6 +1,11 @@
 import { createElement } from 'react'
 
 const icons: Record<string, React.ReactNode> = {
+  menu: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+    createElement('line', { x1: 3, y1: 12, x2: 21, y2: 12 }),
+    createElement('line', { x1: 3, y1: 6, x2: 21, y2: 6 }),
+    createElement('line', { x1: 3, y1: 18, x2: 21, y2: 18 }),
+  ),
   home: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
     createElement('path', { d: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' }),
     createElement('polyline', { points: '9 22 9 12 15 12 15 22' }),
@@ -97,6 +102,17 @@ const icons: Record<string, React.ReactNode> = {
     createElement('path', { d: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z' }),
     createElement('line', { x1: 12, y1: 9, x2: 12, y2: 13 }),
     createElement('line', { x1: 12, y1: 17, x2: 12.01, y2: 17 }),
+  ),
+  pdf: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+    createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+    createElement('polyline', { points: '14 2 14 8 20 8' }),
+    createElement('path', { d: 'M9 15l2 2 4-4' }),
+    createElement('path', { d: 'M9 11h.01' }),
+  ),
+  upload: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+    createElement('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+    createElement('polyline', { points: '17 8 12 3 7 8' }),
+    createElement('line', { x1: 12, y1: 3, x2: 12, y2: 15 }),
   ),
   // Utilidades adicionales
   recycling: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },

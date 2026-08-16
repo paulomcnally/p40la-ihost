@@ -46,7 +46,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">{t('settings.title')}</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{t('settings.title')}</h2>
 
       <div className="mb-6">
         <div className="text-xs uppercase text-text-secondary font-semibold mb-2 ml-3">
@@ -80,7 +80,7 @@ export default function SettingsPage() {
             <select
               value={billingHour}
               onChange={(e) => handleBillingHourChange(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-white"
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-white min-h-[44px]"
             >
               {hours.map(h => (
                 <option key={h.value} value={h.value}>{h.label}</option>

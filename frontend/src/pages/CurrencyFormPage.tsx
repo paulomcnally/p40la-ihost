@@ -51,8 +51,8 @@ export default function CurrencyFormPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-6">
-      <h2 className="text-xl font-bold mb-6">{t(isEdit ? 'app.edit' : 'settings.currencies.create')}</h2>
+    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">{t(isEdit ? 'app.edit' : 'settings.currencies.create')}</h2>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-sm font-medium mb-1">{t('settings.currencies.code')}</label>
@@ -61,7 +61,7 @@ export default function CurrencyFormPage() {
             maxLength={3}
             value={formData.code}
             onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary uppercase"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary uppercase min-h-[44px]"
             required
           />
         </div>
@@ -71,7 +71,7 @@ export default function CurrencyFormPage() {
             type="text"
             value={formData.name}
             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             required
           />
         </div>
@@ -81,7 +81,7 @@ export default function CurrencyFormPage() {
             type="text"
             value={formData.symbol}
             onChange={(e) => setFormData(prev => ({ ...prev, symbol: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             required
           />
         </div>
@@ -90,7 +90,7 @@ export default function CurrencyFormPage() {
             <button
               type="button"
               onClick={() => setShowDelete(true)}
-              className="px-4 py-2 bg-danger text-white rounded-ios-sm hover:bg-red-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-danger text-white rounded-ios-sm hover:bg-red-700 transition-colors flex items-center gap-2 min-h-[44px]"
             >
               <Icon name="delete" className="w-4 h-4" />
               {t('app.delete')}
@@ -102,7 +102,7 @@ export default function CurrencyFormPage() {
             <button
               type="button"
               onClick={() => navigate('/settings')}
-              className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2 min-h-[44px]"
             >
               <Icon name="cancel" className="w-4 h-4" />
               {t('app.cancel')}
@@ -110,7 +110,7 @@ export default function CurrencyFormPage() {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2 min-h-[44px]"
             >
               <Icon name="save" className="w-4 h-4" />
               {t('app.save')}

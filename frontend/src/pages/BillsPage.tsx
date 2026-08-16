@@ -7,6 +7,7 @@ import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
+import UploadBillModal from '../components/UploadBillModal'
 import type { Bill, Service } from '../types'
 
 const MONTHS = [
@@ -22,29 +23,28 @@ export default function BillsPage() {
   const [bills, setBills] = useState<Bill[]>([])
   const [service, setService] = useState<Service | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+  const [uploadOpen, setUploadOpen] = useState(false)
+
+  const load = useCallback(async () => {
+    if (!serviceId) return
+    const [svc, billList] = await Promise.all([
+      api.services.get(Number(serviceId)),
+      api.bills.list(Number(serviceId)),
+    ])
+    setService(svc)
+    setBills(billList || [])
+  }, [serviceId])
 
   useEffect(() => {
-    const load = async () => {
-      if (!serviceId) return
-      const [svc, billList] = await Promise.all([
-        api.services.get(Number(serviceId)),
-        api.bills.list(Number(serviceId)),
-      ])
-      setService(svc)
-      setBills(billList || [])
-    }
     load()
-  }, [serviceId])
+  }, [load])
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return
     await api.bills.delete(deleteTarget)
     setDeleteTarget(null)
-    if (serviceId) {
-      const list = await api.bills.list(Number(serviceId))
-      setBills(list || [])
-    }
-  }, [deleteTarget, serviceId])
+    load()
+  }, [deleteTarget, load])
 
   if (!service) return <div className="text-center py-8 text-text-secondary">Loading...</div>
 
@@ -52,30 +52,31 @@ export default function BillsPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3 mb-4 sm:mb-5">
         <button
           onClick={() => navigate('/services')}
-          className="flex items-center gap-1 text-text-secondary hover:text-text transition-colors"
+          className="flex items-center gap-1 text-text-secondary hover:text-text transition-colors min-h-[44px]"
         >
           <Icon name="back" className="w-4 h-4" />
           {t('menu.services')}
         </button>
       </div>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
         <div>
-          <h2 className="text-2xl font-bold">{service.name}</h2>
+          <h2 className="text-lg sm:text-2xl font-bold">{service.name}</h2>
           <p className="text-sm text-text-secondary">{t('bills.subtitle')}</p>
         </div>
         <CreateMenu options={[
+          { label: 'Subir factura', icon: 'upload', onClick: () => setUploadOpen(true) },
           { label: t('bills.create'), icon: 'plus', onClick: () => navigate(`/bills/new?service=${serviceId}`) },
         ]} />
       </div>
       {bills.length === 0 ? (
-        <div className="bg-card rounded-ios shadow-ios p-12 text-center max-w-md mx-auto">
+        <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
             <Icon name="bill" className="w-full h-full" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">{t('bills.empty')}</h3>
+          <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('bills.empty')}</h3>
           <button
             onClick={() => navigate(`/bills/new?service=${serviceId}`)}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-card border-2 border-dashed border-border rounded-ios text-primary font-semibold hover:border-primary hover:bg-primary/5 transition-colors"
@@ -85,8 +86,8 @@ export default function BillsPage() {
           </button>
         </div>
       ) : (
-        <div className="bg-card rounded-ios shadow-ios">
-          <table className="w-full">
+        <div className="bg-card rounded-ios shadow-ios overflow-x-auto">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('bills.year')}</th>
@@ -141,6 +142,14 @@ export default function BillsPage() {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
+      <UploadBillModal
+        isOpen={uploadOpen}
+        serviceId={Number(serviceId)}
+        frequency={service.frequency}
+        onClose={() => setUploadOpen(false)}
+        onSaved={load}
+      />
     </div>
   )
 }
+

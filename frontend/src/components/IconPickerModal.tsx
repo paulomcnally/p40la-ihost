@@ -50,16 +50,16 @@ export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div ref={modalRef} className="bg-card rounded-ios shadow-ios w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
+      <div ref={modalRef} className="bg-card rounded-ios shadow-ios w-full max-w-sm sm:max-w-lg mx-4 max-h-[80vh] flex flex-col">
         <div className="p-4 border-b border-border">
-          <h3 className="text-lg font-bold mb-3">{t('services.select_icon')}</h3>
+          <h3 className="text-base sm:text-lg font-bold mb-3">{t('services.select_icon')}</h3>
           <input
             ref={inputRef}
             type="text"
             placeholder={t('services.search_icon')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary text-sm"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary text-sm min-h-[44px]"
           />
         </div>
 
@@ -89,14 +89,14 @@ export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClos
           {filtered.length === 0 ? (
             <p className="text-center text-text-secondary text-sm py-8">{t('services.no_icons_found')}</p>
           ) : (
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
               {filtered.map(icon => (
                 <button
                   key={icon.key}
                   type="button"
                   onClick={() => { onSelect(icon.key); onClose() }}
                   title={`${icon.label} (${icon.key})`}
-                  className={`w-12 h-12 rounded-ios-sm border-2 flex items-center justify-center transition-colors ${
+                  className={`w-12 h-12 rounded-ios-sm border-2 flex items-center justify-center transition-colors min-h-[44px] ${
                     selectedIcon === icon.key
                       ? 'border-primary text-primary bg-primary/10'
                       : 'border-border text-text-secondary hover:border-primary/50'

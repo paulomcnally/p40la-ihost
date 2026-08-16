@@ -4,6 +4,7 @@ import { useI18nStore } from '../stores/i18nStore'
 import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
+import AnalyzerPickerModal from '../components/AnalyzerPickerModal'
 import type { AnalyzerInfo } from '../types'
 
 export default function InstitutionFormPage() {
@@ -14,6 +15,7 @@ export default function InstitutionFormPage() {
   const isEdit = !!id
   const [formData, setFormData] = useState({ name: '', analyzer_ids: [] as string[] })
   const [analyzers, setAnalyzers] = useState<AnalyzerInfo[]>([])
+  const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function InstitutionFormPage() {
         showToast('Institución actualizada', 'success')
       } else {
         const inst = await api.institutions.create({ name: formData.name })
-        if (inst && formData.analyzer_ids.length > 0) {
+        if (inst) {
           await api.institutions.setAnalyzers(inst.id, formData.analyzer_ids)
         }
         showToast('Institución creada', 'success')
@@ -85,9 +87,18 @@ export default function InstitutionFormPage() {
     }))
   }
 
+  const removeAnalyzer = (analyzerId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      analyzer_ids: prev.analyzer_ids.filter(aId => aId !== analyzerId),
+    }))
+  }
+
+  const assignedAnalyzers = analyzers.filter(a => formData.analyzer_ids.includes(a.id))
+
   return (
-    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-6">
-      <h2 className="text-xl font-bold mb-6">{isEdit ? 'Editar institución' : 'Nueva institución'}</h2>
+    <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">{isEdit ? 'Editar institución' : 'Nueva institución'}</h2>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-sm font-medium mb-1">Nombre</label>
@@ -95,33 +106,62 @@ export default function InstitutionFormPage() {
             type="text"
             value={formData.name}
             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             required
           />
         </div>
-        {analyzers.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium mb-2">Analizadores disponibles</label>
+
+        <div className="border border-border rounded-ios p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Analizadores asignados</span>
+            {assignedAnalyzers.length > 0 && (
+              <span className="text-xs text-text-secondary">{assignedAnalyzers.length}</span>
+            )}
+          </div>
+
+          {assignedAnalyzers.length === 0 ? (
+            <p className="text-sm text-text-secondary">
+              No hay analizadores asignados. Agregá uno para que el servicio pueda analizar facturas automáticamente.
+            </p>
+          ) : (
             <div className="space-y-2">
-              {analyzers.map(a => (
-                <label key={a.id} className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={formData.analyzer_ids.includes(a.id)}
-                    onChange={() => toggleAnalyzer(a.id)}
-                    className="w-4 h-4 rounded border-border"
-                  />
-                  <span className="text-sm">{a.name}</span>
-                </label>
+              {assignedAnalyzers.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between bg-bg rounded-ios-sm px-3 py-2"
+                >
+                  <span className="flex items-center gap-2 text-sm">
+                    <Icon name="pdf" className="w-4 h-4 text-primary" />
+                    {a.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeAnalyzer(a.id)}
+                    className="p-2 text-text-secondary hover:text-red-500 transition-colors rounded-full"
+                    aria-label={`Remover ${a.name}`}
+                  >
+                    <Icon name="cancel" className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-ios-sm hover:bg-primary/20 transition-colors min-h-[44px] text-sm font-medium"
+          >
+            <Icon name="plus" className="w-4 h-4" />
+            Agregar analizador
+          </button>
+        </div>
+
         <div className="flex justify-end gap-3 pt-4 border-t border-border">
           <button
             type="button"
             onClick={() => navigate('/institutions')}
-            className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2 min-h-[44px]"
           >
             <Icon name="cancel" className="w-4 h-4" />
             Cancelar
@@ -129,13 +169,21 @@ export default function InstitutionFormPage() {
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2 min-h-[44px]"
           >
             <Icon name="save" className="w-4 h-4" />
             Guardar
           </button>
         </div>
       </form>
+
+      <AnalyzerPickerModal
+        isOpen={modalOpen}
+        available={analyzers}
+        selectedIds={formData.analyzer_ids}
+        onToggle={toggleAnalyzer}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   )
 }

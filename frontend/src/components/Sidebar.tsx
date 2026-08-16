@@ -2,7 +2,13 @@ import { useNavigate } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from './Icons'
 
-export default function Sidebar({ activeBase }: { activeBase: string }) {
+interface SidebarProps {
+  activeBase: string
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const { t } = useI18nStore()
 
@@ -12,8 +18,21 @@ export default function Sidebar({ activeBase }: { activeBase: string }) {
     { key: 'institutions', icon: 'building', label: 'Instituciones' },
   ]
 
+  const handleNavigate = (key: string) => {
+    navigate(`/${key}`)
+    onClose?.()
+  }
+
   return (
-    <aside className="w-60 bg-card border-r border-border fixed top-0 left-0 bottom-0 z-50 flex flex-col">
+    <aside className={`
+      bg-card border-border flex flex-col
+      fixed top-0 bottom-0 z-50
+      w-60 left-0
+      lg:fixed lg:left-0 lg:top-0 lg:bottom-0
+      border-r
+      transition-transform duration-200 ease-in-out
+      ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+    `}>
       <div className="px-5 py-4 text-xl font-bold text-primary border-b border-border">
         {t('app.title')}
       </div>
@@ -25,8 +44,8 @@ export default function Sidebar({ activeBase }: { activeBase: string }) {
           {items.map((item) => (
             <button
               key={item.key}
-              onClick={() => navigate(`/${item.key}`)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-ios-sm text-sm transition-colors ${
+              onClick={() => handleNavigate(item.key)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-ios-sm text-sm transition-colors min-h-[44px] ${
                 activeBase === item.key
                   ? 'bg-primary/10 text-primary font-medium'
                   : 'hover:bg-bg'

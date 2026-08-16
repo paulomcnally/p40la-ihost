@@ -33,8 +33,8 @@ export default function SetupPage() {
 
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <div className="bg-card rounded-ios shadow-ios p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-2">Configuración inicial</h1>
+      <div className="bg-card rounded-ios shadow-ios p-6 sm:p-8 w-full max-w-md mx-4">
+        <h1 className="text-xl sm:text-2xl font-bold mb-2">Configuración inicial</h1>
         <p className="text-text-secondary mb-6 text-sm">Crea tu usuario administrador para comenzar.</p>
         {error && (
           <div className="bg-danger/10 text-danger text-sm p-3 rounded-ios-sm mb-4">
@@ -48,7 +48,7 @@ export default function SetupPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
               required
               autoFocus
             />
@@ -59,7 +59,7 @@ export default function SetupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
               required
             />
           </div>
@@ -69,14 +69,14 @@ export default function SetupPage() {
               type="password"
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
               required
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-white py-2.5 rounded-ios-sm font-medium hover:bg-primary-hover disabled:opacity-50 transition-colors"
+            className="w-full bg-primary text-white py-2.5 rounded-ios-sm font-medium hover:bg-primary-hover disabled:opacity-50 transition-colors min-h-[44px]"
           >
             {loading ? '...' : 'Crear usuario'}
           </button>
