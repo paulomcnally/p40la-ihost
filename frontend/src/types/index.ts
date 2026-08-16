@@ -26,6 +26,7 @@ export interface Service {
   auto_generate: boolean
   institution_id?: number
   institution_analyzer_id?: number
+  latest_bill_status: 'paid' | 'pending' | null
 }
 
 export interface Institution {

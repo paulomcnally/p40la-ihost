@@ -27,6 +27,7 @@ Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, 
 
 - **NUNCA ejecutar `rm -f data/app.db` ni ningún comando que elimine la base de datos del usuario.** La DB local es producción. Si se necesitan pruebas limpias, usar `/tmp/test-app.db`.
 - **Usar SIEMPRE `killall` para matar procesos, NUNCA `pkill`.** `pkill` falla silenciosamente en este entorno. Comando correcto: `killall p40la-ihost`.
+- **Verificar SIEMPRE que el server responde antes de informar al usuario que puede acceder.** Después de levantar el servidor, ejecutar `curl -s http://localhost:8088/health` y confirmar respuesta `{"status":"ok"}`. Solo entonces informar al usuario. Si no responde, revisar logs (`/tmp/p40la-server.log`) y reiniciar.
 - **Seguir siempre el patrón de UI existente.** Para páginas de listado: cards con menú de acciones (3 puntos) + EmptyCard (título, descripción, botón) cuando no hay registros. Nunca formularios inline en listados. Referencia: `HomesPage.tsx`.
 - **Validar prerequisitos en backend Y frontend.** Si una entidad depende de otra (ej: servicios → instituciones), validar en ambos lados y redirigir al formulario de la dependencia si no existe.
 
