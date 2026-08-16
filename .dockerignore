@@ -11,3 +11,9 @@ data
 Dockerfile
 docker-compose.yml
 .dockerignore
+frontend/node_modules
+frontend/.cache
+node_modules
+*.log
+p40la-ihost
+bin
