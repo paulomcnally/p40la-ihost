@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 28 |
+| **Total de specs** | 29 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
-| **Pending release** | 6 🟠 |
+| **Pending release** | 7 🟠 |
 | **Released** | 21 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-028 |
+| **Último ID usado** | SPEC-029 |
 
 ---
 
@@ -49,6 +49,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-026 | Categorías de Instituciones con Seed y Filtro de Seguros | pending_release | 2026-08-16 | paulomcnally |
 | SPEC-027 | Script de release automático para Docker Hub con bump de versión | released | 2026-08-16 | paulomcnally |
 | SPEC-028 | Extensión de campos para autos y pólizas de seguro | released | 2026-08-16 | p40la-ihost-team |
+| SPEC-029 | Sistema de Envío de Mails y Alertas Diarias de Seguros Vencidos | pending_release | 2026-08-16 | paulomcnally |
 
 ---
 
@@ -118,4 +119,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-16 — SPEC-028 released.*
+*Última actualización de este tracker: 2026-08-16 — SPEC-029 pending_release.*

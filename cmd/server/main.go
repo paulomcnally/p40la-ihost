@@ -9,10 +9,10 @@ import (
 	"os"
 	"path/filepath"
 
+	_ "github.com/paulomcnally/p40la-ihost/internal/analyzers/all"
 	"github.com/paulomcnally/p40la-ihost/internal/api"
 	"github.com/paulomcnally/p40la-ihost/internal/config"
 	"github.com/paulomcnally/p40la-ihost/internal/db"
-	_ "github.com/paulomcnally/p40la-ihost/internal/analyzers/all"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
 )
@@ -76,6 +76,7 @@ func main() {
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
 	systemSettingsService := services.NewSystemSettingsService(systemSettingsStorage)
+	emailService := services.NewEmailService(systemSettingsService)
 	currencyService := services.NewCurrencyService(currencyStorage)
 	homeService := services.NewHomeService(homeStorage)
 	serviceService := services.NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
@@ -90,8 +91,12 @@ func main() {
 	billingScheduler.Start()
 	defer billingScheduler.Stop()
 
+	alertScheduler := services.NewAlertScheduler(autoStorage, autoServiceStorage, emailService, systemSettingsService)
+	alertScheduler.Start()
+	defer alertScheduler.Stop()
+
 	settingsHandlers := api.NewSettingsHandlers(appSettingsService)
-	systemSettingsHandlers := api.NewSystemSettingsHandlers(systemSettingsService)
+	systemSettingsHandlers := api.NewSystemSettingsHandlers(systemSettingsService, emailService)
 	currencyHandlers := api.NewCurrencyHandlers(currencyService)
 	homeHandlers := api.NewHomeHandlers(homeService)
 	serviceHandlers := api.NewServiceHandlers(serviceService, homeService, institutionStorage)

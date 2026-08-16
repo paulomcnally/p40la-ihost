@@ -98,6 +98,30 @@
       "name": "Name",
       "symbol": "Symbol",
       "create": "Add currency"
+    },
+    "email_alerts": {
+      "title": "Email Alerts",
+      "subtitle": "Receive car insurance alerts by email",
+      "recipients": "Recipients",
+      "recipients_hint": "Comma separated (e.g. a@x.com,b@y.com)",
+      "test_email": "Send test email",
+      "smtp": "SMTP Configuration",
+      "smtp_subtitle": "Outgoing mail server",
+      "smtp_host": "SMTP Server",
+      "smtp_port": "Port",
+      "smtp_user": "Username",
+      "smtp_password": "Password",
+      "smtp_from_email": "From email",
+      "smtp_from_name": "From name",
+      "configured": "Configured",
+      "not_configured": "Not configured",
+      "saved": "Email settings saved",
+      "save_error": "Error saving settings",
+      "test_sent": "Test email sent",
+      "test_error": "Error sending test email",
+      "show": "Show",
+      "hide": "Hide",
+      "leave_blank": "Leave blank to keep current value"
     }
   },
   "months": {
