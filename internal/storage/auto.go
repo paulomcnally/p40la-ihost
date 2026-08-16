@@ -82,6 +82,75 @@ func (s *AutoStorage) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+// ListWithoutInsurance devuelve los autos que no tienen ningún seguro asociado.
+func (s *AutoStorage) ListWithoutInsurance(ctx context.Context) ([]models.AutoAlert, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT a.id, a.year, a.model, a.brand, a.color, a.icon, a.placa
+		FROM autos a
+		WHERE NOT EXISTS (
+			SELECT 1 FROM auto_services asv WHERE asv.auto_id = a.id
+		)
+		ORDER BY a.brand, a.model
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("listar autos sin seguro: %w", err)
+	}
+	defer rows.Close()
+
+	var alerts []models.AutoAlert
+	for rows.Next() {
+		var a models.AutoAlert
+		if err := rows.Scan(&a.AutoID, &a.Year, &a.Model, &a.Brand, &a.Color, &a.Icon, &a.Placa); err != nil {
+			return nil, fmt.Errorf("escanear auto sin seguro: %w", err)
+		}
+		a.AlertType = models.AlertTypeNoInsurance
+		alerts = append(alerts, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return alerts, nil
+}
+
+// ListWithExpiredInsurance devuelve los autos cuyo seguro venció (end_date < hoy)
+// y NO tienen otro seguro activo (end_date NULL o >= hoy).
+func (s *AutoStorage) ListWithExpiredInsurance(ctx context.Context) ([]models.AutoAlert, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT DISTINCT a.id, a.year, a.model, a.brand, a.color, a.icon, a.placa,
+		       s.name, s.end_date
+		FROM autos a
+		JOIN auto_services asv ON asv.auto_id = a.id
+		JOIN services s ON s.id = asv.service_id
+		WHERE s.end_date IS NOT NULL
+		  AND s.end_date < date('now')
+		  AND NOT EXISTS (
+		      SELECT 1 FROM auto_services asv2
+		      JOIN services s2 ON s2.id = asv2.service_id
+		      WHERE asv2.auto_id = a.id
+		        AND (s2.end_date IS NULL OR s2.end_date >= date('now'))
+		  )
+		ORDER BY a.brand, a.model
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("listar autos con seguro vencido: %w", err)
+	}
+	defer rows.Close()
+
+	var alerts []models.AutoAlert
+	for rows.Next() {
+		var a models.AutoAlert
+		if err := rows.Scan(&a.AutoID, &a.Year, &a.Model, &a.Brand, &a.Color, &a.Icon, &a.Placa, &a.ServiceName, &a.EndDate); err != nil {
+			return nil, fmt.Errorf("escanear auto con seguro vencido: %w", err)
+		}
+		a.AlertType = models.AlertTypeExpired
+		alerts = append(alerts, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return alerts, nil
+}
+
 func scanAuto(row *sql.Row) (*models.Auto, error) {
 	var a models.Auto
 	if err := row.Scan(&a.ID, &a.Year, &a.Model, &a.Brand, &a.Color, &a.Icon, &a.Motor, &a.Chasis, &a.VIN, &a.Placa, &a.CreatedAt, &a.UpdatedAt); err != nil {
