@@ -26,7 +26,7 @@ export default function ServiceFormPage() {
     active: true,
     icon_key: 'other',
     billing_type: 'variable' as 'fixed' | 'variable',
-    billing_day: 1,
+    billing_day: null as number | null,
     auto_generate: false,
     institution_id: 0,
     institution_analyzer_id: 0,
@@ -86,7 +86,7 @@ export default function ServiceFormPage() {
             active: svc.active,
             icon_key: svc.icon_key || 'other',
             billing_type: svc.billing_type || 'variable',
-            billing_day: svc.billing_day || 1,
+            billing_day: svc.billing_day ?? null,
             auto_generate: svc.auto_generate || false,
             institution_id: svc.institution_id || 0,
             institution_analyzer_id: svc.institution_analyzer_id || 0,
@@ -127,12 +127,17 @@ export default function ServiceFormPage() {
     )
   }
 
-  const handleChange = (field: string, value: string | number | boolean) => {
+  const handleChange = (field: string, value: string | number | boolean | null) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (formData.auto_generate && formData.billing_type === 'fixed' && !formData.billing_day) {
+      showToast(t('services.billing_day_required') || 'El día de facturación es requerido para facturación automática', 'error')
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const data: Partial<Service> = {
@@ -262,8 +267,11 @@ export default function ServiceFormPage() {
               type="number"
               min="1"
               max="31"
-              value={formData.billing_day}
-              onChange={(e) => handleChange('billing_day', parseInt(e.target.value) || 1)}
+              value={formData.billing_day ?? ''}
+              onChange={(e) => {
+                const val = e.target.value
+                handleChange('billing_day', val === '' ? null : parseInt(val) || null)
+              }}
               className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             />
           </div>

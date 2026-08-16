@@ -26,6 +26,7 @@ Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, 
 ### 0. Reglas críticas (aprendidas de errores)
 
 - **NUNCA ejecutar `rm -f data/app.db` ni ningún comando que elimine la base de datos del usuario.** La DB local es producción. Si se necesitan pruebas limpias, usar `/tmp/test-app.db`.
+- **Usar SIEMPRE `killall` para matar procesos, NUNCA `pkill`.** `pkill` falla silenciosamente en este entorno. Comando correcto: `killall p40la-ihost`.
 - **Seguir siempre el patrón de UI existente.** Para páginas de listado: cards con menú de acciones (3 puntos) + EmptyCard (título, descripción, botón) cuando no hay registros. Nunca formularios inline en listados. Referencia: `HomesPage.tsx`.
 - **Validar prerequisitos en backend Y frontend.** Si una entidad depende de otra (ej: servicios → instituciones), validar en ambos lados y redirigir al formulario de la dependencia si no existe.
 
@@ -108,9 +109,11 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 
 ### Fase 5: Release
 
-1. Merge/deploy según lo acordado con el usuario
-2. Documentar commit/versión en la spec
-3. Estado: `released`
+1. Hacer commit de TODOS los cambios pendientes a `main` con mensaje descriptivo (formato: `SPEC-XXX: descripción corta`)
+2. Push a `main`
+3. Documentar commit/versión en la spec
+4. Estado: `released`
+5. **Cerrar el spec SIEMPRE implica commitear y pushear los cambios.** No cerrar un spec con cambios sin commitear.
 
 ---
 

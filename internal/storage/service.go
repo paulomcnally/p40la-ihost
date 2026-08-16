@@ -104,14 +104,19 @@ func (s *ServiceStorage) SoftDelete(ctx context.Context, id int64) error {
 func scanService(row *sql.Row) (*models.Service, error) {
 	var svc models.Service
 	var deletedAt sql.NullTime
+	var billingDay sql.NullInt64
 	var institutionID, institutionAnalyzerID sql.NullInt64
 	if err := row.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
-		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &svc.BillingDay, &svc.AutoGenerate,
+		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
 		&institutionID, &institutionAnalyzerID, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("escanear servicio: %w", err)
+	}
+	if billingDay.Valid {
+		v := int(billingDay.Int64)
+		svc.BillingDay = &v
 	}
 	if deletedAt.Valid {
 		svc.DeletedAt = &deletedAt.Time
@@ -130,11 +135,16 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 	for rows.Next() {
 		var svc models.Service
 		var deletedAt sql.NullTime
+		var billingDay sql.NullInt64
 		var institutionID, institutionAnalyzerID sql.NullInt64
 		if err := rows.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
-			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &svc.BillingDay, &svc.AutoGenerate,
+			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
 			&institutionID, &institutionAnalyzerID, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear servicio: %w", err)
+		}
+		if billingDay.Valid {
+			v := int(billingDay.Int64)
+			svc.BillingDay = &v
 		}
 		if deletedAt.Valid {
 			svc.DeletedAt = &deletedAt.Time
