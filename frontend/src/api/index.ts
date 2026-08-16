@@ -110,7 +110,7 @@ export const api = {
     update: (id: number, body: Partial<Auto>) => put<Auto>(`/api/autos/${id}`, body),
     delete: (id: number) => del(`/api/autos/${id}`),
     listServices: (id: number) => get<AutoService[]>(`/api/autos/${id}/services`),
-    addService: (id: number, body: { service_id: number; coverage_type: string }) => post(`/api/autos/${id}/services`, body),
+    addService: (id: number, body: { service_id: number; coverage_type: string; policy_number: string; certificate?: string; insurer_number: string }) => post(`/api/autos/${id}/services`, body),
     removeService: (id: number, serviceId: number) => del(`/api/autos/${id}/services/${serviceId}`),
     availableServices: (id: number) => get<Service[]>(`/api/autos/${id}/available-services`),
   },

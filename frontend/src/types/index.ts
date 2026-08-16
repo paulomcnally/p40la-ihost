@@ -37,6 +37,9 @@ export interface AutoService {
   auto_id: number
   service_id: number
   coverage_type: 'daños_a_terceros' | 'full_cover'
+  policy_number: string
+  certificate?: string
+  insurer_number: string
   service_name: string
   institution_name: string
   institution_id?: number
@@ -102,6 +105,10 @@ export interface Auto {
   brand: string
   color: string
   icon: string
+  motor: string
+  chasis: string
+  vin: string
+  placa: string
   created_at: string
   updated_at: string
 }

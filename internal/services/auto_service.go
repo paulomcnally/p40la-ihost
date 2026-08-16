@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
@@ -24,11 +25,20 @@ func (s *AutoServiceService) ListByAuto(ctx context.Context, autoID int64) ([]mo
 }
 
 // Create asocia un servicio como seguro a un auto.
-func (s *AutoServiceService) Create(ctx context.Context, autoID, serviceID int64, coverageType string) (*models.AutoService, error) {
+func (s *AutoServiceService) Create(ctx context.Context, autoID, serviceID int64, coverageType, policyNumber, certificate, insurerNumber string) (*models.AutoService, error) {
 	if coverageType != "daños_a_terceros" && coverageType != "full_cover" {
 		return nil, fmt.Errorf("el tipo de cobertura debe ser 'daños_a_terceros' o 'full_cover'")
 	}
-	return s.autoServiceStorage.Create(ctx, autoID, serviceID, coverageType)
+	policyNumber = strings.TrimSpace(policyNumber)
+	insurerNumber = strings.TrimSpace(insurerNumber)
+	certificate = strings.TrimSpace(certificate)
+	if policyNumber == "" {
+		return nil, fmt.Errorf("el número de póliza es requerido")
+	}
+	if insurerNumber == "" {
+		return nil, fmt.Errorf("el número de aseguradora es requerido")
+	}
+	return s.autoServiceStorage.Create(ctx, autoID, serviceID, coverageType, policyNumber, certificate, insurerNumber)
 }
 
 // Delete elimina un seguro de un auto.

@@ -17,6 +17,10 @@ export default function AutoFormPage() {
   const [brand, setBrand] = useState('')
   const [color, setColor] = useState('')
   const [icon, setIcon] = useState('vehicle')
+  const [motor, setMotor] = useState('')
+  const [chasis, setChasis] = useState('')
+  const [vin, setVin] = useState('')
+  const [placa, setPlaca] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(isEdit)
 
@@ -29,6 +33,10 @@ export default function AutoFormPage() {
           setBrand(auto.brand)
           setColor(auto.color)
           setIcon(auto.icon)
+          setMotor(auto.motor)
+          setChasis(auto.chasis)
+          setVin(auto.vin)
+          setPlaca(auto.placa)
         }
         setLoadingData(false)
       })
@@ -39,7 +47,7 @@ export default function AutoFormPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const data: Partial<Auto> = { year, model, brand, color, icon }
+      const data: Partial<Auto> = { year, model, brand, color, icon, motor, chasis, vin, placa }
       if (isEdit) {
         await api.autos.update(Number(id), data)
         showToast('Auto actualizado', 'success')
@@ -108,6 +116,50 @@ export default function AutoFormPage() {
             value={color}
             onChange={(e) => setColor(e.target.value)}
             placeholder="Ej: Rojo"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Motor</label>
+          <input
+            type="text"
+            value={motor}
+            onChange={(e) => setMotor(e.target.value)}
+            placeholder="Ej: 2ZR12345678"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Chasis</label>
+          <input
+            type="text"
+            value={chasis}
+            onChange={(e) => setChasis(e.target.value)}
+            placeholder="Ej: JTDBU4EE1B9123456"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">VIN</label>
+          <input
+            type="text"
+            value={vin}
+            onChange={(e) => setVin(e.target.value.toUpperCase())}
+            placeholder="Ej: JTDBU4EE1B9123456"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Placa</label>
+          <input
+            type="text"
+            value={placa}
+            onChange={(e) => setPlaca(e.target.value.toUpperCase())}
+            placeholder="Ej: P123ABC"
             className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             required
           />
