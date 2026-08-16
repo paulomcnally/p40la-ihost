@@ -30,6 +30,9 @@ export default function ServiceFormPage() {
     auto_generate: false,
     institution_id: 0,
     institution_analyzer_id: 0,
+    is_recurring: false,
+    start_date: '',
+    end_date: '',
   })
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [analyzerOptions, setAnalyzerOptions] = useState<{id: number, analyzer_id: string, analyzer_name: string}[]>([])
@@ -90,6 +93,9 @@ export default function ServiceFormPage() {
             auto_generate: svc.auto_generate || false,
             institution_id: svc.institution_id || 0,
             institution_analyzer_id: svc.institution_analyzer_id || 0,
+            is_recurring: svc.is_recurring || false,
+            start_date: svc.start_date || '',
+            end_date: svc.end_date || '',
           })
         }
       }
@@ -154,6 +160,9 @@ export default function ServiceFormPage() {
         auto_generate: formData.auto_generate,
         institution_id: formData.institution_id || undefined,
         institution_analyzer_id: formData.institution_analyzer_id || undefined,
+        is_recurring: formData.is_recurring,
+        start_date: formData.is_recurring && formData.start_date ? formData.start_date : undefined,
+        end_date: formData.is_recurring && formData.end_date ? formData.end_date : undefined,
       }
       if (isEdit) {
         await api.services.update(Number(id), data)
@@ -288,6 +297,46 @@ export default function ServiceFormPage() {
           </label>
           <span className="text-sm font-medium">{t('services.auto_generate')}</span>
         </div>
+        <div className="flex items-center gap-3">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.is_recurring}
+              onChange={(e) => {
+                handleChange('is_recurring', e.target.checked)
+                if (!e.target.checked) {
+                  handleChange('start_date', '')
+                  handleChange('end_date', '')
+                }
+              }}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
+          </label>
+          <span className="text-sm font-medium">Recurrente</span>
+        </div>
+        {formData.is_recurring && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Fecha de inicio</label>
+              <input
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => handleChange('start_date', e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Fecha de fin (opcional)</label>
+              <input
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => handleChange('end_date', e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+              />
+            </div>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium mb-2">{t('services.icon')}</label>
           <button

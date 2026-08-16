@@ -60,6 +60,7 @@ export default function AutosPage() {
         {autos.map((auto) => (
           <div
             key={auto.id}
+            onClick={() => navigate(`/autos/${auto.id}`)}
             className="bg-card rounded-ios shadow-ios p-4 relative cursor-pointer hover:shadow-ios-lg transition-shadow"
           >
             <CardMenu

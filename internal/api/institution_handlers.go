@@ -47,13 +47,14 @@ func (h *InstitutionHandlers) GetInstitution(w http.ResponseWriter, r *http.Requ
 
 func (h *InstitutionHandlers) CreateInstitution(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Name string `json:"name"`
+		Name       string `json:"name"`
+		CategoryID *int64 `json:"category_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	inst, err := h.inst.Create(r.Context(), &models.Institution{Name: req.Name})
+	inst, err := h.inst.Create(r.Context(), &models.Institution{Name: req.Name, CategoryID: req.CategoryID})
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return
@@ -68,13 +69,14 @@ func (h *InstitutionHandlers) UpdateInstitution(w http.ResponseWriter, r *http.R
 		return
 	}
 	var req struct {
-		Name string `json:"name"`
+		Name       string `json:"name"`
+		CategoryID *int64 `json:"category_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	inst, err := h.inst.Update(r.Context(), &models.Institution{ID: id, Name: req.Name})
+	inst, err := h.inst.Update(r.Context(), &models.Institution{ID: id, Name: req.Name, CategoryID: req.CategoryID})
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return

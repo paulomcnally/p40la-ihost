@@ -82,6 +82,19 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/autos/{id}", authMiddleware(http.HandlerFunc(handler.auto.UpdateAuto)))
 	mux.Handle("DELETE /api/autos/{id}", authMiddleware(http.HandlerFunc(handler.auto.DeleteAuto)))
 
+	// APIs de seguros de autos
+	mux.Handle("GET /api/autos/{id}/services", authMiddleware(http.HandlerFunc(handler.autoService.ListAutoServices)))
+	mux.Handle("POST /api/autos/{id}/services", authMiddleware(http.HandlerFunc(handler.autoService.CreateAutoService)))
+	mux.Handle("DELETE /api/autos/{id}/services/{service_id}", authMiddleware(http.HandlerFunc(handler.autoService.DeleteAutoService)))
+	mux.Handle("GET /api/autos/{id}/available-services", authMiddleware(http.HandlerFunc(handler.autoService.ListAvailableServices)))
+
+	// APIs de categorías de instituciones
+	mux.Handle("GET /api/institution-categories", authMiddleware(http.HandlerFunc(handler.institutionCategory.ListCategories)))
+	mux.Handle("GET /api/institution-categories/{id}", authMiddleware(http.HandlerFunc(handler.institutionCategory.GetCategory)))
+	mux.Handle("POST /api/institution-categories", authMiddleware(http.HandlerFunc(handler.institutionCategory.CreateCategory)))
+	mux.Handle("PUT /api/institution-categories/{id}", authMiddleware(http.HandlerFunc(handler.institutionCategory.UpdateCategory)))
+	mux.Handle("DELETE /api/institution-categories/{id}", authMiddleware(http.HandlerFunc(handler.institutionCategory.DeleteCategory)))
+
 	// Assets estáticos (JS/CSS bundles del build de Vite)
 	assetsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "assets")))
 	mux.Handle("GET /assets/{file...}", http.StripPrefix("/assets/", assetsFS))

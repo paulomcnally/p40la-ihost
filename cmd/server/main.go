@@ -70,6 +70,8 @@ func main() {
 	billStorage := storage.NewBillStorage(database)
 	institutionStorage := storage.NewInstitutionStorage(database)
 	autoStorage := storage.NewAutoStorage(database)
+	autoServiceStorage := storage.NewAutoServiceStorage(database)
+	institutionCategoryStorage := storage.NewInstitutionCategoryStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -81,6 +83,8 @@ func main() {
 	institutionService := services.NewInstitutionService(institutionStorage)
 	documentService := services.NewDocumentService(serviceStorage, billStorage, institutionStorage)
 	autoService := services.NewAutoService(autoStorage)
+	autoInsuranceService := services.NewAutoServiceService(autoServiceStorage)
+	institutionCategoryService := services.NewInstitutionCategoryService(institutionCategoryStorage)
 
 	billingScheduler := services.NewBillingScheduler(serviceStorage, billStorage, systemSettingsService)
 	billingScheduler.Start()
@@ -95,8 +99,10 @@ func main() {
 	institutionHandlers := api.NewInstitutionHandlers(institutionService, documentService)
 	documentHandlers := api.NewDocumentHandlers(documentService)
 	autoHandlers := api.NewAutoHandlers(autoService)
+	autoServiceHandlers := api.NewAutoServiceHandlers(autoInsuranceService)
+	institutionCategoryHandlers := api.NewInstitutionCategoryHandlers(institutionCategoryService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers)
 
 	router := api.BuildRouter(handler, authService, "./public")
 

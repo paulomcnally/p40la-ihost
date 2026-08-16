@@ -5,7 +5,8 @@ import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import AnalyzerPickerModal from '../components/AnalyzerPickerModal'
-import type { AnalyzerInfo } from '../types'
+import Select from '../components/Select'
+import type { AnalyzerInfo, InstitutionCategory } from '../types'
 
 export default function InstitutionFormPage() {
   const navigate = useNavigate()
@@ -13,13 +14,15 @@ export default function InstitutionFormPage() {
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const isEdit = !!id
-  const [formData, setFormData] = useState({ name: '', analyzer_ids: [] as string[] })
+  const [formData, setFormData] = useState({ name: '', category_id: null as number | null, analyzer_ids: [] as string[] })
   const [analyzers, setAnalyzers] = useState<AnalyzerInfo[]>([])
+  const [categories, setCategories] = useState<InstitutionCategory[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     loadAnalyzers()
+    loadCategories()
   }, [])
 
   useEffect(() => {
@@ -37,11 +40,20 @@ export default function InstitutionFormPage() {
     }
   }
 
+  const loadCategories = async () => {
+    try {
+      const list = await api.institutionCategories.list()
+      setCategories(list || [])
+    } catch {
+      // ignore
+    }
+  }
+
   const loadInstitution = async () => {
     try {
       const inst = await api.institutions.get(Number(id))
       if (inst) {
-        setFormData(prev => ({ ...prev, name: inst.name }))
+        setFormData(prev => ({ ...prev, name: inst.name, category_id: inst.category_id || null }))
       }
       const instAnalyzers = await api.institutions.getAnalyzers(Number(id))
       if (instAnalyzers) {
@@ -58,12 +70,13 @@ export default function InstitutionFormPage() {
     if (!formData.name.trim()) return
     setLoading(true)
     try {
+      const payload = { name: formData.name, category_id: formData.category_id }
       if (isEdit) {
-        await api.institutions.update(Number(id), { name: formData.name })
+        await api.institutions.update(Number(id), payload)
         await api.institutions.setAnalyzers(Number(id), formData.analyzer_ids)
         showToast('Institución actualizada', 'success')
       } else {
-        const inst = await api.institutions.create({ name: formData.name })
+        const inst = await api.institutions.create(payload)
         if (inst) {
           await api.institutions.setAnalyzers(inst.id, formData.analyzer_ids)
         }
@@ -108,6 +121,19 @@ export default function InstitutionFormPage() {
             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
             className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Categoría</label>
+          <Select
+            options={[
+              { value: '', label: 'Sin categoría' },
+              ...categories.map(cat => ({ value: cat.id, label: cat.name })),
+            ]}
+            value={formData.category_id || ''}
+            onChange={(value) => setFormData(prev => ({ ...prev, category_id: value ? Number(value) : null }))}
+            placeholder="Seleccionar categoría"
           />
         </div>
 

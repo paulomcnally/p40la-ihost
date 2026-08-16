@@ -10,16 +10,18 @@ import (
 
 // Handler agrupa los handlers HTTP de la aplicación.
 type Handler struct {
-	auth           *services.AuthService
-	settings       *SettingsHandlers
-	systemSettings *SystemSettingsHandlers
-	currency       *CurrencyHandlers
-	home           *HomeHandlers
-	service        *ServiceHandlers
-	bill           *BillHandlers
-	institution    *InstitutionHandlers
-	document       *DocumentHandlers
-	auto           *AutoHandlers
+	auth                 *services.AuthService
+	settings             *SettingsHandlers
+	systemSettings       *SystemSettingsHandlers
+	currency             *CurrencyHandlers
+	home                 *HomeHandlers
+	service              *ServiceHandlers
+	bill                 *BillHandlers
+	institution          *InstitutionHandlers
+	document             *DocumentHandlers
+	auto                 *AutoHandlers
+	autoService          *AutoServiceHandlers
+	institutionCategory  *InstitutionCategoryHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -34,18 +36,22 @@ func NewHandler(
 	institution *InstitutionHandlers,
 	document *DocumentHandlers,
 	auto *AutoHandlers,
+	autoService *AutoServiceHandlers,
+	institutionCategory *InstitutionCategoryHandlers,
 ) *Handler {
 	return &Handler{
-		auth:           auth,
-		settings:       settings,
-		systemSettings: systemSettings,
-		currency:       currency,
-		home:           home,
-		service:        service,
-		bill:           bill,
-		institution:    institution,
-		document:       document,
-		auto:           auto,
+		auth:                auth,
+		settings:            settings,
+		systemSettings:      systemSettings,
+		currency:            currency,
+		home:                home,
+		service:             service,
+		bill:                bill,
+		institution:         institution,
+		document:            document,
+		auto:                auto,
+		autoService:         autoService,
+		institutionCategory: institutionCategory,
 	}
 }
 

@@ -20,6 +20,7 @@ const serviceColumns = `
 	id, home_id, name, institution, currency_id, frequency,
 	suggested_amount, active, icon_key, billing_type, billing_day, auto_generate,
 	institution_id, institution_analyzer_id,
+	start_date, end_date, is_recurring,
 	(SELECT b.status FROM bills b WHERE b.service_id = services.id AND (b.amount > 0 OR b.invoice_number != '') ORDER BY b.year DESC, b.month DESC, b.id DESC LIMIT 1) AS latest_bill_status,
 	deleted_at, created_at, updated_at
 `
@@ -66,9 +67,9 @@ func (s *ServiceStorage) Count(ctx context.Context, homeID *int64) (int64, error
 
 func (s *ServiceStorage) Create(ctx context.Context, svc *models.Service) (*models.Service, error) {
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO services (home_id, name, institution, currency_id, frequency, suggested_amount, active, icon_key, billing_type, billing_day, auto_generate, institution_id, institution_analyzer_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, svc.HomeID, svc.Name, svc.Institution, svc.CurrencyID, svc.Frequency, svc.SuggestedAmount, svc.Active, svc.IconKey, svc.BillingType, svc.BillingDay, svc.AutoGenerate, svc.InstitutionID, svc.InstitutionAnalyzerID)
+		INSERT INTO services (home_id, name, institution, currency_id, frequency, suggested_amount, active, icon_key, billing_type, billing_day, auto_generate, institution_id, institution_analyzer_id, start_date, end_date, is_recurring)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, svc.HomeID, svc.Name, svc.Institution, svc.CurrencyID, svc.Frequency, svc.SuggestedAmount, svc.Active, svc.IconKey, svc.BillingType, svc.BillingDay, svc.AutoGenerate, svc.InstitutionID, svc.InstitutionAnalyzerID, svc.StartDate, svc.EndDate, svc.IsRecurring)
 	if err != nil {
 		return nil, fmt.Errorf("insertar servicio: %w", err)
 	}
@@ -83,10 +84,13 @@ func (s *ServiceStorage) Update(ctx context.Context, svc *models.Service) (*mode
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE services
 		SET home_id = ?, name = ?, institution = ?, currency_id = ?, frequency = ?,
-		    suggested_amount = ?, active = ?, icon_key = ?, billing_type = ?, billing_day = ?, auto_generate = ?, institution_id = ?, institution_analyzer_id = ?, updated_at = CURRENT_TIMESTAMP
+		    suggested_amount = ?, active = ?, icon_key = ?, billing_type = ?, billing_day = ?, auto_generate = ?,
+		    institution_id = ?, institution_analyzer_id = ?, start_date = ?, end_date = ?, is_recurring = ?,
+		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND deleted_at IS NULL
 	`, svc.HomeID, svc.Name, svc.Institution, svc.CurrencyID, svc.Frequency,
-		svc.SuggestedAmount, svc.Active, svc.IconKey, svc.BillingType, svc.BillingDay, svc.AutoGenerate, svc.InstitutionID, svc.InstitutionAnalyzerID, svc.ID)
+		svc.SuggestedAmount, svc.Active, svc.IconKey, svc.BillingType, svc.BillingDay, svc.AutoGenerate,
+		svc.InstitutionID, svc.InstitutionAnalyzerID, svc.StartDate, svc.EndDate, svc.IsRecurring, svc.ID)
 	if err != nil {
 		return nil, fmt.Errorf("actualizar servicio: %w", err)
 	}
@@ -109,9 +113,11 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	var billingDay sql.NullInt64
 	var institutionID, institutionAnalyzerID sql.NullInt64
 	var latestBillStatus sql.NullString
+	var startDate, endDate sql.NullString
 	if err := row.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
 		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
-		&institutionID, &institutionAnalyzerID, &latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
+		&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring,
+		&latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -130,6 +136,12 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	if institutionAnalyzerID.Valid {
 		svc.InstitutionAnalyzerID = &institutionAnalyzerID.Int64
 	}
+	if startDate.Valid {
+		svc.StartDate = &startDate.String
+	}
+	if endDate.Valid {
+		svc.EndDate = &endDate.String
+	}
 	if latestBillStatus.Valid {
 		svc.LatestBillStatus = &latestBillStatus.String
 	}
@@ -144,9 +156,11 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 		var billingDay sql.NullInt64
 		var institutionID, institutionAnalyzerID sql.NullInt64
 		var latestBillStatus sql.NullString
+		var startDate, endDate sql.NullString
 		if err := rows.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
 			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
-			&institutionID, &institutionAnalyzerID, &latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
+			&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring,
+			&latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear servicio: %w", err)
 		}
 		if billingDay.Valid {
@@ -161,6 +175,12 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 		}
 		if institutionAnalyzerID.Valid {
 			svc.InstitutionAnalyzerID = &institutionAnalyzerID.Int64
+		}
+		if startDate.Valid {
+			svc.StartDate = &startDate.String
+		}
+		if endDate.Valid {
+			svc.EndDate = &endDate.String
 		}
 		if latestBillStatus.Valid {
 			svc.LatestBillStatus = &latestBillStatus.String

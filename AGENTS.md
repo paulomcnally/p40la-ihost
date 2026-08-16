@@ -30,6 +30,11 @@ Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, 
 - **Verificar SIEMPRE que el server responde antes de informar al usuario que puede acceder.** Después de levantar el servidor, ejecutar `curl -s http://localhost:8088/health` y confirmar respuesta `{"status":"ok"}`. Solo entonces informar al usuario. Si no responde, revisar logs (`/tmp/p40la-server.log`) y reiniciar.
 - **Seguir siempre el patrón de UI existente.** Para páginas de listado: cards con menú de acciones (3 puntos) + EmptyCard (título, descripción, botón) cuando no hay registros. Nunca formularios inline en listados. Referencia: `HomesPage.tsx`.
 - **Validar prerequisitos en backend Y frontend.** Si una entidad depende de otra (ej: servicios → instituciones), validar en ambos lados y redirigir al formulario de la dependencia si no existe.
+- **Crear usuarios de prueba directamente en la DB cuando se necesite autenticar.** El agente tiene permiso y obligación de crear usuarios vía SQLite para poder probar endpoints protegidos. Proceso:
+  1. Generar hash: `go run /tmp/genhash.go` (requiere un Go file con `bcrypt.GenerateFromPassword([]byte("test1234"), 10)`)
+  2. Insertar: `sqlite3 data/app.db "INSERT INTO users (email, password_hash) VALUES ('test@test.com', '$HASH');"`
+  3. Login: `curl -s -c /tmp/cookies.txt http://localhost:8088/api/login -X POST -H 'Content-Type: application/json' -d '{"email":"test@test.com","password":"test1234"}'`
+  4. Usar cookies: `curl -s -b /tmp/cookies.txt http://localhost:8088/api/...`
 
 ### 1. Cero código sin spec
 

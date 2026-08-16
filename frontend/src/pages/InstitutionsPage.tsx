@@ -7,20 +7,27 @@ import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
-import type { Institution } from '../types'
+import InstitutionCategoriesModal from '../components/InstitutionCategoriesModal'
+import type { Institution, InstitutionCategory } from '../types'
 
 export default function InstitutionsPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const [institutions, setInstitutions] = useState<Institution[]>([])
+  const [categories, setCategories] = useState<InstitutionCategory[]>([])
   const [analyzerCounts, setAnalyzerCounts] = useState<Record<number, number>>({})
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
-      const instList = await api.institutions.list()
+      const [instList, catList] = await Promise.all([
+        api.institutions.list(),
+        api.institutionCategories.list(),
+      ])
       setInstitutions(instList || [])
+      setCategories(catList || [])
       const counts: Record<number, number> = {}
       for (const inst of instList || []) {
         const list = await api.institutions.getAnalyzers(inst.id)
@@ -63,7 +70,18 @@ export default function InstitutionsPage() {
 
   const createOptions = [
     { label: 'Nueva institución', icon: 'plus', onClick: () => navigate('/institutions/new') },
+    { label: 'Categorías de instituciones', icon: 'tag', onClick: () => setShowCategoriesModal(true) },
   ]
+
+  const getCategoryName = (categoryId?: number) => {
+    if (!categoryId) return null
+    return categories.find(c => c.id === categoryId)?.name || null
+  }
+
+  const getCategoryIcon = (categoryId?: number) => {
+    if (!categoryId) return null
+    return categories.find(c => c.id === categoryId)?.icon_key || 'other'
+  }
 
   return (
     <div>
@@ -74,6 +92,8 @@ export default function InstitutionsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {institutions.map((inst) => {
           const count = analyzerCounts[inst.id] || 0
+          const catName = getCategoryName(inst.category_id)
+          const catIcon = getCategoryIcon(inst.category_id)
           return (
             <div
               key={inst.id}
@@ -87,9 +107,14 @@ export default function InstitutionsPage() {
                 ]}
               />
               <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center mb-3">
-                <Icon name="building" className="w-6 h-6" />
+                <Icon name={catIcon || 'building'} className="w-6 h-6" />
               </div>
               <h3 className="font-semibold text-base">{inst.name}</h3>
+              {catName && (
+                <span className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  {catName}
+                </span>
+              )}
               <p className="text-sm text-text-secondary mt-1 flex items-center gap-1.5">
                 {count > 0 ? (
                   <>
@@ -112,6 +137,7 @@ export default function InstitutionsPage() {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
+      <InstitutionCategoriesModal isOpen={showCategoriesModal} onClose={() => setShowCategoriesModal(false)} />
     </div>
   )
 }
