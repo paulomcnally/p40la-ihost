@@ -342,4 +342,4 @@ Mismo body que `POST /api/autos`. Response 200 con el auto actualizado.
 | 2026-08-16 | p40la-ihost-team | Estado cambiado a pending_execution |
 | 2026-08-16 | p40la-ihost-team | Estado cambiado a in_progress para comenzar implementación |
 | 2026-08-16 | p40la-ihost-team | Implementación completada y verificada en local; estado cambiado a pending_release |
-| 2026-08-16 | paulomcnally | Usuario confirmó pruebas satisfactorias; liberado a main |
+| 2026-08-16 | paulomcnally | Usuario confirmó pruebas satisfactorias; liberado a main (commit `bdc63aa`) |
