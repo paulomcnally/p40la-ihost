@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 11 |
-| **En draft** | 1 🟡 |
+| **Total de specs** | 15 |
+| **En draft** | 0  |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
 | **Pending release** | 2 🟠 |
-| **Released** | 7 🟢 |
+| **Released** | 12 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-011 |
+| **Último ID usado** | SPEC-015 |
 
 ---
 
@@ -30,8 +30,12 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-007 | Formulario de facturas: ocultar mes para servicios anuales | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-008 | Sistema de facturación automática: monto fijo/variable y generación programada | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-009 | Módulo de Instituciones, Analizadores de Documentos y Extracción Automática de Facturas | released | 2026-08-15 | p40la-ihost-team |
-| SPEC-010 | Integración de Specs con GitHub Issues para Gestión Asíncrona y Multi-Agente | in_progress | 2026-08-15 | paulomcnally |
-| SPEC-011 | Soporte Responsive para Dispositivos Móviles | draft | 2026-08-15 | paulomcnally |
+| SPEC-010 | Integración de Specs con GitHub Issues para Gestión Asíncrona y Multi-Agente | pending_release | 2026-08-15 | paulomcnally |
+| SPEC-011 | Soporte Responsive para Dispositivos Móviles | released | 2026-08-15 | paulomcnally |
+| SPEC-012 | Analizador de facturas Claro: internet residencial e internet móvil | pending_release | 2026-08-15 | paulomcnally |
+| SPEC-013 | Mejora de UI para gestión de analizadores en instituciones | released | 2026-08-15 | paulomcnally |
+| SPEC-014 | UI de subida de facturas con análisis automático + fix overflow BillsPage | released | 2026-08-15 | paulomcnally |
+| SPEC-015 | CI/CD con GitHub Actions: build multi-arch por tag | in_progress | 2026-08-15 | paulomcnally |
 
 ---
 
@@ -101,4 +105,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-15 — SPEC-011 creada (responsive mobile).*
+*Última actualización de este tracker: 2026-08-15 — SPEC-012 implementado (analizador Claro).*
