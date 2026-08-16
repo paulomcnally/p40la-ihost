@@ -17,6 +17,7 @@ type Service struct {
 	AutoGenerate          bool       `json:"auto_generate"`
 	InstitutionID         *int64     `json:"institution_id,omitempty"`
 	InstitutionAnalyzerID *int64     `json:"institution_analyzer_id,omitempty"`
+	LatestBillStatus      *string    `json:"latest_bill_status"`
 	DeletedAt             *time.Time `json:"deleted_at,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 	UpdatedAt             time.Time  `json:"updated_at"`

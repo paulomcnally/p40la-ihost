@@ -19,7 +19,9 @@ func NewServiceStorage(db *sql.DB) *ServiceStorage {
 const serviceColumns = `
 	id, home_id, name, institution, currency_id, frequency,
 	suggested_amount, active, icon_key, billing_type, billing_day, auto_generate,
-	institution_id, institution_analyzer_id, deleted_at, created_at, updated_at
+	institution_id, institution_analyzer_id,
+	(SELECT b.status FROM bills b WHERE b.service_id = services.id AND (b.amount > 0 OR b.invoice_number != '') ORDER BY b.year DESC, b.month DESC, b.id DESC LIMIT 1) AS latest_bill_status,
+	deleted_at, created_at, updated_at
 `
 
 func (s *ServiceStorage) List(ctx context.Context, homeID *int64) ([]models.Service, error) {
@@ -106,9 +108,10 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	var deletedAt sql.NullTime
 	var billingDay sql.NullInt64
 	var institutionID, institutionAnalyzerID sql.NullInt64
+	var latestBillStatus sql.NullString
 	if err := row.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
 		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
-		&institutionID, &institutionAnalyzerID, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
+		&institutionID, &institutionAnalyzerID, &latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -127,6 +130,9 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	if institutionAnalyzerID.Valid {
 		svc.InstitutionAnalyzerID = &institutionAnalyzerID.Int64
 	}
+	if latestBillStatus.Valid {
+		svc.LatestBillStatus = &latestBillStatus.String
+	}
 	return &svc, nil
 }
 
@@ -137,9 +143,10 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 		var deletedAt sql.NullTime
 		var billingDay sql.NullInt64
 		var institutionID, institutionAnalyzerID sql.NullInt64
+		var latestBillStatus sql.NullString
 		if err := rows.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
 			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
-			&institutionID, &institutionAnalyzerID, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
+			&institutionID, &institutionAnalyzerID, &latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear servicio: %w", err)
 		}
 		if billingDay.Valid {
@@ -154,6 +161,9 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 		}
 		if institutionAnalyzerID.Valid {
 			svc.InstitutionAnalyzerID = &institutionAnalyzerID.Int64
+		}
+		if latestBillStatus.Valid {
+			svc.LatestBillStatus = &latestBillStatus.String
 		}
 		services = append(services, svc)
 	}

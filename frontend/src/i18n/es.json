@@ -79,6 +79,7 @@
     "drive_url": "Enlace de Google Drive",
     "status_pending": "Pendiente",
     "status_paid": "Pagada",
+    "no_bills": "Sin facturas",
     "empty": "No hay facturas registradas.",
     "saved_success": "Factura guardada correctamente"
   },

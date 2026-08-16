@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 17 |
+| **Total de specs** | 18 |
 | **En draft** | 0  |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
-| **Pending release** | 2 🟠 |
+| **Pending release** | 3 🟠 |
 | **Released** | 14 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-017 |
+| **Último ID usado** | SPEC-018 |
 
 ---
 
@@ -38,6 +38,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-015 | CI/CD con GitHub Actions: build multi-arch por tag | in_progress | 2026-08-15 | paulomcnally |
 | SPEC-016 | Permitir borrar el campo día de facturación con validación por toast | released | 2026-08-15 | paulomcnally |
 | SPEC-017 | Responsive BillsPage: tabla en desktop, cards en móvil | released | 2026-08-15 | p40la-ihost-team |
+| SPEC-018 | Estado de pago dinámico en cards de servicios | pending_release | 2026-08-15 | paulomcnally |
 
 ---
 
@@ -107,4 +108,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-15 — SPEC-017 movido a pending_release.*
+*Última actualización de este tracker: 2026-08-15 — SPEC-018 creada (draft).*

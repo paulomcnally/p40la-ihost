@@ -115,19 +115,25 @@ export default function ServicesPage() {
                   <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center">
                     <Icon name={svc.icon_key || 'other'} className="w-6 h-6" />
                   </div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    svc.active ? 'bg-success/20 text-green-800' : 'bg-warning/20 text-yellow-800'
-                  }`}>
-                    {svc.active ? t('bills.status_paid') : t('bills.status_pending')}
-                  </span>
                 </div>
                 <h3 className="font-semibold text-base">{svc.name}</h3>
                 <p className="text-sm text-text-secondary mt-1">
                   {svc.institution && `${svc.institution} · `}{home?.name || ''}
                 </p>
-                <p className="text-xs text-text-secondary mt-1">
-                  {currency?.symbol}{svc.suggested_amount.toFixed(2)} · {t(`frequency.${svc.frequency}`)}
-                </p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-text-secondary">
+                    {currency?.symbol}{svc.suggested_amount.toFixed(2)} · {t(`frequency.${svc.frequency}`)}
+                  </p>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    svc.latest_bill_status === 'paid' ? 'bg-success/20 text-green-800' :
+                    svc.latest_bill_status === 'pending' ? 'bg-warning/20 text-yellow-800' :
+                    'bg-gray-100 text-gray-500'
+                  }`}>
+                    {svc.latest_bill_status === 'paid' ? t('bills.status_paid') :
+                     svc.latest_bill_status === 'pending' ? t('bills.status_pending') :
+                     t('bills.no_bills')}
+                  </span>
+                </div>
               </div>
             )
           })}

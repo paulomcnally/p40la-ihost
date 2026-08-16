@@ -79,6 +79,7 @@
     "drive_url": "Google Drive link",
     "status_pending": "Pending",
     "status_paid": "Paid",
+    "no_bills": "No bills",
     "empty": "No bills registered."
   },
   "settings": {
