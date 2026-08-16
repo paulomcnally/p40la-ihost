@@ -1,7 +1,7 @@
 ---
 title: "Analizador de facturas DISNORTE-DISSUR"
 id: "SPEC-019"
-status: "draft"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-15"
 updated: "2026-08-15"
