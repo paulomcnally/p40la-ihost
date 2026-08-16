@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 20 |
+| **Total de specs** | 22 |
 | **En draft** | 0  |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
 | **Pending release** | 3 🟠 |
-| **Released** | 16 🟢 |
+| **Released** | 17 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-020 |
+| **Último ID usado** | SPEC-022 |
 
 ---
 
@@ -41,6 +41,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-018 | Estado de pago dinámico en cards de servicios | pending_release | 2026-08-15 | paulomcnally |
 | SPEC-019 | Analizador de facturas DISNORTE-DISSUR | released | 2026-08-15 | paulomcnally |
 | SPEC-020 | Fix posición del label de estado en cards de Bills | released | 2026-08-15 | p40la-ihost-team |
+| SPEC-021 | Sobrescribir bill existente cuando el analizador extrae datos | in_progress | 2026-08-15 | p40la-ihost-team |
+| SPEC-022 | Loading states en listas de casas y servicios | released | 2026-08-15 | p40la-ihost-team |
 
 ---
 
@@ -110,4 +112,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-15 — SPEC-020 created.*
+*Última actualización de este tracker: 2026-08-15 — SPEC-022 created.*

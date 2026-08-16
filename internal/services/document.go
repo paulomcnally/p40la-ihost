@@ -97,13 +97,19 @@ func (s *DocumentService) UploadAndAnalyze(ctx context.Context, serviceID int64,
 	return result, analyzerID, nil
 }
 
-func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID int64, extracted *analyzers.ExtractedBill) (*models.Bill, error) {
+func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID int64, extracted *analyzers.ExtractedBill) (*models.Bill, bool, error) {
 	existing, err := s.billStorage.FindByServicePeriod(ctx, serviceID, extracted.Year, extracted.Month)
 	if err != nil {
-		return nil, fmt.Errorf("verificar factura existente: %w", err)
+		return nil, false, fmt.Errorf("verificar factura existente: %w", err)
 	}
 	if existing != nil {
-		return nil, fmt.Errorf("ya existe una factura para este período")
+		err := s.billStorage.UpdateFromExtracted(ctx, existing.ID, extracted.Amount, extracted.InvoiceNumber)
+		if err != nil {
+			return nil, false, fmt.Errorf("actualizando factura: %w", err)
+		}
+		existing.Amount = extracted.Amount
+		existing.InvoiceNumber = extracted.InvoiceNumber
+		return existing, true, nil
 	}
 
 	bill := &models.Bill{
@@ -118,7 +124,11 @@ func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID
 		bill.UpdatedAt = *extracted.DueDate
 	}
 
-	return s.billStorage.Create(ctx, bill)
+	b, err := s.billStorage.Create(ctx, bill)
+	if err != nil {
+		return nil, false, err
+	}
+	return b, false, nil
 }
 
 func (s *DocumentService) GetAnalyzerOptions(ctx context.Context, institutionID int64) ([]map[string]interface{}, error) {

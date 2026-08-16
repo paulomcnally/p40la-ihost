@@ -8,6 +8,7 @@ import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import UploadBillModal from '../components/UploadBillModal'
+import LoadingSpinner from '../components/LoadingSpinner'
 import type { Bill, Service } from '../types'
 
 const MONTHS = [
@@ -24,15 +25,18 @@ export default function BillsPage() {
   const [service, setService] = useState<Service | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     if (!serviceId) return
+    setLoading(true)
     const [svc, billList] = await Promise.all([
       api.services.get(Number(serviceId)),
       api.bills.list(Number(serviceId)),
     ])
     setService(svc)
     setBills(billList || [])
+    setLoading(false)
   }, [serviceId])
 
   useEffect(() => {
@@ -45,6 +49,8 @@ export default function BillsPage() {
     setDeleteTarget(null)
     load()
   }, [deleteTarget, load])
+
+  if (loading) return <LoadingSpinner />
 
   if (!service) return <div className="text-center py-8 text-text-secondary">Loading...</div>
 

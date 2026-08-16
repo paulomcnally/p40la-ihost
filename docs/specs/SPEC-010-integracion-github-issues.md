@@ -1,7 +1,7 @@
 ---
 title: "Integración de Specs con GitHub Issues para Gestión Asíncrona y Multi-Agente"
 id: "SPEC-010"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-15"
 updated: "2026-08-15"
@@ -11,7 +11,7 @@ github_issue: 11
 # Integración de Specs con GitHub Issues para Gestión Asíncrona y Multi-Agente
 
 **ID**: SPEC-010  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-15  
 **Actualizado**: 2026-08-15 (implementación completa: labels, issues, SKILL.md, template)
@@ -310,3 +310,4 @@ La skill `spec-manager` debe actualizarse para incluir:
 |-------|-------|-------------|
 | 2026-08-15 | paulomcnally | Creación inicial de la especificación |
 | 2026-08-15 | paulomcnally | Labels creados, issues SPEC-001 a SPEC-009 migrados, SKILL.md actualizado |
+| 2026-08-15 | paulomcnally | Spec released |
