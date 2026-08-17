@@ -13,10 +13,11 @@ import (
 type SystemSettingsHandlers struct {
 	settings     *services.SystemSettingsService
 	emailService *services.EmailService
+	voiceMonkey  *services.VoiceMonkeyService
 }
 
-func NewSystemSettingsHandlers(settings *services.SystemSettingsService, emailService *services.EmailService) *SystemSettingsHandlers {
-	return &SystemSettingsHandlers{settings: settings, emailService: emailService}
+func NewSystemSettingsHandlers(settings *services.SystemSettingsService, emailService *services.EmailService, voiceMonkey *services.VoiceMonkeyService) *SystemSettingsHandlers {
+	return &SystemSettingsHandlers{settings: settings, emailService: emailService, voiceMonkey: voiceMonkey}
 }
 
 func (h *SystemSettingsHandlers) GetBillingGenerationHour(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +75,12 @@ type settingsRequest struct {
 	SMTPFromEmail         *string `json:"smtp_from_email,omitempty"`
 	SMTPFromName          *string `json:"smtp_from_name,omitempty"`
 	AlertEmails           *string `json:"alert_emails,omitempty"`
+
+	// Voice Monkey (SPEC-033). Token/device solo se envían para guardar.
+	VoiceMonkeyEnabled    *bool   `json:"voicemonkey_enabled,omitempty"`
+	VoiceMonkeySendAlerts *bool   `json:"voicemonkey_send_alerts,omitempty"`
+	VoiceMonkeyToken      *string `json:"voicemonkey_token,omitempty"`
+	VoiceMonkeyDevice     *string `json:"voicemonkey_device,omitempty"`
 }
 
 func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +102,12 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
+	vm, err := h.settings.GetVoiceMonkeyConfigPublic(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
 	// SMTPConfigPublic.User es siempre "" (info sensible, no se expone).
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour": hour,
@@ -105,6 +118,9 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"smtp_from_name":          smtp.FromName,
 		"smtp_configured":         smtp.Configured,
 		"alert_emails":            joinEmails(alertEmails),
+		"voicemonkey_enabled":     vm.Enabled,
+		"voicemonkey_send_alerts": vm.SendAlerts,
+		"voicemonkey_configured":  vm.Configured,
 	})
 }
 
@@ -162,11 +178,41 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		}
 	}
 
+	// Voice Monkey: cada campo se persiste solo si viene en el request
+	// (updates parciales no se pisan entre sí — REQ-021).
+	if req.VoiceMonkeyEnabled != nil {
+		if err := h.settings.SetVoiceMonkeyEnabled(r.Context(), *req.VoiceMonkeyEnabled); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+	}
+	if req.VoiceMonkeySendAlerts != nil {
+		if err := h.settings.SetVoiceMonkeySendAlerts(r.Context(), *req.VoiceMonkeySendAlerts); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+	}
+	if req.VoiceMonkeyToken != nil || req.VoiceMonkeyDevice != nil {
+		vmCfg := &models.VoiceMonkeyConfig{}
+		if req.VoiceMonkeyToken != nil {
+			vmCfg.Token = *req.VoiceMonkeyToken
+		}
+		if req.VoiceMonkeyDevice != nil {
+			vmCfg.Device = *req.VoiceMonkeyDevice
+		}
+		if err := h.settings.SetVoiceMonkeyConfig(r.Context(), vmCfg); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+	}
+
 	hour, _ := h.settings.GetBillingGenerationHour(r.Context())
 	smtp, _ := h.settings.GetSMTPConfigPublic(r.Context())
+	vm, _ := h.settings.GetVoiceMonkeyConfigPublic(r.Context())
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour": hour,
 		"smtp_configured":         smtp.Configured,
+		"voicemonkey_configured":  vm.Configured,
 		"message":                 "Configuración actualizada",
 	})
 }
@@ -201,6 +247,50 @@ func (h *SystemSettingsHandlers) TestEmail(w http.ResponseWriter, r *http.Reques
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"message":    "Email de prueba enviado",
 		"recipients": joinEmails(emails),
+	})
+}
+
+// TestVoice anuncia un mensaje de prueba por Voice Monkey (TTS).
+func (h *SystemSettingsHandlers) TestVoice(w http.ResponseWriter, r *http.Request) {
+	configured, err := h.settings.IsVoiceMonkeyConfigured(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	if !configured {
+		respondError(w, http.StatusBadRequest, "voicemonkey_not_configured", "Configure Voice Monkey (token y device) antes de probar")
+		return
+	}
+
+	if err := h.voiceMonkey.SendTest(r.Context()); err != nil {
+		respondError(w, http.StatusInternalServerError, "voicemonkey_error", err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Aviso de voz enviado",
+	})
+}
+
+// DeleteVoiceMonkey limpia la configuración de Voice Monkey y resetea los
+// toggles a OFF (botón "Reconfigurar", REQ-020).
+func (h *SystemSettingsHandlers) DeleteVoiceMonkey(w http.ResponseWriter, r *http.Request) {
+	if err := h.settings.ClearVoiceMonkey(r.Context()); err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	vm, err := h.settings.GetVoiceMonkeyConfigPublic(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"voicemonkey_enabled":     vm.Enabled,
+		"voicemonkey_send_alerts": vm.SendAlerts,
+		"voicemonkey_configured":  vm.Configured,
+		"message":                 "Configuración de Voice Monkey eliminada",
 	})
 }
 

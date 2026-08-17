@@ -13,6 +13,7 @@ type Handler struct {
 	auth                 *services.AuthService
 	settings             *SettingsHandlers
 	systemSettings       *SystemSettingsHandlers
+	alerts               *AlertsHandlers
 	currency             *CurrencyHandlers
 	home                 *HomeHandlers
 	service              *ServiceHandlers
@@ -29,6 +30,7 @@ func NewHandler(
 	auth *services.AuthService,
 	settings *SettingsHandlers,
 	systemSettings *SystemSettingsHandlers,
+	alerts *AlertsHandlers,
 	currency *CurrencyHandlers,
 	home *HomeHandlers,
 	service *ServiceHandlers,
@@ -43,6 +45,7 @@ func NewHandler(
 		auth:                auth,
 		settings:            settings,
 		systemSettings:      systemSettings,
+		alerts:              alerts,
 		currency:            currency,
 		home:                home,
 		service:             service,

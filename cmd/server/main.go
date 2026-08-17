@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -64,6 +65,7 @@ func main() {
 	userStorage := storage.NewUserStorage(database)
 	settingsStorage := storage.NewSettingsStorage(database)
 	systemSettingsStorage := storage.NewSystemSettingsStorage(database)
+	alertStorage := storage.NewAlertStorage(database)
 	currencyStorage := storage.NewCurrencyStorage(database)
 	homeStorage := storage.NewHomeStorage(database)
 	serviceStorage := storage.NewServiceStorage(database)
@@ -77,6 +79,8 @@ func main() {
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
 	systemSettingsService := services.NewSystemSettingsService(systemSettingsStorage)
 	emailService := services.NewEmailService(systemSettingsService)
+	voiceMonkeyService := services.NewVoiceMonkeyService(systemSettingsService)
+	alertService := services.NewAlertService(alertStorage)
 	currencyService := services.NewCurrencyService(currencyStorage)
 	homeService := services.NewHomeService(homeStorage)
 	serviceService := services.NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
@@ -87,16 +91,26 @@ func main() {
 	autoInsuranceService := services.NewAutoServiceService(autoServiceStorage)
 	institutionCategoryService := services.NewInstitutionCategoryService(institutionCategoryStorage)
 
-	billingScheduler := services.NewBillingScheduler(serviceStorage, billStorage, systemSettingsService)
+	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
+	if err := alertService.Seed(context.Background()); err != nil {
+		slog.Error("seed de alertas", "error", err)
+	}
+
+	billingScheduler := services.NewBillingScheduler(serviceStorage, billStorage, systemSettingsService, emailService, currencyStorage, alertService, voiceMonkeyService)
 	billingScheduler.Start()
 	defer billingScheduler.Stop()
 
-	alertScheduler := services.NewAlertScheduler(autoStorage, autoServiceStorage, emailService, systemSettingsService)
+	alertScheduler := services.NewAlertScheduler(autoStorage, autoServiceStorage, emailService, systemSettingsService, alertService, voiceMonkeyService)
 	alertScheduler.Start()
 	defer alertScheduler.Stop()
 
+	billSummaryScheduler := services.NewBillSummaryScheduler(billStorage, emailService, systemSettingsService, alertService, voiceMonkeyService)
+	billSummaryScheduler.Start()
+	defer billSummaryScheduler.Stop()
+
 	settingsHandlers := api.NewSettingsHandlers(appSettingsService)
-	systemSettingsHandlers := api.NewSystemSettingsHandlers(systemSettingsService, emailService)
+	systemSettingsHandlers := api.NewSystemSettingsHandlers(systemSettingsService, emailService, voiceMonkeyService)
+	alertsHandlers := api.NewAlertsHandlers(alertService)
 	currencyHandlers := api.NewCurrencyHandlers(currencyService)
 	homeHandlers := api.NewHomeHandlers(homeService)
 	serviceHandlers := api.NewServiceHandlers(serviceService, homeService, institutionStorage)
@@ -107,7 +121,7 @@ func main() {
 	autoServiceHandlers := api.NewAutoServiceHandlers(autoInsuranceService)
 	institutionCategoryHandlers := api.NewInstitutionCategoryHandlers(institutionCategoryService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers)
 
 	router := api.BuildRouter(handler, authService, "./public")
 

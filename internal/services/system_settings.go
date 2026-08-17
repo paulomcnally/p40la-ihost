@@ -206,6 +206,134 @@ func (s *SystemSettingsService) SetAlertCheckHour(ctx context.Context, hour int)
 	return s.storage.Set(ctx, "alert_check_hour", strconv.Itoa(hour))
 }
 
+// ---- Voice Monkey configuration (SPEC-033) ----
+
+// Claves de config de Voice Monkey en system_settings.
+const (
+	VoiceMonkeyEnabledKey    = "voicemonkey_enabled"
+	VoiceMonkeySendAlertsKey = "voicemonkey_send_alerts"
+	VoiceMonkeyTokenKey      = "voicemonkey_token"
+	VoiceMonkeyDeviceKey     = "voicemonkey_device"
+)
+
+// GetVoiceMonkeyConfig devuelve la config completa (incluye token/device).
+// Uso interno: VoiceMonkeyService. NUNCA exponer en responses de API.
+func (s *SystemSettingsService) GetVoiceMonkeyConfig(ctx context.Context) (*models.VoiceMonkeyConfig, error) {
+	enabled, err := s.getBoolSetting(ctx, VoiceMonkeyEnabledKey)
+	if err != nil {
+		return nil, err
+	}
+	sendAlerts, err := s.getBoolSetting(ctx, VoiceMonkeySendAlertsKey)
+	if err != nil {
+		return nil, err
+	}
+	token, err := s.storage.Get(ctx, VoiceMonkeyTokenKey)
+	if err != nil {
+		return nil, err
+	}
+	device, err := s.storage.Get(ctx, VoiceMonkeyDeviceKey)
+	if err != nil {
+		return nil, err
+	}
+	return &models.VoiceMonkeyConfig{
+		Enabled:    enabled,
+		SendAlerts: sendAlerts,
+		Token:      token,
+		Device:     device,
+	}, nil
+}
+
+// GetVoiceMonkeyConfigPublic devuelve la config SIN credenciales (token/device).
+// Se usa en responses de API. Incluye flag Configured.
+func (s *SystemSettingsService) GetVoiceMonkeyConfigPublic(ctx context.Context) (*models.VoiceMonkeyConfigPublic, error) {
+	cfg, err := s.GetVoiceMonkeyConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &models.VoiceMonkeyConfigPublic{
+		Enabled:    cfg.Enabled,
+		SendAlerts: cfg.SendAlerts,
+		Configured: s.isVoiceMonkeyConfigured(cfg),
+	}, nil
+}
+
+// SetVoiceMonkeyConfig guarda solo las credenciales (token/device). Vacíos no
+// se sobrescriben si ya tienen un valor guardado. Los toggles booleanos se
+// persisten por separado via SetVoiceMonkeyEnabled / SetVoiceMonkeySendAlerts
+// para permitir updates parciales sin pisarse (REQ-021).
+func (s *SystemSettingsService) SetVoiceMonkeyConfig(ctx context.Context, cfg *models.VoiceMonkeyConfig) error {
+	if err := s.setIfNonEmpty(ctx, VoiceMonkeyTokenKey, cfg.Token); err != nil {
+		return err
+	}
+	if err := s.setIfNonEmpty(ctx, VoiceMonkeyDeviceKey, cfg.Device); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetVoiceMonkeyEnabled persiste el toggle maestro "Activar Voice Monkey".
+func (s *SystemSettingsService) SetVoiceMonkeyEnabled(ctx context.Context, enabled bool) error {
+	return s.setBoolSetting(ctx, VoiceMonkeyEnabledKey, enabled)
+}
+
+// SetVoiceMonkeySendAlerts persiste el toggle "Enviar alertas".
+func (s *SystemSettingsService) SetVoiceMonkeySendAlerts(ctx context.Context, sendAlerts bool) error {
+	return s.setBoolSetting(ctx, VoiceMonkeySendAlertsKey, sendAlerts)
+}
+
+// ClearVoiceMonkey limpia las credenciales y resetea ambos toggles a OFF
+// (botón "Reconfigurar", REQ-020).
+func (s *SystemSettingsService) ClearVoiceMonkey(ctx context.Context) error {
+	for _, key := range []string{VoiceMonkeyTokenKey, VoiceMonkeyDeviceKey} {
+		if err := s.storage.Set(ctx, key, ""); err != nil {
+			return err
+		}
+	}
+	if err := s.setBoolSetting(ctx, VoiceMonkeyEnabledKey, false); err != nil {
+		return err
+	}
+	return s.setBoolSetting(ctx, VoiceMonkeySendAlertsKey, false)
+}
+
+// IsVoiceMonkeyConfigured indica si hay token y device guardados.
+func (s *SystemSettingsService) IsVoiceMonkeyConfigured(ctx context.Context) (bool, error) {
+	cfg, err := s.GetVoiceMonkeyConfig(ctx)
+	if err != nil {
+		return false, err
+	}
+	return s.isVoiceMonkeyConfigured(cfg), nil
+}
+
+// IsVoiceMonkeyEnabled indica si el toggle maestro de Voice Monkey está on.
+func (s *SystemSettingsService) IsVoiceMonkeyEnabled(ctx context.Context) (bool, error) {
+	return s.getBoolSetting(ctx, VoiceMonkeyEnabledKey)
+}
+
+// IsVoiceMonkeySendingAlerts indica si el toggle "enviar alertas" está on.
+func (s *SystemSettingsService) IsVoiceMonkeySendingAlerts(ctx context.Context) (bool, error) {
+	return s.getBoolSetting(ctx, VoiceMonkeySendAlertsKey)
+}
+
+func (s *SystemSettingsService) isVoiceMonkeyConfigured(cfg *models.VoiceMonkeyConfig) bool {
+	return cfg.Token != "" && cfg.Device != ""
+}
+
+func (s *SystemSettingsService) getBoolSetting(ctx context.Context, key string) (bool, error) {
+	val, err := s.storage.Get(ctx, key)
+	if err != nil {
+		return false, err
+	}
+	return val == "1", nil
+}
+
+func (s *SystemSettingsService) setBoolSetting(ctx context.Context, key string, value bool) error {
+	v := "0"
+	if value {
+		v = "1"
+	}
+	return s.storage.Set(ctx, key, v)
+}
+
 // parseEmails separa una lista comma-separated en emails limpios.
 func parseEmails(val string) []string {
 	if val == "" {

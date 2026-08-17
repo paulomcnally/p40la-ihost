@@ -9,9 +9,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 33 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 5 🟣 |
+| **In progress** | 1 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 28 🟢 |
+| **Released** | 32 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-033 |
 
@@ -50,10 +50,10 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-027 | Script de release automático para Docker Hub con bump de versión | released | 2026-08-16 | paulomcnally |
 | SPEC-028 | Extensión de campos para autos y pólizas de seguro | released | 2026-08-16 | p40la-ihost-team |
 | SPEC-029 | Sistema de Envío de Mails y Alertas Diarias de Seguros Vencidos | released | 2026-08-16 | paulomcnally |
-| SPEC-030 | Email informativo al generar factura automática | in_progress | 2026-08-16 | paulomcnally |
-| SPEC-031 | Resumen diario de facturas pendientes por email | in_progress | 2026-08-16 | paulomcnally |
-| SPEC-032 | Sección Alertas en Configuraciones con toggles por funcionalidad de mail | in_progress | 2026-08-16 | paulomcnally |
-| SPEC-033 | Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz | in_progress | 2026-08-16 | paulomcnally |
+| SPEC-030 | Email informativo al generar factura automática | released | 2026-08-16 | paulomcnally |
+| SPEC-031 | Resumen diario de facturas pendientes por email | released | 2026-08-16 | paulomcnally |
+| SPEC-032 | Sección Alertas en Configuraciones con toggles por funcionalidad de mail | released | 2026-08-16 | paulomcnally |
+| SPEC-033 | Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz | released | 2026-08-16 | paulomcnally |
 
 ---
 
@@ -123,4 +123,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-16 — SPEC-018, SPEC-024, SPEC-025, SPEC-026 released.*
+*Última actualización de este tracker: 2026-08-16 — SPEC-030/031/032/033 released.*

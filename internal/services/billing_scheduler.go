@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -13,6 +14,10 @@ type BillingScheduler struct {
 	serviceStorage    *storage.ServiceStorage
 	billStorage       *storage.BillStorage
 	settingsService   *SystemSettingsService
+	emailService      *EmailService
+	currencyStorage   *storage.CurrencyStorage
+	alertService      *AlertService
+	voiceMonkey       *VoiceMonkeyService
 	stopCh            chan struct{}
 	lastGenerationKey string
 }
@@ -21,11 +26,19 @@ func NewBillingScheduler(
 	serviceStorage *storage.ServiceStorage,
 	billStorage *storage.BillStorage,
 	settingsService *SystemSettingsService,
+	emailService *EmailService,
+	currencyStorage *storage.CurrencyStorage,
+	alertService *AlertService,
+	voiceMonkey *VoiceMonkeyService,
 ) *BillingScheduler {
 	return &BillingScheduler{
 		serviceStorage:    serviceStorage,
 		billStorage:       billStorage,
 		settingsService:   settingsService,
+		emailService:      emailService,
+		currencyStorage:   currencyStorage,
+		alertService:      alertService,
+		voiceMonkey:       voiceMonkey,
 		stopCh:            make(chan struct{}),
 		lastGenerationKey: "last_billing_generation",
 	}
@@ -107,7 +120,25 @@ func (s *BillingScheduler) checkAndGenerate() {
 	}
 	_ = s.settingsService.Set(ctx, s.lastGenerationKey, today)
 
+	// Voz: se anuncia UNA vez por corrida (no por factura) para evitar ráfagas TTS.
+	if generated > 0 {
+		speech, err := s.alertService.Speech(ctx, models.AlertKeyBillCreated)
+		if err != nil {
+			slog.Error("billing scheduler: error al obtener speech", "error", err)
+		} else {
+			dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyBillCreated, createdSpeech(speech, generated))
+		}
+	}
+
 	slog.Info("billing scheduler: generación completada", "generated", generated)
+}
+
+// createdSpeech adapta el speech de "nueva factura" según la cantidad generada.
+func createdSpeech(base string, n int) string {
+	if n == 1 {
+		return base
+	}
+	return fmt.Sprintf("Paulo, se generaron %d facturas automáticas.", n)
 }
 
 func (s *BillingScheduler) generateBillForService(ctx context.Context, svc *models.Service, now time.Time) error {
@@ -152,8 +183,57 @@ func (s *BillingScheduler) generateBillForService(ctx context.Context, svc *mode
 		Amount:    svc.SuggestedAmount,
 		Status:    "pending",
 	}
-	_, err = s.billStorage.Create(ctx, bill)
-	return err
+	created, err := s.billStorage.Create(ctx, bill)
+	if err != nil {
+		return err
+	}
+
+	s.sendBillCreatedEmail(ctx, created, svc)
+	return nil
+}
+
+// sendBillCreatedEmail envía un email informativo por cada factura generada
+// automáticamente (SPEC-030), solo si la alerta "nueva factura" tiene el canal
+// mail habilitado (SPEC-032). Si no, loguea (debug) y no envía.
+func (s *BillingScheduler) sendBillCreatedEmail(ctx context.Context, bill *models.Bill, svc *models.Service) {
+	if s.emailService == nil {
+		return
+	}
+
+	if !alertMailEnabled(ctx, s.alertService, models.AlertKeyBillCreated) {
+		slog.Debug("billing scheduler: email de factura deshabilitado", "service_id", svc.ID)
+		return
+	}
+
+	recipients, err := s.settingsService.GetAlertEmails(ctx)
+	if err != nil {
+		slog.Warn("billing scheduler: no se pudo obtener destinatarios", "error", err)
+		return
+	}
+	if len(recipients) == 0 {
+		slog.Warn("billing scheduler: sin destinatarios, no se envía email de factura", "service_id", svc.ID)
+		return
+	}
+
+	configured, err := s.settingsService.IsSMTPConfigured(ctx)
+	if err != nil || !configured {
+		slog.Warn("billing scheduler: SMTP no configurado, no se envía email de factura", "service_id", svc.ID)
+		return
+	}
+
+	symbol := ""
+	if s.currencyStorage != nil {
+		if currency, err := s.currencyStorage.GetByID(ctx, svc.CurrencyID); err == nil && currency != nil {
+			symbol = currency.Symbol
+		}
+	}
+
+	title, content := buildBillCreatedEmail(svc, bill, symbol)
+	html := s.emailService.RenderTemplate(title, content)
+
+	if err := s.emailService.Send(ctx, recipients, title, html); err != nil {
+		slog.Error("billing scheduler: error al enviar email de factura", "bill_id", bill.ID, "service_id", svc.ID, "error", err.Error())
+	}
 }
 
 func daysInMonth(year int, month time.Month) int {
