@@ -123,6 +123,34 @@
       "show": "Mostrar",
       "hide": "Ocultar",
       "leave_blank": "Dejar vacío para mantener el valor actual"
+    },
+    "alerts": {
+      "title": "Alertas",
+      "mail": "Mail",
+      "alexa": "Alexa",
+      "saved": "Alerta actualizada",
+      "save_error": "Error al actualizar alerta",
+      "alexa_disabled_hint": "Activá Voice Monkey (token y device) y el toggle \"Enviar alertas\" para habilitar los avisos por Alexa."
+    },
+    "voicemonkey": {
+      "title": "Voice Monkey (Alexa)",
+      "enable": "Activar Voice Monkey",
+      "enable_hint": "Anunciar alertas por voz en un altavoz Alexa.",
+      "token": "API token",
+      "device": "Device",
+      "send_alerts": "Enviar alertas",
+      "test": "Probar aviso",
+      "test_sent": "Aviso de voz enviado",
+      "test_error": "Error al enviar aviso de voz",
+      "saved": "Configuración de Voice Monkey guardada",
+      "save_error": "Error al guardar configuración de Voice Monkey",
+      "configured": "Configurado",
+      "not_configured": "No configurado",
+      "leave_blank": "Dejar vacío para mantener el valor actual",
+      "configured_status": "Voice Monkey configurado",
+      "reconfigure": "Reconfigurar",
+      "reconfigure_confirm": "¿Querés quitar la configuración actual de Voice Monkey? Tendrás que volver a ingresar token y device.",
+      "reconfigured": "Configuración de Voice Monkey eliminada"
     }
   },
   "months": {

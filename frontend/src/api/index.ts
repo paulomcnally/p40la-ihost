@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -90,9 +90,18 @@ export const api = {
       smtp_from_name: string
       smtp_configured: boolean
       alert_emails: string
+      voicemonkey_enabled: boolean
+      voicemonkey_send_alerts: boolean
+      voicemonkey_configured: boolean
     }>('/api/system-settings'),
     update: (body: Record<string, unknown>) => put<{ billing_generation_hour: number; smtp_configured: boolean }>('/api/system-settings', body),
     testEmail: () => post<{ message: string; recipients: string }>('/api/system-settings/test-email', {}),
+    testVoice: () => post<{ message: string }>('/api/system-settings/test-voice', {}),
+    disconnectVoiceMonkey: () => del<{ voicemonkey_enabled: boolean; voicemonkey_send_alerts: boolean; voicemonkey_configured: boolean }>('/api/system-settings/voicemonkey'),
+  },
+  alerts: {
+    list: () => get<Alert[]>('/api/alerts'),
+    update: (key: string, body: { mail_enabled?: boolean; voice_enabled?: boolean }) => put(`/api/alerts/${key}`, body),
   },
   institutions: {
     list: () => get<Institution[]>('/api/institutions'),

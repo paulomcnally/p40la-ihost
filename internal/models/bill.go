@@ -16,3 +16,20 @@ type Bill struct {
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
 }
+
+// PendingBillDetail detalla una factura pendiente con contexto (casa,
+// institución, servicio, moneda) para el resumen diario (SPEC-031).
+type PendingBillDetail struct {
+	BillID         int64     `json:"bill_id"`
+	ServiceID      int64     `json:"service_id"`
+	HomeID         int64     `json:"home_id"`
+	HomeName       string    `json:"home_name"`
+	Institution    string    `json:"institution"`
+	ServiceName    string    `json:"service_name"`
+	CurrencySymbol string    `json:"currency_symbol"`
+	Year           int       `json:"year"`
+	Month          int       `json:"month"`
+	Amount         float64   `json:"amount"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"created_at"`
+}

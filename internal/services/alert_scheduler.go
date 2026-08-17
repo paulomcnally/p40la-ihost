@@ -12,12 +12,15 @@ import (
 )
 
 // AlertScheduler verifica diariamente el estado de los seguros de los autos
-// y envía un email de alerta cuando detecta autos sin seguro o con seguro vencido.
+// y despacha alertas por los canales habilitados (mail y/o voz) cuando detecta
+// autos sin seguro o con seguro vencido.
 type AlertScheduler struct {
 	autoStorage        *storage.AutoStorage
 	autoServiceStorage *storage.AutoServiceStorage
 	emailService       *EmailService
 	settingsService    *SystemSettingsService
+	alertService       *AlertService
+	voiceMonkey        *VoiceMonkeyService
 	stopCh             chan struct{}
 	lastCheckKey       string
 }
@@ -27,12 +30,16 @@ func NewAlertScheduler(
 	autoServiceStorage *storage.AutoServiceStorage,
 	emailService *EmailService,
 	settingsService *SystemSettingsService,
+	alertService *AlertService,
+	voiceMonkey *VoiceMonkeyService,
 ) *AlertScheduler {
 	return &AlertScheduler{
 		autoStorage:        autoStorage,
 		autoServiceStorage: autoServiceStorage,
 		emailService:       emailService,
 		settingsService:    settingsService,
+		alertService:       alertService,
+		voiceMonkey:        voiceMonkey,
 		stopCh:             make(chan struct{}),
 		lastCheckKey:       "last_alert_check",
 	}
@@ -71,6 +78,12 @@ func (s *AlertScheduler) CheckNow() {
 func (s *AlertScheduler) checkAndAlert() {
 	ctx := context.Background()
 
+	if !alertMailEnabled(ctx, s.alertService, models.AlertKeyInsurance) &&
+		!alertVoiceEnabled(ctx, s.alertService, models.AlertKeyInsurance) {
+		slog.Debug("alert scheduler: alerta de seguros deshabilitada en todos los canales")
+		return
+	}
+
 	hour, err := s.settingsService.GetAlertCheckHour(ctx)
 	if err != nil {
 		slog.Error("alert scheduler: error al obtener hora de alertas", "error", err)
@@ -100,9 +113,19 @@ func (s *AlertScheduler) checkAndAlert() {
 	}
 
 	if len(alerts) > 0 {
-		if err := s.sendAlertEmail(ctx, alerts); err != nil {
-			slog.Error("alert scheduler: error al enviar email de alerta", "error", err.Error())
-			return
+		if alertMailEnabled(ctx, s.alertService, models.AlertKeyInsurance) {
+			if err := s.sendAlertEmail(ctx, alerts); err != nil {
+				slog.Error("alert scheduler: error al enviar email de alerta", "error", err.Error())
+			}
+		} else {
+			slog.Debug("alert scheduler: alerta de seguros sin mail habilitado")
+		}
+
+		speech, err := s.alertService.Speech(ctx, models.AlertKeyInsurance)
+		if err != nil {
+			slog.Error("alert scheduler: error al obtener speech", "error", err)
+		} else {
+			dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyInsurance, speech)
 		}
 	} else {
 		slog.Info("alert scheduler: no hay autos en condición de alerta")

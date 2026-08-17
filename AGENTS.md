@@ -35,6 +35,11 @@ Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, 
   2. Insertar: `sqlite3 data/app.db "INSERT INTO users (email, password_hash) VALUES ('test@test.com', '$HASH');"`
   3. Login: `curl -s -c /tmp/cookies.txt http://localhost:8088/api/login -X POST -H 'Content-Type: application/json' -d '{"email":"test@test.com","password":"test1234"}'`
   4. Usar cookies: `curl -s -b /tmp/cookies.txt http://localhost:8088/api/...`
+- **La fuente de verdad del i18n es `frontend/public/i18n/`, NO `public/i18n/`.** El build de Vite (`npm run build` en `frontend/`) usa `emptyOutDir: true` sobre `public/`: borra TODO su contenido y lo regenera desde `frontend/public/` (copia `i18n/`, `index.html`, assets). Por lo tanto:
+  - Cualquier cambio de traducción se edita SIEMPRE en `frontend/public/i18n/{es,en}.json`.
+  - Nunca editar `public/i18n/*.json` directamente: esos archivos son salida del build y se sobrescriben/perden en el próximo `npm run build`.
+  - Después de editar i18n, correr `npm run build` (en `frontend/`) y verificar con `curl -s http://localhost:8088/i18n/es.json` que las claves nuevas estén servidas.
+  - Precedente: SPEC-032/033 — las claves `settings.alerts.*` y `settings.voicemonkey.*` se editaron en `public/i18n/` y desaparecieron en el build (fallo de i18n reportado por el usuario).
 
 ### 1. Cero código sin spec
 

@@ -112,3 +112,15 @@ export interface Auto {
   created_at: string
   updated_at: string
 }
+
+export interface Alert {
+  id: number
+  key: string
+  title: string
+  description: string
+  mail_enabled: boolean
+  voice_enabled: boolean
+  speech: string
+  created_at: string
+  updated_at: string
+}

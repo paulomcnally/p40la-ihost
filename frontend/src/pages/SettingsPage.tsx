@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from '../components/Icons'
+import Toggle from '../components/Toggle'
 import { api } from '../api'
 import { useToast } from '../components/Toast'
+import type { Alert } from '../types'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
@@ -25,11 +27,26 @@ export default function SettingsPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [sendingTest, setSendingTest] = useState(false)
   const [savingEmail, setSavingEmail] = useState(false)
+  const [smtpOpen, setSmtpOpen] = useState(false)
+
+  // Alertas (catálogo + toggles de canal mail/alexa)
+  const [alerts, setAlerts] = useState<Alert[]>([])
+
+  // Voice Monkey (Alexa)
+  const [vmEnabled, setVmEnabled] = useState(false)
+  const [vmSendAlerts, setVmSendAlerts] = useState(false)
+  const [vmToken, setVmToken] = useState('')
+  const [vmDevice, setVmDevice] = useState('')
+  const [vmConfigured, setVmConfigured] = useState(false)
+  const [savingVoice, setSavingVoice] = useState(false)
+  const [testingVoice, setTestingVoice] = useState(false)
 
   useEffect(() => {
     loadCurrencies()
     loadBillingHour()
     loadEmailSettings()
+    loadVoiceMonkeySettings()
+    loadAlerts()
   }, [])
 
   const loadBillingHour = async () => {
@@ -60,6 +77,28 @@ export default function SettingsPage() {
     }
   }
 
+  const loadVoiceMonkeySettings = async () => {
+    try {
+      const data = await api.systemSettings.get()
+      if (data) {
+        setVmEnabled(data.voicemonkey_enabled ?? false)
+        setVmSendAlerts(data.voicemonkey_send_alerts ?? false)
+        setVmConfigured(data.voicemonkey_configured ?? false)
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const loadAlerts = async () => {
+    try {
+      const data = await api.alerts.list()
+      if (data) setAlerts(data)
+    } catch {
+      // ignore
+    }
+  }
+
   const handleBillingHourChange = async (hour: number) => {
     try {
       await api.systemSettings.update({ billing_generation_hour: hour })
@@ -67,6 +106,17 @@ export default function SettingsPage() {
       showToast('Hora de facturación actualizada', 'success')
     } catch {
       showToast('Error al actualizar', 'error')
+    }
+  }
+
+  const handleToggleAlert = async (key: string, field: 'mail_enabled' | 'voice_enabled', value: boolean) => {
+    setAlerts((prev) => prev.map((a) => (a.key === key ? { ...a, [field]: value } : a)))
+    try {
+      await api.alerts.update(key, { [field]: value })
+      showToast(t('settings.alerts.saved'), 'success')
+    } catch {
+      setAlerts((prev) => prev.map((a) => (a.key === key ? { ...a, [field]: !value } : a)))
+      showToast(t('settings.alerts.save_error'), 'error')
     }
   }
 
@@ -108,13 +158,83 @@ export default function SettingsPage() {
     }
   }
 
+  const handleVmEnabledChange = async (value: boolean) => {
+    setVmEnabled(value)
+    try {
+      await api.systemSettings.update({ voicemonkey_enabled: value })
+    } catch {
+      setVmEnabled(!value)
+      showToast(t('settings.voicemonkey.save_error'), 'error')
+    }
+  }
+
+  const handleVmSendChange = async (value: boolean) => {
+    setVmSendAlerts(value)
+    try {
+      await api.systemSettings.update({ voicemonkey_send_alerts: value })
+    } catch {
+      setVmSendAlerts(!value)
+      showToast(t('settings.voicemonkey.save_error'), 'error')
+    }
+  }
+
+  const handleSaveVoiceMonkey = async () => {
+    setSavingVoice(true)
+    try {
+      const body: Record<string, unknown> = {}
+      if (vmToken.trim()) body.voicemonkey_token = vmToken.trim()
+      if (vmDevice.trim()) body.voicemonkey_device = vmDevice.trim()
+      await api.systemSettings.update(body)
+      const data = await api.systemSettings.get()
+      if (data) setVmConfigured(data.voicemonkey_configured ?? false)
+      setVmToken('')
+      setVmDevice('')
+      showToast(t('settings.voicemonkey.saved'), 'success')
+    } catch {
+      showToast(t('settings.voicemonkey.save_error'), 'error')
+    } finally {
+      setSavingVoice(false)
+    }
+  }
+
+  const handleTestVoice = async () => {
+    setTestingVoice(true)
+    try {
+      await api.systemSettings.testVoice()
+      showToast(t('settings.voicemonkey.test_sent'), 'success')
+    } catch {
+      showToast(t('settings.voicemonkey.test_error'), 'error')
+    } finally {
+      setTestingVoice(false)
+    }
+  }
+
+  const handleReconfigureVoiceMonkey = async () => {
+    if (!window.confirm(t('settings.voicemonkey.reconfigure_confirm'))) return
+    try {
+      await api.systemSettings.disconnectVoiceMonkey()
+      setVmEnabled(false)
+      setVmSendAlerts(false)
+      setVmConfigured(false)
+      setVmToken('')
+      setVmDevice('')
+      showToast(t('settings.voicemonkey.reconfigured'), 'success')
+    } catch {
+      showToast(t('settings.voicemonkey.save_error'), 'error')
+    }
+  }
+
   const hours = Array.from({ length: 24 }, (_, i) => ({
     value: i,
     label: `${String(i).padStart(2, '0')}:00`,
   }))
 
+  // Voice Monkey está plenamente activo solo si master on + configurado + enviar alertas on.
+  const vmActive = vmEnabled && vmConfigured && vmSendAlerts
+
   const inputCls = 'w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-white min-h-[44px]'
   const labelCls = 'text-sm font-medium text-text-secondary mb-1'
+  const toggleCls = (on: boolean) => `inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${on ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -161,68 +281,111 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Alertas */}
+      <div className="mb-6">
+        <div className="text-xs uppercase text-text-secondary font-semibold mb-2 ml-3">
+          {t('settings.alerts.title')}
+        </div>
+        <div className="bg-card rounded-ios shadow-ios overflow-hidden">
+          {alerts.length === 0 && (
+            <div className="px-4 py-3.5 text-sm text-text-secondary">...</div>
+          )}
+          {alerts.map((a, idx) => (
+            <div key={a.key} className={`px-4 py-3.5 ${idx < alerts.length - 1 ? 'border-b border-border' : ''}`}>
+              <div className="font-medium">{a.title}</div>
+              <div className="text-sm text-text-secondary mb-3">{a.description}</div>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Toggle checked={a.mail_enabled} onChange={(v) => handleToggleAlert(a.key, 'mail_enabled', v)} />
+                  <span className="text-sm font-medium">{t('settings.alerts.mail')}</span>
+                </div>
+                <div className={`flex items-center gap-2 ${vmActive ? '' : 'opacity-50'}`}>
+                  <Toggle checked={a.voice_enabled} onChange={(v) => handleToggleAlert(a.key, 'voice_enabled', v)} disabled={!vmActive} />
+                  <span className="text-sm font-medium">{t('settings.alerts.alexa')}</span>
+                </div>
+              </div>
+              {!vmActive && (
+                <p className="text-xs text-text-secondary mt-2">{t('settings.alerts.alexa_disabled_hint')}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Email alerts */}
       <div className="mb-6">
         <div className="text-xs uppercase text-text-secondary font-semibold mb-2 ml-3">
           {t('settings.email_alerts.title')}
         </div>
         <div className="bg-card rounded-ios shadow-ios overflow-hidden">
-          <div className="px-4 py-3.5 border-b border-border">
-            <div className="font-medium">{t('settings.email_alerts.smtp')}</div>
-            <div className="text-sm text-text-secondary mb-3">{t('settings.email_alerts.smtp_subtitle')}</div>
-            <div className="space-y-3">
-              <div>
-                <label className={labelCls}>{t('settings.email_alerts.smtp_host')}</label>
-                <input type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>{t('settings.email_alerts.smtp_port')}</label>
-                <input type="number" value={smtpPort} onChange={(e) => setSmtpPort(Number(e.target.value))} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>{t('settings.email_alerts.smtp_user')}</label>
-                <input
-                  type="text"
-                  value={smtpUser}
-                  onChange={(e) => setSmtpUser(e.target.value)}
-                  className={inputCls}
-                  placeholder={smtpConfigured ? t('settings.email_alerts.leave_blank') : ''}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>{t('settings.email_alerts.smtp_password')}</label>
-                <div className="relative">
+          {/* SMTP como acordeón colapsable, cerrado por defecto */}
+          <button
+            type="button"
+            onClick={() => setSmtpOpen(!smtpOpen)}
+            className="w-full flex items-center justify-between px-4 py-3.5 border-b border-border hover:bg-bg/50 transition-colors"
+          >
+            <div className="text-left">
+              <div className="font-medium">{t('settings.email_alerts.smtp')}</div>
+              <div className="text-sm text-text-secondary">{t('settings.email_alerts.smtp_subtitle')}</div>
+            </div>
+            <Icon name="chevron" className={`w-4 h-4 text-text-secondary transition-transform ${smtpOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {smtpOpen && (
+            <div className="px-4 py-3.5 border-b border-border">
+              <div className="space-y-3">
+                <div>
+                  <label className={labelCls}>{t('settings.email_alerts.smtp_host')}</label>
+                  <input type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>{t('settings.email_alerts.smtp_port')}</label>
+                  <input type="number" value={smtpPort} onChange={(e) => setSmtpPort(Number(e.target.value))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>{t('settings.email_alerts.smtp_user')}</label>
                   <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={smtpPassword}
-                    onChange={(e) => setSmtpPassword(e.target.value)}
+                    type="text"
+                    value={smtpUser}
+                    onChange={(e) => setSmtpUser(e.target.value)}
                     className={inputCls}
                     placeholder={smtpConfigured ? t('settings.email_alerts.leave_blank') : ''}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-text-secondary px-2 py-1"
-                  >
-                    {showPassword ? t('settings.email_alerts.hide') : t('settings.email_alerts.show')}
-                  </button>
+                </div>
+                <div>
+                  <label className={labelCls}>{t('settings.email_alerts.smtp_password')}</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={smtpPassword}
+                      onChange={(e) => setSmtpPassword(e.target.value)}
+                      className={inputCls}
+                      placeholder={smtpConfigured ? t('settings.email_alerts.leave_blank') : ''}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-text-secondary px-2 py-1"
+                    >
+                      {showPassword ? t('settings.email_alerts.hide') : t('settings.email_alerts.show')}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>{t('settings.email_alerts.smtp_from_email')}</label>
+                  <input type="email" value={smtpFromEmail} onChange={(e) => setSmtpFromEmail(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>{t('settings.email_alerts.smtp_from_name')}</label>
+                  <input type="text" value={smtpFromName} onChange={(e) => setSmtpFromName(e.target.value)} className={inputCls} />
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className={toggleCls(smtpConfigured)}>
+                    {smtpConfigured ? t('settings.email_alerts.configured') : t('settings.email_alerts.not_configured')}
+                  </span>
                 </div>
               </div>
-              <div>
-                <label className={labelCls}>{t('settings.email_alerts.smtp_from_email')}</label>
-                <input type="email" value={smtpFromEmail} onChange={(e) => setSmtpFromEmail(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>{t('settings.email_alerts.smtp_from_name')}</label>
-                <input type="text" value={smtpFromName} onChange={(e) => setSmtpFromName(e.target.value)} className={inputCls} />
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${smtpConfigured ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {smtpConfigured ? t('settings.email_alerts.configured') : t('settings.email_alerts.not_configured')}
-                </span>
-              </div>
             </div>
-          </div>
+          )}
 
           <div className="px-4 py-3.5 border-b border-border">
             <div className="font-medium">{t('settings.email_alerts.recipients')}</div>
@@ -246,6 +409,91 @@ export default function SettingsPage() {
               {t('settings.email_alerts.test_email')}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Voice Monkey (Alexa) */}
+      <div className="mb-6">
+        <div className="text-xs uppercase text-text-secondary font-semibold mb-2 ml-3">
+          {t('settings.voicemonkey.title')}
+        </div>
+        <div className="bg-card rounded-ios shadow-ios overflow-hidden">
+          <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
+            <div>
+              <div className="font-medium">{t('settings.voicemonkey.enable')}</div>
+              <div className="text-sm text-text-secondary">{t('settings.voicemonkey.enable_hint')}</div>
+            </div>
+            <Toggle checked={vmEnabled} onChange={handleVmEnabledChange} />
+          </div>
+
+          {vmEnabled && (
+            <>
+              {vmConfigured ? (
+                <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      {t('settings.voicemonkey.configured_status')}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleReconfigureVoiceMonkey}
+                    className="px-4 py-2 rounded-ios-sm border border-border font-medium min-h-[44px]"
+                  >
+                    {t('settings.voicemonkey.reconfigure')}
+                  </button>
+                </div>
+              ) : (
+                <div className="px-4 py-3.5 border-b border-border">
+                  <div className="space-y-3">
+                    <div>
+                      <label className={labelCls}>{t('settings.voicemonkey.token')}</label>
+                      <input
+                        type="password"
+                        value={vmToken}
+                        onChange={(e) => setVmToken(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>{t('settings.voicemonkey.device')}</label>
+                      <input
+                        type="text"
+                        value={vmDevice}
+                        onChange={(e) => setVmDevice(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className={`px-4 py-3.5 border-b border-border flex items-center justify-between ${vmConfigured ? '' : 'opacity-50'}`}>
+                <div>
+                  <div className="font-medium">{t('settings.voicemonkey.send_alerts')}</div>
+                </div>
+                <Toggle checked={vmSendAlerts} onChange={handleVmSendChange} disabled={!vmConfigured} />
+              </div>
+
+              <div className="px-4 py-3.5 flex flex-col sm:flex-row gap-3">
+                {!vmConfigured && (
+                  <button
+                    onClick={handleSaveVoiceMonkey}
+                    disabled={savingVoice}
+                    className="flex-1 px-4 py-2.5 rounded-ios-sm bg-primary text-white font-medium min-h-[44px] disabled:opacity-50"
+                  >
+                    {savingVoice ? '...' : t('app.save')}
+                  </button>
+                )}
+                <button
+                  onClick={handleTestVoice}
+                  disabled={testingVoice || !vmConfigured}
+                  className="flex-1 px-4 py-2.5 rounded-ios-sm border border-border font-medium min-h-[44px] disabled:opacity-50"
+                >
+                  {t('settings.voicemonkey.test')}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
