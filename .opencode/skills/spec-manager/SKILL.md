@@ -197,6 +197,17 @@ Tomar una spec en `pending_execution` y empezar desarrollo.
 4. Generar lista de tareas (todo) para el agente
 5. Confirmar y mostrar plan
 
+### `/spec worktree <ID>`
+Crear un worktree aislado para desarrollar una spec en su propia rama, sin pisar el trabajo de otras sesiones.
+
+**Regla crítica**: cada ventana/sesión trabaja en su PROPIO worktree. Compartir un checkout git hace que operaciones como `checkout`/`reset` destruyan el trabajo sin commitear de otras sesiones.
+
+1. Validar que la spec exista en `docs/specs/`
+2. Ejecutar: `./scripts/new-worktree.sh <SPEC-ID>`
+3. Informar al usuario el directorio aislado creado (ej: `../p40la-ihost-spec-034`) y pedir que abra una NUEVA ventana de opencode allí
+4. **NUNCA** ejecutar `git checkout`/`switch`/`reset`/`stash`/`clean` sobre el worktree principal compartido ni sobre worktrees de otras sesiones
+5. Toda operación git de la spec se hace DENTRO del worktree propio
+
 ### `/spec pending`
 Mostrar rápidamente specs en estados no-terminal con sus issues.
 ```bash
