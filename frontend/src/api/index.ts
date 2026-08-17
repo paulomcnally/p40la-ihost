@@ -83,6 +83,7 @@ export const api = {
   systemSettings: {
     get: () => get<{
       billing_generation_hour: number
+      alert_check_hour: number
       smtp_host: string
       smtp_port: number
       smtp_user: string
