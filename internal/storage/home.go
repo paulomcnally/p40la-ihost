@@ -99,7 +99,8 @@ func (s *HomeStorage) SoftDelete(ctx context.Context, id int64) error {
 func scanHome(row *sql.Row) (*models.Home, error) {
 	var h models.Home
 	var deletedAt sql.NullTime
-	if err := row.Scan(&h.ID, &h.Name, &h.Address, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
+	var address sql.NullString
+	if err := row.Scan(&h.ID, &h.Name, &address, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -108,6 +109,7 @@ func scanHome(row *sql.Row) (*models.Home, error) {
 	if deletedAt.Valid {
 		h.DeletedAt = &deletedAt.Time
 	}
+	h.Address = address.String
 	return &h, nil
 }
 
@@ -116,12 +118,14 @@ func scanHomes(rows *sql.Rows) ([]models.Home, error) {
 	for rows.Next() {
 		var h models.Home
 		var deletedAt sql.NullTime
-		if err := rows.Scan(&h.ID, &h.Name, &h.Address, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
+		var address sql.NullString
+		if err := rows.Scan(&h.ID, &h.Name, &address, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear hogar: %w", err)
 		}
 		if deletedAt.Valid {
 			h.DeletedAt = &deletedAt.Time
 		}
+		h.Address = address.String
 		homes = append(homes, h)
 	}
 	if err := rows.Err(); err != nil {
