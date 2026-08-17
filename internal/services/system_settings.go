@@ -220,6 +220,22 @@ func (s *SystemSettingsService) SetAlertCheckHour(ctx context.Context, hour int)
 	return s.storage.Set(ctx, "alert_check_hour", strconv.Itoa(hour))
 }
 
+// ---- Email alerts master toggle (SPEC-037) ----
+
+// EmailAlertsEnabledKey es la key del toggle maestro "Alertas por Email".
+// Espejo de VoiceMonkeyEnabledKey.
+const EmailAlertsEnabledKey = "email_alerts_enabled"
+
+// GetEmailAlertsEnabled indica si el toggle maestro de alertas por email está on.
+func (s *SystemSettingsService) GetEmailAlertsEnabled(ctx context.Context) (bool, error) {
+	return s.getBoolSetting(ctx, EmailAlertsEnabledKey)
+}
+
+// SetEmailAlertsEnabled persiste el toggle maestro "Alertas por Email".
+func (s *SystemSettingsService) SetEmailAlertsEnabled(ctx context.Context, enabled bool) error {
+	return s.setBoolSetting(ctx, EmailAlertsEnabledKey, enabled)
+}
+
 // ---- Voice Monkey configuration (SPEC-033) ----
 
 // Claves de config de Voice Monkey en system_settings.

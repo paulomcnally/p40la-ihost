@@ -110,7 +110,7 @@ func main() {
 
 	settingsHandlers := api.NewSettingsHandlers(appSettingsService)
 	systemSettingsHandlers := api.NewSystemSettingsHandlers(systemSettingsService, emailService, voiceMonkeyService)
-	alertsHandlers := api.NewAlertsHandlers(alertService)
+	alertsHandlers := api.NewAlertsHandlers(alertService, systemSettingsService)
 	currencyHandlers := api.NewCurrencyHandlers(currencyService)
 	homeHandlers := api.NewHomeHandlers(homeService)
 	serviceHandlers := api.NewServiceHandlers(serviceService, homeService, institutionStorage)
