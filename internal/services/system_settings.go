@@ -156,6 +156,20 @@ func (s *SystemSettingsService) isConfigured(cfg *models.SMTPConfig) bool {
 	return cfg.User != "" && cfg.Password != "" && cfg.Host != ""
 }
 
+// ClearSMTP limpia toda la configuración SMTP (host, port, user, password,
+// from_email, from_name) — botón "Reconfigurar" (SPEC-034).
+func (s *SystemSettingsService) ClearSMTP(ctx context.Context) error {
+	for _, key := range []string{
+		"smtp_host", "smtp_port", "smtp_user",
+		"smtp_password", "smtp_from_email", "smtp_from_name",
+	} {
+		if err := s.storage.Set(ctx, key, ""); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // setIfNonEmpty guarda el valor solo si no está vacío. Usado para no
 // sobrescribir credenciales existentes con strings vacíos en updates parciales.
 func (s *SystemSettingsService) setIfNonEmpty(ctx context.Context, key, value string) error {

@@ -32,6 +32,7 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("POST /api/system-settings/test-email", authMiddleware(http.HandlerFunc(handler.systemSettings.TestEmail)))
 	mux.Handle("POST /api/system-settings/test-voice", authMiddleware(http.HandlerFunc(handler.systemSettings.TestVoice)))
 	mux.Handle("DELETE /api/system-settings/voicemonkey", authMiddleware(http.HandlerFunc(handler.systemSettings.DeleteVoiceMonkey)))
+	mux.Handle("DELETE /api/system-settings/smtp", authMiddleware(http.HandlerFunc(handler.systemSettings.DeleteSMTP)))
 
 	// APIs de alertas (catálogo + toggles de canal)
 	mux.Handle("GET /api/alerts", authMiddleware(http.HandlerFunc(handler.alerts.ListAlerts)))

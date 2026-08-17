@@ -98,6 +98,7 @@ export const api = {
     testEmail: () => post<{ message: string; recipients: string }>('/api/system-settings/test-email', {}),
     testVoice: () => post<{ message: string }>('/api/system-settings/test-voice', {}),
     disconnectVoiceMonkey: () => del<{ voicemonkey_enabled: boolean; voicemonkey_send_alerts: boolean; voicemonkey_configured: boolean }>('/api/system-settings/voicemonkey'),
+    disconnectSMTP: () => del<{ smtp_configured: boolean }>('/api/system-settings/smtp'),
   },
   alerts: {
     list: () => get<Alert[]>('/api/alerts'),
