@@ -2,7 +2,10 @@ package services
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"path/filepath"
 	"strings"
@@ -40,24 +43,24 @@ var allowedExtensions = map[string]bool{
 	".jpeg": true,
 }
 
-func (s *DocumentService) UploadAndAnalyze(ctx context.Context, serviceID int64, file multipart.File, header *multipart.FileHeader) (*analyzers.ExtractedBill, string, error) {
+func (s *DocumentService) UploadAndAnalyze(ctx context.Context, serviceID int64, file multipart.File, header *multipart.FileHeader) (*analyzers.ExtractedBill, string, string, error) {
 	svc, err := s.serviceStorage.GetByID(ctx, serviceID)
 	if err != nil {
-		return nil, "", fmt.Errorf("obtener servicio: %w", err)
+		return nil, "", "", fmt.Errorf("obtener servicio: %w", err)
 	}
 	if svc == nil {
-		return nil, "", fmt.Errorf("servicio no encontrado")
+		return nil, "", "", fmt.Errorf("servicio no encontrado")
 	}
 	if svc.InstitutionID == nil {
-		return nil, "", fmt.Errorf("el servicio no tiene institución asociada")
+		return nil, "", "", fmt.Errorf("el servicio no tiene institución asociada")
 	}
 	if svc.InstitutionAnalyzerID == nil {
-		return nil, "", fmt.Errorf("el servicio no tiene analizador configurado")
+		return nil, "", "", fmt.Errorf("el servicio no tiene analizador configurado")
 	}
 
 	instAnalyzers, err := s.instStorage.GetAnalyzers(ctx, *svc.InstitutionID)
 	if err != nil {
-		return nil, "", fmt.Errorf("obtener analyzers de institución: %w", err)
+		return nil, "", "", fmt.Errorf("obtener analyzers de institución: %w", err)
 	}
 
 	var analyzerID string
@@ -68,17 +71,17 @@ func (s *DocumentService) UploadAndAnalyze(ctx context.Context, serviceID int64,
 		}
 	}
 	if analyzerID == "" {
-		return nil, "", fmt.Errorf("analizador no encontrado para este servicio")
+		return nil, "", "", fmt.Errorf("analizador no encontrado para este servicio")
 	}
 
 	analyzer, ok := analyzers.Get(analyzerID)
 	if !ok {
-		return nil, "", fmt.Errorf("analizador %q no está registrado", analyzerID)
+		return nil, "", "", fmt.Errorf("analizador %q no está registrado", analyzerID)
 	}
 
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if !allowedExtensions[ext] {
-		return nil, "", fmt.Errorf("formato de archivo no soportado. Use PDF, PNG o JPG")
+		return nil, "", "", fmt.Errorf("formato de archivo no soportado. Use PDF, PNG o JPG")
 	}
 
 	mimeType := header.Header.Get("Content-Type")
@@ -86,30 +89,48 @@ func (s *DocumentService) UploadAndAnalyze(ctx context.Context, serviceID int64,
 		mimeType = "application/octet-stream"
 	}
 	if !allowedMimeTypes[mimeType] && !allowedExtensions[ext] {
-		return nil, "", fmt.Errorf("tipo de archivo no permitido")
+		return nil, "", "", fmt.Errorf("tipo de archivo no permitido")
 	}
 
-	result, err := analyzer.Analyze(file, mimeType)
+	// Calcular MD5 del archivo durante el análisis (sin lectura extra) para
+	// dedup de importaciones (SPEC-041).
+	hasher := md5.New()
+	reader := io.TeeReader(file, hasher)
+
+	result, err := analyzer.Analyze(reader, mimeType)
 	if err != nil {
-		return nil, "", fmt.Errorf("error al analizar documento: %w", err)
+		return nil, "", "", fmt.Errorf("error al analizar documento: %w", err)
 	}
 
-	return result, analyzerID, nil
+	fileHash := hex.EncodeToString(hasher.Sum(nil))
+	return result, analyzerID, fileHash, nil
 }
 
-func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID int64, extracted *analyzers.ExtractedBill) (*models.Bill, bool, error) {
+func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID int64, extracted *analyzers.ExtractedBill, fileHash string) (*models.Bill, bool, bool, error) {
+	// Dedup: si el archivo ya fue importado para este servicio, no hacer nada.
+	if fileHash != "" {
+		byHash, err := s.billStorage.FindByServiceFileHash(ctx, serviceID, fileHash)
+		if err != nil {
+			return nil, false, false, fmt.Errorf("verificar archivo importado: %w", err)
+		}
+		if byHash != nil {
+			return byHash, false, true, nil
+		}
+	}
+
 	existing, err := s.billStorage.FindByServicePeriod(ctx, serviceID, extracted.Year, extracted.Month)
 	if err != nil {
-		return nil, false, fmt.Errorf("verificar factura existente: %w", err)
+		return nil, false, false, fmt.Errorf("verificar factura existente: %w", err)
 	}
 	if existing != nil {
-		err := s.billStorage.UpdateFromExtracted(ctx, existing.ID, extracted.Amount, extracted.InvoiceNumber)
+		err := s.billStorage.UpdateFromExtracted(ctx, existing.ID, extracted.Amount, extracted.InvoiceNumber, fileHash)
 		if err != nil {
-			return nil, false, fmt.Errorf("actualizando factura: %w", err)
+			return nil, false, false, fmt.Errorf("actualizando factura: %w", err)
 		}
 		existing.Amount = extracted.Amount
 		existing.InvoiceNumber = extracted.InvoiceNumber
-		return existing, true, nil
+		existing.FileHash = fileHash
+		return existing, true, false, nil
 	}
 
 	bill := &models.Bill{
@@ -119,6 +140,7 @@ func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID
 		Amount:        extracted.Amount,
 		InvoiceNumber: extracted.InvoiceNumber,
 		Status:        "pending",
+		FileHash:      fileHash,
 	}
 	if extracted.DueDate != nil {
 		bill.UpdatedAt = *extracted.DueDate
@@ -126,9 +148,9 @@ func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID
 
 	b, err := s.billStorage.Create(ctx, bill)
 	if err != nil {
-		return nil, false, err
+		return nil, false, false, err
 	}
-	return b, false, nil
+	return b, false, false, nil
 }
 
 func (s *DocumentService) GetAnalyzerOptions(ctx context.Context, institutionID int64) ([]map[string]interface{}, error) {

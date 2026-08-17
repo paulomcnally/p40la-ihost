@@ -22,7 +22,7 @@ func NewBillStorage(db *sql.DB) *BillStorage {
 func (s *BillStorage) ListByService(ctx context.Context, serviceID int64) ([]models.Bill, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
-		       deleted_at, created_at, updated_at
+		       file_hash, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE service_id = ? AND deleted_at IS NULL
 		ORDER BY year DESC, month DESC
@@ -39,7 +39,7 @@ func (s *BillStorage) ListByService(ctx context.Context, serviceID int64) ([]mod
 func (s *BillStorage) GetByID(ctx context.Context, id int64) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
-		       deleted_at, created_at, updated_at
+		       file_hash, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE id = ? AND deleted_at IS NULL
 	`, id)
@@ -50,19 +50,32 @@ func (s *BillStorage) GetByID(ctx context.Context, id int64) (*models.Bill, erro
 func (s *BillStorage) FindByServicePeriod(ctx context.Context, serviceID int64, year, month int) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
-		       deleted_at, created_at, updated_at
+		       file_hash, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE service_id = ? AND year = ? AND month = ? AND deleted_at IS NULL
 	`, serviceID, year, month)
 	return scanBill(row)
 }
 
+// FindByServiceFileHash busca una factura que ya fue importada con ese hash
+// de archivo para el servicio (dedup de subidas, SPEC-041).
+func (s *BillStorage) FindByServiceFileHash(ctx context.Context, serviceID int64, fileHash string) (*models.Bill, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
+		       file_hash, deleted_at, created_at, updated_at
+		FROM bills
+		WHERE service_id = ? AND file_hash = ? AND deleted_at IS NULL
+		LIMIT 1
+	`, serviceID, fileHash)
+	return scanBill(row)
+}
+
 // Create inserta una nueva factura.
 func (s *BillStorage) Create(ctx context.Context, bill *models.Bill) (*models.Bill, error) {
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO bills (service_id, year, month, amount, invoice_number, status, drive_url)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, bill.ServiceID, bill.Year, bill.Month, bill.Amount, bill.InvoiceNumber, bill.Status, bill.DriveURL)
+		INSERT INTO bills (service_id, year, month, amount, invoice_number, status, drive_url, file_hash)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, bill.ServiceID, bill.Year, bill.Month, bill.Amount, bill.InvoiceNumber, bill.Status, bill.DriveURL, bill.FileHash)
 	if err != nil {
 		return nil, fmt.Errorf("insertar factura: %w", err)
 	}
@@ -77,10 +90,10 @@ func (s *BillStorage) Create(ctx context.Context, bill *models.Bill) (*models.Bi
 func (s *BillStorage) Update(ctx context.Context, bill *models.Bill) (*models.Bill, error) {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE bills
-		SET year = ?, month = ?, amount = ?, invoice_number = ?, status = ?, drive_url = ?,
+		SET year = ?, month = ?, amount = ?, invoice_number = ?, status = ?, drive_url = ?, file_hash = ?,
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND deleted_at IS NULL
-	`, bill.Year, bill.Month, bill.Amount, bill.InvoiceNumber, bill.Status, bill.DriveURL, bill.ID)
+	`, bill.Year, bill.Month, bill.Amount, bill.InvoiceNumber, bill.Status, bill.DriveURL, bill.FileHash, bill.ID)
 	if err != nil {
 		return nil, fmt.Errorf("actualizar factura: %w", err)
 	}
@@ -88,12 +101,12 @@ func (s *BillStorage) Update(ctx context.Context, bill *models.Bill) (*models.Bi
 }
 
 // UpdateFromExtracted actualiza solo los campos provistos por el analizador.
-func (s *BillStorage) UpdateFromExtracted(ctx context.Context, billID int64, amount float64, invoiceNumber string) error {
+func (s *BillStorage) UpdateFromExtracted(ctx context.Context, billID int64, amount float64, invoiceNumber, fileHash string) error {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE bills
-		SET amount = ?, invoice_number = ?, updated_at = CURRENT_TIMESTAMP
+		SET amount = ?, invoice_number = ?, file_hash = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND deleted_at IS NULL
-	`, amount, invoiceNumber, billID)
+	`, amount, invoiceNumber, fileHash, billID)
 	if err != nil {
 		return fmt.Errorf("actualizar factura desde analizador: %w", err)
 	}
@@ -151,7 +164,7 @@ func scanBill(row *sql.Row) (*models.Bill, error) {
 	var b models.Bill
 	var deletedAt sql.NullTime
 	if err := row.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount, &b.InvoiceNumber,
-		&b.Status, &b.DriveURL, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
+		&b.Status, &b.DriveURL, &b.FileHash, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -169,7 +182,7 @@ func scanBills(rows *sql.Rows) ([]models.Bill, error) {
 		var b models.Bill
 		var deletedAt sql.NullTime
 		if err := rows.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount, &b.InvoiceNumber,
-			&b.Status, &b.DriveURL, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
+			&b.Status, &b.DriveURL, &b.FileHash, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear factura: %w", err)
 		}
 		if deletedAt.Valid {

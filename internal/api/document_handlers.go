@@ -37,7 +37,7 @@ func (h *DocumentHandlers) UploadAndAnalyze(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	result, analyzerID, err := h.doc.UploadAndAnalyze(r.Context(), serviceID, file, header)
+	result, analyzerID, fileHash, err := h.doc.UploadAndAnalyze(r.Context(), serviceID, file, header)
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "analysis_failed", err.Error())
 		return
@@ -46,6 +46,7 @@ func (h *DocumentHandlers) UploadAndAnalyze(w http.ResponseWriter, r *http.Reque
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"extracted":     result,
 		"analyzer_used": analyzerID,
+		"file_hash":     fileHash,
 	})
 }
 
@@ -61,6 +62,7 @@ func (h *DocumentHandlers) CreateBillFromExtracted(w http.ResponseWriter, r *htt
 		InvoiceNumber string  `json:"invoice_number"`
 		Year          int     `json:"year"`
 		Month         int     `json:"month"`
+		FileHash      string  `json:"file_hash"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
@@ -74,7 +76,7 @@ func (h *DocumentHandlers) CreateBillFromExtracted(w http.ResponseWriter, r *htt
 		Month:         req.Month,
 	}
 
-	bill, updated, err := h.doc.CreateBillFromExtracted(r.Context(), serviceID, extracted)
+	bill, updated, duplicate, err := h.doc.CreateBillFromExtracted(r.Context(), serviceID, extracted, req.FileHash)
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return
@@ -90,5 +92,6 @@ func (h *DocumentHandlers) CreateBillFromExtracted(w http.ResponseWriter, r *htt
 		"created_at":      bill.CreatedAt,
 		"updated_at":      bill.UpdatedAt,
 		"updated":         updated,
+		"duplicate":       duplicate,
 	})
 }

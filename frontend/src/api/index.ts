@@ -68,8 +68,8 @@ export const api = {
           return data
         })
     },
-    createBillFromExtracted: (serviceId: number, body: { amount: number; invoice_number: string; year: number; month: number }) =>
-      post<Bill & { updated?: boolean }>(`/api/services/${serviceId}/bills/from-extracted`, body),
+    createBillFromExtracted: (serviceId: number, body: { amount: number; invoice_number: string; year: number; month: number; file_hash?: string }) =>
+      post<Bill & { updated?: boolean; duplicate?: boolean }>(`/api/services/${serviceId}/bills/from-extracted`, body),
   },
   auth: {
     login: (email: string, password: string, remember: boolean) =>
