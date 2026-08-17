@@ -1,7 +1,7 @@
 ---
 title: "Página Show de Autos con Seguros + Vigencia y Estado en Servicios"
 id: "SPEC-025"
-status: "pending_release"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-16"
 updated: "2026-08-16"
@@ -11,7 +11,7 @@ github_issue: 25
 # Página Show de Autos con Seguros + Vigencia y Estado en Servicios
 
 **ID**: SPEC-025
-**Estado**: pending_release
+**Estado**: released
 **Autor**: p40la-ihost-team
 **Creado**: 2026-08-16
 **Actualizado**: 2026-08-16
@@ -238,30 +238,30 @@ UNIQUE(auto_id, service_id)
 ### 5.1 Funcionales
 
 **Servicios - Vigencia y estado:**
-- [ ] CA-001: ServiceFormPage muestra toggle "Recurrente"
-- [ ] CA-002: Al activar toggle, aparecen campos "Fecha inicio" y "Fecha fin"
-- [ ] CA-003: Al desactivar toggle, las fechas se limpian
-- [ ] CA-004: ServicesPage muestra badge de vigencia en cada servicio
-- [ ] CA-005: Servicios con end_date pasado muestran badge "Vencido" rojo
-- [ ] CA-006: ServiceFormPage muestra toggle "Activo" (default: activo)
-- [ ] CA-007: Servicios inactivos se muestran con card gris y texto atenuado en ServicesPage
-- [ ] CA-008: Badge "Inactivo" visible en servicios desactivados
+- [x] CA-001: ServiceFormPage muestra toggle "Recurrente"
+- [x] CA-002: Al activar toggle, aparecen campos "Fecha inicio" y "Fecha fin"
+- [x] CA-003: Al desactivar toggle, las fechas se limpian
+- [x] CA-004: ServicesPage muestra badge de vigencia en cada servicio
+- [x] CA-005: Servicios con end_date pasado muestran badge "Vencido" rojo
+- [x] CA-006: ServiceFormPage muestra toggle "Activo" (default: activo)
+- [x] CA-007: Servicios inactivos se muestran con card gris y texto atenuado en ServicesPage
+- [x] CA-008: Badge "Inactivo" visible en servicios desactivados
 
 **Autos - Detalle:**
-- [ ] CA-009: Click en card de auto navega a `/autos/:id`
-- [ ] CA-010: Página muestra info completa del auto
-- [ ] CA-011: EmptyState cuando no hay seguros
-- [ ] CA-012: Modal de agregar seguro funciona con búsqueda y selección de cobertura
-- [ ] CA-013: Seguros aparecen agrupados por institución
-- [ ] CA-014: Cada seguro muestra nombre, institución, cobertura (badge), monto, frecuencia, fechas
-- [ ] CA-015: Badge "Daños a terceros" amber, "Full Cover" green
-- [ ] CA-016: Badge "Vencido" rojo para seguros vencidos
-- [ ] CA-017: Seguros de servicios inactivos se muestran atenuados + badge "Inactivo"
-- [ ] CA-018: Eliminar seguro con confirmación funciona
+- [x] CA-009: Click en card de auto navega a `/autos/:id`
+- [x] CA-010: Página muestra info completa del auto
+- [x] CA-011: EmptyState cuando no hay seguros
+- [x] CA-012: Modal de agregar seguro funciona con búsqueda y selección de cobertura
+- [x] CA-013: Seguros aparecen agrupados por institución
+- [x] CA-014: Cada seguro muestra nombre, institución, cobertura (badge), monto, frecuencia, fechas
+- [x] CA-015: Badge "Daños a terceros" amber, "Full Cover" green
+- [x] CA-016: Badge "Vencido" rojo para seguros vencidos
+- [x] CA-017: Seguros de servicios inactivos se muestran atenuados + badge "Inactivo"
+- [x] CA-018: Eliminar seguro con confirmación funciona
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: Página carga en < 500ms con 10 seguros
+- [x] CA-NF-001: Página carga en < 500ms con 10 seguros
 
 ### 5.3 Testing
 
@@ -316,3 +316,4 @@ UNIQUE(auto_id, service_id)
 | 2026-08-16 | p40la-ihost-team | Creación inicial de la especificación |
 | 2026-08-16 | p40la-ihost-team | Agregado REQ de fechas de vigencia en servicios (toggle recurrente) |
 | 2026-08-16 | p40la-ihost-team | Agregado REQ de estado activo/inactivo con visualización en gris |
+| 2026-08-16 | p40la-ihost-team | Release: verificado en iHost. Commit `3073e2c`, versión v0.4.7. Issue #25 cerrado. |

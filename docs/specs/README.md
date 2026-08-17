@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 29 |
+| **Total de specs** | 33 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 1 🟣 |
-| **Pending release** | 6 🟠 |
-| **Released** | 22 🟢 |
+| **In progress** | 5 🟣 |
+| **Pending release** | 0 🟠 |
+| **Released** | 28 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-029 |
+| **Último ID usado** | SPEC-033 |
 
 ---
 
@@ -30,26 +30,30 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-007 | Formulario de facturas: ocultar mes para servicios anuales | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-008 | Sistema de facturación automática: monto fijo/variable y generación programada | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-009 | Módulo de Instituciones, Analizadores de Documentos y Extracción Automática de Facturas | released | 2026-08-15 | p40la-ihost-team |
-| SPEC-010 | Integración de Specs con GitHub Issues para Gestión Asíncrona y Multi-Agente | pending_release | 2026-08-15 | paulomcnally |
+| SPEC-010 | Integración de Specs con GitHub Issues para Gestión Asíncrona y Multi-Agente | released | 2026-08-15 | paulomcnally |
 | SPEC-011 | Soporte Responsive para Dispositivos Móviles | released | 2026-08-15 | paulomcnally |
-| SPEC-012 | Analizador de facturas Claro: internet residencial e internet móvil | pending_release | 2026-08-15 | paulomcnally |
+| SPEC-012 | Analizador de facturas Claro: internet residencial e internet móvil | released | 2026-08-15 | paulomcnally |
 | SPEC-013 | Mejora de UI para gestión de analizadores en instituciones | released | 2026-08-15 | paulomcnally |
 | SPEC-014 | UI de subida de facturas con análisis automático + fix overflow BillsPage | released | 2026-08-15 | paulomcnally |
 | SPEC-015 | CI/CD con GitHub Actions: build multi-arch por tag | in_progress | 2026-08-15 | paulomcnally |
 | SPEC-016 | Permitir borrar el campo día de facturación con validación por toast | released | 2026-08-15 | paulomcnally |
 | SPEC-017 | Responsive BillsPage: tabla en desktop, cards en móvil | released | 2026-08-15 | p40la-ihost-team |
-| SPEC-018 | Estado de pago dinámico en cards de servicios | pending_release | 2026-08-15 | paulomcnally |
+| SPEC-018 | Estado de pago dinámico en cards de servicios | released | 2026-08-15 | paulomcnally |
 | SPEC-019 | Analizador de facturas DISNORTE-DISSUR | released | 2026-08-15 | paulomcnally |
 | SPEC-020 | Fix posición del label de estado en cards de Bills | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-021 | Sobrescribir bill existente cuando el analizador extrae datos | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-022 | Loading states en listas de casas y servicios | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-023 | Modal del analizador: deshabilitar cierre al hacer click fuera | released | 2026-08-15 | p40la-ihost-team |
-| SPEC-024 | Módulo CRUD de Autos | pending_release | 2026-08-16 | p40la-ihost-team |
-| SPEC-025 | Página Show de Autos con Seguros + Vigencia y Estado en Servicios | pending_release | 2026-08-16 | p40la-ihost-team |
-| SPEC-026 | Categorías de Instituciones con Seed y Filtro de Seguros | pending_release | 2026-08-16 | paulomcnally |
+| SPEC-024 | Módulo CRUD de Autos | released | 2026-08-16 | p40la-ihost-team |
+| SPEC-025 | Página Show de Autos con Seguros + Vigencia y Estado en Servicios | released | 2026-08-16 | p40la-ihost-team |
+| SPEC-026 | Categorías de Instituciones con Seed y Filtro de Seguros | released | 2026-08-16 | paulomcnally |
 | SPEC-027 | Script de release automático para Docker Hub con bump de versión | released | 2026-08-16 | paulomcnally |
 | SPEC-028 | Extensión de campos para autos y pólizas de seguro | released | 2026-08-16 | p40la-ihost-team |
 | SPEC-029 | Sistema de Envío de Mails y Alertas Diarias de Seguros Vencidos | released | 2026-08-16 | paulomcnally |
+| SPEC-030 | Email informativo al generar factura automática | in_progress | 2026-08-16 | paulomcnally |
+| SPEC-031 | Resumen diario de facturas pendientes por email | in_progress | 2026-08-16 | paulomcnally |
+| SPEC-032 | Sección Alertas en Configuraciones con toggles por funcionalidad de mail | in_progress | 2026-08-16 | paulomcnally |
+| SPEC-033 | Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz | in_progress | 2026-08-16 | paulomcnally |
 
 ---
 
@@ -119,4 +123,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-16 — SPEC-029 released.*
+*Última actualización de este tracker: 2026-08-16 — SPEC-018, SPEC-024, SPEC-025, SPEC-026 released.*

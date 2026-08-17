@@ -1,7 +1,7 @@
 ---
 title: "Categorías de Instituciones con Seed y Filtro de Seguros"
 id: "SPEC-026"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-16"
 updated: "2026-08-16"
@@ -11,7 +11,7 @@ github_issue: 26
 # Categorías de Instituciones con Seed y Filtro de Seguros
 
 **ID**: SPEC-026
-**Estado**: pending_release
+**Estado**: released
 **Autor**: paulomcnally
 **Creado**: 2026-08-16
 **Actualizado**: 2026-08-16
@@ -143,3 +143,4 @@ DELETE /api/institution-categories/:id
 |-------|-------|-------------|
 | 2026-08-16 | paulomcnally | Creación de la especificación |
 | 2026-08-16 | paulomcnally | Implementación completa y validación |
+| 2026-08-16 | paulomcnally | Release: verificado en iHost. Commit `3073e2c` (compartido con SPEC-025), versión v0.4.7. Issue #26 cerrado. |

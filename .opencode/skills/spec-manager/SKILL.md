@@ -154,6 +154,13 @@ Cuando una spec pasa a `released`:
 3. Cerrar el issue de GitHub con label `spec/released`
 4. El estado `released` significa "en iHost o producción"
 
+**Regla CRÍTICA: implementación y release son inseparables.**
+
+- Una spec NO se da por terminada hasta completar el release completo: frontmatter + cuerpo (`**Estado**:`) + README tracker + label GitHub + cierre del issue + documentación del commit.
+- Si el código de una feature está commiteado en `main`, la spec DEBE estar `released`. Toda spec en `pending_release` con código en `main` es un error.
+- Antes de declarar terminada una spec, ejecutar `/spec check-release` para confirmar que no quedan colgadas.
+- Los commits de implementación DEBEN ir acompañados (en la misma sesión) del commit de release que documenta el cambio de estado. No dejar la spec en `pending_release` tras mergear a main.
+
 ## Comandos de la skill
 
 ### `/spec create "<título>"`
@@ -195,6 +202,20 @@ Mostrar rápidamente specs en estados no-terminal con sus issues.
 ```bash
 gh issue list --label "spec/draft,spec/pending-execution,spec/in-progress,spec/pending-release" --state open
 ```
+
+### `/spec check-release`
+Verificar que no haya specs "colgadas" (código commiteado en main pero estado != `released`). Debe ejecutarse SIEMPRE antes de declarar terminada una spec y tras cada release.
+
+1. Listar todas las specs locales y su estado (`frontmatter status`)
+2. Para cada spec en estado != `released`, verificar si su feature tiene código en `main`:
+   - Buscar commits con el nombre de la spec: `git log --all --oneline --grep="SPEC-XXX" -i`
+   - Si hay commits de implementación pero el estado no es `released`, la spec está colgada
+3. Cruzar con issues de GitHub: `gh issue list --label "spec/<estado>" --state open`
+4. Reporte final:
+   - Specs colgadas (requieren release o documentación de bloqueo)
+   - Issues abiertos sin spec local o viceversa
+   - Consistencia local vs GitHub (frontmatter vs labels + open/closed)
+5. Si hay colgadas: NO declarar la tarea terminada. Ejecutar el flujo de release de la sección 5 o documentar el bloqueo.
 
 ## Validaciones
 
