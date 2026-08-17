@@ -133,7 +133,17 @@
       "configured_status": "SMTP configuration configured",
       "reconfigure": "Reconfigure",
       "reconfigure_confirm": "Do you want to remove the current SMTP configuration? You will need to re-enter server, username and password.",
-      "reconfigured": "SMTP configuration removed"
+      "reconfigured": "SMTP configuration removed",
+      "help": {
+        "title": "Where do I find this data?",
+        "step1": "Open the Mailgun SMTP configuration screen in a new tab.",
+        "open_link": "Open Mailgun SMTP settings",
+        "step2": "Copy the SMTP server (host) shown there and paste it into the \"SMTP Server\" field.",
+        "step3": "Copy the port (usually 587) into the \"Port\" field.",
+        "step4": "Use the email of your Mailgun account as \"Username\".",
+        "step5": "Create or use the SMTP password shown by Mailgun and paste it into \"Password\".",
+        "step6": "Fill in the \"From email\" (where emails are sent from) and the \"From name\"."
+      }
     },
     "alerts": {
       "title": "Alerts",
@@ -159,11 +169,20 @@
       "configured": "Configured",
       "not_configured": "Not configured",
       "leave_blank": "Leave blank to keep current value",
- "configured_status": "Voice Monkey configured",
- "reconfigure": "Reconfigure",
- "reconfigure_confirm": "Do you want to remove the current Voice Monkey configuration? You'll need to re-enter the token and device.",
- "reconfigured": "Voice Monkey configuration removed",
- "needs_config_hint": "Token and device, or the \"Send alerts\" toggle, are missing to complete the setup."
+      "configured_status": "Voice Monkey configured",
+      "reconfigure": "Reconfigure",
+      "reconfigure_confirm": "Do you want to remove the current Voice Monkey configuration? You'll need to re-enter the token and device.",
+      "reconfigured": "Voice Monkey configuration removed",
+      "needs_config_hint": "Token and device, or the \"Send alerts\" toggle, are missing to complete the setup.",
+      "help": {
+        "title": "Where do I find this data?",
+        "step1": "Get your Key/API token on the Voice Monkey tokens page.",
+        "open_tokens": "Get API token",
+        "step2": "Copy it and paste it into the \"API token\" field.",
+        "step3": "Choose the speaker where you want alerts announced on the speakers page.",
+        "open_speakers": "View my speakers",
+        "step4": "Copy the corresponding Device and paste it into the \"Device\" field."
+      }
     }
   },
   "months": {

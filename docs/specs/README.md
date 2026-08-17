@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 37 |
-| **En draft** | 2 🟡 |
+| **Total de specs** | 38 |
+| **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
 | **Pending release** | 1 🟠 |
-| **Released** | 34 🟢 |
+| **Released** | 36 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-037 |
+| **Último ID usado** | SPEC-038 |
 
 ---
 
@@ -56,8 +56,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-033 | Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz | released | 2026-08-16 | paulomcnally |
 | SPEC-034 | Estado Configurado y botón Reconfigurar para SMTP (mirror UI de Voice Monkey) | released | 2026-08-16 | paulomcnally |
 | SPEC-035 | Destinatarios con modal: alta/baja de emails con guardado automático | released | 2026-08-16 | paulomcnally |
-| SPEC-036 | Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa) | draft | 2026-08-16 | paulomcnally |
+| SPEC-036 | Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa) | released | 2026-08-16 | paulomcnally |
 | SPEC-037 | Secciones colapsables de Email/Voice Monkey y gating de toggles de email | pending_release | 2026-08-16 | paulomcnally |
+| SPEC-038 | Limpieza automática de worktrees al liberar una spec | released | 2026-08-16 | paulomcnally |
 
 ---
 
