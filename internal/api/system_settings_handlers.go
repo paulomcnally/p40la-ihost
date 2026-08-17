@@ -93,6 +93,12 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
+	alertCheckHour, err := h.settings.GetAlertCheckHour(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
 	smtp, err := h.settings.GetSMTPConfigPublic(r.Context())
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
@@ -120,6 +126,7 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 	// SMTPConfigPublic.User es siempre "" (info sensible, no se expone).
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour": hour,
+		"alert_check_hour":        alertCheckHour,
 		"smtp_host":               smtp.Host,
 		"smtp_port":               smtp.Port,
 		"smtp_user":               smtp.User,
