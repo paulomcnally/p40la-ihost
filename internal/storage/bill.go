@@ -163,8 +163,9 @@ func (s *BillStorage) ListPendingWithDetails(ctx context.Context) ([]models.Pend
 func scanBill(row *sql.Row) (*models.Bill, error) {
 	var b models.Bill
 	var deletedAt sql.NullTime
-	if err := row.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount, &b.InvoiceNumber,
-		&b.Status, &b.DriveURL, &b.FileHash, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
+	var invoiceNumber, driveURL, fileHash sql.NullString
+	if err := row.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount,
+		&invoiceNumber, &b.Status, &driveURL, &fileHash, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -173,6 +174,9 @@ func scanBill(row *sql.Row) (*models.Bill, error) {
 	if deletedAt.Valid {
 		b.DeletedAt = &deletedAt.Time
 	}
+	b.InvoiceNumber = invoiceNumber.String
+	b.DriveURL = driveURL.String
+	b.FileHash = fileHash.String
 	return &b, nil
 }
 
@@ -181,13 +185,17 @@ func scanBills(rows *sql.Rows) ([]models.Bill, error) {
 	for rows.Next() {
 		var b models.Bill
 		var deletedAt sql.NullTime
-		if err := rows.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount, &b.InvoiceNumber,
-			&b.Status, &b.DriveURL, &b.FileHash, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
+		var invoiceNumber, driveURL, fileHash sql.NullString
+		if err := rows.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount,
+			&invoiceNumber, &b.Status, &driveURL, &fileHash, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear factura: %w", err)
 		}
 		if deletedAt.Valid {
 			b.DeletedAt = &deletedAt.Time
 		}
+		b.InvoiceNumber = invoiceNumber.String
+		b.DriveURL = driveURL.String
+		b.FileHash = fileHash.String
 		bills = append(bills, b)
 	}
 	if err := rows.Err(); err != nil {
