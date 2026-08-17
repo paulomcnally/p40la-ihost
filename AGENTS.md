@@ -140,6 +140,15 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 - **JAMÁS** ejecutar `--force` o `--force-with-lease` en `main` o ramas de release.
 - **Solo usar labels de spec definidos en la skill.** Los labels válidos son: `spec/draft`, `spec/pending-execution`, `spec/in-progress`, `spec/pending-release`, `spec/released`, `spec/cancelled`. **NUNCA** agregar labels genéricos como `spec` o cualquier otro que no esté en esta lista. Solo se agregan labels cuando el flujo de specs lo requiere explícitamente.
 
+### ️ Regla CRÍTICA: Worktrees por sesión (multi-ventana)
+
+- **Cada ventana/sesión de opencode trabaja en SU PROPIO git worktree.** El proyecto permite hasta 6 ventanas trabajando en specs distintos en paralelo; compartir un mismo checkout git hace que operaciones como `checkout` o `reset` pisen el trabajo sin commitear de otras sesiones (error crítico documentado: SPEC-018/024/025/026 + SPEC-030-033).
+- **Para empezar una spec**: `./scripts/new-worktree.sh SPEC-XXX` crea un directorio aislado (`p40la-ihost-spec-XXX`) en su propia rama `feature/SPEC-XXX`. Luego abrir una nueva ventana de opencode en ese directorio.
+- **JAMÁS ejecutar `git checkout`, `git switch`, `git reset`, `git stash` ni `git clean`** sobre el worktree principal compartido ni sobre el worktree de otra sesión. Cada sesión solo opera su propio worktree.
+- **Verificar antes de operar**: `git worktree list` muestra todos los worktrees y sus ramas. Antes de cualquier operación git, confirmar en qué worktree se está (`git branch --show-current`).
+- **JAMÁS ejecutar `git reset --hard`** salvo que el usuario lo pida explícitamente para su propio worktree. Un `reset --hard` descarta TODO cambio sin commitear (propio o ajeno).
+- **Para liberar una spec** (pasar a `released`): mergear la rama del worktree a `main` (con confirmación del usuario), luego cerrar el issue y actualizar labels desde cualquier worktree.
+
 ### ️ Regla CRÍTICA: Arquitectura Multi-Arch (iHost + desarrollo)
 
 - **El SONOFF iHost usa procesador ARM64 (aarch64).**
@@ -216,6 +225,7 @@ La skill está registrada en `.opencode/skills/spec-manager/SKILL.md`.
 | `/spec status <id> <estado>` | Cambiar estado de una spec |
 | `/spec show <id>` | Mostrar resumen de una spec |
 | `/spec check-release` | Verificar que no haya specs colgadas (código en main sin estado released) |
+| `/spec worktree <ID>` | Crear worktree aislado para desarrollar una spec en su propia rama |
 
 ### Activación automática
 
