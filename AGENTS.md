@@ -148,6 +148,7 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 - **Verificar antes de operar**: `git worktree list` muestra todos los worktrees y sus ramas. Antes de cualquier operación git, confirmar en qué worktree se está (`git branch --show-current`).
 - **JAMÁS ejecutar `git reset --hard`** salvo que el usuario lo pida explícitamente para su propio worktree. Un `reset --hard` descarta TODO cambio sin commitear (propio o ajeno).
 - **Para liberar una spec** (pasar a `released`): mergear la rama del worktree a `main` (con confirmación del usuario), luego cerrar el issue y actualizar labels desde cualquier worktree.
+- **Al liberar una spec, limpiar SU worktree y rama** (paso obligatorio del release, SPEC-038): `git worktree remove ../p40la-ihost-spec-XXX` y `git branch -d feature/SPEC-XXX` (usar SIEMPRE `-d`, nunca `-D`: protege ramas no mergeadas). Verificar con `git worktree list`. **Esta limpieza SOLO aplica a specs `released`**; los worktrees de specs en desarrollo (`draft`/`in_progress`/`pending_release`) nunca se tocan.
 
 ### ️ Regla CRÍTICA: Arquitectura Multi-Arch (iHost + desarrollo)
 
