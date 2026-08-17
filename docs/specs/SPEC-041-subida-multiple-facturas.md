@@ -1,7 +1,7 @@
 ---
 title: "Subida múltiple de facturas para importación masiva de pagos"
 id: "SPEC-041"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-16"
 updated: "2026-08-16"
@@ -11,7 +11,7 @@ github_issue: 41
 # Subida múltiple de facturas para importación masiva de pagos
 
 **ID**: SPEC-041  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-16  
 **Actualizado**: 2026-08-17
@@ -278,3 +278,4 @@ Entidad: Bill
 | 2026-08-16 | paulomcnally | Cambio de estado a pending_execution |
 | 2026-08-16 | paulomcnally | Implementación: migración 0014 (file_hash + índice único parcial), backend dedup MD5 (TeeReader), flag duplicate en from-extracted, UploadBillModal multi-archivo (selección múltiple, análisis secuencial, resultados editables, guardado en lote), tests de migración/dedup/hash. Cambio de estado a in_progress |
 | 2026-08-17 | paulomcnally | Validación manual del usuario satisfactoria. Criterios de aceptación P0 y NF-001..003 marcados como pass. Cambio de estado a pending_release |
+| 2026-08-17 | paulomcnally | Release: merge de feature/SPEC-041 a main (commit c827bb4) y push. Estado a released |

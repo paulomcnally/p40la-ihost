@@ -10,8 +10,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
-| **Pending release** | 1 🟠 |
-| **Released** | 39 🟢 |
+| **Pending release** | 0 🟠 |
+| **Released** | 40 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-041 |
 
@@ -61,7 +61,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-038 | Limpieza automática de worktrees al liberar una spec | released | 2026-08-16 | paulomcnally |
 | SPEC-039 | Dropdowns de UI para horas (generación y check de alertas) con formato AM/PM y 24h | released | 2026-08-16 | p40la-ihost-team |
 | SPEC-040 | Analizador de recibos ASSA - Seguro Auto | released | 2026-08-16 | paulomcnally |
-| SPEC-041 | Subida múltiple de facturas para importación masiva de pagos | pending_release | 2026-08-16 | paulomcnally |
+| SPEC-041 | Subida múltiple de facturas para importación masiva de pagos | released | 2026-08-16 | paulomcnally |
 
 ---
 
@@ -131,4 +131,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-17 — SPEC-041 pending_release.*
+*Última actualización de este tracker: 2026-08-17 — SPEC-041 released (c827bb4).*
