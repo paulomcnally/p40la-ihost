@@ -4,11 +4,29 @@ import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from '../components/Icons'
 import Toggle from '../components/Toggle'
+import Select from '../components/Select'
 import EmailRecipientsModal from '../components/EmailRecipientsModal'
 import HelpPanel from '../components/HelpPanel'
 import { api } from '../api'
 import { useToast } from '../components/Toast'
 import type { Alert } from '../types'
+
+type HourFormat = '12h' | '24h'
+
+const HOUR_FORMAT_KEY = 'hourFormat'
+
+function getInitialHourFormat(): HourFormat {
+  return localStorage.getItem(HOUR_FORMAT_KEY) === '24h' ? '24h' : '12h'
+}
+
+function formatHourLabel(hour: number, format: HourFormat): string {
+  if (format === '24h') {
+    return `${String(hour).padStart(2, '0')}:00`
+  }
+  const period = hour < 12 ? 'AM' : 'PM'
+  const h12 = hour % 12 === 0 ? 12 : hour % 12
+  return `${h12}:00 ${period}`
+}
 
 function parseEmails(value?: string | null): string[] {
   if (!value) return []
@@ -24,6 +42,8 @@ export default function SettingsPage() {
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const [billingHour, setBillingHour] = useState(0)
+  const [alertCheckHour, setAlertCheckHour] = useState(0)
+  const [hourFormat, setHourFormat] = useState<HourFormat>(getInitialHourFormat)
   // Email alerts
   const [smtpHost, setSmtpHost] = useState('')
   const [smtpPort, setSmtpPort] = useState(587)
@@ -74,6 +94,7 @@ export default function SettingsPage() {
       const data = await api.systemSettings.get()
       if (data) {
         setBillingHour(data.billing_generation_hour ?? 0)
+        setAlertCheckHour(data.alert_check_hour ?? 0)
       }
     } catch {
       // ignore
@@ -128,6 +149,22 @@ export default function SettingsPage() {
     } catch {
       showToast('Error al actualizar', 'error')
     }
+  }
+
+  const handleAlertCheckHourChange = async (hour: number) => {
+    try {
+      await api.systemSettings.update({ alert_check_hour: hour })
+      setAlertCheckHour(hour)
+      showToast('Hora de check de alertas actualizada', 'success')
+    } catch {
+      showToast('Error al actualizar', 'error')
+    }
+  }
+
+  const handleHourFormatChange = (next: boolean) => {
+    const format: HourFormat = next ? '24h' : '12h'
+    setHourFormat(format)
+    localStorage.setItem(HOUR_FORMAT_KEY, format)
   }
 
   const handleToggleAlert = async (key: string, field: 'mail_enabled' | 'voice_enabled', value: boolean) => {
@@ -288,7 +325,7 @@ export default function SettingsPage() {
 
   const hours = Array.from({ length: 24 }, (_, i) => ({
     value: i,
-    label: `${String(i).padStart(2, '0')}:00`,
+    label: formatHourLabel(i, hourFormat),
   }))
 
   // Voice Monkey está plenamente activo solo si master on + configurado + enviar alertas on.
@@ -338,15 +375,29 @@ export default function SettingsPage() {
           <div className="px-4 py-3.5 border-b border-border">
             <div className="font-medium">Hora de generación</div>
             <div className="text-sm text-text-secondary mb-3">Hora del día para generar facturas automáticamente</div>
-            <select
+            <Select
+              options={hours}
               value={billingHour}
-              onChange={(e) => handleBillingHourChange(Number(e.target.value))}
-              className={inputCls}
-            >
-              {hours.map(h => (
-                <option key={h.value} value={h.value}>{h.label}</option>
-              ))}
-            </select>
+              onChange={(v) => handleBillingHourChange(Number(v))}
+              searchable
+            />
+          </div>
+          <div className="px-4 py-3.5 border-b border-border">
+            <div className="font-medium">Hora de check de alertas</div>
+            <div className="text-sm text-text-secondary mb-3">Hora del día para verificar alertas pendientes</div>
+            <Select
+              options={hours}
+              value={alertCheckHour}
+              onChange={(v) => handleAlertCheckHourChange(Number(v))}
+              searchable
+            />
+          </div>
+          <div className="px-4 py-3.5 flex items-center justify-between gap-3">
+            <div>
+              <div className="font-medium">Formato de hora</div>
+              <div className="text-sm text-text-secondary">Mostrar horas en formato 12h (AM/PM) o 24h</div>
+            </div>
+            <Toggle checked={hourFormat === '24h'} onChange={handleHourFormatChange} />
           </div>
         </div>
       </div>

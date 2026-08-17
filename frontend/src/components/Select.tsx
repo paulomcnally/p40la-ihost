@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './Icons'
 
 export interface SelectOption {
@@ -17,6 +18,7 @@ export interface SelectProps {
 export default function Select({ options, value, onChange, placeholder, searchable = false }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number } | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -25,16 +27,36 @@ export default function Select({ options, value, onChange, placeholder, searchab
     ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
     : options
 
+  const close = () => {
+    setOpen(false)
+    setSearch('')
+  }
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-        setSearch('')
+        close()
       }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const updatePos = () => {
+      if (!ref.current) return
+      const rect = ref.current.getBoundingClientRect()
+      setMenuPos({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+    }
+    updatePos()
+    window.addEventListener('scroll', updatePos, true)
+    window.addEventListener('resize', updatePos)
+    return () => {
+      window.removeEventListener('scroll', updatePos, true)
+      window.removeEventListener('resize', updatePos)
+    }
+  }, [open])
 
   useEffect(() => {
     if (open && searchable && inputRef.current) {
@@ -44,8 +66,7 @@ export default function Select({ options, value, onChange, placeholder, searchab
 
   const handleSelect = (opt: SelectOption) => {
     onChange(opt.value)
-    setOpen(false)
-    setSearch('')
+    close()
   }
 
   return (
@@ -61,41 +82,47 @@ export default function Select({ options, value, onChange, placeholder, searchab
         <Icon name="chevron" className={`w-4 h-4 text-text-secondary transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-ios-sm shadow-ios-lg z-50 overflow-hidden">
-          {searchable && (
-            <div className="p-2 border-b border-border">
-              <input
-                ref={inputRef}
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar..."
-                className="w-full px-2 py-1.5 text-sm border border-border rounded-ios-sm focus:outline-none focus:border-primary"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          )}
-          <div className="max-h-48 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-text-secondary">Sin resultados</div>
-            ) : (
-              filtered.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => handleSelect(opt)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-bg transition-colors ${
-                    opt.value === value ? 'text-primary font-medium bg-primary/5' : ''
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))
+      {open &&
+        menuPos &&
+        createPortal(
+          <div
+            className="fixed bg-card border border-border rounded-ios-sm shadow-ios-lg z-50 overflow-hidden"
+            style={{ top: menuPos.top, left: menuPos.left, width: menuPos.width }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {searchable && (
+              <div className="p-2 border-b border-border">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar..."
+                  className="w-full px-2 py-1.5 text-sm border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+                />
+              </div>
             )}
-          </div>
-        </div>
-      )}
+            <div className="max-h-48 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-text-secondary">Sin resultados</div>
+              ) : (
+                filtered.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleSelect(opt)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-bg transition-colors ${
+                      opt.value === value ? 'text-primary font-medium bg-primary/5' : ''
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }
