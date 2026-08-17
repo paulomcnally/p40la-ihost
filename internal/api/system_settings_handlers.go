@@ -81,6 +81,9 @@ type settingsRequest struct {
 	VoiceMonkeySendAlerts *bool   `json:"voicemonkey_send_alerts,omitempty"`
 	VoiceMonkeyToken      *string `json:"voicemonkey_token,omitempty"`
 	VoiceMonkeyDevice     *string `json:"voicemonkey_device,omitempty"`
+
+	// Email alerts master toggle (SPEC-037).
+	EmailAlertsEnabled *bool `json:"email_alerts_enabled,omitempty"`
 }
 
 func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +111,12 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
+	emailAlertsEnabled, err := h.settings.GetEmailAlertsEnabled(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
 	// SMTPConfigPublic.User es siempre "" (info sensible, no se expone).
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour": hour,
@@ -121,6 +130,7 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"voicemonkey_enabled":     vm.Enabled,
 		"voicemonkey_send_alerts": vm.SendAlerts,
 		"voicemonkey_configured":  vm.Configured,
+		"email_alerts_enabled":    emailAlertsEnabled,
 	})
 }
 
@@ -206,13 +216,23 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		}
 	}
 
+	// Email alerts master toggle (SPEC-037).
+	if req.EmailAlertsEnabled != nil {
+		if err := h.settings.SetEmailAlertsEnabled(r.Context(), *req.EmailAlertsEnabled); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+	}
+
 	hour, _ := h.settings.GetBillingGenerationHour(r.Context())
 	smtp, _ := h.settings.GetSMTPConfigPublic(r.Context())
 	vm, _ := h.settings.GetVoiceMonkeyConfigPublic(r.Context())
+	emailAlertsEnabled, _ := h.settings.GetEmailAlertsEnabled(r.Context())
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour": hour,
 		"smtp_configured":         smtp.Configured,
 		"voicemonkey_configured":  vm.Configured,
+		"email_alerts_enabled":    emailAlertsEnabled,
 		"message":                 "Configuración actualizada",
 	})
 }
