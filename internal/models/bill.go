@@ -12,6 +12,7 @@ type Bill struct {
 	InvoiceNumber string     `json:"invoice_number,omitempty"`
 	Status        string     `json:"status"`
 	DriveURL      string     `json:"drive_url,omitempty"`
+	FileHash      string     `json:"file_hash,omitempty"`
 	DeletedAt     *time.Time `json:"deleted_at,omitempty"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
