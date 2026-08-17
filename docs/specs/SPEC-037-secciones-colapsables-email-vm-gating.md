@@ -1,7 +1,7 @@
 ---
 title: "Secciones colapsables de Email/Voice Monkey y gating de toggles de email"
 id: "SPEC-037"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-16"
 updated: "2026-08-16"
@@ -11,7 +11,7 @@ github_issue: 37
 # Secciones colapsables de Email/Voice Monkey y gating de toggles de email
 
 **ID**: SPEC-037  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-16  
 **Actualizado**: 2026-08-16
@@ -251,3 +251,4 @@ alerts (tabla existente, sin cambios)
 | 2026-08-16 | paulomcnally | Inicio de desarrollo (in_progress) |
 | 2026-08-16 | paulomcnally | Refinamiento UX durante validación manual: la sección solo es desplegable con el toggle maestro activo (sin chevron si está apagado) |
 | 2026-08-16 | paulomcnally | Validación manual aprobada por el usuario; criterios de aceptación pass (pending_release) |
+| 2026-08-16 | paulomcnally | Release: merge feature/SPEC-037 a main (64949af) y push |
