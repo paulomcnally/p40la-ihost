@@ -294,6 +294,25 @@ func (h *SystemSettingsHandlers) DeleteVoiceMonkey(w http.ResponseWriter, r *htt
 	})
 }
 
+// DeleteSMTP limpia la configuración SMTP (botón "Reconfigurar", SPEC-034).
+func (h *SystemSettingsHandlers) DeleteSMTP(w http.ResponseWriter, r *http.Request) {
+	if err := h.settings.ClearSMTP(r.Context()); err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	smtp, err := h.settings.GetSMTPConfigPublic(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"smtp_configured": smtp.Configured,
+		"message":         "Configuración SMTP eliminada",
+	})
+}
+
 func joinEmails(emails []string) string {
 	if len(emails) == 0 {
 		return ""

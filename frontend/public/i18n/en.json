@@ -121,7 +121,11 @@
       "test_error": "Error sending test email",
       "show": "Show",
       "hide": "Hide",
-      "leave_blank": "Leave blank to keep current value"
+      "leave_blank": "Leave blank to keep current value",
+      "configured_status": "SMTP configuration configured",
+      "reconfigure": "Reconfigure",
+      "reconfigure_confirm": "Do you want to remove the current SMTP configuration? You will need to re-enter server, username and password.",
+      "reconfigured": "SMTP configuration removed"
     },
     "alerts": {
       "title": "Alerts",

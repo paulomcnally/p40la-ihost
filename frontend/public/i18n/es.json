@@ -122,7 +122,11 @@
       "test_error": "Error al enviar email de prueba",
       "show": "Mostrar",
       "hide": "Ocultar",
-      "leave_blank": "Dejar vacío para mantener el valor actual"
+      "leave_blank": "Dejar vacío para mantener el valor actual",
+      "configured_status": "Configuración SMTP configurada",
+      "reconfigure": "Reconfigurar",
+      "reconfigure_confirm": "¿Querés quitar la configuración actual de SMTP? Tendrás que volver a ingresar servidor, usuario y contraseña.",
+      "reconfigured": "Configuración SMTP eliminada"
     },
     "alerts": {
       "title": "Alertas",
