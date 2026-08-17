@@ -131,7 +131,17 @@
       "configured_status": "Configuración SMTP configurada",
       "reconfigure": "Reconfigurar",
       "reconfigure_confirm": "¿Querés quitar la configuración actual de SMTP? Tendrás que volver a ingresar servidor, usuario y contraseña.",
-      "reconfigured": "Configuración SMTP eliminada"
+      "reconfigured": "Configuración SMTP eliminada",
+      "help": {
+        "title": "¿Dónde encuentro estos datos?",
+        "step1": "Abrí la pantalla de configuración SMTP de Mailgun en una pestaña nueva.",
+        "open_link": "Abrir configuración SMTP de Mailgun",
+        "step2": "Copiá el servidor SMTP (host) que aparece allí y pegalo en el campo \"Servidor SMTP\".",
+        "step3": "Copiá el puerto (suele ser 587) en el campo \"Puerto\".",
+        "step4": "Usá el email de tu cuenta de Mailgun como \"Usuario\".",
+        "step5": "Creá o usá la contraseña SMTP que muestra Mailgun y pegalá en \"Contraseña\".",
+        "step6": "Completá el \"Email remitente\" (desde dónde se envían los mails) y el \"Nombre remitente\"."
+      }
     },
     "alerts": {
       "title": "Alertas",
@@ -159,7 +169,16 @@
       "configured_status": "Voice Monkey configurado",
       "reconfigure": "Reconfigurar",
       "reconfigure_confirm": "¿Querés quitar la configuración actual de Voice Monkey? Tendrás que volver a ingresar token y device.",
-      "reconfigured": "Configuración de Voice Monkey eliminada"
+      "reconfigured": "Configuración de Voice Monkey eliminada",
+      "help": {
+        "title": "¿Dónde encuentro estos datos?",
+        "step1": "Obtené tu Key/API token en la página de tokens de Voice Monkey.",
+        "open_tokens": "Obtener API token",
+        "step2": "Copialo y pegalo en el campo \"API token\".",
+        "step3": "Elegí el altavoz donde querés que se anuncien las alertas en la página de speakers.",
+        "open_speakers": "Ver mis altavoces",
+        "step4": "Copiá el Device correspondiente y pegalo en el campo \"Device\"."
+      }
     }
   },
   "months": {

@@ -5,6 +5,7 @@ import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from '../components/Icons'
 import Toggle from '../components/Toggle'
 import EmailRecipientsModal from '../components/EmailRecipientsModal'
+import HelpPanel from '../components/HelpPanel'
 import { api } from '../api'
 import { useToast } from '../components/Toast'
 import type { Alert } from '../types'
@@ -386,12 +387,13 @@ export default function SettingsPage() {
                   </button>
                 </div>
               ) : (
-                <div className="px-4 py-3.5 border-b border-border">
-                  <div className="space-y-3">
-                    <div>
-                      <label className={labelCls}>{t('settings.email_alerts.smtp_host')}</label>
-                      <input type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className={inputCls} />
-                    </div>
+                <>
+                  <div className="px-4 py-3.5 border-b border-border">
+                    <div className="space-y-3">
+                      <div>
+                        <label className={labelCls}>{t('settings.email_alerts.smtp_host')}</label>
+                        <input type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className={inputCls} />
+                      </div>
                     <div>
                       <label className={labelCls}>{t('settings.email_alerts.smtp_port')}</label>
                       <input type="number" value={smtpPort} onChange={(e) => setSmtpPort(Number(e.target.value))} className={inputCls} />
@@ -428,6 +430,22 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+                <HelpPanel title={t('settings.email_alerts.help.title')}>
+                  <ol className="list-decimal pl-5 space-y-2">
+                    <li>
+                      {t('settings.email_alerts.help.step1')}{' '}
+                      <a href="https://app.mailgun.com/mg/sending/paulomcnally.com/settings?tab=smtp" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                        {t('settings.email_alerts.help.open_link')}
+                      </a>
+                    </li>
+                    <li>{t('settings.email_alerts.help.step2')}</li>
+                    <li>{t('settings.email_alerts.help.step3')}</li>
+                    <li>{t('settings.email_alerts.help.step4')}</li>
+                    <li>{t('settings.email_alerts.help.step5')}</li>
+                    <li>{t('settings.email_alerts.help.step6')}</li>
+                  </ol>
+                </HelpPanel>
+                </>
               )}
             </>
           )}
@@ -516,28 +534,48 @@ export default function SettingsPage() {
                   </button>
                 </div>
               ) : (
-                <div className="px-4 py-3.5 border-b border-border">
-                  <div className="space-y-3">
-                    <div>
-                      <label className={labelCls}>{t('settings.voicemonkey.token')}</label>
-                      <input
-                        type="password"
-                        value={vmToken}
-                        onChange={(e) => setVmToken(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>{t('settings.voicemonkey.device')}</label>
-                      <input
-                        type="text"
-                        value={vmDevice}
-                        onChange={(e) => setVmDevice(e.target.value)}
-                        className={inputCls}
-                      />
+                <>
+                  <div className="px-4 py-3.5 border-b border-border">
+                    <div className="space-y-3">
+                      <div>
+                        <label className={labelCls}>{t('settings.voicemonkey.token')}</label>
+                        <input
+                          type="password"
+                          value={vmToken}
+                          onChange={(e) => setVmToken(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelCls}>{t('settings.voicemonkey.device')}</label>
+                        <input
+                          type="text"
+                          value={vmDevice}
+                          onChange={(e) => setVmDevice(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                  <HelpPanel title={t('settings.voicemonkey.help.title')}>
+                    <ol className="list-decimal pl-5 space-y-2">
+                      <li>
+                        {t('settings.voicemonkey.help.step1')}{' '}
+                        <a href="https://app.voicemonkey.io/tokens" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                          {t('settings.voicemonkey.help.open_tokens')}
+                        </a>
+                      </li>
+                      <li>{t('settings.voicemonkey.help.step2')}</li>
+                      <li>
+                        {t('settings.voicemonkey.help.step3')}{' '}
+                        <a href="https://app.voicemonkey.io/speakers" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                          {t('settings.voicemonkey.help.open_speakers')}
+                        </a>
+                      </li>
+                      <li>{t('settings.voicemonkey.help.step4')}</li>
+                    </ol>
+                  </HelpPanel>
+                </>
               )}
 
               <div className={`px-4 py-3.5 border-b border-border flex items-center justify-between ${vmConfigured ? '' : 'opacity-50'}`}>
