@@ -1,7 +1,7 @@
 ---
 title: "Fix error NULL en file_hash al escanear facturas con registros existentes en iHost"
 id: "SPEC-042"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-17"
 updated: "2026-08-17"
@@ -11,7 +11,7 @@ github_issue: 42
 # Fix error NULL en file_hash al escanear facturas con registros existentes en iHost
 
 **ID**: SPEC-042  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-17  
 **Actualizado**: 2026-08-17
@@ -197,18 +197,18 @@ Sin cambios de contrato. Comportamiento restaurado:
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado un bill con `invoice_number`, `drive_url` y `file_hash` NULL en la DB, cuando se llama a `GET /api/services/{service_id}/bills`, entonces responde 200 con la lista completa sin error de scan.
-- [ ] CA-002: Dado un bill con `invoice_number`, `drive_url` o `file_hash` en `''` o con valor real, cuando se escanea, entonces se devuelve el valor correcto en el modelo (vacío o dato).
-- [ ] CA-003: Dado un registro con campos NULL, cuando se escanea, entonces esos campos NO aparecen en el JSON (omitempty), igual que antes de la SPEC-041.
-- [ ] CA-004: Los endpoints de lectura que usan los scans (`GET /api/bills/{id}`, `FindByServicePeriod`, `FindByServiceFileHash`, `GET /api/homes`, `GET /api/services`) funcionan con filas NULL sin regresión.
-- [ ] CA-005: Dado un hogar con `address` NULL en la DB, cuando se llama a `GET /api/homes`, entonces responde 200 con la lista completa sin error de scan (caso reportado por el usuario).
-- [ ] CA-006: Dado un servicio con `institution` NULL en la DB, cuando se llama a `GET /api/services`, entonces responde 200 con la lista completa sin error de scan.
+- [x] CA-001: Dado un bill con `invoice_number`, `drive_url` y `file_hash` NULL en la DB, cuando se llama a `GET /api/services/{service_id}/bills`, entonces responde 200 con la lista completa sin error de scan.
+- [x] CA-002: Dado un bill con `invoice_number`, `drive_url` o `file_hash` en `''` o con valor real, cuando se escanea, entonces se devuelve el valor correcto en el modelo (vacío o dato).
+- [x] CA-003: Dado un registro con campos NULL, cuando se escanea, entonces esos campos NO aparecen en el JSON (omitempty), igual que antes de la SPEC-041.
+- [x] CA-004: Los endpoints de lectura que usan los scans (`GET /api/bills/{id}`, `FindByServicePeriod`, `FindByServiceFileHash`, `GET /api/homes`, `GET /api/services`) funcionan con filas NULL sin regresión.
+- [x] CA-005: Dado un hogar con `address` NULL en la DB, cuando se llama a `GET /api/homes`, entonces responde 200 con la lista completa sin error de scan (caso reportado por el usuario).
+- [x] CA-006: Dado un servicio con `institution` NULL en la DB, cuando se llama a `GET /api/services`, entonces responde 200 con la lista completa sin error de scan.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: `go build` sin errores.
-- [ ] CA-NF-002: Tests del storage pasan (`go test ./internal/storage/...`).
-- [ ] CA-NF-003: Sin migración nueva y sin modificar datos de la DB de iHost.
+- [x] CA-NF-001: `go build` sin errores.
+- [x] CA-NF-002: Tests del storage pasan (`go test ./internal/storage/...`).
+- [x] CA-NF-003: Sin migración nueva y sin modificar datos de la DB de iHost.
 
 ### 5.3 Testing
 
@@ -257,3 +257,5 @@ Sin cambios de contrato. Comportamiento restaurado:
 | 2026-08-17 | paulomcnally | Alcance ampliado durante implementación: el test reveló que `invoice_number` y `drive_url` también son NULL-ables y rompían igual que `file_hash`. La spec cubre ahora las 3 columnas string nullable de `bills` |
 | 2026-08-17 | paulomcnally | Cambio de estado a in_progress. Implementación: fix de scanBill/scanBills con sql.NullString para las 3 columnas + test `bill_null_file_hash_test.go`. `go build` y `go test ./...` en verde |
 | 2026-08-17 | paulomcnally | Alcance ampliado tras validación con el usuario: el mismo defecto se reprodujo en `homes.address` (GET /api/homes) y se detectó en `services.institution`. La spec cubre ahora todas las columnas string nullable: bills (3), homes.address y services.institution |
+| 2026-08-17 | paulomcnally | Validación manual del usuario satisfactoria (bills, homes, services). Criterios de aceptación marcados como pass. Cambio de estado a pending_release |
+| 2026-08-17 | paulomcnally | Release: merge de feature/SPEC-042 a main (commit b0534f0) y push. Estado a released. Issue #42 cerrado |
