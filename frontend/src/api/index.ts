@@ -93,6 +93,7 @@ export const api = {
       voicemonkey_enabled: boolean
       voicemonkey_send_alerts: boolean
       voicemonkey_configured: boolean
+      email_alerts_enabled: boolean
     }>('/api/system-settings'),
     update: (body: Record<string, unknown>) => put<{ billing_generation_hour: number; smtp_configured: boolean }>('/api/system-settings', body),
     testEmail: () => post<{ message: string; recipients: string }>('/api/system-settings/test-email', {}),
