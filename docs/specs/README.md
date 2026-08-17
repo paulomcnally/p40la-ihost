@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 37 |
+| **Total de specs** | 38 |
 | **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 1 🟣 |
+| **In progress** | 2 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 35 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-037 |
+| **Último ID usado** | SPEC-038 |
 
 ---
 
@@ -58,6 +58,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-035 | Destinatarios con modal: alta/baja de emails con guardado automático | released | 2026-08-16 | paulomcnally |
 | SPEC-036 | Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa) | released | 2026-08-16 | paulomcnally |
 | SPEC-037 | Secciones colapsables de Email/Voice Monkey y gating de toggles de email | draft | 2026-08-16 | paulomcnally |
+| SPEC-038 | Limpieza automática de worktrees al liberar una spec | in_progress | 2026-08-16 | paulomcnally |
 
 ---
 
@@ -127,4 +128,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-16 — SPEC-036 released; SPEC-037 creada en draft.*
+*Última actualización de este tracker: 2026-08-16 — SPEC-036 released; SPEC-038 creada en draft.*

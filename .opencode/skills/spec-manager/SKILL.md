@@ -153,6 +153,11 @@ Cuando una spec pasa a `released`:
 2. Documentar en la spec: commit/versión, fecha de deploy
 3. Cerrar el issue de GitHub con label `spec/released`
 4. El estado `released` significa "en iHost o producción"
+5. **Limpiar el worktree de la spec liberada** (si existe):
+   - `git worktree remove <ruta-del-worktree>` (ej: `../p40la-ihost-spec-XXX`)
+   - `git branch -d feature/SPEC-XXX` (usa `-d`, NO `-D`: falla si la rama no está mergeada)
+   - Verificar con `git worktree list` que ya no aparece
+   - **Regla**: la limpieza SOLO aplica a specs `released`. Worktrees de specs en desarrollo NO se tocan.
 
 **Regla CRÍTICA: implementación y release son inseparables.**
 
@@ -207,6 +212,12 @@ Crear un worktree aislado para desarrollar una spec en su propia rama, sin pisar
 3. Informar al usuario el directorio aislado creado (ej: `../p40la-ihost-spec-034`) y pedir que abra una NUEVA ventana de opencode allí
 4. **NUNCA** ejecutar `git checkout`/`switch`/`reset`/`stash`/`clean` sobre el worktree principal compartido ni sobre worktrees de otras sesiones
 5. Toda operación git de la spec se hace DENTRO del worktree propio
+6. **Limpieza al liberar**: cuando la spec pasa a `released`, el worktree y su rama se eliminan (ver sección "Release"). Limpieza manual de referencia:
+   ```bash
+   git worktree remove ../p40la-ihost-spec-XXX
+   git branch -d feature/SPEC-XXX
+   git worktree list   # verificar que ya no aparece
+   ```
 
 ### `/spec pending`
 Mostrar rápidamente specs en estados no-terminal con sus issues.
