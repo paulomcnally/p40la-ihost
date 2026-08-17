@@ -1,7 +1,7 @@
 ---
 title: "Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa)"
 id: "SPEC-036"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-16"
 updated: "2026-08-16"
@@ -11,7 +11,7 @@ github_issue: 36
 # Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa)
 
 **ID**: SPEC-036  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-16  
 **Actualizado**: 2026-08-16
@@ -188,3 +188,4 @@ Sin cambios en la API. Solo se modifica el frontend.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-08-16 | paulomcnally | Creación inicial de la especificación |
+| 2026-08-16 | paulomcnally | Implementación (HelpPanel, ayuda SMTP + Voice Monkey, i18n es/en) y release a main (commits `7a92489`, `7aafdbf`) |

@@ -10,8 +10,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
-| **Pending release** | 1 🟠 |
-| **Released** | 34 🟢 |
+| **Pending release** | 0 🟠 |
+| **Released** | 35 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-037 |
 
@@ -56,7 +56,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-033 | Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz | released | 2026-08-16 | paulomcnally |
 | SPEC-034 | Estado Configurado y botón Reconfigurar para SMTP (mirror UI de Voice Monkey) | released | 2026-08-16 | paulomcnally |
 | SPEC-035 | Destinatarios con modal: alta/baja de emails con guardado automático | released | 2026-08-16 | paulomcnally |
-| SPEC-036 | Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa) | pending_release | 2026-08-16 | paulomcnally |
+| SPEC-036 | Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa) | released | 2026-08-16 | paulomcnally |
 | SPEC-037 | Secciones colapsables de Email/Voice Monkey y gating de toggles de email | draft | 2026-08-16 | paulomcnally |
 
 ---
@@ -127,4 +127,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-16 — SPEC-036 en pending_release; SPEC-037 creada en draft.*
+*Última actualización de este tracker: 2026-08-16 — SPEC-036 released; SPEC-037 creada en draft.*
