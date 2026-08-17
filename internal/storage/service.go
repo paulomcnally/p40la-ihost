@@ -114,7 +114,8 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	var institutionID, institutionAnalyzerID sql.NullInt64
 	var latestBillStatus sql.NullString
 	var startDate, endDate sql.NullString
-	if err := row.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
+	var institution sql.NullString
+	if err := row.Scan(&svc.ID, &svc.HomeID, &svc.Name, &institution, &svc.CurrencyID,
 		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
 		&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring,
 		&latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
@@ -123,6 +124,7 @@ func scanService(row *sql.Row) (*models.Service, error) {
 		}
 		return nil, fmt.Errorf("escanear servicio: %w", err)
 	}
+	svc.Institution = institution.String
 	if billingDay.Valid {
 		v := int(billingDay.Int64)
 		svc.BillingDay = &v
@@ -157,12 +159,14 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 		var institutionID, institutionAnalyzerID sql.NullInt64
 		var latestBillStatus sql.NullString
 		var startDate, endDate sql.NullString
-		if err := rows.Scan(&svc.ID, &svc.HomeID, &svc.Name, &svc.Institution, &svc.CurrencyID,
+		var institution sql.NullString
+		if err := rows.Scan(&svc.ID, &svc.HomeID, &svc.Name, &institution, &svc.CurrencyID,
 			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
 			&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring,
 			&latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear servicio: %w", err)
 		}
+		svc.Institution = institution.String
 		if billingDay.Valid {
 			v := int(billingDay.Int64)
 			svc.BillingDay = &v
