@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 41 |
+| **Total de specs** | 42 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 1 🟣 |
+| **In progress** | 2 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 40 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-041 |
+| **Último ID usado** | SPEC-042 |
 
 ---
 
@@ -62,6 +62,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-039 | Dropdowns de UI para horas (generación y check de alertas) con formato AM/PM y 24h | released | 2026-08-16 | p40la-ihost-team |
 | SPEC-040 | Analizador de recibos ASSA - Seguro Auto | released | 2026-08-16 | paulomcnally |
 | SPEC-041 | Subida múltiple de facturas para importación masiva de pagos | released | 2026-08-16 | paulomcnally |
+| SPEC-042 | Fix error NULL en file_hash al escanear facturas con registros existentes en iHost | in_progress | 2026-08-17 | paulomcnally |
 
 ---
 
