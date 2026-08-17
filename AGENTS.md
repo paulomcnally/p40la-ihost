@@ -121,6 +121,8 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 4. Estado: `released`
 5. **Cerrar el spec SIEMPRE implica commitear y pushear los cambios.** No cerrar un spec con cambios sin commitear.
 6. **Actualizar SIEMPRE el label de GitHub al estado final.** Al cambiar el estado de una spec, ejecutar `gh issue edit <number> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"`. Si el estado es `released` o `cancelled`, además cerrar el issue con `gh issue close <number>`. **No cerrar un issue sin antes actualizar su label al estado correcto.**
+7. **Implementación y release son inseparables.** Si el código de una feature está commiteado en `main`, la spec DEBE estar `released`. Toda spec en `pending_release` (o anterior) con código en `main` es un error y debe liberarse o documentar el bloqueo. Antes de declarar terminada una spec, ejecutar `/spec check-release`.
+8. **El release incluye TODOS estos pasos en el mismo ciclo:** actualizar `status` del frontmatter y del cuerpo (`**Estado**:`), actualizar el README tracker (tabla + contadores), cambiar el label de GitHub, cerrar el issue y documentar el commit/versión en el historial. No declarar una spec terminada hasta completar todos.
 
 ---
 
@@ -208,6 +210,7 @@ La skill está registrada en `.opencode/skills/spec-manager/SKILL.md`.
 | `/spec list [estado]` | Listar specs, opcionalmente filtradas |
 | `/spec status <id> <estado>` | Cambiar estado de una spec |
 | `/spec show <id>` | Mostrar resumen de una spec |
+| `/spec check-release` | Verificar que no haya specs colgadas (código en main sin estado released) |
 
 ### Activación automática
 

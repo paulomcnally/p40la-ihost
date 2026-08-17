@@ -1,7 +1,7 @@
 ---
 title: "Módulo CRUD de Autos"
 id: "SPEC-024"
-status: "pending_release"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-16"
 updated: "2026-08-16"
@@ -11,7 +11,7 @@ github_issue: 24
 # Módulo CRUD de Autos
 
 **ID**: SPEC-024
-**Estado**: draft
+**Estado**: released
 **Autor**: p40la-ihost-team
 **Creado**: 2026-08-16
 **Actualizado**: 2026-08-16
@@ -272,3 +272,4 @@ Relaciones: Ninguna (entidad independiente)
 |-------|-------|-------------|
 | 2026-08-16 | p40la-ihost-team | Creación inicial de la especificación |
 | 2026-08-16 | p40la-ihost-team | Implementación completa: backend + frontend, pruebas manuales aprobadas |
+| 2026-08-16 | p40la-ihost-team | Release: verificado en iHost. Commit `1d03cd8`, versión v0.4.7. Issue #24 cerrado. |

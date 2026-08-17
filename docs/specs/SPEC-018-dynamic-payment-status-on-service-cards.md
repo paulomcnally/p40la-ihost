@@ -1,7 +1,7 @@
 ---
 title: "Estado de pago dinámico en cards de servicios"
 id: "SPEC-018"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-15"
 updated: "2026-08-16"
@@ -11,10 +11,10 @@ github_issue: 18
 # Estado de pago dinámico en cards de servicios
 
 **ID**: SPEC-018  
-**Estado**: draft  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-15  
-**Actualizado**: 2026-08-15
+**Actualizado**: 2026-08-16
 
 ---
 
@@ -141,16 +141,16 @@ Service response (extendido):
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado un servicio con factura del mes actual en estado "paid", la card muestra "Pagada" en verde.
-- [ ] CA-002: Dado un servicio con factura del mes actual en estado "pending", la card muestra "Pendiente" en amarillo.
-- [ ] CA-003: Dado un servicio sin facturas, la card muestra "Sin facturas" en gris.
-- [ ] CA-004: Dado un servicio con factura de un mes pasado pero ninguna del mes actual, se muestra el estado de la factura más reciente (mes pasado).
-- [ ] CA-005: El toggle "Activo" en el formulario de servicio sigue funcionando independientemente del label de pago.
-- [ ] CA-006: La respuesta de `GET /api/services` incluye el campo `latest_bill_status`.
+- [x] CA-001: Dado un servicio con factura del mes actual en estado "paid", la card muestra "Pagada" en verde.
+- [x] CA-002: Dado un servicio con factura del mes actual en estado "pending", la card muestra "Pendiente" en amarillo.
+- [x] CA-003: Dado un servicio sin facturas, la card muestra "Sin facturas" en gris.
+- [x] CA-004: Dado un servicio con factura de un mes pasado pero ninguna del mes actual, se muestra el estado de la factura más reciente (mes pasado).
+- [x] CA-005: El toggle "Activo" en el formulario de servicio sigue funcionando independientemente del label de pago.
+- [x] CA-006: La respuesta de `GET /api/services` incluye el campo `latest_bill_status`.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: `ListServices` con 50 servicios tarda menos de 200ms con la subquery agregada.
+- [x] CA-NF-001: `ListServices` con 50 servicios tarda menos de 200ms con la subquery agregada.
 
 ### 5.3 Testing
 
@@ -196,3 +196,4 @@ Service response (extendido):
 |-------|-------|-------------|
 | 2026-08-15 | paulomcnally | Creación inicial de la especificación |
 | 2026-08-16 | paulomcnally | Implementación completa. Subquery con filtro de facturas reales. Label movido a bottom-right. |
+| 2026-08-16 | paulomcnally | Release: verificado en iHost. Commit `4d1a554`, versión v0.4.7. Issue #18 cerrado. |
