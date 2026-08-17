@@ -4,9 +4,18 @@ import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from '../components/Icons'
 import Toggle from '../components/Toggle'
+import EmailRecipientsModal from '../components/EmailRecipientsModal'
 import { api } from '../api'
 import { useToast } from '../components/Toast'
 import type { Alert } from '../types'
+
+function parseEmails(value?: string | null): string[] {
+  if (!value) return []
+  return value
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean)
+}
 
 export default function SettingsPage() {
   const navigate = useNavigate()
@@ -14,7 +23,6 @@ export default function SettingsPage() {
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const [billingHour, setBillingHour] = useState(0)
-
   // Email alerts
   const [smtpHost, setSmtpHost] = useState('')
   const [smtpPort, setSmtpPort] = useState(587)
@@ -22,12 +30,14 @@ export default function SettingsPage() {
   const [smtpPassword, setSmtpPassword] = useState('')
   const [smtpFromEmail, setSmtpFromEmail] = useState('')
   const [smtpFromName, setSmtpFromName] = useState('')
-  const [alertEmails, setAlertEmails] = useState('')
+  const [alertEmails, setAlertEmails] = useState<string[]>([])
   const [smtpConfigured, setSmtpConfigured] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [sendingTest, setSendingTest] = useState(false)
   const [savingEmail, setSavingEmail] = useState(false)
   const [smtpOpen, setSmtpOpen] = useState(false)
+  const [showRecipientModal, setShowRecipientModal] = useState(false)
+  const [savingRecipients, setSavingRecipients] = useState(false)
 
   // Alertas (catálogo + toggles de canal mail/alexa)
   const [alerts, setAlerts] = useState<Alert[]>([])
@@ -69,7 +79,7 @@ export default function SettingsPage() {
         setSmtpUser('') // user nunca se devuelve (sensible)
         setSmtpFromEmail(data.smtp_from_email ?? '')
         setSmtpFromName(data.smtp_from_name ?? '')
-        setAlertEmails(data.alert_emails ?? '')
+        setAlertEmails(parseEmails(data.alert_emails))
         setSmtpConfigured(data.smtp_configured ?? false)
       }
     } catch {
@@ -128,7 +138,6 @@ export default function SettingsPage() {
         smtp_port: Number(smtpPort) || 587,
         smtp_from_email: smtpFromEmail,
         smtp_from_name: smtpFromName,
-        alert_emails: alertEmails,
       }
       // Solo se envían user/password si el usuario escribió algo nuevo.
       if (smtpUser.trim()) body.smtp_user = smtpUser.trim()
@@ -143,6 +152,22 @@ export default function SettingsPage() {
       showToast(t('settings.email_alerts.save_error'), 'error')
     } finally {
       setSavingEmail(false)
+    }
+  }
+
+  const handleRecipientsChange = async (next: string[]) => {
+    const prev = alertEmails
+    setAlertEmails(next)
+    setSavingRecipients(true)
+    try {
+      await api.systemSettings.update({ alert_emails: next.join(',') })
+      showToast(t('settings.email_alerts.saved'), 'success')
+    } catch {
+      setAlertEmails(prev)
+      showToast(t('settings.email_alerts.save_error'), 'error')
+      throw new Error('save failed')
+    } finally {
+      setSavingRecipients(false)
     }
   }
 
@@ -410,7 +435,33 @@ export default function SettingsPage() {
           <div className="px-4 py-3.5 border-b border-border">
             <div className="font-medium">{t('settings.email_alerts.recipients')}</div>
             <div className="text-sm text-text-secondary mb-3">{t('settings.email_alerts.recipients_hint')}</div>
-            <input type="text" value={alertEmails} onChange={(e) => setAlertEmails(e.target.value)} className={inputCls} />
+            <div className="flex flex-wrap gap-2">
+              {alertEmails.map((email) => (
+                <span
+                  key={email}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm min-h-[32px]"
+                >
+                  {email}
+                  <button
+                    type="button"
+                    onClick={() => handleRecipientsChange(alertEmails.filter((e) => e !== email)).catch(() => {})}
+                    disabled={savingRecipients}
+                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-primary/20 transition-colors disabled:opacity-50"
+                    aria-label={t('settings.email_alerts.remove_recipient')}
+                  >
+                    <Icon name="cancel" className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowRecipientModal(true)}
+              disabled={savingRecipients}
+              className="mt-3 px-4 py-2 rounded-ios-sm border border-border font-medium min-h-[44px] disabled:opacity-50"
+            >
+              {t('settings.email_alerts.add_recipient')}
+            </button>
           </div>
 
           <div className="px-4 py-3.5 flex flex-col sm:flex-row gap-3">
@@ -546,6 +597,14 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {showRecipientModal && (
+        <EmailRecipientsModal
+          existing={alertEmails}
+          onAdd={(email) => handleRecipientsChange([...alertEmails, email])}
+          onClose={() => setShowRecipientModal(false)}
+        />
+      )}
     </div>
   )
 }
