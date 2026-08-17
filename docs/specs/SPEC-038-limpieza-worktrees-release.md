@@ -1,7 +1,7 @@
 ---
 title: "Limpieza automática de worktrees al liberar una spec"
 id: "SPEC-038"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-16"
 updated: "2026-08-16"
@@ -11,7 +11,7 @@ github_issue: 38
 # Limpieza automática de worktrees al liberar una spec
 
 **ID**: SPEC-038  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-16  
 **Actualizado**: 2026-08-16
@@ -177,3 +177,4 @@ N/A (no hay API).
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-08-16 | paulomcnally | Creación inicial de la especificación |
+| 2026-08-16 | paulomcnally | Implementación (skill spec-manager + AGENTS.md) y release a main (commit `2a35552`) |
