@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 38 |
+| **Total de specs** | 40 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 1 🟣 |
+| **In progress** | 2 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 37 🟢 |
+| **Released** | 38 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-038 |
+| **Último ID usado** | SPEC-040 |
 
 ---
 
@@ -59,6 +59,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-036 | Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa) | released | 2026-08-16 | paulomcnally |
 | SPEC-037 | Secciones colapsables de Email/Voice Monkey y gating de toggles de email | released | 2026-08-16 | paulomcnally |
 | SPEC-038 | Limpieza automática de worktrees al liberar una spec | released | 2026-08-16 | paulomcnally |
+| SPEC-039 | Dropdowns de UI para horas (generación y check de alertas) con formato AM/PM y 24h | released | 2026-08-16 | p40la-ihost-team |
+| SPEC-040 | Analizador de recibos ASSA - Seguro Auto | in_progress | 2026-08-16 | paulomcnally |
 
 ---
 
@@ -128,4 +130,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-16 — SPEC-037 released (64949af).*
+*Última actualización de este tracker: 2026-08-16 — SPEC-039 released (ed7950b), SPEC-040 in_progress.*
