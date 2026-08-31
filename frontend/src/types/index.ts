@@ -92,6 +92,8 @@ export interface Bill {
   invoice_number: string
   status: 'pending' | 'paid'
   drive_url: string
+  paid_at?: string
+  payment_reference?: string
 }
 
 export interface Settings {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 )
@@ -22,7 +23,7 @@ func NewBillStorage(db *sql.DB) *BillStorage {
 func (s *BillStorage) ListByService(ctx context.Context, serviceID int64) ([]models.Bill, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
-		       file_hash, deleted_at, created_at, updated_at
+		       file_hash, paid_at, payment_reference, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE service_id = ? AND deleted_at IS NULL
 		ORDER BY year DESC, month DESC
@@ -39,7 +40,7 @@ func (s *BillStorage) ListByService(ctx context.Context, serviceID int64) ([]mod
 func (s *BillStorage) GetByID(ctx context.Context, id int64) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
-		       file_hash, deleted_at, created_at, updated_at
+		       file_hash, paid_at, payment_reference, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE id = ? AND deleted_at IS NULL
 	`, id)
@@ -50,7 +51,7 @@ func (s *BillStorage) GetByID(ctx context.Context, id int64) (*models.Bill, erro
 func (s *BillStorage) FindByServicePeriod(ctx context.Context, serviceID int64, year, month int) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
-		       file_hash, deleted_at, created_at, updated_at
+		       file_hash, paid_at, payment_reference, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE service_id = ? AND year = ? AND month = ? AND deleted_at IS NULL
 	`, serviceID, year, month)
@@ -62,7 +63,7 @@ func (s *BillStorage) FindByServicePeriod(ctx context.Context, serviceID int64, 
 func (s *BillStorage) FindByServiceFileHash(ctx context.Context, serviceID int64, fileHash string) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
-		       file_hash, deleted_at, created_at, updated_at
+		       file_hash, paid_at, payment_reference, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE service_id = ? AND file_hash = ? AND deleted_at IS NULL
 		LIMIT 1
@@ -86,7 +87,9 @@ func (s *BillStorage) Create(ctx context.Context, bill *models.Bill) (*models.Bi
 	return s.GetByID(ctx, id)
 }
 
-// Update actualiza una factura existente.
+// Update actualiza una factura existente. No toca paid_at ni payment_reference:
+// esos campos se gestionan solo a través del flujo de pago (SPEC-043) para no
+// pisarlos en ediciones posteriores.
 func (s *BillStorage) Update(ctx context.Context, bill *models.Bill) (*models.Bill, error) {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE bills
@@ -111,6 +114,21 @@ func (s *BillStorage) UpdateFromExtracted(ctx context.Context, billID int64, amo
 		return fmt.Errorf("actualizar factura desde analizador: %w", err)
 	}
 	return nil
+}
+
+// Pay marca una factura como pagada persistiendo la fecha de pago, el
+// comprobante (Google Drive, opcional) y la referencia del pago (opcional, SPEC-043).
+func (s *BillStorage) Pay(ctx context.Context, id int64, paidAt time.Time, driveURL, paymentReference string) (*models.Bill, error) {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE bills
+		SET status = 'paid', paid_at = ?, drive_url = ?, payment_reference = ?,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND deleted_at IS NULL
+	`, paidAt, driveURL, paymentReference, id)
+	if err != nil {
+		return nil, fmt.Errorf("marcar factura como pagada: %w", err)
+	}
+	return s.GetByID(ctx, id)
 }
 
 // SoftDelete marca una factura como eliminada.
@@ -162,10 +180,11 @@ func (s *BillStorage) ListPendingWithDetails(ctx context.Context) ([]models.Pend
 
 func scanBill(row *sql.Row) (*models.Bill, error) {
 	var b models.Bill
-	var deletedAt sql.NullTime
-	var invoiceNumber, driveURL, fileHash sql.NullString
+	var deletedAt, paidAt sql.NullTime
+	var invoiceNumber, driveURL, fileHash, paymentReference sql.NullString
 	if err := row.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount,
-		&invoiceNumber, &b.Status, &driveURL, &fileHash, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
+		&invoiceNumber, &b.Status, &driveURL, &fileHash, &paidAt, &paymentReference,
+		&deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -174,9 +193,13 @@ func scanBill(row *sql.Row) (*models.Bill, error) {
 	if deletedAt.Valid {
 		b.DeletedAt = &deletedAt.Time
 	}
+	if paidAt.Valid {
+		b.PaidAt = &paidAt.Time
+	}
 	b.InvoiceNumber = invoiceNumber.String
 	b.DriveURL = driveURL.String
 	b.FileHash = fileHash.String
+	b.PaymentReference = paymentReference.String
 	return &b, nil
 }
 
@@ -184,18 +207,23 @@ func scanBills(rows *sql.Rows) ([]models.Bill, error) {
 	var bills []models.Bill
 	for rows.Next() {
 		var b models.Bill
-		var deletedAt sql.NullTime
-		var invoiceNumber, driveURL, fileHash sql.NullString
+		var deletedAt, paidAt sql.NullTime
+		var invoiceNumber, driveURL, fileHash, paymentReference sql.NullString
 		if err := rows.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount,
-			&invoiceNumber, &b.Status, &driveURL, &fileHash, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
+			&invoiceNumber, &b.Status, &driveURL, &fileHash, &paidAt, &paymentReference,
+			&deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear factura: %w", err)
 		}
 		if deletedAt.Valid {
 			b.DeletedAt = &deletedAt.Time
 		}
+		if paidAt.Valid {
+			b.PaidAt = &paidAt.Time
+		}
 		b.InvoiceNumber = invoiceNumber.String
 		b.DriveURL = driveURL.String
 		b.FileHash = fileHash.String
+		b.PaymentReference = paymentReference.String
 		bills = append(bills, b)
 	}
 	if err := rows.Err(); err != nil {
