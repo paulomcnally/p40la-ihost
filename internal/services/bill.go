@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
@@ -57,6 +58,36 @@ func (s *BillService) Delete(ctx context.Context, id int64) error {
 	return s.storage.SoftDelete(ctx, id)
 }
 
+// PayBill marca una factura como pagada (SPEC-043). Persiste la fecha de pago
+// (obligatoria) y, opcionalmente, el link de Google Drive del comprobante y una
+// referencia interna del pago.
+func (s *BillService) PayBill(ctx context.Context, id int64, paidAt time.Time, driveURL, paymentReference string) (*models.Bill, error) {
+	if paidAt.IsZero() {
+		return nil, fmt.Errorf("la fecha de pago es obligatoria")
+	}
+	if !paidAt.Before(time.Now().Add(24 * time.Hour)) {
+		return nil, fmt.Errorf("la fecha de pago no puede ser futura")
+	}
+
+	bill, err := s.storage.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("obtener factura: %w", err)
+	}
+	if bill == nil {
+		return nil, fmt.Errorf("la factura no existe")
+	}
+	if bill.Status == "paid" {
+		return nil, fmt.Errorf("la factura ya está pagada")
+	}
+
+	driveURL = strings.TrimSpace(driveURL)
+	if driveURL != "" && !driveURLRegex.MatchString(driveURL) {
+		return nil, fmt.Errorf("el enlace de Google Drive no es válido")
+	}
+
+	return s.storage.Pay(ctx, id, paidAt, driveURL, strings.TrimSpace(paymentReference))
+}
+
 func (s *BillService) validate(ctx context.Context, bill *models.Bill, isNew bool) error {
 	bill.InvoiceNumber = strings.TrimSpace(bill.InvoiceNumber)
 	bill.DriveURL = strings.TrimSpace(bill.DriveURL)
@@ -95,10 +126,7 @@ func (s *BillService) validate(ctx context.Context, bill *models.Bill, isNew boo
 	}
 
 	if bill.Status == "paid" {
-		if bill.DriveURL == "" {
-			return fmt.Errorf("el enlace de Google Drive es obligatorio para marcar como pagada")
-		}
-		if !driveURLRegex.MatchString(bill.DriveURL) {
+		if bill.DriveURL != "" && !driveURLRegex.MatchString(bill.DriveURL) {
 			return fmt.Errorf("el enlace de Google Drive no es válido")
 		}
 	}

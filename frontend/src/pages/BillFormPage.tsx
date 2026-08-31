@@ -160,7 +160,7 @@ export default function BillFormPage() {
             value={formData.drive_url}
             onChange={(e) => setFormData(prev => ({ ...prev, drive_url: e.target.value }))}
             className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary"
-            required={formData.status === 'paid'}
+            placeholder={t('bills.receipt_hint')}
           />
         </div>
         <div className="flex justify-end gap-3 pt-4 border-t border-border">

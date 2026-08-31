@@ -54,6 +54,8 @@ export const api = {
     create: (body: Partial<Bill>) => post<Bill>('/api/bills', body),
     update: (id: number, body: Partial<Bill>) => put<Bill>(`/api/bills/${id}`, body),
     delete: (id: number) => del(`/api/bills/${id}`),
+    pay: (id: number, body: { paid_at: string; drive_url?: string; payment_reference?: string }) =>
+      post<Bill>(`/api/bills/${id}/pay`, body),
     uploadAndAnalyze: (serviceId: number, file: File) => {
       const form = new FormData()
       form.append('file', file)

@@ -5,8 +5,9 @@ import { useI18nStore } from '../stores/i18nStore'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
-import CardMenu from '../components/CardMenu'
+import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
+import PayBillModal from '../components/PayBillModal'
 import UploadBillModal from '../components/UploadBillModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type { Bill, Service } from '../types'
@@ -24,6 +25,7 @@ export default function BillsPage() {
   const [bills, setBills] = useState<Bill[]>([])
   const [service, setService] = useState<Service | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+  const [payTarget, setPayTarget] = useState<Bill | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -49,6 +51,17 @@ export default function BillsPage() {
     setDeleteTarget(null)
     load()
   }, [deleteTarget, load])
+
+  const billMenuOptions = (bill: Bill): CardMenuOption[] => {
+    const options: CardMenuOption[] = [
+      { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/bills/edit/${bill.id}?service=${serviceId}`) },
+    ]
+    if (bill.status === 'pending') {
+      options.push({ label: t('bills.pay'), icon: 'credit', onClick: () => setPayTarget(bill) })
+    }
+    options.push({ label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget(bill.id) })
+    return options
+  }
 
   if (loading) return <LoadingSpinner />
 
@@ -97,12 +110,7 @@ export default function BillsPage() {
           <div className="sm:hidden space-y-3">
             {bills.map(bill => (
               <div key={bill.id} className="bg-card rounded-ios shadow-ios p-4 relative">
-                <CardMenu
-                  options={[
-                    { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/bills/edit/${bill.id}?service=${serviceId}`) },
-                    { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget(bill.id) },
-                  ]}
-                />
+                <CardMenu options={billMenuOptions(bill)} />
                 <div className="mb-2">
                   <span className="text-sm text-text-secondary">
                     {bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])} {bill.year}
@@ -164,12 +172,7 @@ export default function BillsPage() {
                       ) : '-'}
                     </td>
                     <td className="px-4 py-3 relative">
-                      <CardMenu
-                        options={[
-                          { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/bills/edit/${bill.id}?service=${serviceId}`) },
-                          { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget(bill.id) },
-                        ]}
-                      />
+                      <CardMenu options={billMenuOptions(bill)} />
                     </td>
                   </tr>
                 ))}
@@ -184,6 +187,13 @@ export default function BillsPage() {
           subtitle={`${t('bills.title')} #${deleteTarget}`}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+      {payTarget && (
+        <PayBillModal
+          bill={payTarget}
+          onClose={() => setPayTarget(null)}
+          onSuccess={load}
         />
       )}
       <UploadBillModal
