@@ -78,7 +78,15 @@
     "drive_url": "Google Drive link",
     "status_pending": "Pending",
     "status_paid": "Paid",
-    "empty": "No bills registered."
+    "empty": "No bills registered.",
+    "pay": "Pay",
+    "pay_date": "Payment date",
+    "pay_date_required": "Payment date is required",
+    "pay_success": "Bill marked as paid",
+    "receipt": "Receipt",
+    "receipt_hint": "Google Drive link (optional)",
+    "payment_reference": "Payment reference",
+    "payment_reference_placeholder": "E.g. transaction number"
   },
   "settings": {
     "title": "Settings",

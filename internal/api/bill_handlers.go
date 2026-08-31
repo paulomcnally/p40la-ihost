@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
@@ -27,6 +28,12 @@ type billRequest struct {
 	InvoiceNumber string  `json:"invoice_number"`
 	Status        string  `json:"status"`
 	DriveURL      string  `json:"drive_url"`
+}
+
+type payBillRequest struct {
+	PaidAt           string `json:"paid_at"`
+	DriveURL         string `json:"drive_url"`
+	PaymentReference string `json:"payment_reference"`
 }
 
 func (h *BillHandlers) toModel(req billRequest, id int64) *models.Bill {
@@ -127,4 +134,39 @@ func (h *BillHandlers) DeleteBill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Factura eliminada"})
+}
+
+// PayBill marca una factura como pagada (SPEC-043). Requiere paid_at; drive_url
+// (comprobante Google Drive) y payment_reference son opcionales.
+func (h *BillHandlers) PayBill(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+	var req payBillRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
+		return
+	}
+
+	paidAt, err := time.Parse("2006-01-02", req.PaidAt)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_paid_at", "La fecha de pago es obligatoria (formato YYYY-MM-DD)")
+		return
+	}
+
+	bill, err := h.service.PayBill(r.Context(), id, paidAt, req.DriveURL, req.PaymentReference)
+	if err != nil {
+		switch {
+		case err.Error() == "la factura no existe":
+			respondError(w, http.StatusNotFound, "not_found", err.Error())
+		case err.Error() == "la factura ya está pagada":
+			respondError(w, http.StatusBadRequest, "already_paid", err.Error())
+		default:
+			respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		}
+		return
+	}
+	respondJSON(w, http.StatusOK, bill)
 }

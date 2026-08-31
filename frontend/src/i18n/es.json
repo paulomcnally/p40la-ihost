@@ -81,7 +81,15 @@
     "status_paid": "Pagada",
     "no_bills": "Sin facturas",
     "empty": "No hay facturas registradas.",
-    "saved_success": "Factura guardada correctamente"
+    "saved_success": "Factura guardada correctamente",
+    "pay": "Pagar",
+    "pay_date": "Fecha de pago",
+    "pay_date_required": "La fecha de pago es obligatoria",
+    "pay_success": "Factura marcada como pagada",
+    "receipt": "Comprobante",
+    "receipt_hint": "Link de Google Drive (opcional)",
+    "payment_reference": "Referencia del pago",
+    "payment_reference_placeholder": "Ej: número de transacción"
   },
   "settings": {
     "title": "Configuración",
