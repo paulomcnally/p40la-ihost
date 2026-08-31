@@ -97,6 +97,24 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 fi
 
 # -----------------------------------------------------------------------------
+# Validar que no haya ramas de spec con código sin mergear a main
+# -----------------------------------------------------------------------------
+# La imagen se construye desde el tag generado sobre main. Si una feature
+# branch tiene commits que main no contiene, ese código NO entraría en la
+# imagen y el usuario vería una release sin los cambios esperados.
+# (Precedente: SPEC-043 liberado en v0.4.12 sin su implementación.)
+
+log "Validando que no haya ramas de feature con código sin mergear a main..."
+UNMERGED_BRANCHES=$(git branch --no-merged main --format='%(refname:short)' | grep -v '^main$' || true)
+if [[ -n "${UNMERGED_BRANCHES}" ]]; then
+  error "Hay ramas de feature con código que main NO incluye:
+$(echo "${UNMERGED_BRANCHES}" | sed 's/^/  - /')
+
+La imagen se construye desde el tag sobre main, por lo que ese código NO se incluiría.
+Mergeá cada rama a main (o liberá su spec) ANTES de correr release.sh."
+fi
+
+# -----------------------------------------------------------------------------
 # Consultar Docker Hub
 # -----------------------------------------------------------------------------
 
