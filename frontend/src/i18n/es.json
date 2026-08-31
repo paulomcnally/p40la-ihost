@@ -111,10 +111,18 @@
       "create": "Agregar moneda"
     },
     "email_alerts": {
-      "title": "Alertas por Email",
-      "subtitle": "Recibir alertas de seguros de autos por email",
+ "title": "Alertas por Email",
+ "subtitle": "Recibir alertas de seguros de autos por email",
+ "enable": "Activar Alertas por Email",
+ "enable_hint": "Habilitar el envío de alertas por correo electrónico.",
+ "needs_config_hint": "Falta configurar SMTP y/o agregar destinatarios para completar la configuración.",
       "recipients": "Destinatarios",
-      "recipients_hint": "Separados por coma (ej: a@x.com,b@y.com)",
+      "recipients_hint": "Cada destinatario se agrega individualmente.",
+      "add_recipient": "Agregar email",
+      "remove_recipient": "Eliminar destinatario",
+      "recipients_empty": "Ingresa una dirección de email.",
+      "recipients_invalid": "La dirección de email no es válida.",
+      "recipients_duplicate": "Ese email ya está en la lista.",
       "test_email": "Enviar email de prueba",
       "smtp": "Configuración SMTP",
       "smtp_subtitle": "Servidor de correo saliente",
@@ -132,7 +140,60 @@
       "test_error": "Error al enviar email de prueba",
       "show": "Mostrar",
       "hide": "Ocultar",
-      "leave_blank": "Dejar vacío para mantener el valor actual"
+      "leave_blank": "Dejar vacío para mantener el valor actual",
+      "configured_status": "Configuración SMTP configurada",
+      "reconfigure": "Reconfigurar",
+      "reconfigure_confirm": "¿Querés quitar la configuración actual de SMTP? Tendrás que volver a ingresar servidor, usuario y contraseña.",
+      "reconfigured": "Configuración SMTP eliminada",
+      "help": {
+        "title": "¿Dónde encuentro estos datos?",
+        "step1": "Abrí la pantalla de configuración SMTP de Mailgun en una pestaña nueva.",
+        "open_link": "Abrir configuración SMTP de Mailgun",
+        "step2": "Copiá el servidor SMTP (host) que aparece allí y pegalo en el campo \"Servidor SMTP\".",
+        "step3": "Copiá el puerto (suele ser 587) en el campo \"Puerto\".",
+        "step4": "Usá el email de tu cuenta de Mailgun como \"Usuario\".",
+        "step5": "Creá o usá la contraseña SMTP que muestra Mailgun y pegalá en \"Contraseña\".",
+        "step6": "Completá el \"Email remitente\" (desde dónde se envían los mails) y el \"Nombre remitente\"."
+      }
+    },
+    "alerts": {
+      "title": "Alertas",
+      "mail": "Mail",
+      "alexa": "Alexa",
+      "saved": "Alerta actualizada",
+ "save_error": "Error al actualizar alerta",
+ "alexa_disabled_hint": "Activá Voice Monkey (token y device) y el toggle \"Enviar alertas\" para habilitar los avisos por Alexa.",
+ "mail_disabled_hint": "Activá \"Alertas por Email\", configurá SMTP y agregá al menos un destinatario para habilitar el aviso por mail."
+    },
+    "voicemonkey": {
+      "title": "Voice Monkey (Alexa)",
+      "enable": "Activar Voice Monkey",
+      "enable_hint": "Anunciar alertas por voz en un altavoz Alexa.",
+      "token": "API token",
+      "device": "Device",
+      "send_alerts": "Enviar alertas",
+      "test": "Probar aviso",
+      "test_sent": "Aviso de voz enviado",
+      "test_error": "Error al enviar aviso de voz",
+      "saved": "Configuración de Voice Monkey guardada",
+      "save_error": "Error al guardar configuración de Voice Monkey",
+      "configured": "Configurado",
+      "not_configured": "No configurado",
+      "leave_blank": "Dejar vacío para mantener el valor actual",
+      "configured_status": "Voice Monkey configurado",
+      "reconfigure": "Reconfigurar",
+      "reconfigure_confirm": "¿Querés quitar la configuración actual de Voice Monkey? Tendrás que volver a ingresar token y device.",
+      "reconfigured": "Configuración de Voice Monkey eliminada",
+      "needs_config_hint": "Falta configurar token y device, o activar \"Enviar alertas\" para completar la configuración.",
+      "help": {
+        "title": "¿Dónde encuentro estos datos?",
+        "step1": "Obtené tu Key/API token en la página de tokens de Voice Monkey.",
+        "open_tokens": "Obtener API token",
+        "step2": "Copialo y pegalo en el campo \"API token\".",
+        "step3": "Elegí el altavoz donde querés que se anuncien las alertas en la página de speakers.",
+        "open_speakers": "Ver mis altavoces",
+        "step4": "Copiá el Device correspondiente y pegalo en el campo \"Device\"."
+      }
     }
   },
   "months": {

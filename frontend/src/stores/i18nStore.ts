@@ -34,14 +34,17 @@ export const useI18nStore = create<I18nState>((set, get) => ({
   },
 
   t: (key: string, fallback?: string) => {
-    const { dictionary } = get()
-    const parts = key.split('.')
-    let value: unknown = dictionary
-    for (const part of parts) {
-      if (value == null || typeof value !== 'object') return fallback || key
-      value = (value as Record<string, unknown>)[part]
+    const { lang, dictionary } = get()
+    const lookup = (dict: Record<string, unknown>): string | undefined => {
+      const parts = key.split('.')
+      let value: unknown = dict
+      for (const part of parts) {
+        if (value == null || typeof value !== 'object') return undefined
+        value = (value as Record<string, unknown>)[part]
+      }
+      return typeof value === 'string' ? value : undefined
     }
-    if (typeof value === 'string') return value
-    return fallback || key
+    const bundled = dictionaries[lang] || dictionaries.es
+    return lookup(dictionary) ?? lookup(bundled) ?? fallback ?? key
   },
 }))
