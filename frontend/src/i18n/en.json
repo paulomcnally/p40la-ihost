@@ -110,10 +110,18 @@
       "create": "Add currency"
     },
     "email_alerts": {
-      "title": "Email Alerts",
-      "subtitle": "Receive car insurance alerts by email",
+ "title": "Email Alerts",
+ "subtitle": "Receive car insurance alerts by email",
+ "enable": "Enable Email Alerts",
+ "enable_hint": "Enable sending alerts by email.",
+ "needs_config_hint": "SMTP configuration and/or recipients are missing to complete the setup.",
       "recipients": "Recipients",
-      "recipients_hint": "Comma separated (e.g. a@x.com,b@y.com)",
+      "recipients_hint": "Each recipient is added individually.",
+      "add_recipient": "Add email",
+      "remove_recipient": "Remove recipient",
+      "recipients_empty": "Enter an email address.",
+      "recipients_invalid": "The email address is not valid.",
+      "recipients_duplicate": "That email is already in the list.",
       "test_email": "Send test email",
       "smtp": "SMTP Configuration",
       "smtp_subtitle": "Outgoing mail server",
@@ -131,7 +139,60 @@
       "test_error": "Error sending test email",
       "show": "Show",
       "hide": "Hide",
-      "leave_blank": "Leave blank to keep current value"
+      "leave_blank": "Leave blank to keep current value",
+      "configured_status": "SMTP configuration configured",
+      "reconfigure": "Reconfigure",
+      "reconfigure_confirm": "Do you want to remove the current SMTP configuration? You will need to re-enter server, username and password.",
+      "reconfigured": "SMTP configuration removed",
+      "help": {
+        "title": "Where do I find this data?",
+        "step1": "Open the Mailgun SMTP configuration screen in a new tab.",
+        "open_link": "Open Mailgun SMTP settings",
+        "step2": "Copy the SMTP server (host) shown there and paste it into the \"SMTP Server\" field.",
+        "step3": "Copy the port (usually 587) into the \"Port\" field.",
+        "step4": "Use the email of your Mailgun account as \"Username\".",
+        "step5": "Create or use the SMTP password shown by Mailgun and paste it into \"Password\".",
+        "step6": "Fill in the \"From email\" (where emails are sent from) and the \"From name\"."
+      }
+    },
+    "alerts": {
+      "title": "Alerts",
+      "mail": "Mail",
+      "alexa": "Alexa",
+      "saved": "Alert updated",
+ "save_error": "Error updating alert",
+ "alexa_disabled_hint": "Enable Voice Monkey (token and device) and the \"Send alerts\" toggle to enable Alexa announcements.",
+ "mail_disabled_hint": "Enable \"Email Alerts\", configure SMTP and add at least one recipient to enable the mail alert."
+    },
+    "voicemonkey": {
+      "title": "Voice Monkey (Alexa)",
+      "enable": "Enable Voice Monkey",
+      "enable_hint": "Announce alerts by voice on an Alexa speaker.",
+      "token": "API token",
+      "device": "Device",
+      "send_alerts": "Send alerts",
+      "test": "Test announcement",
+      "test_sent": "Voice announcement sent",
+      "test_error": "Error sending voice announcement",
+      "saved": "Voice Monkey settings saved",
+      "save_error": "Error saving Voice Monkey settings",
+      "configured": "Configured",
+      "not_configured": "Not configured",
+      "leave_blank": "Leave blank to keep current value",
+      "configured_status": "Voice Monkey configured",
+      "reconfigure": "Reconfigure",
+      "reconfigure_confirm": "Do you want to remove the current Voice Monkey configuration? You'll need to re-enter the token and device.",
+      "reconfigured": "Voice Monkey configuration removed",
+      "needs_config_hint": "Token and device, or the \"Send alerts\" toggle, are missing to complete the setup.",
+      "help": {
+        "title": "Where do I find this data?",
+        "step1": "Get your Key/API token on the Voice Monkey tokens page.",
+        "open_tokens": "Get API token",
+        "step2": "Copy it and paste it into the \"API token\" field.",
+        "step3": "Choose the speaker where you want alerts announced on the speakers page.",
+        "open_speakers": "View my speakers",
+        "step4": "Copy the corresponding Device and paste it into the \"Device\" field."
+      }
     }
   },
   "months": {
