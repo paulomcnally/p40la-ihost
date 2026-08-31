@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 42 |
+| **Total de specs** | 43 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 1 🟣 |
+| **In progress** | 2 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 41 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-042 |
+| **Último ID usado** | SPEC-043 |
 
 ---
 
@@ -63,6 +63,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-040 | Analizador de recibos ASSA - Seguro Auto | released | 2026-08-16 | paulomcnally |
 | SPEC-041 | Subida múltiple de facturas para importación masiva de pagos | released | 2026-08-16 | paulomcnally |
 | SPEC-042 | Fix error NULL en file_hash al escanear facturas con registros existentes en iHost | released | 2026-08-17 | paulomcnally |
+| SPEC-043 | Acción Pagar en facturas con fecha de pago, comprobante y referencia | in_progress | 2026-08-31 | p40la-ihost-team |
 
 ---
 
@@ -132,4 +133,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-08-17 — SPEC-042 released (b0534f0).*
+*Última actualización de este tracker: 2026-08-31 — SPEC-043 creada (draft).*
