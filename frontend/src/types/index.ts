@@ -137,6 +137,15 @@ export interface Salary {
   updated_at: string
 }
 
+export interface PensionCategory {
+  id: number
+  name: string
+  description: string
+  auto_generate: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface Alert {
   id: number
   key: string
