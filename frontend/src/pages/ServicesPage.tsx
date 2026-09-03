@@ -111,7 +111,7 @@ export default function ServicesPage() {
                 key={svc.id}
                 onClick={() => navigate(`/services/bills/${svc.id}`)}
                 className={`rounded-ios shadow-ios p-4 relative cursor-pointer hover:shadow-ios-lg transition-shadow ${
-                  svc.active ? 'bg-card' : 'bg-gray-100 opacity-60'
+                  svc.active ? 'bg-card' : 'bg-gray-100 opacity-60 dark:bg-[#2c2c2e]'
                 }`}
               >
                 <CardMenu
@@ -122,7 +122,7 @@ export default function ServicesPage() {
                 />
                 <div className="flex items-center justify-between mb-3">
                   <div className={`w-11 h-11 rounded-ios flex items-center justify-center ${
-                    svc.active ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400'
+                    svc.active ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400 dark:bg-[#2c2c2e] dark:text-gray-500'
                   }`}>
                     <Icon name={svc.icon_key || 'other'} className="w-6 h-6" />
                   </div>
@@ -133,12 +133,12 @@ export default function ServicesPage() {
                 </p>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {!svc.active && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400">
                       Inactivo
                     </span>
                   )}
                   {isExpired && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
                       Vencido
                     </span>
                   )}
@@ -153,9 +153,9 @@ export default function ServicesPage() {
                     {currency?.symbol}{svc.suggested_amount.toFixed(2)} · {t(`frequency.${svc.frequency}`)}
                   </p>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    svc.latest_bill_status === 'paid' ? 'bg-success/20 text-green-800' :
-                    svc.latest_bill_status === 'pending' ? 'bg-warning/20 text-yellow-800' :
-                    'bg-gray-100 text-gray-500'
+                    svc.latest_bill_status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' :
+                    svc.latest_bill_status === 'pending' ? 'bg-warning/20 text-yellow-800 dark:text-yellow-400' :
+                    'bg-gray-100 text-gray-500 dark:bg-[#2c2c2e] dark:text-gray-400'
                   }`}>
                     {svc.latest_bill_status === 'paid' ? t('bills.status_paid') :
                      svc.latest_bill_status === 'pending' ? t('bills.status_pending') :

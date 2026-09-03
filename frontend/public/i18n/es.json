@@ -116,6 +116,10 @@
       "es": "Español",
       "en": "English"
     },
+    "dark_mode": {
+      "title": "Modo oscuro",
+      "subtitle": "Tema oscuro para toda la aplicación"
+    },
     "currencies": {
       "title": "Monedas",
       "subtitle": "Administra las monedas disponibles",

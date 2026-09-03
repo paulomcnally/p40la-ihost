@@ -73,7 +73,7 @@ export default function SalariesPage() {
               key={salary.id}
               onClick={() => {}}
               className={`rounded-ios shadow-ios p-4 relative cursor-pointer hover:shadow-ios-lg transition-shadow ${
-                salary.active ? 'bg-card' : 'bg-gray-100 opacity-60'
+                salary.active ? 'bg-card' : 'bg-gray-100 opacity-60 dark:bg-[#2c2c2e]'
               }`}
             >
               <CardMenu
@@ -84,12 +84,12 @@ export default function SalariesPage() {
               />
               <div className="flex items-center justify-between mb-3">
                 <div className={`w-11 h-11 rounded-ios flex items-center justify-center ${
-                  salary.active ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400'
+                  salary.active ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400 dark:bg-[#2c2c2e] dark:text-gray-500'
                 }`}>
                   <Icon name="savings" className="w-6 h-6" />
                 </div>
                 {!salary.active && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400">
                     {t('salaries.inactive')}
                   </span>
                 )}

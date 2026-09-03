@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: 0 122 255;
+  --color-primary-hover: 0 86 179;
+  --color-danger: 255 59 48;
+  --color-success: 52 199 89;
+  --color-warning: 255 149 0;
+  --color-bg: 242 242 247;
+  --color-card: 255 255 255;
+  --color-border: 229 229 234;
+  --color-text-secondary: 108 108 112;
+  --color-text: 28 28 30;
+}
+
+.dark {
+  --color-primary: 10 132 255;
+  --color-primary-hover: 0 122 255;
+  --color-danger: 255 69 58;
+  --color-success: 48 209 88;
+  --color-warning: 255 159 10;
+  --color-bg: 0 0 0;
+  --color-card: 28 28 30;
+  --color-border: 44 44 46;
+  --color-text-secondary: 142 142 147;
+  --color-text: 242 242 247;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -9,8 +35,8 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f2f2f7;
-  color: #1c1c1e;
+  background: rgb(var(--color-bg));
+  color: rgb(var(--color-text));
 }
 
 @keyframes slideIn {
