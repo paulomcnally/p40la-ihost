@@ -250,5 +250,25 @@
     "created": "Hijo creado",
     "updated": "Hijo actualizado",
     "save_error": "Error al guardar"
+  },
+  "salaries": {
+    "title": "Salarios",
+    "subtitle": "Registra los salarios para gestionar la pensión alimenticia.",
+    "empty": "No has registrado ningún salario todavía.",
+    "create": "Nuevo salario",
+    "new": "Nuevo salario",
+    "edit": "Editar salario",
+    "employer": "Empleador / Fuente",
+    "employer_placeholder": "Ej: Empresa XYZ",
+    "amount": "Monto",
+    "currency": "Moneda",
+    "payment_day": "Día de pago",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "note": "Nota",
+    "note_placeholder": "Observaciones opcionales...",
+    "created": "Salario creado",
+    "updated": "Salario actualizado",
+    "save_error": "Error al guardar"
   }
 }
