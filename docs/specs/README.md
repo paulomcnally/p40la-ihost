@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 48 |
-| **En draft** | 1 🟡 |
+| **Total de specs** | 51 |
+| **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 2 🟣 |
-| **Pending release** | 0 🟠 |
-| **Released** | 46 🟢 |
+| **Pending release** | 2 🟠 |
+| **Released** | 47 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-048 |
+| **Último ID usado** | SPEC-051 |
 
 ---
 
@@ -52,8 +52,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-029 | Sistema de Envío de Mails y Alertas Diarias de Seguros Vencidos | released | 2026-08-16 | paulomcnally |
 | SPEC-030 | Email informativo al generar factura automática | released | 2026-08-16 | paulomcnally |
 | SPEC-031 | Resumen diario de facturas pendientes por email | released | 2026-08-16 | paulomcnally |
-| SPEC-032 | Sección Alertas en Configuraciones con toggles por funcionalidad de mail | released | 2026-08-16 | paulomcnally |
-| SPEC-033 | Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz | released | 2026-08-16 | paulomcnally |
+| SPEC-032 | Sección Alertas en Configuraciones con toggles por funcionalidad de mail | pending_release | 2026-08-16 | paulomcnally |
+| SPEC-033 | Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz | pending_release | 2026-08-16 | paulomcnally |
 | SPEC-034 | Estado Configurado y botón Reconfigurar para SMTP (mirror UI de Voice Monkey) | released | 2026-08-16 | paulomcnally |
 | SPEC-035 | Destinatarios con modal: alta/baja de emails con guardado automático | released | 2026-08-16 | paulomcnally |
 | SPEC-036 | Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa) | released | 2026-08-16 | paulomcnally |
@@ -69,6 +69,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-046 | CRUD de Notificaciones en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-047 | CRUD de Salarios en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-048 | CRUD de Categorías en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
+| SPEC-049 | Backend de Registros Mensuales de Pensión Alimenticia (support_records, salary_payments, month_closings) | released | 2026-09-02 | p40la-ihost-team |
+| SPEC-050 | Página de Registros Mensuales de Pensión Alimenticia (frontend, replicar child-support/records de P4OLA) | released | 2026-09-02 | p40la-ihost-team |
+| SPEC-051 | Emails y Generación Mensual de Registros de Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
 
 ---
 
@@ -138,4 +141,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-02 — SPEC-048 released.*
+*Última actualización de este tracker: 2026-09-03 — SPEC-049/050/051 released.*
