@@ -1,7 +1,7 @@
 ---
 title: "CRUD de Salarios en módulo Pensión Alimenticia"
 id: "SPEC-047"
-status: "draft"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-09-02"
 updated: "2026-09-02"
@@ -11,7 +11,7 @@ github_issue: 47
 # CRUD de Salarios en módulo Pensión Alimenticia
 
 **ID**: SPEC-047  
-**Estado**: draft  
+**Estado**: released  
 **Autor**: p40la-ihost-team  
 **Creado**: 2026-09-02  
 **Actualizado**: 2026-09-02
@@ -310,3 +310,6 @@ Relaciones: salary.currency_id → currencies.id (N:1)
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-02 | p40la-ihost-team | Creación inicial de la especificación |
+| 2026-09-02 | p40la-ihost-team | Estado cambiado a in_progress; inicio de desarrollo en worktree feature/SPEC-047 |
+| 2026-09-02 | p40la-ihost-team | Implementación completa: migración 0017, backend CRUD /api/salaries, SalariesPage, SalaryFormPage, i18n es/en, tests. Validado en local (go test + npm run build + CRUD API). Pendiente validación manual del usuario |
+| 2026-09-02 | p40la-ihost-team | Validación manual aprobada por el usuario. Release: merge a main, issue #47 cerrado, worktree limpiado |
