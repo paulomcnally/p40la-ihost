@@ -75,6 +75,8 @@ func main() {
 	autoServiceStorage := storage.NewAutoServiceStorage(database)
 	institutionCategoryStorage := storage.NewInstitutionCategoryStorage(database)
 	notificationStorage := storage.NewNotificationStorage(database)
+	childStorage := storage.NewChildStorage(database)
+	salaryStorage := storage.NewSalaryStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -92,6 +94,8 @@ func main() {
 	autoInsuranceService := services.NewAutoServiceService(autoServiceStorage)
 	institutionCategoryService := services.NewInstitutionCategoryService(institutionCategoryStorage)
 	notificationService := services.NewNotificationService(notificationStorage)
+	childService := services.NewChildService(childStorage)
+	salaryService := services.NewSalaryService(salaryStorage, currencyStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
@@ -123,8 +127,10 @@ func main() {
 	autoServiceHandlers := api.NewAutoServiceHandlers(autoInsuranceService)
 	institutionCategoryHandlers := api.NewInstitutionCategoryHandlers(institutionCategoryService)
 	notificationHandlers := api.NewNotificationHandlers(notificationService)
+	childHandlers := api.NewChildHandlers(childService)
+	salaryHandlers := api.NewSalaryHandlers(salaryService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers)
 
 	router := api.BuildRouter(handler, authService, "./public")
 

@@ -104,12 +104,26 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/institution-categories/{id}", authMiddleware(http.HandlerFunc(handler.institutionCategory.UpdateCategory)))
 	mux.Handle("DELETE /api/institution-categories/{id}", authMiddleware(http.HandlerFunc(handler.institutionCategory.DeleteCategory)))
 
-	// APIs de notificaciones
+// APIs de notificaciones
 	mux.Handle("GET /api/notifications", authMiddleware(http.HandlerFunc(handler.notification.ListNotifications)))
 	mux.Handle("GET /api/notifications/{id}", authMiddleware(http.HandlerFunc(handler.notification.GetNotification)))
 	mux.Handle("POST /api/notifications", authMiddleware(http.HandlerFunc(handler.notification.CreateNotification)))
 	mux.Handle("PUT /api/notifications/{id}", authMiddleware(http.HandlerFunc(handler.notification.UpdateNotification)))
 	mux.Handle("DELETE /api/notifications/{id}", authMiddleware(http.HandlerFunc(handler.notification.DeleteNotification)))
+
+	// APIs de hijos (pensión alimenticia)
+	mux.Handle("GET /api/children", authMiddleware(http.HandlerFunc(handler.child.ListChildren)))
+	mux.Handle("GET /api/children/{id}", authMiddleware(http.HandlerFunc(handler.child.GetChild)))
+	mux.Handle("POST /api/children", authMiddleware(http.HandlerFunc(handler.child.CreateChild)))
+	mux.Handle("PUT /api/children/{id}", authMiddleware(http.HandlerFunc(handler.child.UpdateChild)))
+	mux.Handle("DELETE /api/children/{id}", authMiddleware(http.HandlerFunc(handler.child.DeleteChild)))
+
+	// APIs de salarios (pensión alimenticia)
+	mux.Handle("GET /api/salaries", authMiddleware(http.HandlerFunc(handler.salary.ListSalaries)))
+	mux.Handle("GET /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.GetSalary)))
+	mux.Handle("POST /api/salaries", authMiddleware(http.HandlerFunc(handler.salary.CreateSalary)))
+	mux.Handle("PUT /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.UpdateSalary)))
+	mux.Handle("DELETE /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.DeleteSalary)))
 
 	// Assets estáticos (JS/CSS bundles del build de Vite)
 	assetsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "assets")))

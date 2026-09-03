@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 46 |
-| **En draft** | 0 🟡 |
+| **Total de specs** | 48 |
+| **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 3 🟣 |
+| **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 42 🟢 |
+| **Released** | 45 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-046 |
+| **Último ID usado** | SPEC-048 |
 
 ---
 
@@ -65,8 +65,10 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-042 | Fix error NULL en file_hash al escanear facturas con registros existentes en iHost | released | 2026-08-17 | paulomcnally |
 | SPEC-043 | Acción Pagar en facturas con fecha de pago, comprobante y referencia | in_progress | 2026-08-31 | p40la-ihost-team |
 | SPEC-044 | Menú Pensión Alimenticia en el Sidebar con submenús y páginas en blanco | released | 2026-09-02 | p40la-ihost-team |
-| SPEC-045 | CRUD de Hijos en módulo Pensión Alimenticia | in_progress | 2026-09-02 | p40la-ihost-team |
-| SPEC-046 | CRUD de Notificaciones en módulo Pensión Alimenticia | in_progress | 2026-09-02 | p40la-ihost-team |
+| SPEC-045 | CRUD de Hijos en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
+| SPEC-046 | CRUD de Notificaciones en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
+| SPEC-047 | CRUD de Salarios en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
+| SPEC-048 | CRUD de Categorías en módulo Pensión Alimenticia | draft | 2026-09-02 | p40la-ihost-team |
 
 ---
 
@@ -136,4 +138,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-02 — SPEC-046 en desarrollo (in_progress).*
+*Última actualización de este tracker: 2026-09-02 — SPEC-046 released, SPEC-047 released, SPEC-048 creada (draft).*
