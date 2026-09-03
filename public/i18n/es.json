@@ -17,7 +17,21 @@
   "menu": {
     "home": "Casa",
     "services": "Servicios",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "pension": "Pensión alimenticia"
+  },
+  "pension": {
+    "title": "Pensión alimenticia",
+    "children": "Hijos",
+    "categories": "Categorías",
+    "salaries": "Salarios",
+    "records": "Registros mensuales",
+    "notifications": "Notificaciones",
+    "children_empty": "No hay hijos registrados.",
+    "categories_empty": "No hay categorías registradas.",
+    "salaries_empty": "No hay salarios registrados.",
+    "records_empty": "No hay registros mensuales.",
+    "notifications_empty": "No hay notificaciones."
   },
   "home": {
     "title": "Casa",
