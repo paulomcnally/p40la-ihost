@@ -115,6 +115,16 @@ export interface Auto {
   updated_at: string
 }
 
+export interface Child {
+  id: number
+  first_name: string
+  last_name: string
+  birth_date: string
+  notes: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Alert {
   id: number
   key: string

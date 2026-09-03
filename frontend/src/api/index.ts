@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Child } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -137,5 +137,12 @@ export const api = {
     addService: (id: number, body: { service_id: number; coverage_type: string; policy_number: string; certificate?: string; insurer_number: string }) => post(`/api/autos/${id}/services`, body),
     removeService: (id: number, serviceId: number) => del(`/api/autos/${id}/services/${serviceId}`),
     availableServices: (id: number) => get<Service[]>(`/api/autos/${id}/available-services`),
+  },
+  children: {
+    list: () => get<Child[]>('/api/children'),
+    get: (id: number) => get<Child>(`/api/children/${id}`),
+    create: (body: Partial<Child>) => post<Child>('/api/children', body),
+    update: (id: number, body: Partial<Child>) => put<Child>(`/api/children/${id}`, body),
+    delete: (id: number) => del(`/api/children/${id}`),
   },
 }
