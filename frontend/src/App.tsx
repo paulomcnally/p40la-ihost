@@ -27,6 +27,8 @@ import HijosPage from './pages/HijosPage'
 import HijoFormPage from './pages/HijoFormPage'
 import SalariesPage from './pages/SalariesPage'
 import SalaryFormPage from './pages/SalaryFormPage'
+import CategoriasPage from './pages/CategoriasPage'
+import CategoryFormPage from './pages/CategoryFormPage'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -95,7 +97,9 @@ function App() {
                   <Route path="pension/hijos" element={<HijosPage />} />
                   <Route path="pension/hijos/new" element={<HijoFormPage />} />
                   <Route path="pension/hijos/edit/:id" element={<HijoFormPage />} />
-                  <Route path="pension/categorias" element={<PensionPage section="categorias" />} />
+                  <Route path="pension/categorias" element={<CategoriasPage />} />
+                  <Route path="pension/categorias/new" element={<CategoryFormPage />} />
+                  <Route path="pension/categorias/edit/:id" element={<CategoryFormPage />} />
                   <Route path="pension/salarios" element={<SalariesPage />} />
                   <Route path="pension/salarios/new" element={<SalaryFormPage />} />
                   <Route path="pension/salarios/edit/:id" element={<SalaryFormPage />} />

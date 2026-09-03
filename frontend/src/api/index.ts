@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary, PensionCategory } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -152,11 +152,18 @@ export const api = {
     update: (id: number, body: Partial<Child>) => put<Child>(`/api/children/${id}`, body),
     delete: (id: number) => del(`/api/children/${id}`),
   },
-  salaries: {
+salaries: {
     list: () => get<Salary[]>('/api/salaries'),
     get: (id: number) => get<Salary>(`/api/salaries/${id}`),
     create: (body: Partial<Salary>) => post<Salary>('/api/salaries', body),
     update: (id: number, body: Partial<Salary>) => put<Salary>(`/api/salaries/${id}`, body),
     delete: (id: number) => del(`/api/salaries/${id}`),
+  },
+  pensionCategories: {
+    list: () => get<PensionCategory[]>('/api/pension-categories'),
+    get: (id: number) => get<PensionCategory>(`/api/pension-categories/${id}`),
+    create: (body: Partial<PensionCategory>) => post<PensionCategory>('/api/pension-categories', body),
+    update: (id: number, body: Partial<PensionCategory>) => put<PensionCategory>(`/api/pension-categories/${id}`, body),
+    delete: (id: number) => del(`/api/pension-categories/${id}`),
   },
 }

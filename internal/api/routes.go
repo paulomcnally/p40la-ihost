@@ -118,12 +118,19 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/children/{id}", authMiddleware(http.HandlerFunc(handler.child.UpdateChild)))
 	mux.Handle("DELETE /api/children/{id}", authMiddleware(http.HandlerFunc(handler.child.DeleteChild)))
 
-	// APIs de salarios (pensión alimenticia)
+// APIs de salarios (pensión alimenticia)
 	mux.Handle("GET /api/salaries", authMiddleware(http.HandlerFunc(handler.salary.ListSalaries)))
 	mux.Handle("GET /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.GetSalary)))
 	mux.Handle("POST /api/salaries", authMiddleware(http.HandlerFunc(handler.salary.CreateSalary)))
 	mux.Handle("PUT /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.UpdateSalary)))
 	mux.Handle("DELETE /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.DeleteSalary)))
+
+	// APIs de categorías de pensión alimenticia
+	mux.Handle("GET /api/pension-categories", authMiddleware(http.HandlerFunc(handler.pensionCategory.ListCategories)))
+	mux.Handle("GET /api/pension-categories/{id}", authMiddleware(http.HandlerFunc(handler.pensionCategory.GetCategory)))
+	mux.Handle("POST /api/pension-categories", authMiddleware(http.HandlerFunc(handler.pensionCategory.CreateCategory)))
+	mux.Handle("PUT /api/pension-categories/{id}", authMiddleware(http.HandlerFunc(handler.pensionCategory.UpdateCategory)))
+	mux.Handle("DELETE /api/pension-categories/{id}", authMiddleware(http.HandlerFunc(handler.pensionCategory.DeleteCategory)))
 
 	// Assets estáticos (JS/CSS bundles del build de Vite)
 	assetsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "assets")))

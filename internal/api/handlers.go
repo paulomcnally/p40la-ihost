@@ -26,6 +26,7 @@ type Handler struct {
 	notification         *NotificationHandlers
 	child                *ChildHandlers
 	salary               *SalaryHandlers
+	pensionCategory      *PensionCategoryHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -46,6 +47,7 @@ func NewHandler(
 	notification *NotificationHandlers,
 	child *ChildHandlers,
 	salary *SalaryHandlers,
+	pensionCategory *PensionCategoryHandlers,
 ) *Handler {
 	return &Handler{
 		auth:                auth,
@@ -64,6 +66,7 @@ func NewHandler(
 		notification:        notification,
 		child:               child,
 		salary:              salary,
+		pensionCategory:     pensionCategory,
 	}
 }
 

@@ -1,7 +1,7 @@
 ---
 title: "CRUD de Categorías en módulo Pensión Alimenticia"
 id: "SPEC-048"
-status: "draft"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-09-02"
 updated: "2026-09-02"
@@ -11,7 +11,7 @@ github_issue: 48
 # CRUD de Categorías en módulo Pensión Alimenticia
 
 **ID**: SPEC-048  
-**Estado**: draft  
+**Estado**: released
 **Autor**: p40la-ihost-team  
 **Creado**: 2026-09-02  
 **Actualizado**: 2026-09-02
@@ -254,7 +254,7 @@ Relaciones: Ninguna por ahora (a futuro las usará la tabla de registros mensual
 
 | Fase | Descripción | Estimación | Dependencias |
 |------|-------------|------------|--------------|
-| 1 | Migración SQLite `0018_create_pension_categories` (up/down) + modelo Go | 15 min | Ninguna |
+| 1 | Migración SQLite `0019_create_pension_categories` (up/down) + modelo Go | 15 min | Ninguna |
 | 2 | PensionCategoryStorage + PensionCategoryService + PensionCategoryHandlers | 30 min | Fase 1 |
 | 3 | Registro de rutas API en `routes.go` + wiring en `main.go` | 15 min | Fase 2 |
 | 4 | Tipo `PensionCategory` en `frontend/src/types/index.ts` + métodos en api client | 15 min | Fase 3 |
@@ -296,3 +296,5 @@ Relaciones: Ninguna por ahora (a futuro las usará la tabla de registros mensual
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-02 | p40la-ihost-team | Creación inicial de la especificación |
+| 2026-09-02 | p40la-ihost-team | Estado cambiado de draft a in_progress. Implementación completa: migración 0019, backend CRUD /api/pension-categories, CategoriasPage con indicador auto_generate, CategoryFormPage con switch y sub-label, i18n es/en, tests. Validado en local (go test + npm run build + CRUD API). Pendiente validación manual del usuario |
+| 2026-09-02 | p40la-ihost-team | Validación manual aprobada por el usuario. Release: merge a main, issue #48 cerrado, worktree limpiado |

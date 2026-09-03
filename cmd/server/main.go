@@ -77,6 +77,7 @@ func main() {
 	notificationStorage := storage.NewNotificationStorage(database)
 	childStorage := storage.NewChildStorage(database)
 	salaryStorage := storage.NewSalaryStorage(database)
+	pensionCategoryStorage := storage.NewPensionCategoryStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -96,6 +97,7 @@ func main() {
 	notificationService := services.NewNotificationService(notificationStorage)
 	childService := services.NewChildService(childStorage)
 	salaryService := services.NewSalaryService(salaryStorage, currencyStorage)
+	pensionCategoryService := services.NewPensionCategoryService(pensionCategoryStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
@@ -129,8 +131,9 @@ func main() {
 	notificationHandlers := api.NewNotificationHandlers(notificationService)
 	childHandlers := api.NewChildHandlers(childService)
 	salaryHandlers := api.NewSalaryHandlers(salaryService)
+	pensionCategoryHandlers := api.NewPensionCategoryHandlers(pensionCategoryService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers)
 
 	router := api.BuildRouter(handler, authService, "./public")
 

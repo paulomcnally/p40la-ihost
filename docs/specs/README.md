@@ -9,9 +9,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 48 |
 | **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 0 🟣 |
+| **In progress** | 2 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 45 🟢 |
+| **Released** | 46 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-048 |
 
@@ -68,7 +68,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-045 | CRUD de Hijos en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-046 | CRUD de Notificaciones en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-047 | CRUD de Salarios en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
-| SPEC-048 | CRUD de Categorías en módulo Pensión Alimenticia | draft | 2026-09-02 | p40la-ihost-team |
+| SPEC-048 | CRUD de Categorías en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
 
 ---
 
@@ -138,4 +138,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-02 — SPEC-046 released, SPEC-047 released, SPEC-048 creada (draft).*
+*Última actualización de este tracker: 2026-09-02 — SPEC-048 released.*
