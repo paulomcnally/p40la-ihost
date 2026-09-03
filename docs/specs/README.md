@@ -9,9 +9,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 51 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 2 🟣 |
+| **In progress** | 1 🟣 |
 | **Pending release** | 2 🟠 |
-| **Released** | 47 🟢 |
+| **Released** | 48 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-051 |
 
@@ -63,7 +63,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-040 | Analizador de recibos ASSA - Seguro Auto | released | 2026-08-16 | paulomcnally |
 | SPEC-041 | Subida múltiple de facturas para importación masiva de pagos | released | 2026-08-16 | paulomcnally |
 | SPEC-042 | Fix error NULL en file_hash al escanear facturas con registros existentes en iHost | released | 2026-08-17 | paulomcnally |
-| SPEC-043 | Acción Pagar en facturas con fecha de pago, comprobante y referencia | in_progress | 2026-08-31 | p40la-ihost-team |
+| SPEC-043 | Acción Pagar en facturas con fecha de pago, comprobante y referencia | released | 2026-08-31 | p40la-ihost-team |
 | SPEC-044 | Menú Pensión Alimenticia en el Sidebar con submenús y páginas en blanco | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-045 | CRUD de Hijos en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-046 | CRUD de Notificaciones en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
@@ -141,4 +141,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-03 — SPEC-049/050/051 released.*
+*Última actualización de este tracker: 2026-09-03 — SPEC-043 released, SPEC-049/050/051 released.*

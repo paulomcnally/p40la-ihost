@@ -1,20 +1,20 @@
 ---
 title: "Acción Pagar en facturas con fecha de pago, comprobante y referencia"
 id: "SPEC-043"
-status: "in_progress"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-08-31"
-updated: "2026-08-31"
+updated: "2026-09-03"
 github_issue: 43
 ---
 
 # Acción Pagar en facturas con fecha de pago, comprobante y referencia
 
 **ID**: SPEC-043  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: p40la-ihost-team  
 **Creado**: 2026-08-31  
-**Actualizado**: 2026-08-31
+**Actualizado**: 2026-09-03
 
 ---
 
@@ -208,21 +208,21 @@ ALTER TABLE bills ADD COLUMN payment_reference TEXT;
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: En `BillsPage`, una factura `pending` muestra el menú con opciones **Editar | Pagar | Eliminar** en ese orden (móvil y desktop).
-- [ ] CA-002: Una factura `paid` **no** muestra la opción "Pagar".
-- [ ] CA-003: Al hacer clic en "Pagar" se abre un modal con campo de fecha (por defecto hoy, editable), campo "Comprobante" (link Google Drive, opcional) y campo "Referencia" (opcional).
-- [ ] CA-004: Confirmar sin fecha de pago muestra error y no persiste.
-- [ ] CA-005: Confirmar con fecha y sin comprobante ni referencia marca la factura como `paid` correctamente.
-- [ ] CA-006: Confirmar con comprobante y referencia persiste `drive_url` y `payment_reference`, y el badge muestra "Pagada".
-- [ ] CA-007: Si se ingresa comprobante, solo acepta URLs de `drive.google.com` / `docs.google.com` (rechaza otras URLs con toast de error).
-- [ ] CA-008: La factura pagada desaparece del próximo email de "Resumen de facturas pendientes" (SPEC-031) sin cambios en el scheduler.
-- [ ] CA-009: La card del servicio (SPEC-018) refleja el estado `paid` de la factura más reciente automáticamente.
-- [ ] CA-010: Los textos nuevos (`bills.pay`, labels del modal) aparecen en ES y EN tras `npm run build` y se sirven en `/i18n/{lang}.json`.
+- [x] CA-001: En `BillsPage`, una factura `pending` muestra el menú con opciones **Editar | Pagar | Eliminar** en ese orden (móvil y desktop).
+- [x] CA-002: Una factura `paid` **no** muestra la opción "Pagar".
+- [x] CA-003: Al hacer clic en "Pagar" se abre un modal con campo de fecha (por defecto hoy, editable), campo "Comprobante" (link Google Drive, opcional) y campo "Referencia" (opcional).
+- [x] CA-004: Confirmar sin fecha de pago muestra error y no persiste.
+- [x] CA-005: Confirmar con fecha y sin comprobante ni referencia marca la factura como `paid` correctamente.
+- [x] CA-006: Confirmar con comprobante y referencia persiste `drive_url` y `payment_reference`, y el badge muestra "Pagada".
+- [x] CA-007: Si se ingresa comprobante, solo acepta URLs de `drive.google.com` / `docs.google.com` (rechaza otras URLs con toast de error).
+- [x] CA-008: La factura pagada desaparece del próximo email de "Resumen de facturas pendientes" (SPEC-031) sin cambios en el scheduler.
+- [x] CA-009: La card del servicio (SPEC-018) refleja el estado `paid` de la factura más reciente automáticamente.
+- [x] CA-010: Los textos nuevos (`bills.pay`, labels del modal) aparecen en ES y EN tras `npm run build` y se sirven en `/i18n/{lang}.json`.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: El endpoint `POST /api/bills/{id}/pay` requiere autenticación.
-- [ ] CA-NF-002: El flujo completo no agrega dependencias nuevas y mantiene el consumo de RAM del iHost sin cambios perceptibles.
+- [x] CA-NF-001: El endpoint `POST /api/bills/{id}/pay` requiere autenticación.
+- [x] CA-NF-002: El flujo completo no agrega dependencias nuevas y mantiene el consumo de RAM del iHost sin cambios perceptibles.
 
 ### 5.3 Testing
 
@@ -272,3 +272,4 @@ ALTER TABLE bills ADD COLUMN payment_reference TEXT;
 |-------|-------|-------------|
 | 2026-08-31 | p40la-ihost-team | Creación inicial de la especificación. Se agrega además el campo opcional "Referencia del pago" según pedido del usuario. |
 | 2026-08-31 | p40la-ihost-team | Cambio de estado a `in_progress` para inicio de desarrollo. |
+| 2026-09-03 | p40la-ihost-team | Cambio de estado a `released`. Feature mergeada a `main` (merge `4218991`, fix i18n `ac97a09`); disponible desde v0.4.12/v0.4.14. Issue #43 cerrado. |
