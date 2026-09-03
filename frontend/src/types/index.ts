@@ -166,3 +166,51 @@ export interface Notification {
   created_at: string
   updated_at: string
 }
+
+export type SupportRecordStatus = 'pending' | 'paid' | 'rejected'
+export type SalaryPaymentStatus = 'pending' | 'received'
+
+export interface SupportRecord {
+  id: number
+  child_id: number
+  child_name: string
+  pension_category_id: number
+  category_name: string
+  year: number
+  month: number
+  amount: number
+  currency: string
+  status: SupportRecordStatus
+  paid_at?: string
+  payment_method?: string
+  payment_reference?: string
+  evidence_notes?: string
+  notes?: string
+  proof_file_name?: string
+  original_amount?: number
+  original_currency?: string
+  exchange_rate?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface SalaryPayment {
+  id: number
+  salary_id: number
+  employer: string
+  year: number
+  month: number
+  amount: number
+  currency: string
+  status: SalaryPaymentStatus
+  received_amount?: number
+  received_at?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface MonthClosing {
+  closed: boolean
+  closed_at: string | null
+}
