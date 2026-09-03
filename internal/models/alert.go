@@ -22,6 +22,13 @@ const (
 	AlertKeyInsurance   = "insurance"
 	AlertKeyBillCreated = "bill_created"
 	AlertKeyBillSummary = "bill_summary"
+
+	// Alertas del módulo Pensión Alimenticia (SPEC-051).
+	AlertKeyPensionRecordsCreated = "pension_records_created"
+	AlertKeyPensionRecordPaid     = "pension_record_paid"
+	AlertKeyPensionSalaryReceived = "pension_salary_received"
+	AlertKeyPensionRecordRejected = "pension_record_rejected"
+	AlertKeyPensionMonthClosing   = "pension_month_closing"
 )
 
 // AlertChannel identifica un canal de entrega de una alerta.

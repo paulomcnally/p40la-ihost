@@ -40,6 +40,36 @@ func catalog() []models.Alert {
 			Description: "Resumen diario de todas las facturas pendientes.",
 			Speech:      "Paulo, tienes {n} facturas pendientes.",
 		},
+		{
+			Key:         models.AlertKeyPensionRecordsCreated,
+			Title:       "Pensión: registros del mes creados",
+			Description: "Resumen de salarios y registros de manutención generados al generar el mes.",
+			Speech:      "Paulo, se generaron los registros de pensión del mes.",
+		},
+		{
+			Key:         models.AlertKeyPensionRecordPaid,
+			Title:       "Pensión: pago de manutención registrado",
+			Description: "Aviso cuando un registro de manutención se marca como pagado.",
+			Speech:      "Paulo, se registró un pago de manutención.",
+		},
+		{
+			Key:         models.AlertKeyPensionSalaryReceived,
+			Title:       "Pensión: salario recibido",
+			Description: "Aviso cuando un pago de salario se marca como recibido.",
+			Speech:      "Paulo, se registró un pago de salario como recibido.",
+		},
+		{
+			Key:         models.AlertKeyPensionRecordRejected,
+			Title:       "Pensión: registro rechazado",
+			Description: "Aviso cuando un registro de manutención se rechaza.",
+			Speech:      "Paulo, se rechazó un registro de manutención.",
+		},
+		{
+			Key:         models.AlertKeyPensionMonthClosing,
+			Title:       "Pensión: cierre de mes",
+			Description: "Resumen del mes al cerrar el período de la pensión alimenticia.",
+			Speech:      "Paulo, se cerró el mes de la pensión alimenticia.",
+		},
 	}
 }
 
