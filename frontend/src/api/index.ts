@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -217,5 +217,18 @@ salaries: {
     status: (year: number, month: number) => get<MonthClosing>(`/api/pension/closing/${year}/${month}`),
     close: (year: number, month: number) => post<{ ok: boolean; closed_at: string }>(`/api/pension/closing/${year}/${month}`, {}),
     reopen: (year: number, month: number) => del<{ ok: boolean }>(`/api/pension/closing/${year}/${month}`),
+  },
+  pensionGenerate: {
+    generate: (year: number, month: number) =>
+      post<{ ok: boolean; created_salary_payments: number; created_support_records: number }>(`/api/pension/generate?year=${year}&month=${month}`, {}),
+  },
+  pensionConfigs: {
+    list: () => get<ChildSupportConfig[]>('/api/pension/configs'),
+    get: (id: number) => get<ChildSupportConfig>(`/api/pension/configs/${id}`),
+    create: (body: { child_id: number; pension_category_id: number; amount: number; currency: string; is_active?: boolean; auto_generate?: boolean }) =>
+      post<ChildSupportConfig>('/api/pension/configs', body),
+    update: (id: number, body: { pension_category_id: number; amount: number; currency: string; is_active: boolean; auto_generate: boolean }) =>
+      put<ChildSupportConfig>(`/api/pension/configs/${id}`, body),
+    delete: (id: number) => del(`/api/pension/configs/${id}`),
   },
 }
