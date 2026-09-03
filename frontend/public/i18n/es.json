@@ -314,6 +314,8 @@
     "empty": "No hay registros mensuales para este período.",
     "create": "Crear registro",
     "create_manual": "Crear registro manual",
+    "generate": "Generar mes",
+    "generated": "Mes generado",
     "close_month": "Cerrar mes",
     "reopen_month": "Reabrir mes",
     "closed": "Mes cerrado",

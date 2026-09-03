@@ -214,3 +214,17 @@ export interface MonthClosing {
   closed: boolean
   closed_at: string | null
 }
+
+export interface ChildSupportConfig {
+  id: number
+  child_id: number
+  child_name?: string
+  pension_category_id: number
+  category_name?: string
+  amount: number
+  currency: string
+  is_active: boolean
+  auto_generate: boolean
+  created_at: string
+  updated_at: string
+}

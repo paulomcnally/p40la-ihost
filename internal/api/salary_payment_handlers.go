@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -16,12 +17,13 @@ type markSalaryReceivedRequest struct {
 
 // SalaryPaymentHandlers agrupa los handlers de pagos de salario.
 type SalaryPaymentHandlers struct {
-	service *services.SalaryPaymentService
+	service      *services.SalaryPaymentService
+	notification *services.PensionNotificationService
 }
 
 // NewSalaryPaymentHandlers crea un nuevo SalaryPaymentHandlers.
-func NewSalaryPaymentHandlers(service *services.SalaryPaymentService) *SalaryPaymentHandlers {
-	return &SalaryPaymentHandlers{service: service}
+func NewSalaryPaymentHandlers(service *services.SalaryPaymentService, notification *services.PensionNotificationService) *SalaryPaymentHandlers {
+	return &SalaryPaymentHandlers{service: service, notification: notification}
 }
 
 // ListSalaryPayments responde con los pagos de salario de un período.
@@ -87,6 +89,7 @@ func (h *SalaryPaymentHandlers) MarkSalaryReceived(w http.ResponseWriter, r *htt
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return
 	}
+	go h.notification.SendSalaryReceived(context.Background(), payment)
 	respondJSON(w, http.StatusOK, payment)
 }
 

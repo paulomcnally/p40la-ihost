@@ -165,6 +165,9 @@ export default function RegistrosPage() {
   // Reopen modal state
   const [reopenWord, setReopenWord] = useState('')
 
+  // Generación mensual (SPEC-051)
+  const [generating, setGenerating] = useState(false)
+
   const isClosed = closing.closed
   const periodLabel = `${t(`months.${month}`)} ${year}`
 
@@ -397,6 +400,21 @@ export default function RegistrosPage() {
     }
   }
 
+  const handleGenerateMonth = async () => {
+    setGenerating(true)
+    try {
+      const res = await api.pensionGenerate.generate(year, month)
+      showToast(t('registros.generated'), 'success')
+      if (res && (res.created_salary_payments > 0 || res.created_support_records > 0)) {
+        loadData()
+      }
+    } catch (err: any) {
+      showToast(err?.message || t('registros.save_error'), 'error')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const handleCloseMonth = async () => {
     setBusy(true)
     try {
@@ -431,6 +449,9 @@ export default function RegistrosPage() {
 
   const menuOptions = [
     { label: t('registros.create_manual'), icon: 'plus', onClick: openCreateForm },
+    ...(!isClosed
+      ? [{ label: t('registros.generate'), icon: 'refresh', onClick: handleGenerateMonth }]
+      : []),
     ...(records.length > 0 && !isClosed
       ? [{ label: t('registros.close_month'), icon: 'lock', onClick: () => setShowCloseConfirm(true) }]
       : []),

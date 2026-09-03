@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -9,12 +10,13 @@ import (
 
 // MonthClosingHandlers agrupa los handlers de cierre de mes.
 type MonthClosingHandlers struct {
-	service *services.MonthClosingService
+	service      *services.MonthClosingService
+	notification *services.PensionNotificationService
 }
 
 // NewMonthClosingHandlers crea un nuevo MonthClosingHandlers.
-func NewMonthClosingHandlers(service *services.MonthClosingService) *MonthClosingHandlers {
-	return &MonthClosingHandlers{service: service}
+func NewMonthClosingHandlers(service *services.MonthClosingService, notification *services.PensionNotificationService) *MonthClosingHandlers {
+	return &MonthClosingHandlers{service: service, notification: notification}
 }
 
 // GetClosingStatus responde si un mes está cerrado.
@@ -47,6 +49,7 @@ func (h *MonthClosingHandlers) CloseMonth(w http.ResponseWriter, r *http.Request
 		respondError(w, http.StatusConflict, "conflict", err.Error())
 		return
 	}
+	go h.notification.SendMonthClosing(context.Background(), year, month)
 	respondJSON(w, http.StatusOK, map[string]any{
 		"ok":        true,
 		"closed_at": closing.ClosedAt,

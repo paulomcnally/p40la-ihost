@@ -30,6 +30,8 @@ type Handler struct {
 	supportRecord        *SupportRecordHandlers
 	salaryPayment        *SalaryPaymentHandlers
 	monthClosing         *MonthClosingHandlers
+	config               *ChildSupportConfigHandlers
+	pensionDashboard     *PensionDashboardHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -54,6 +56,8 @@ func NewHandler(
 	supportRecord *SupportRecordHandlers,
 	salaryPayment *SalaryPaymentHandlers,
 	monthClosing *MonthClosingHandlers,
+	config *ChildSupportConfigHandlers,
+	pensionDashboard *PensionDashboardHandlers,
 ) *Handler {
 	return &Handler{
 		auth:                auth,
@@ -76,6 +80,8 @@ func NewHandler(
 		supportRecord:       supportRecord,
 		salaryPayment:       salaryPayment,
 		monthClosing:        monthClosing,
+		config:              config,
+		pensionDashboard:    pensionDashboard,
 	}
 }
 

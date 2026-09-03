@@ -154,6 +154,16 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("POST /api/pension/closing/{year}/{month}", authMiddleware(http.HandlerFunc(handler.monthClosing.CloseMonth)))
 	mux.Handle("DELETE /api/pension/closing/{year}/{month}", authMiddleware(http.HandlerFunc(handler.monthClosing.ReopenMonth)))
 
+	// APIs de configs de pensión (SPEC-051)
+	mux.Handle("GET /api/pension/configs", authMiddleware(http.HandlerFunc(handler.config.ListConfigs)))
+	mux.Handle("GET /api/pension/configs/{id}", authMiddleware(http.HandlerFunc(handler.config.GetConfig)))
+	mux.Handle("POST /api/pension/configs", authMiddleware(http.HandlerFunc(handler.config.CreateConfig)))
+	mux.Handle("PUT /api/pension/configs/{id}", authMiddleware(http.HandlerFunc(handler.config.UpdateConfig)))
+	mux.Handle("DELETE /api/pension/configs/{id}", authMiddleware(http.HandlerFunc(handler.config.DeleteConfig)))
+
+	// Generación mensual de pensión (SPEC-051)
+	mux.Handle("POST /api/pension/generate", authMiddleware(http.HandlerFunc(handler.pensionDashboard.GenerateMonth)))
+
 	// Assets estáticos (JS/CSS bundles del build de Vite)
 	assetsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "assets")))
 	mux.Handle("GET /assets/{file...}", http.StripPrefix("/assets/", assetsFS))

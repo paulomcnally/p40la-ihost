@@ -313,6 +313,8 @@
     "empty": "There are no monthly records for this period.",
     "create": "Create record",
     "create_manual": "Create manual record",
+    "generate": "Generate month",
+    "generated": "Month generated",
     "close_month": "Close month",
     "reopen_month": "Reopen month",
     "closed": "Month closed",

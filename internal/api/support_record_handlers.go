@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -42,12 +43,13 @@ type markRejectedRequest struct {
 
 // SupportRecordHandlers agrupa los handlers de registros de manutención.
 type SupportRecordHandlers struct {
-	service *services.SupportRecordService
+	service      *services.SupportRecordService
+	notification *services.PensionNotificationService
 }
 
 // NewSupportRecordHandlers crea un nuevo SupportRecordHandlers.
-func NewSupportRecordHandlers(service *services.SupportRecordService) *SupportRecordHandlers {
-	return &SupportRecordHandlers{service: service}
+func NewSupportRecordHandlers(service *services.SupportRecordService, notification *services.PensionNotificationService) *SupportRecordHandlers {
+	return &SupportRecordHandlers{service: service, notification: notification}
 }
 
 // ListRecords responde con los registros de un período.
@@ -160,6 +162,7 @@ func (h *SupportRecordHandlers) MarkPaid(w http.ResponseWriter, r *http.Request)
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return
 	}
+	go h.notification.SendRecordPaid(context.Background(), record)
 	respondJSON(w, http.StatusOK, record)
 }
 
@@ -203,6 +206,7 @@ func (h *SupportRecordHandlers) MarkRejected(w http.ResponseWriter, r *http.Requ
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return
 	}
+	go h.notification.SendRecordRejected(context.Background(), record, req.Reason)
 	respondJSON(w, http.StatusOK, record)
 }
 
