@@ -249,5 +249,23 @@
     "created": "Child created",
     "updated": "Child updated",
     "save_error": "Error saving"
+  },
+  "categorias": {
+    "title": "Categories",
+    "subtitle": "Register expense categories to manage child support.",
+    "empty": "You have not registered any category yet.",
+    "create": "New category",
+    "new": "New category",
+    "edit": "Edit category",
+    "name": "Name",
+    "name_placeholder": "e.g. Food",
+    "description": "Description",
+    "description_placeholder": "Optional description...",
+    "auto_generate": "Auto generation",
+    "auto_generate_hint": "If enabled, records will be generated automatically every month.",
+    "auto_generate_badge": "Auto generation",
+    "created": "Category created",
+    "updated": "Category updated",
+    "save_error": "Error saving"
   }
 }

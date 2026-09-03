@@ -250,5 +250,23 @@
     "created": "Hijo creado",
     "updated": "Hijo actualizado",
     "save_error": "Error al guardar"
+  },
+  "categorias": {
+    "title": "Categorías",
+    "subtitle": "Registra las categorías de gastos para gestionar la pensión alimenticia.",
+    "empty": "No has registrado ninguna categoría todavía.",
+    "create": "Nueva categoría",
+    "new": "Nueva categoría",
+    "edit": "Editar categoría",
+    "name": "Nombre",
+    "name_placeholder": "Ej: Alimentación",
+    "description": "Descripción",
+    "description_placeholder": "Descripción opcional...",
+    "auto_generate": "Generación automática",
+    "auto_generate_hint": "Si se activa, se generarán registros automáticamente cada mes.",
+    "auto_generate_badge": "Generación automática",
+    "created": "Categoría creada",
+    "updated": "Categoría actualizada",
+    "save_error": "Error al guardar"
   }
 }
