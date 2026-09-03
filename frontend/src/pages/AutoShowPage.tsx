@@ -105,7 +105,7 @@ export default function AutoShowPage() {
                 <div className="flex items-center gap-2 mb-2">
                   <Icon name="building" className="w-4 h-4 text-text-secondary" />
                   <span className="text-sm font-semibold text-text-secondary">{instName}</span>
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{items.length}</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full dark:bg-[#2c2c2e] dark:text-gray-400">{items.length}</span>
                 </div>
                 <div className="space-y-2">
                   {items.map((item) => {
@@ -114,11 +114,11 @@ export default function AutoShowPage() {
                       <div
                         key={item.id}
                         className={`flex items-center gap-3 p-3 rounded-ios-sm border border-border ${
-                          !item.active ? 'bg-gray-50 opacity-60' : 'bg-bg'
+                          !item.active ? 'bg-gray-50 opacity-60 dark:bg-[#2c2c2e]' : 'bg-bg'
                         }`}
                       >
                         <div className={`w-9 h-9 rounded-ios flex items-center justify-center flex-shrink-0 ${
-                          item.active ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400'
+                          item.active ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400 dark:bg-[#2c2c2e] dark:text-gray-500'
                         }`}>
                           <Icon name={item.icon_key || 'other'} className="w-5 h-5" />
                         </div>
@@ -126,7 +126,7 @@ export default function AutoShowPage() {
                           <p className="font-medium text-sm truncate">{item.service_name}</p>
                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                              item.coverage_type === 'full_cover' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                              item.coverage_type === 'full_cover' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
                             }`}>
                               {item.coverage_type === 'full_cover' ? 'Full Cover' : 'Daños a terceros'}
                             </span>
@@ -136,12 +136,12 @@ export default function AutoShowPage() {
                               <span className="text-xs text-text-secondary">Certificado: {item.certificate}</span>
                             )}
                             {!item.active && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400">
                                 Inactivo
                               </span>
                             )}
                             {isExpired && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
                                 Vencido
                               </span>
                             )}
@@ -158,7 +158,7 @@ export default function AutoShowPage() {
                         </div>
                         <button
                           onClick={() => setDeleteTarget({ serviceId: item.service_id, serviceName: item.service_name })}
-                          className="p-2 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                          className="p-2 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 dark:text-gray-500 dark:hover:text-red-400"
                         >
                           <Icon name="delete" className="w-4 h-4" />
                         </button>

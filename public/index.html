@@ -4,8 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>p40la</title>
-    <script type="module" crossorigin src="/assets/index-BS989z0Q.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DHWGF1lL.css">
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem('darkMode');
+          if (mode !== 'light') document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-U4ouXGDQ.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BpKmCTne.css">
   </head>
   <body>
     <div id="root"></div>
