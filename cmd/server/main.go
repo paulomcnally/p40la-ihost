@@ -78,6 +78,9 @@ func main() {
 	childStorage := storage.NewChildStorage(database)
 	salaryStorage := storage.NewSalaryStorage(database)
 	pensionCategoryStorage := storage.NewPensionCategoryStorage(database)
+	supportRecordStorage := storage.NewSupportRecordStorage(database)
+	salaryPaymentStorage := storage.NewSalaryPaymentStorage(database)
+	monthClosingStorage := storage.NewMonthClosingStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -98,6 +101,9 @@ func main() {
 	childService := services.NewChildService(childStorage)
 	salaryService := services.NewSalaryService(salaryStorage, currencyStorage)
 	pensionCategoryService := services.NewPensionCategoryService(pensionCategoryStorage)
+	supportRecordService := services.NewSupportRecordService(supportRecordStorage, monthClosingStorage, childStorage, pensionCategoryStorage, cfg.DataDir)
+	salaryPaymentService := services.NewSalaryPaymentService(salaryPaymentStorage, monthClosingStorage)
+	monthClosingService := services.NewMonthClosingService(monthClosingStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
@@ -132,8 +138,11 @@ func main() {
 	childHandlers := api.NewChildHandlers(childService)
 	salaryHandlers := api.NewSalaryHandlers(salaryService)
 	pensionCategoryHandlers := api.NewPensionCategoryHandlers(pensionCategoryService)
+	supportRecordHandlers := api.NewSupportRecordHandlers(supportRecordService)
+	salaryPaymentHandlers := api.NewSalaryPaymentHandlers(salaryPaymentService)
+	monthClosingHandlers := api.NewMonthClosingHandlers(monthClosingService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers)
 
 	router := api.BuildRouter(handler, authService, "./public")
 

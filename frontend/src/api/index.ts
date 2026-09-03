@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary, PensionCategory } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -21,6 +21,29 @@ function get<T>(path: string) { return request<T>(path, { method: 'GET' }) }
 function post<T>(path: string, body: unknown) { return request<T>(path, { method: 'POST', body: JSON.stringify(body) }) }
 function put<T>(path: string, body: unknown) { return request<T>(path, { method: 'PUT', body: JSON.stringify(body) }) }
 function del<T>(path: string) { return request<T>(path, { method: 'DELETE' }) }
+
+function postFormData<T>(path: string, file: File): Promise<T | null> {
+  const form = new FormData()
+  form.append('file', file)
+  return fetch(path, { method: 'POST', body: form }).then(async (res) => {
+    if (res.status === 401) {
+      window.location.href = '/login'
+      return null
+    }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.message || 'Request failed')
+    return data
+  })
+}
+
+function periodParams(filters?: { year?: number; month?: number; id?: number }): string {
+  const params = new URLSearchParams()
+  if (filters?.year) params.set('year', String(filters.year))
+  if (filters?.month) params.set('month', String(filters.month))
+  if (filters?.id) params.set('child_id', String(filters.id))
+  const qs = params.toString()
+  return qs ? `?${qs}` : ''
+}
 
 export const api = {
   settings: {
@@ -165,5 +188,34 @@ salaries: {
     create: (body: Partial<PensionCategory>) => post<PensionCategory>('/api/pension-categories', body),
     update: (id: number, body: Partial<PensionCategory>) => put<PensionCategory>(`/api/pension-categories/${id}`, body),
     delete: (id: number) => del(`/api/pension-categories/${id}`),
+  },
+  pensionRecords: {
+    list: (filters?: { year?: number; month?: number; child_id?: number }) =>
+      get<SupportRecord[]>(`/api/pension/records${periodParams(filters)}`),
+    get: (id: number) => get<SupportRecord>(`/api/pension/records/${id}`),
+    create: (body: { child_id: number; pension_category_id: number; year: number; month: number; amount: number; currency?: string; notes?: string }) =>
+      post<SupportRecord>('/api/pension/records', body),
+    update: (id: number, body: { amount: number; pension_category_id: number; notes?: string | null }) =>
+      put<SupportRecord>(`/api/pension/records/${id}`, body),
+    markPaid: (id: number, body: { paid_at?: string; payment_method?: string; payment_reference?: string; evidence_notes?: string; original_amount?: number; original_currency?: string; exchange_rate?: number }) =>
+      post<SupportRecord>(`/api/pension/records/${id}/mark-paid`, body),
+    markPending: (id: number) => post<SupportRecord>(`/api/pension/records/${id}/mark-pending`, {}),
+    markRejected: (id: number, reason: string) => post<SupportRecord>(`/api/pension/records/${id}/mark-rejected`, { reason }),
+    uploadProof: (id: number, file: File) =>
+      postFormData<{ ok: boolean; proof_file_name: string; id: number; status: string }>(`/api/pension/records/${id}/upload-proof`, file),
+    proofUrl: (id: number) => `/api/pension/records/${id}/proof`,
+  },
+  pensionSalaryPayments: {
+    list: (filters?: { year?: number; month?: number; salary_id?: number }) =>
+      get<SalaryPayment[]>(`/api/pension/salary-payments${filters?.salary_id ? `?year=${filters.year ?? ''}&month=${filters.month ?? ''}&salary_id=${filters.salary_id}` : periodParams(filters)}`),
+    get: (id: number) => get<SalaryPayment>(`/api/pension/salary-payments/${id}`),
+    markReceived: (id: number, body: { received_at: string; received_amount?: number; notes?: string }) =>
+      post<SalaryPayment>(`/api/pension/salary-payments/${id}/mark-received`, body),
+    markPending: (id: number) => post<SalaryPayment>(`/api/pension/salary-payments/${id}/mark-pending`, {}),
+  },
+  pensionClosing: {
+    status: (year: number, month: number) => get<MonthClosing>(`/api/pension/closing/${year}/${month}`),
+    close: (year: number, month: number) => post<{ ok: boolean; closed_at: string }>(`/api/pension/closing/${year}/${month}`, {}),
+    reopen: (year: number, month: number) => del<{ ok: boolean }>(`/api/pension/closing/${year}/${month}`),
   },
 }
