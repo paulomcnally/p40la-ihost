@@ -182,3 +182,4 @@ Sin cambios. No aplica.
 |-------|-------|-------------|
 | 2026-09-03 | p40la-ihost-team | Creación inicial de la especificación. |
 | 2026-09-03 | p40la-ihost-team | Cambio de estado a `in_progress` para inicio de desarrollo. |
+| 2026-09-03 | p40la-ihost-team | Implementación completada y mergeada a `main` (merge `c3ae98b`). Release diferido al próximo bump de versión por pedido del usuario (workflow se dispara solo con tags `v*`). Se mantiene `in_progress`. |
