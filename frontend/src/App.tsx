@@ -20,7 +20,6 @@ import InstitutionFormPage from './pages/InstitutionFormPage'
 import AutosPage from './pages/AutosPage'
 import AutoFormPage from './pages/AutoFormPage'
 import AutoShowPage from './pages/AutoShowPage'
-import PensionPage from './pages/PensionPage'
 import NotificationsPage from './pages/NotificationsPage'
 import NotificationFormPage from './pages/NotificationFormPage'
 import HijosPage from './pages/HijosPage'
@@ -29,6 +28,7 @@ import SalariesPage from './pages/SalariesPage'
 import SalaryFormPage from './pages/SalaryFormPage'
 import CategoriasPage from './pages/CategoriasPage'
 import CategoryFormPage from './pages/CategoryFormPage'
+import RegistrosPage from './pages/RegistrosPage'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -103,7 +103,7 @@ function App() {
                   <Route path="pension/salarios" element={<SalariesPage />} />
                   <Route path="pension/salarios/new" element={<SalaryFormPage />} />
                   <Route path="pension/salarios/edit/:id" element={<SalaryFormPage />} />
-                  <Route path="pension/registros" element={<PensionPage section="registros" />} />
+                  <Route path="pension/registros" element={<RegistrosPage />} />
                   <Route path="pension/notificaciones" element={<NotificationsPage />} />
                   <Route path="pension/notificaciones/new" element={<NotificationFormPage />} />
                   <Route path="pension/notificaciones/edit/:id" element={<NotificationFormPage />} />
