@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Child } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Child, PensionCategory } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -144,5 +144,12 @@ export const api = {
     create: (body: Partial<Child>) => post<Child>('/api/children', body),
     update: (id: number, body: Partial<Child>) => put<Child>(`/api/children/${id}`, body),
     delete: (id: number) => del(`/api/children/${id}`),
+  },
+  pensionCategories: {
+    list: () => get<PensionCategory[]>('/api/pension-categories'),
+    get: (id: number) => get<PensionCategory>(`/api/pension-categories/${id}`),
+    create: (body: Partial<PensionCategory>) => post<PensionCategory>('/api/pension-categories', body),
+    update: (id: number, body: Partial<PensionCategory>) => put<PensionCategory>(`/api/pension-categories/${id}`, body),
+    delete: (id: number) => del(`/api/pension-categories/${id}`),
   },
 }

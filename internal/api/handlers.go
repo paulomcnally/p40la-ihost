@@ -24,6 +24,7 @@ type Handler struct {
 	autoService          *AutoServiceHandlers
 	institutionCategory  *InstitutionCategoryHandlers
 	child                *ChildHandlers
+	pensionCategory      *PensionCategoryHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -42,6 +43,7 @@ func NewHandler(
 	autoService *AutoServiceHandlers,
 	institutionCategory *InstitutionCategoryHandlers,
 	child *ChildHandlers,
+	pensionCategory *PensionCategoryHandlers,
 ) *Handler {
 	return &Handler{
 		auth:                auth,
@@ -58,6 +60,7 @@ func NewHandler(
 		autoService:         autoService,
 		institutionCategory: institutionCategory,
 		child:               child,
+		pensionCategory:     pensionCategory,
 	}
 }
 
