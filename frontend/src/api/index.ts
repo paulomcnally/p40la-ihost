@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Child } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Child, Salary } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -144,5 +144,12 @@ export const api = {
     create: (body: Partial<Child>) => post<Child>('/api/children', body),
     update: (id: number, body: Partial<Child>) => put<Child>(`/api/children/${id}`, body),
     delete: (id: number) => del(`/api/children/${id}`),
+  },
+  salaries: {
+    list: () => get<Salary[]>('/api/salaries'),
+    get: (id: number) => get<Salary>(`/api/salaries/${id}`),
+    create: (body: Partial<Salary>) => post<Salary>('/api/salaries', body),
+    update: (id: number, body: Partial<Salary>) => put<Salary>(`/api/salaries/${id}`, body),
+    delete: (id: number) => del(`/api/salaries/${id}`),
   },
 }

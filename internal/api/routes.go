@@ -111,6 +111,13 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/children/{id}", authMiddleware(http.HandlerFunc(handler.child.UpdateChild)))
 	mux.Handle("DELETE /api/children/{id}", authMiddleware(http.HandlerFunc(handler.child.DeleteChild)))
 
+	// APIs de salarios (pensión alimenticia)
+	mux.Handle("GET /api/salaries", authMiddleware(http.HandlerFunc(handler.salary.ListSalaries)))
+	mux.Handle("GET /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.GetSalary)))
+	mux.Handle("POST /api/salaries", authMiddleware(http.HandlerFunc(handler.salary.CreateSalary)))
+	mux.Handle("PUT /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.UpdateSalary)))
+	mux.Handle("DELETE /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.DeleteSalary)))
+
 	// Assets estáticos (JS/CSS bundles del build de Vite)
 	assetsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "assets")))
 	mux.Handle("GET /assets/{file...}", http.StripPrefix("/assets/", assetsFS))

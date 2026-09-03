@@ -249,5 +249,25 @@
     "created": "Child created",
     "updated": "Child updated",
     "save_error": "Error saving"
+  },
+  "salaries": {
+    "title": "Salaries",
+    "subtitle": "Register salaries to manage child support.",
+    "empty": "You have not registered any salaries yet.",
+    "create": "New salary",
+    "new": "New salary",
+    "edit": "Edit salary",
+    "employer": "Employer / Source",
+    "employer_placeholder": "e.g. XYZ Company",
+    "amount": "Amount",
+    "currency": "Currency",
+    "payment_day": "Payment day",
+    "active": "Active",
+    "inactive": "Inactive",
+    "note": "Note",
+    "note_placeholder": "Optional notes...",
+    "created": "Salary created",
+    "updated": "Salary updated",
+    "save_error": "Error saving"
   }
 }
