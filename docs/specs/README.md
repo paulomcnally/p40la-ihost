@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 52 |
+| **Total de specs** | 53 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 2 🟣 |
 | **Pending release** | 2 🟠 |
-| **Released** | 48 🟢 |
+| **Released** | 49 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-052 |
+| **Último ID usado** | SPEC-053 |
 
 ---
 
@@ -73,6 +73,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-050 | Página de Registros Mensuales de Pensión Alimenticia (frontend, replicar child-support/records de P4OLA) | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-051 | Emails y Generación Mensual de Registros de Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-052 | Fix deprecación Node.js 20 en GitHub Actions del build Docker | in_progress | 2026-09-03 | p40la-ihost-team |
+| SPEC-053 | Modo oscuro configurable con default activo | released | 2026-09-03 | p40la-ihost-team |
 
 ---
 
@@ -142,4 +143,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-03 — SPEC-052 draft, SPEC-043 released, SPEC-049/050/051 released.*
+*Última actualización de este tracker: 2026-09-03 — SPEC-053 released, SPEC-052 draft, SPEC-043 released, SPEC-049/050/051 released.*
