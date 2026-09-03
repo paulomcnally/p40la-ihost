@@ -33,9 +33,9 @@ function statusIcon(status: string): string {
 }
 
 function statusColor(status: string): string {
-  if (status === 'paid') return 'text-emerald-600'
-  if (status === 'rejected') return 'text-red-500'
-  return 'text-amber-500'
+  if (status === 'paid') return 'text-emerald-600 dark:text-emerald-400'
+  if (status === 'rejected') return 'text-red-500 dark:text-red-400'
+  return 'text-amber-500 dark:text-amber-400'
 }
 
 function ModalShell({ title, onClose, children, wide }: {
@@ -476,7 +476,7 @@ export default function RegistrosPage() {
             </button>
           </div>
           {isClosed && (
-            <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-emerald-600/10 text-emerald-700 border border-emerald-600/30">
+            <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-emerald-600/10 text-emerald-700 border border-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/30">
               <Icon name="lock" className="w-3 h-3 inline mr-1" />
               {t('registros.closed')}
             </span>
@@ -540,9 +540,9 @@ export default function RegistrosPage() {
       {records.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
           <SummaryCard label={t('registros.total_due')} amount={totalAmount} currency={baseCurrency} color="text-white" />
-          <SummaryCard label={t('registros.total_paid')} amount={paidAmount} currency={baseCurrency} color="text-emerald-600" />
-          <SummaryCard label={t('registros.total_pending')} amount={pendingAmount} currency={baseCurrency} color="text-amber-500" />
-          <SummaryCard label={t('registros.total_rejected')} amount={rejectedAmount} currency={baseCurrency} color="text-red-500" />
+          <SummaryCard label={t('registros.total_paid')} amount={paidAmount} currency={baseCurrency} color="text-emerald-600 dark:text-emerald-400" />
+          <SummaryCard label={t('registros.total_pending')} amount={pendingAmount} currency={baseCurrency} color="text-amber-500 dark:text-amber-400" />
+          <SummaryCard label={t('registros.total_rejected')} amount={rejectedAmount} currency={baseCurrency} color="text-red-500 dark:text-red-400" />
         </div>
       )}
 
@@ -617,7 +617,7 @@ export default function RegistrosPage() {
                 disabled={uploading}
                 className={`w-full border-2 border-dashed rounded-ios-sm px-4 py-3 text-sm transition-colors min-h-[44px] ${
                   proofFile
-                    ? 'border-emerald-600/50 bg-emerald-600/10 text-emerald-700'
+                    ? 'border-emerald-600/50 bg-emerald-600/10 text-emerald-700 dark:text-emerald-300 dark:border-emerald-500/40'
                     : 'border-border text-text-secondary hover:border-primary'
                 }`}
               >
@@ -690,7 +690,7 @@ export default function RegistrosPage() {
                 const diff = received - expected
                 if (!salaryReceivedAmount || diff === 0) return null
                 return (
-                  <p className={`text-xs mt-1 ${diff > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  <p className={`text-xs mt-1 ${diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                     {diff > 0 ? '+' : ''}{diff.toFixed(2)} {salaryModal.currency}
                   </p>
                 )
@@ -804,7 +804,7 @@ function SalaryCard({ sp, isClosed, t, onMarkReceived, onMarkPending }: {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-ios flex items-center justify-center ${received ? 'bg-emerald-600/10' : 'bg-amber-500/10'}`}>
-            <Icon name={received ? 'check' : 'clock'} className={`w-5 h-5 ${received ? 'text-emerald-600' : 'text-amber-500'}`} />
+            <Icon name={received ? 'check' : 'clock'} className={`w-5 h-5 ${received ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500 dark:text-amber-400'}`} />
           </div>
           <div>
             <p className="text-sm font-semibold">{sp.employer}</p>
@@ -815,7 +815,7 @@ function SalaryCard({ sp, isClosed, t, onMarkReceived, onMarkPending }: {
           <button
             onClick={onMarkPending}
             disabled={isClosed}
-            className={`text-xs transition-colors min-h-[44px] px-2 ${isClosed ? 'text-text-secondary opacity-50 cursor-not-allowed' : 'text-text-secondary hover:text-amber-500'}`}
+            className={`text-xs transition-colors min-h-[44px] px-2 ${isClosed ? 'text-text-secondary opacity-50 cursor-not-allowed' : 'text-text-secondary hover:text-amber-500 dark:hover:text-amber-400'}`}
           >
             <Icon name="refresh" className="w-3 h-3 inline mr-1" />
             {t('salaryPayments.markPending')}
@@ -839,7 +839,7 @@ function SalaryCard({ sp, isClosed, t, onMarkReceived, onMarkPending }: {
           {sp.received_amount != null && Number(sp.received_amount) !== Number(sp.amount) && (
             <div>
               <p className="text-text-secondary">{t('salaryPayments.receivedAmount')}</p>
-              <p className={`mt-0.5 font-medium ${Number(sp.received_amount) > Number(sp.amount) ? 'text-emerald-600' : 'text-red-500'}`}>
+              <p className={`mt-0.5 font-medium ${Number(sp.received_amount) > Number(sp.amount) ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                 {sp.currency} {Number(sp.received_amount).toFixed(2)}
               </p>
             </div>
@@ -894,7 +894,7 @@ function RecordCard({ record, isClosed, t, onEdit, onPay, onReject, onMarkPendin
                 <button onClick={onPay} className="px-3 py-1.5 bg-emerald-600 text-white rounded-ios-sm text-xs font-medium hover:bg-emerald-700 transition-colors min-h-[36px]">
                   {t('registros.mark_paid')}
                 </button>
-                <button onClick={onReject} className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-red-500 transition-colors" title={t('registros.mark_rejected')}>
+                <button onClick={onReject} className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-red-500 dark:hover:text-red-400 transition-colors" title={t('registros.mark_rejected')}>
                   <Icon name="cancel" className="w-4 h-4" />
                 </button>
               </div>
@@ -905,7 +905,7 @@ function RecordCard({ record, isClosed, t, onEdit, onPay, onReject, onMarkPendin
             <button
               onClick={onMarkPending}
               disabled={isClosed}
-              className={`text-xs transition-colors min-h-[44px] px-2 ${isClosed ? 'text-text-secondary opacity-50 cursor-not-allowed' : 'text-text-secondary hover:text-amber-500'}`}
+              className={`text-xs transition-colors min-h-[44px] px-2 ${isClosed ? 'text-text-secondary opacity-50 cursor-not-allowed' : 'text-text-secondary hover:text-amber-500 dark:hover:text-amber-400'}`}
             >
               <Icon name="refresh" className="w-3 h-3 inline mr-1" />
               {t('registros.mark_pending')}
@@ -961,7 +961,7 @@ function RecordCard({ record, isClosed, t, onEdit, onPay, onReject, onMarkPendin
       {record.status === 'rejected' && (
         <div className="mt-3 pt-3 border-t border-border">
           <div className="bg-red-500/5 border border-red-500/20 rounded-ios-sm px-4 py-3">
-            <p className="text-red-600 font-medium text-xs mb-1">{t('registros.rejection_reason')}</p>
+            <p className="text-red-600 dark:text-red-400 font-medium text-xs mb-1">{t('registros.rejection_reason')}</p>
             <p className="text-text text-sm">{record.notes || '—'}</p>
           </div>
         </div>

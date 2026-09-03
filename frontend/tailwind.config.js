@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}',
@@ -7,15 +8,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#007aff',
-        'primary-hover': '#0056b3',
-        danger: '#ff3b30',
-        success: '#34c759',
-        warning: '#ff9500',
-        bg: '#f2f2f7',
-        card: '#ffffff',
-        border: '#e5e5ea',
-        'text-secondary': '#6c6c70',
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        'primary-hover': 'rgb(var(--color-primary-hover) / <alpha-value>)',
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        bg: 'rgb(var(--color-bg) / <alpha-value>)',
+        card: 'rgb(var(--color-card) / <alpha-value>)',
+        border: 'rgb(var(--color-border) / <alpha-value>)',
+        'text-secondary': 'rgb(var(--color-text-secondary) / <alpha-value>)',
+        text: 'rgb(var(--color-text) / <alpha-value>)',
       },
       borderRadius: {
         'ios': '12px',
