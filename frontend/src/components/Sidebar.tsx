@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from './Icons'
 
@@ -10,7 +11,9 @@ interface SidebarProps {
 
 export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useI18nStore()
+  const [pensionOpen, setPensionOpen] = useState(false)
 
   const items = [
     { key: 'home', icon: 'home', label: t('menu.home') },
@@ -18,6 +21,16 @@ export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
     { key: 'institutions', icon: 'building', label: 'Instituciones' },
     { key: 'autos', icon: 'vehicle', label: 'Autos' },
   ]
+
+  const pensionItems = [
+    { path: '/pension/hijos', icon: 'baby', label: t('pension.children') },
+    { path: '/pension/categorias', icon: 'tag', label: t('pension.categories') },
+    { path: '/pension/salarios', icon: 'savings', label: t('pension.salaries') },
+    { path: '/pension/registros', icon: 'calendar', label: t('pension.records') },
+    { path: '/pension/notificaciones', icon: 'bell', label: t('pension.notifications') },
+  ]
+
+  const isPensionActive = activeBase === 'pension'
 
   const handleNavigate = (key: string) => {
     navigate(`/${key}`)
@@ -56,6 +69,44 @@ export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
               <span>{item.label}</span>
             </button>
           ))}
+          <button
+            onClick={() => setPensionOpen((o) => !o)}
+            className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-ios-sm text-sm transition-colors min-h-[44px] ${
+              isPensionActive
+                ? 'bg-primary/10 text-primary font-medium'
+                : 'hover:bg-bg'
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <Icon name="pension" className="w-5 h-5" />
+              <span>{t('menu.pension')}</span>
+            </span>
+            <Icon
+              name="chevron"
+              className={`w-4 h-4 transition-transform ${pensionOpen ? 'rotate-90' : ''}`}
+            />
+          </button>
+          {pensionOpen && (
+            <div className="mt-1 space-y-1">
+              {pensionItems.map((item) => {
+                const isActive = location.pathname === item.path
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => handleNavigate(item.path.slice(1))}
+                    className={`w-full flex items-center gap-3 pl-9 pr-3 py-2 rounded-ios-sm text-sm transition-colors min-h-[44px] ${
+                      isActive
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'hover:bg-bg'
+                    }`}
+                  >
+                    <Icon name={item.icon} className="w-5 h-5" />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </nav>
     </aside>

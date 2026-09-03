@@ -17,7 +17,21 @@
   "menu": {
     "home": "Home",
     "services": "Services",
-    "settings": "Settings"
+    "settings": "Settings",
+    "pension": "Child support"
+  },
+  "pension": {
+    "title": "Child support",
+    "children": "Children",
+    "categories": "Categories",
+    "salaries": "Salaries",
+    "records": "Monthly records",
+    "notifications": "Notifications",
+    "children_empty": "No children registered.",
+    "categories_empty": "No categories registered.",
+    "salaries_empty": "No salaries registered.",
+    "records_empty": "No monthly records.",
+    "notifications_empty": "No notifications."
   },
   "home": {
     "title": "Home",
