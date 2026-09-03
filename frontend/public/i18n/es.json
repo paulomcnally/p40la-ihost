@@ -125,11 +125,11 @@
       "create": "Agregar moneda"
     },
     "email_alerts": {
- "title": "Alertas por Email",
- "subtitle": "Recibir alertas de seguros de autos por email",
- "enable": "Activar Alertas por Email",
- "enable_hint": "Habilitar el envío de alertas por correo electrónico.",
- "needs_config_hint": "Falta configurar SMTP y/o agregar destinatarios para completar la configuración.",
+      "title": "Alertas por Email",
+      "subtitle": "Recibir alertas de seguros de autos por email",
+      "enable": "Activar Alertas por Email",
+      "enable_hint": "Habilitar el envío de alertas por correo electrónico.",
+      "needs_config_hint": "Falta configurar SMTP y/o agregar destinatarios para completar la configuración.",
       "recipients": "Destinatarios",
       "recipients_hint": "Cada destinatario se agrega individualmente.",
       "add_recipient": "Agregar email",
@@ -175,9 +175,9 @@
       "mail": "Mail",
       "alexa": "Alexa",
       "saved": "Alerta actualizada",
- "save_error": "Error al actualizar alerta",
- "alexa_disabled_hint": "Activá Voice Monkey (token y device) y el toggle \"Enviar alertas\" para habilitar los avisos por Alexa.",
- "mail_disabled_hint": "Activá \"Alertas por Email\", configurá SMTP y agregá al menos un destinatario para habilitar el aviso por mail."
+      "save_error": "Error al actualizar alerta",
+      "alexa_disabled_hint": "Activá Voice Monkey (token y device) y el toggle \"Enviar alertas\" para habilitar los avisos por Alexa.",
+      "mail_disabled_hint": "Activá \"Alertas por Email\", configurá SMTP y agregá al menos un destinatario para habilitar el aviso por mail."
     },
     "voicemonkey": {
       "title": "Voice Monkey (Alexa)",
@@ -249,5 +249,45 @@
     "invalid_drive": "El enlace de Google Drive no es válido",
     "drive_required": "El enlace de Google Drive es obligatorio para marcar como pagada",
     "generic": "Ocurrió un error. Intenta de nuevo."
+  },
+  "hijos": {
+    "title": "Hijos",
+    "subtitle": "Registra a los hijos para gestionar la pensión alimenticia.",
+    "empty": "No has registrado ningún hijo todavía.",
+    "create": "Nuevo hijo",
+    "new": "Nuevo hijo",
+    "edit": "Editar hijo",
+    "first_name": "Nombres",
+    "first_name_placeholder": "Ej: María",
+    "last_name": "Apellidos",
+    "last_name_placeholder": "Ej: Pérez",
+    "birth_date": "Fecha de nacimiento",
+    "notes": "Notas",
+    "notes_placeholder": "Observaciones opcionales...",
+    "year": "año",
+    "years": "años",
+    "created": "Hijo creado",
+    "updated": "Hijo actualizado",
+    "save_error": "Error al guardar"
+  },
+  "salaries": {
+    "title": "Salarios",
+    "subtitle": "Registra los salarios para gestionar la pensión alimenticia.",
+    "empty": "No has registrado ningún salario todavía.",
+    "create": "Nuevo salario",
+    "new": "Nuevo salario",
+    "edit": "Editar salario",
+    "employer": "Empleador / Fuente",
+    "employer_placeholder": "Ej: Empresa XYZ",
+    "amount": "Monto",
+    "currency": "Moneda",
+    "payment_day": "Día de pago",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "note": "Nota",
+    "note_placeholder": "Observaciones opcionales...",
+    "created": "Salario creado",
+    "updated": "Salario actualizado",
+    "save_error": "Error al guardar"
   }
 }

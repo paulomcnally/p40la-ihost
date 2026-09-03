@@ -23,6 +23,10 @@ import AutoShowPage from './pages/AutoShowPage'
 import PensionPage from './pages/PensionPage'
 import NotificationsPage from './pages/NotificationsPage'
 import NotificationFormPage from './pages/NotificationFormPage'
+import HijosPage from './pages/HijosPage'
+import HijoFormPage from './pages/HijoFormPage'
+import SalariesPage from './pages/SalariesPage'
+import SalaryFormPage from './pages/SalaryFormPage'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -88,9 +92,13 @@ function App() {
                   <Route path="autos/new" element={<AutoFormPage />} />
                   <Route path="autos/edit/:id" element={<AutoFormPage />} />
                   <Route path="autos/:id" element={<AutoShowPage />} />
-                  <Route path="pension/hijos" element={<PensionPage section="hijos" />} />
+                  <Route path="pension/hijos" element={<HijosPage />} />
+                  <Route path="pension/hijos/new" element={<HijoFormPage />} />
+                  <Route path="pension/hijos/edit/:id" element={<HijoFormPage />} />
                   <Route path="pension/categorias" element={<PensionPage section="categorias" />} />
-                  <Route path="pension/salarios" element={<PensionPage section="salarios" />} />
+                  <Route path="pension/salarios" element={<SalariesPage />} />
+                  <Route path="pension/salarios/new" element={<SalaryFormPage />} />
+                  <Route path="pension/salarios/edit/:id" element={<SalaryFormPage />} />
                   <Route path="pension/registros" element={<PensionPage section="registros" />} />
                   <Route path="pension/notificaciones" element={<NotificationsPage />} />
                   <Route path="pension/notificaciones/new" element={<NotificationFormPage />} />

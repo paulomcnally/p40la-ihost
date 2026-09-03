@@ -115,6 +115,28 @@ export interface Auto {
   updated_at: string
 }
 
+export interface Child {
+  id: number
+  first_name: string
+  last_name: string
+  birth_date: string
+  notes: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Salary {
+  id: number
+  employer: string
+  amount: number
+  currency_id: number
+  payment_day: number
+  active: boolean
+  note: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Alert {
   id: number
   key: string
