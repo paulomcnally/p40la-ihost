@@ -39,14 +39,47 @@ func TestAlertService_Seed_IsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if len(alerts) != 3 {
-		t.Fatalf("se esperaban 3 alertas, got %d", len(alerts))
+	if len(alerts) != len(catalog()) {
+		t.Fatalf("se esperaban %d alertas (catálogo), got %d", len(catalog()), len(alerts))
+	}
+
+	// Todas las claves del catálogo están presentes.
+	expectedKeys := map[string]bool{}
+	for _, c := range catalog() {
+		expectedKeys[c.Key] = true
+	}
+	for _, a := range alerts {
+		if !expectedKeys[a.Key] {
+			t.Errorf("alerta %s no está en el catálogo", a.Key)
+		}
+		delete(expectedKeys, a.Key)
+	}
+	if len(expectedKeys) > 0 {
+		t.Errorf("faltan alertas del catálogo: %v", expectedKeys)
 	}
 
 	// Todos los toggles inician en OFF (opt-in).
 	for _, a := range alerts {
 		if a.MailEnabled || a.VoiceEnabled {
 			t.Errorf("alerta %s debía arrancar apagada, got mail=%v voice=%v", a.Key, a.MailEnabled, a.VoiceEnabled)
+		}
+	}
+}
+
+func TestAlertCatalog_IncludesPension(t *testing.T) {
+	keys := map[string]bool{}
+	for _, c := range catalog() {
+		keys[c.Key] = true
+	}
+	for _, key := range []string{
+		models.AlertKeyPensionRecordsCreated,
+		models.AlertKeyPensionRecordPaid,
+		models.AlertKeyPensionSalaryReceived,
+		models.AlertKeyPensionRecordRejected,
+		models.AlertKeyPensionMonthClosing,
+	} {
+		if !keys[key] {
+			t.Errorf("la alerta %s debería estar en el catálogo (SPEC-051)", key)
 		}
 	}
 }
