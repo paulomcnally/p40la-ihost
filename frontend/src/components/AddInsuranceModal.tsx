@@ -98,8 +98,8 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
                 onClick={() => setCoverageType('daños_a_terceros')}
                 className={`flex-1 px-3 py-2 rounded-ios-sm border text-sm font-medium transition-colors ${
                   coverageType === 'daños_a_terceros'
-                    ? 'border-amber-400 bg-amber-50 text-amber-700'
-                    : 'border-border hover:border-amber-300'
+                    ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/30 dark:text-amber-300'
+                    : 'border-border hover:border-amber-300 dark:hover:border-amber-700'
                 }`}
               >
                 Daños a terceros
@@ -108,8 +108,8 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
                 onClick={() => setCoverageType('full_cover')}
                 className={`flex-1 px-3 py-2 rounded-ios-sm border text-sm font-medium transition-colors ${
                   coverageType === 'full_cover'
-                    ? 'border-green-400 bg-green-50 text-green-700'
-                    : 'border-border hover:border-green-300'
+                    ? 'border-green-400 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-900/30 dark:text-green-300'
+                    : 'border-border hover:border-green-300 dark:hover:border-green-700'
                 }`}
               >
                 Full Cover

@@ -127,7 +127,7 @@ export default function BillsPage() {
                     )}
                   </div>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    bill.status === 'paid' ? 'bg-success/20 text-green-800' : 'bg-warning/20 text-yellow-800'
+                    bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
                   }`}>
                     {t(`bills.status_${bill.status}`)}
                   </span>
@@ -159,7 +159,7 @@ export default function BillsPage() {
                     <td className="px-4 py-3 text-sm">{bill.invoice_number || '-'}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                        bill.status === 'paid' ? 'bg-success/20 text-green-800' : 'bg-warning/20 text-yellow-800'
+                        bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
                       }`}>
                         {t(`bills.status_${bill.status}`)}
                       </span>

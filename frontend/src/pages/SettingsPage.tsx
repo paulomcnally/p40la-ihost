@@ -14,9 +14,14 @@ import type { Alert } from '../types'
 type HourFormat = '12h' | '24h'
 
 const HOUR_FORMAT_KEY = 'hourFormat'
+const DARK_MODE_KEY = 'darkMode'
 
 function getInitialHourFormat(): HourFormat {
   return localStorage.getItem(HOUR_FORMAT_KEY) === '24h' ? '24h' : '12h'
+}
+
+function getInitialDarkMode(): boolean {
+  return localStorage.getItem(DARK_MODE_KEY) !== 'light'
 }
 
 function formatHourLabel(hour: number, format: HourFormat): string {
@@ -44,6 +49,7 @@ export default function SettingsPage() {
   const [billingHour, setBillingHour] = useState(0)
   const [alertCheckHour, setAlertCheckHour] = useState(0)
   const [hourFormat, setHourFormat] = useState<HourFormat>(getInitialHourFormat)
+  const [darkMode, setDarkMode] = useState<boolean>(getInitialDarkMode)
   // Email alerts
   const [smtpHost, setSmtpHost] = useState('')
   const [smtpPort, setSmtpPort] = useState(587)
@@ -82,6 +88,10 @@ export default function SettingsPage() {
     loadVoiceMonkeySettings()
     loadAlerts()
   }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode)
+  }, [darkMode])
 
   useEffect(() => {
     setEmailOpen(emailNeedsConfig)
@@ -165,6 +175,11 @@ export default function SettingsPage() {
     const format: HourFormat = next ? '24h' : '12h'
     setHourFormat(format)
     localStorage.setItem(HOUR_FORMAT_KEY, format)
+  }
+
+  const handleDarkModeChange = (next: boolean) => {
+    setDarkMode(next)
+    localStorage.setItem(DARK_MODE_KEY, next ? 'dark' : 'light')
   }
 
   const handleToggleAlert = async (key: string, field: 'mail_enabled' | 'voice_enabled', value: boolean) => {
@@ -340,7 +355,7 @@ export default function SettingsPage() {
   const emailNeedsConfig = emailAlertsEnabled && !emailActive
   const vmNeedsConfig = vmEnabled && !vmActive
 
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-white min-h-[44px]'
+  const inputCls = 'w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-white dark:bg-[#2c2c2e] min-h-[44px]'
   const labelCls = 'text-sm font-medium text-text-secondary mb-1'
 
   return (
@@ -364,6 +379,13 @@ export default function SettingsPage() {
               <Icon name="chevron" className="w-4 h-4" />
             </div>
           </button>
+          <div className="px-4 py-3.5 flex items-center justify-between gap-3">
+            <div>
+              <div className="font-medium">{t('settings.dark_mode.title')}</div>
+              <div className="text-sm text-text-secondary">{t('settings.dark_mode.subtitle')}</div>
+            </div>
+            <Toggle checked={darkMode} onChange={handleDarkModeChange} />
+          </div>
         </div>
       </div>
 
@@ -462,7 +484,7 @@ export default function SettingsPage() {
 
           {emailNeedsConfig && (
             <div className="px-4 py-3 border-b border-border">
-              <p className="text-xs text-amber-600">{t('settings.email_alerts.needs_config_hint')}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400">{t('settings.email_alerts.needs_config_hint')}</p>
             </div>
           )}
 
@@ -484,7 +506,7 @@ export default function SettingsPage() {
                 <>
                   {smtpConfigured ? (
                     <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
                         {t('settings.email_alerts.configured_status')}
                       </span>
                       <button
@@ -636,7 +658,7 @@ export default function SettingsPage() {
 
           {vmNeedsConfig && (
             <div className="px-4 py-3 border-b border-border">
-              <p className="text-xs text-amber-600">{t('settings.voicemonkey.needs_config_hint')}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400">{t('settings.voicemonkey.needs_config_hint')}</p>
             </div>
           )}
 
@@ -645,7 +667,7 @@ export default function SettingsPage() {
               {vmConfigured ? (
                 <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
                       {t('settings.voicemonkey.configured_status')}
                     </span>
                   </div>

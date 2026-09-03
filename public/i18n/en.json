@@ -115,6 +115,10 @@
       "es": "Español",
       "en": "English"
     },
+    "dark_mode": {
+      "title": "Dark mode",
+      "subtitle": "Dark theme for the entire app"
+    },
     "currencies": {
       "title": "Currencies",
       "subtitle": "Manage available currencies",

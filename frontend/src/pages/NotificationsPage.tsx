@@ -78,8 +78,8 @@ export default function NotificationsPage() {
                 <span
                   className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                     notification.active
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-200 text-gray-600'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                      : 'bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400'
                   }`}
                 >
                   {notification.active ? t('notifications.active') : t('notifications.inactive')}
