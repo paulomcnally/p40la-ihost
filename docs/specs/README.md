@@ -7,9 +7,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | Métrica | Valor |
 |---------|-------|
 | **Total de specs** | 47 |
-| **En draft** | 2 🟡 |
+| **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 2 🟣 |
+| **In progress** | 3 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 43 🟢 |
 | **Canceladas** | 0 ⚫ |
@@ -67,7 +67,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-044 | Menú Pensión Alimenticia en el Sidebar con submenús y páginas en blanco | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-045 | CRUD de Hijos en módulo Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-046 | CRUD de Notificaciones en módulo Pensión Alimenticia | draft | 2026-09-02 | p40la-ihost-team |
-| SPEC-047 | CRUD de Salarios en módulo Pensión Alimenticia | draft | 2026-09-02 | p40la-ihost-team |
+| SPEC-047 | CRUD de Salarios en módulo Pensión Alimenticia | in_progress | 2026-09-02 | p40la-ihost-team |
 
 ---
 
