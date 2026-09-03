@@ -210,6 +210,25 @@
       }
     }
   },
+  "notifications": {
+    "create": "Nueva notificación",
+    "edit": "Editar notificación",
+    "empty_title": "No hay notificaciones",
+    "empty_subtitle": "Registra un destinatario para recibir notificaciones por email",
+    "name": "Nombre",
+    "name_placeholder": "Ej: María Pérez",
+    "email": "Email",
+    "email_placeholder": "Ej: maria@example.com",
+    "active_label": "Recibir emails",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "created": "Notificación creada",
+    "updated": "Notificación actualizada",
+    "save_error": "Error al guardar",
+    "delete_confirm": "Confirmar eliminación",
+    "history_title": "Histórico de emails enviados",
+    "history_placeholder": "Aún no hay un historial de envíos. Esta sección se habilitará cuando esté disponible el envío de emails."
+  },
   "months": {
     "1": "Enero",
     "2": "Febrero",

@@ -209,6 +209,25 @@
       }
     }
   },
+  "notifications": {
+    "create": "New notification",
+    "edit": "Edit notification",
+    "empty_title": "No notifications",
+    "empty_subtitle": "Register a recipient to receive email notifications",
+    "name": "Name",
+    "name_placeholder": "E.g. Maria Perez",
+    "email": "Email",
+    "email_placeholder": "E.g. maria@example.com",
+    "active_label": "Receive emails",
+    "active": "Active",
+    "inactive": "Inactive",
+    "created": "Notification created",
+    "updated": "Notification updated",
+    "save_error": "Error saving",
+    "delete_confirm": "Confirm deletion",
+    "history_title": "Sent emails history",
+    "history_placeholder": "There is no send history yet. This section will be enabled when email sending is available."
+  },
   "months": {
     "1": "January",
     "2": "February",

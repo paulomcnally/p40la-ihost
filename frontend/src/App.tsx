@@ -21,6 +21,8 @@ import AutosPage from './pages/AutosPage'
 import AutoFormPage from './pages/AutoFormPage'
 import AutoShowPage from './pages/AutoShowPage'
 import PensionPage from './pages/PensionPage'
+import NotificationsPage from './pages/NotificationsPage'
+import NotificationFormPage from './pages/NotificationFormPage'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -90,7 +92,9 @@ function App() {
                   <Route path="pension/categorias" element={<PensionPage section="categorias" />} />
                   <Route path="pension/salarios" element={<PensionPage section="salarios" />} />
                   <Route path="pension/registros" element={<PensionPage section="registros" />} />
-                  <Route path="pension/notificaciones" element={<PensionPage section="notificaciones" />} />
+                  <Route path="pension/notificaciones" element={<NotificationsPage />} />
+                  <Route path="pension/notificaciones/new" element={<NotificationFormPage />} />
+                  <Route path="pension/notificaciones/edit/:id" element={<NotificationFormPage />} />
                 </Route>
               </Routes>
             </AuthGuard>

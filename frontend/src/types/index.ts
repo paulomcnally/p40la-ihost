@@ -126,3 +126,12 @@ export interface Alert {
   created_at: string
   updated_at: string
 }
+
+export interface Notification {
+  id: number
+  name: string
+  email: string
+  active: boolean
+  created_at: string
+  updated_at: string
+}
