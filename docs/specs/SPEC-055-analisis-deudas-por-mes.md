@@ -30,7 +30,7 @@ Como ya existe el endpoint `GET /api/debt-bills?year=&month=` (usado por el cale
 
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
 
-1. **REQ-001**: Agregar una tercera pestaña **Análisis** en la página `/deudas` (junto a Calendario y Deudas), sincronizada con el mismo patrón de tabs existente.
+1. **REQ-001**: Agregar una tercera pestaña **Análisis** en la página `/deudas` (junto a Calendario y Deudas), sincronizada con el mismo patrón de tabs existente. La pestaña **Análisis es la pestaña por defecto** al abrir `/deudas`, seguida de Calendario y Deudas (en ese orden). Los tabs muestran **iconos** según corresponda (gráfico para Análisis, calendario para Calendario, crédito para Deudas).
 2. **REQ-002**: En la pestaña Análisis, mostrar el **total del mes** y el desglose: total a pagar del mes, total ya pagado, y **total pendiente** (lo que se necesita para saldar el mes). Agrupado por moneda cuando haya más de una.
 3. **REQ-003**: Listar todos los registros de cuotas del mes con su estado (pagado/pendiente), número de cuota, descripción de la deuda, institución, fecha de vencimiento y monto.
 4. **REQ-004**: Navegación por mes: mostrar el mes en curso por defecto, con flechas anterior/siguiente y botón para volver al mes actual (patrón de `DebtCalendar` y `RegistrosPage`).
@@ -41,6 +41,8 @@ Como ya existe el endpoint `GET /api/debt-bills?year=&month=` (usado por el cale
 1. **REQ-006**: Gráfico de barras (opcional) que compare el total pendiente vs pagado por deuda en el mes, o el resumen mes a mes, para dar contexto adicional.
 2. **REQ-007**: Indicador visual de progreso (porcentaje pagado del mes) junto al total pendiente.
 3. **REQ-008**: Acción de marcar como pagada una cuota pendiente directamente desde la vista Análisis (reutilizando `DebtPayModal`).
+4. **REQ-011**: Selector de moneda en la pestaña Análisis para ver únicamente los registros de una moneda a la vez (sin mezclar monedas). Incluye la opción "Todas las monedas". Los totales, el donut, las barras y el listado se recalculan según la moneda seleccionada.
+5. **REQ-012**: Cada cuota del listado de Análisis es **clickeable** y navega al detalle de su deuda (`/deudas/{debt_id}`). La acción Pagar sigue disponible sin disparar la navegación.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -155,6 +157,10 @@ Sin endpoints nuevos. No hay contratos que modificar.
 - [ ] CA-005: Dado un mes con más de una deuda, cuando se abre Análisis, entonces el gráfico de pastel muestra la proporción de dinero que consume cada deuda, identificando a simple vista la más costosa.
 - [ ] CA-006: Dado un mes sin cuotas, cuando se abre Análisis, entonces se muestra un estado vacío coherente con el patrón de EmptyCard.
 - [ ] CA-007: Dado un mes con cuotas pendientes, cuando el usuario marca una como pagada desde Análisis, entonces el estado, los totales y el gráfico se actualizan.
+- [ ] CA-008: Dado un mes con cuotas en más de una moneda, cuando el usuario selecciona una moneda en el filtro, entonces solo se muestran los registros de esa moneda (totales, donut, barras y listado) sin mezclar monedas.
+- [ ] CA-009: Dado el filtro de moneda, cuando el usuario elige "Todas las monedas", entonces se vuelven a mostrar los registros de todas las monedas.
+- [ ] CA-010: Dado `/deudas` recién abierto, entonces la pestaña por defecto es **Análisis** y los tabs (Análisis, Calendario, Deudas) muestran su icono correspondiente.
+- [ ] CA-011: Dado el listado de cuotas en Análisis, cuando el usuario hace click en una cuota (sin tocar Pagar), entonces navega al detalle de esa deuda.
 
 ### 5.2 No funcionales
 
@@ -180,6 +186,9 @@ Sin endpoints nuevos. No hay contratos que modificar.
 | 3 | Gráfico de pastel (donut) SVG + barras opcionales | 1 día | Fase 2 |
 | 4 | Reutilizar `DebtPayModal` para marcar pagado y refrescar | 0.5 día | Fase 2 |
 | 5 | Claves i18n (es/en), build y validación en local | 0.5 día | Fases 2-4 |
+| 6 | Filtro/selector de moneda en Análisis (cambio iterativo solicitado por usuario) | 0.5 día | Fase 2 |
+| 7 | Tab Análisis por defecto + iconos en los tabs (cambios iterativos solicitados por usuario) | 0.25 día | Fase 1 |
+| 8 | Cuota clickeable hacia el detalle de la deuda (cambio iterativo solicitado por usuario) | 0.25 día | Fase 2 |
 
 ### 6.2 Milestones
 
