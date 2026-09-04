@@ -19,7 +19,7 @@ export default function DeudasPage() {
   const { t } = useI18nStore()
   const { currencies, loadAll } = useAppStore()
   const [searchParams, setSearchParams] = useSearchParams()
-  const tab = (searchParams.get('tab') as TabKey | null) ?? 'calendario'
+  const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
 
   const [debts, setDebts] = useState<Debt[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])
@@ -51,8 +51,7 @@ export default function DeudasPage() {
   }, [deleteTarget, loadDebts])
 
   const setTab = (key: TabKey) => {
-    if (key === 'calendario') setSearchParams({}, { replace: false })
-    else setSearchParams({ tab: key })
+    setSearchParams({ tab: key }, { replace: false })
   }
 
   if (loading) return <LoadingSpinner />
@@ -107,20 +106,21 @@ export default function DeudasPage() {
       <div className="flex gap-2 mb-4">
         {(
           [
-            { key: 'calendario', label: t('deudas.tab_calendar') },
-            { key: 'deudas', label: t('deudas.tab_debts') },
-            { key: 'analisis', label: t('deudas.tab_analysis') },
-          ] as { key: TabKey; label: string }[]
+            { key: 'analisis', label: t('deudas.tab_analysis'), icon: 'chart' },
+            { key: 'calendario', label: t('deudas.tab_calendar'), icon: 'calendar' },
+            { key: 'deudas', label: t('deudas.tab_debts'), icon: 'credit' },
+          ] as { key: TabKey; label: string; icon: string }[]
         ).map((item) => (
           <button
             key={item.key}
             onClick={() => setTab(item.key)}
-            className={`px-4 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] ${
+            className={`px-4 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] inline-flex items-center gap-1.5 ${
               tab === item.key
                 ? 'bg-primary text-white'
                 : 'bg-card text-text-secondary hover:bg-border'
             }`}
           >
+            <Icon name={item.icon} className="w-4 h-4" />
             {item.label}
           </button>
         ))}

@@ -57,6 +57,7 @@
     "analysis_empty": "No installments this month",
     "analysis_empty_subtitle": "Navigate to another month to see the analysis of your debts",
     "analysis_current_month": "Current month",
+    "analysis_all_currencies": "All currencies",
     "analysis_others": "Others",
     "creditor": "Creditor",
     "identifier": "Identifier",
