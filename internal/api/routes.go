@@ -91,6 +91,16 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/autos/{id}", authMiddleware(http.HandlerFunc(handler.auto.UpdateAuto)))
 	mux.Handle("DELETE /api/autos/{id}", authMiddleware(http.HandlerFunc(handler.auto.DeleteAuto)))
 
+	// APIs de deudas y cuotas (SPEC-054)
+	mux.Handle("GET /api/debts", authMiddleware(http.HandlerFunc(handler.debt.ListDebts)))
+	mux.Handle("GET /api/debts/{id}", authMiddleware(http.HandlerFunc(handler.debt.GetDebt)))
+	mux.Handle("POST /api/debts", authMiddleware(http.HandlerFunc(handler.debt.CreateDebt)))
+	mux.Handle("PUT /api/debts/{id}", authMiddleware(http.HandlerFunc(handler.debt.UpdateDebt)))
+	mux.Handle("DELETE /api/debts/{id}", authMiddleware(http.HandlerFunc(handler.debt.DeleteDebt)))
+	mux.Handle("GET /api/debts/{id}/bills", authMiddleware(http.HandlerFunc(handler.debt.ListDebtBills)))
+	mux.Handle("GET /api/debt-bills", authMiddleware(http.HandlerFunc(handler.debt.ListDebtBillsByMonth)))
+	mux.Handle("PUT /api/debt-bills/{id}/pay", authMiddleware(http.HandlerFunc(handler.debt.PayDebtBill)))
+
 	// APIs de seguros de autos
 	mux.Handle("GET /api/autos/{id}/services", authMiddleware(http.HandlerFunc(handler.autoService.ListAutoServices)))
 	mux.Handle("POST /api/autos/{id}/services", authMiddleware(http.HandlerFunc(handler.autoService.CreateAutoService)))

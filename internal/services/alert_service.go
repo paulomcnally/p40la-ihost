@@ -41,6 +41,12 @@ func catalog() []models.Alert {
 			Speech:      "Paulo, tienes {n} facturas pendientes.",
 		},
 		{
+			Key:         models.AlertKeyDebtDue,
+			Title:       "Cuotas de deudas que vencen hoy",
+			Description: "Email diario que agrupa todas las cuotas de deudas que vencen hoy, con el total del día.",
+			Speech:      "Paulo, tienes {n} cuotas de deudas que vencen hoy.",
+		},
+		{
 			Key:         models.AlertKeyPensionRecordsCreated,
 			Title:       "Pensión: registros del mes creados",
 			Description: "Resumen de salarios y registros de manutención generados al generar el mes.",
