@@ -45,7 +45,7 @@ func (s *PensionNotificationService) SendRecordsCreated(ctx context.Context, sal
 	if len(salaryPayments) == 0 && len(records) == 0 {
 		return
 	}
-	title, content := buildPensionRecordsCreatedEmail(salaryPayments, records, year, month)
+	title, content := buildPensionRecordsCreatedEmail(salaryPayments, records, year, month, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionRecordsCreated, title, content)
 }
 
@@ -54,7 +54,7 @@ func (s *PensionNotificationService) SendRecordPaid(ctx context.Context, record 
 	if record == nil {
 		return
 	}
-	title, content := buildPensionRecordPaidEmail(record)
+	title, content := buildPensionRecordPaidEmail(record, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionRecordPaid, title, content)
 }
 
@@ -63,7 +63,7 @@ func (s *PensionNotificationService) SendSalaryReceived(ctx context.Context, pay
 	if payment == nil {
 		return
 	}
-	title, content := buildPensionSalaryReceivedEmail(payment)
+	title, content := buildPensionSalaryReceivedEmail(payment, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionSalaryReceived, title, content)
 }
 
@@ -72,7 +72,7 @@ func (s *PensionNotificationService) SendRecordRejected(ctx context.Context, rec
 	if record == nil {
 		return
 	}
-	title, content := buildPensionRecordRejectedEmail(record, reason)
+	title, content := buildPensionRecordRejectedEmail(record, reason, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionRecordRejected, title, content)
 }
 
@@ -88,8 +88,18 @@ func (s *PensionNotificationService) SendMonthClosing(ctx context.Context, year,
 		slog.Warn("pension notifications: error al listar salarios para cierre", "error", err.Error())
 		return
 	}
-	title, content := buildPensionMonthClosingEmail(records, salaryPayments, year, month)
+	title, content := buildPensionMonthClosingEmail(records, salaryPayments, year, month, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionMonthClosing, title, content)
+}
+
+// currencyFormat devuelve el formato de moneda configurado (default si error).
+func (s *PensionNotificationService) currencyFormat(ctx context.Context) CurrencyFormat {
+	format, err := s.settingsService.GetCurrencyFormat(ctx)
+	if err != nil {
+		slog.Warn("pension notifications: error al leer formato de moneda, usando default", "error", err)
+		return DefaultCurrencyFormat()
+	}
+	return format
 }
 
 // send envía un email si la alerta tiene el canal mail habilitado, hay

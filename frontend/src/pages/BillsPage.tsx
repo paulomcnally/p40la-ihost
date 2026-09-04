@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -22,6 +23,7 @@ export default function BillsPage() {
   const { serviceId } = useParams()
   const { t } = useI18nStore()
   const { currencies } = useAppStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [bills, setBills] = useState<Bill[]>([])
   const [service, setService] = useState<Service | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
@@ -116,7 +118,7 @@ export default function BillsPage() {
                     {bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])} {bill.year}
                   </span>
                 </div>
-                <p className="text-xl font-semibold mb-2">{currency?.symbol}{bill.amount.toFixed(2)}</p>
+                <p className="text-xl font-semibold mb-2">{formatMoney(bill.amount, currency?.symbol)}</p>
                 <div className="flex items-center justify-between text-sm text-text-secondary">
                   <div className="flex items-center gap-4">
                     {bill.invoice_number && <span>#{bill.invoice_number}</span>}
@@ -155,7 +157,7 @@ export default function BillsPage() {
                   <tr key={bill.id} className="border-b border-border last:border-b-0 hover:bg-bg/50">
                     <td className="px-4 py-3 text-sm">{bill.year}</td>
                     <td className="px-4 py-3 text-sm">{bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])}</td>
-                    <td className="px-4 py-3 text-sm font-medium">{currency?.symbol}{bill.amount.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm font-medium">{formatMoney(bill.amount, currency?.symbol)}</td>
                     <td className="px-4 py-3 text-sm">{bill.invoice_number || '-'}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${

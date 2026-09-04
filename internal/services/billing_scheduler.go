@@ -228,7 +228,13 @@ func (s *BillingScheduler) sendBillCreatedEmail(ctx context.Context, bill *model
 		}
 	}
 
-	title, content := buildBillCreatedEmail(svc, bill, symbol)
+	format, err := s.settingsService.GetCurrencyFormat(ctx)
+	if err != nil {
+		slog.Warn("billing scheduler: error al leer formato de moneda, usando default", "error", err)
+		format = DefaultCurrencyFormat()
+	}
+
+	title, content := buildBillCreatedEmail(svc, bill, symbol, format)
 	html := s.emailService.RenderTemplate(title, content)
 
 	if err := s.emailService.Send(ctx, recipients, title, html); err != nil {
