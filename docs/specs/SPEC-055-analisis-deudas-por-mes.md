@@ -1,7 +1,7 @@
 ---
 title: "Análisis de Deudas por Mes con Gráficos en la página de Deudas"
 id: "SPEC-055"
-status: "in_progress"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-09-04"
 updated: "2026-09-04"
@@ -11,7 +11,7 @@ github_issue: 55
 # Análisis de Deudas por Mes con Gráficos en la página de Deudas
 
 **ID**: SPEC-055  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: p40la-ihost-team  
 **Creado**: 2026-09-04  
 **Actualizado**: 2026-09-04
@@ -219,3 +219,5 @@ Sin endpoints nuevos. No hay contratos que modificar.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-04 | p40la-ihost-team | Creación inicial de la especificación. Requerimiento de usuario: pestaña Análisis por mes en Deudas. Se añadió gráfico de pastel para identificar la deuda que consume más dinero (solicitud de usuario). |
+| 2026-09-04 | p40la-ihost-team | Cambios iterativos: filtro por moneda, tab Análisis por defecto con iconos, cuota clickeable al detalle, buscador en "Cuotas del mes". |
+| 2026-09-04 | p40la-ihost-team | Release: merge `feature/SPEC-055` a `main` (commit `4e55ca3`). Estado `released`. |
