@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -47,6 +48,71 @@ func (s *SystemSettingsService) Set(ctx context.Context, key, value string) erro
 
 func (s *SystemSettingsService) GetSetting(ctx context.Context, key string) (*models.SystemSetting, error) {
 	return s.storage.GetSetting(ctx, key)
+}
+
+// ---- Formato de moneda (SPEC-058) ----
+
+// Claves de formato de moneda en system_settings.
+const (
+	CurrencyThousandsSeparatorKey = "currency_thousands_separator"
+	CurrencyDecimalSeparatorKey   = "currency_decimal_separator"
+	CurrencyDecimalDigitsKey      = "currency_decimal_digits"
+)
+
+// GetCurrencyFormat devuelve el formato de moneda configurado. Si falta una
+// clave o tiene un valor inválido, se usa el default Nicaragua (1,000.00).
+func (s *SystemSettingsService) GetCurrencyFormat(ctx context.Context) (CurrencyFormat, error) {
+	f := DefaultCurrencyFormat()
+
+	thousands, err := s.storage.Get(ctx, CurrencyThousandsSeparatorKey)
+	if err != nil {
+		return f, err
+	}
+	if validSeparator(thousands) {
+		f.ThousandsSeparator = thousands
+	}
+
+	decimalSep, err := s.storage.Get(ctx, CurrencyDecimalSeparatorKey)
+	if err != nil {
+		return f, err
+	}
+	if validSeparator(decimalSep) {
+		f.DecimalSeparator = decimalSep
+	}
+
+	digits, err := s.storage.Get(ctx, CurrencyDecimalDigitsKey)
+	if err != nil {
+		return f, err
+	}
+	if d, err := strconv.Atoi(digits); err == nil && d >= 0 && d <= 4 {
+		f.DecimalDigits = d
+	}
+
+	return f, nil
+}
+
+// SetCurrencyThousandsSeparator persiste el separador de miles (whitelist).
+func (s *SystemSettingsService) SetCurrencyThousandsSeparator(ctx context.Context, sep string) error {
+	if !validSeparator(sep) {
+		return fmt.Errorf("separador de miles inválido")
+	}
+	return s.storage.Set(ctx, CurrencyThousandsSeparatorKey, sep)
+}
+
+// SetCurrencyDecimalSeparator persiste el separador decimal (whitelist).
+func (s *SystemSettingsService) SetCurrencyDecimalSeparator(ctx context.Context, sep string) error {
+	if !validSeparator(sep) {
+		return fmt.Errorf("separador decimal inválido")
+	}
+	return s.storage.Set(ctx, CurrencyDecimalSeparatorKey, sep)
+}
+
+// SetCurrencyDecimalDigits persiste la cantidad de dígitos decimales (0-4).
+func (s *SystemSettingsService) SetCurrencyDecimalDigits(ctx context.Context, digits int) error {
+	if digits < 0 || digits > 4 {
+		return fmt.Errorf("dígitos decimales inválidos")
+	}
+	return s.storage.Set(ctx, CurrencyDecimalDigitsKey, strconv.Itoa(digits))
 }
 
 // ---- SMTP configuration ----

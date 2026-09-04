@@ -15,11 +15,11 @@ var monthNames = map[int]string{
 
 // buildBillCreatedEmail construye el título y contenido del email que se envía
 // cuando el sistema genera una factura automáticamente (SPEC-030).
-func buildBillCreatedEmail(svc *models.Service, bill *models.Bill, currencySymbol string) (title, contentHTML string) {
+func buildBillCreatedEmail(svc *models.Service, bill *models.Bill, currencySymbol string, format CurrencyFormat) (title, contentHTML string) {
 	title = fmt.Sprintf("Nueva factura generada — %s", svc.Name)
 
 	period := formatPeriod(bill.Month, bill.Year)
-	amount := formatAmount(bill.Amount, currencySymbol)
+	amount := formatAmount(bill.Amount, currencySymbol, format)
 
 	amountType := "fijo"
 	if svc.BillingType == "variable" {
@@ -67,10 +67,5 @@ func formatPeriod(month, year int) string {
 	return fmt.Sprintf("%s %d", name, year)
 }
 
-// formatAmount formatea un monto con el símbolo de la moneda.
-func formatAmount(amount float64, symbol string) string {
-	if symbol == "" {
-		return fmt.Sprintf("%.2f", amount)
-	}
-	return fmt.Sprintf("%s%.2f", symbol, amount)
-}
+// formatAmount formatea un monto con el símbolo de la moneda según el formato
+// configurado (SPEC-058). Implementado en currency_format.go.

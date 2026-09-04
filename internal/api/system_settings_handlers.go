@@ -84,6 +84,11 @@ type settingsRequest struct {
 
 	// Email alerts master toggle (SPEC-037).
 	EmailAlertsEnabled *bool `json:"email_alerts_enabled,omitempty"`
+
+	// Formato de moneda (SPEC-058).
+	CurrencyThousandsSeparator *string `json:"currency_thousands_separator,omitempty"`
+	CurrencyDecimalSeparator   *string `json:"currency_decimal_separator,omitempty"`
+	CurrencyDecimalDigits      *int    `json:"currency_decimal_digits,omitempty"`
 }
 
 func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
@@ -123,21 +128,30 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
+	currencyFormat, err := h.settings.GetCurrencyFormat(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
 	// SMTPConfigPublic.User es siempre "" (info sensible, no se expone).
 	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"billing_generation_hour": hour,
-		"alert_check_hour":        alertCheckHour,
-		"smtp_host":               smtp.Host,
-		"smtp_port":               smtp.Port,
-		"smtp_user":               smtp.User,
-		"smtp_from_email":         smtp.FromEmail,
-		"smtp_from_name":          smtp.FromName,
-		"smtp_configured":         smtp.Configured,
-		"alert_emails":            joinEmails(alertEmails),
-		"voicemonkey_enabled":     vm.Enabled,
-		"voicemonkey_send_alerts": vm.SendAlerts,
-		"voicemonkey_configured":  vm.Configured,
-		"email_alerts_enabled":    emailAlertsEnabled,
+		"billing_generation_hour":      hour,
+		"alert_check_hour":             alertCheckHour,
+		"smtp_host":                    smtp.Host,
+		"smtp_port":                    smtp.Port,
+		"smtp_user":                    smtp.User,
+		"smtp_from_email":              smtp.FromEmail,
+		"smtp_from_name":               smtp.FromName,
+		"smtp_configured":              smtp.Configured,
+		"alert_emails":                 joinEmails(alertEmails),
+		"voicemonkey_enabled":          vm.Enabled,
+		"voicemonkey_send_alerts":      vm.SendAlerts,
+		"voicemonkey_configured":       vm.Configured,
+		"email_alerts_enabled":         emailAlertsEnabled,
+		"currency_thousands_separator": currencyFormat.ThousandsSeparator,
+		"currency_decimal_separator":   currencyFormat.DecimalSeparator,
+		"currency_decimal_digits":      currencyFormat.DecimalDigits,
 	})
 }
 
@@ -231,16 +245,40 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		}
 	}
 
+	// Formato de moneda (SPEC-058). Se valida en el service (whitelist).
+	if req.CurrencyThousandsSeparator != nil {
+		if err := h.settings.SetCurrencyThousandsSeparator(r.Context(), *req.CurrencyThousandsSeparator); err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_currency_format", err.Error())
+			return
+		}
+	}
+	if req.CurrencyDecimalSeparator != nil {
+		if err := h.settings.SetCurrencyDecimalSeparator(r.Context(), *req.CurrencyDecimalSeparator); err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_currency_format", err.Error())
+			return
+		}
+	}
+	if req.CurrencyDecimalDigits != nil {
+		if err := h.settings.SetCurrencyDecimalDigits(r.Context(), *req.CurrencyDecimalDigits); err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_currency_format", err.Error())
+			return
+		}
+	}
+
 	hour, _ := h.settings.GetBillingGenerationHour(r.Context())
 	smtp, _ := h.settings.GetSMTPConfigPublic(r.Context())
 	vm, _ := h.settings.GetVoiceMonkeyConfigPublic(r.Context())
 	emailAlertsEnabled, _ := h.settings.GetEmailAlertsEnabled(r.Context())
+	currencyFormat, _ := h.settings.GetCurrencyFormat(r.Context())
 	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"billing_generation_hour": hour,
-		"smtp_configured":         smtp.Configured,
-		"voicemonkey_configured":  vm.Configured,
-		"email_alerts_enabled":    emailAlertsEnabled,
-		"message":                 "Configuración actualizada",
+		"billing_generation_hour":      hour,
+		"smtp_configured":              smtp.Configured,
+		"voicemonkey_configured":       vm.Configured,
+		"email_alerts_enabled":         emailAlertsEnabled,
+		"currency_thousands_separator": currencyFormat.ThousandsSeparator,
+		"currency_decimal_separator":   currencyFormat.DecimalSeparator,
+		"currency_decimal_digits":      currencyFormat.DecimalDigits,
+		"message":                      "Configuración actualizada",
 	})
 }
 

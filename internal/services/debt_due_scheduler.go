@@ -132,8 +132,13 @@ func (s *DebtDueScheduler) sendDueEmail(ctx context.Context, due []models.DebtBi
 		total += b.Amount
 	}
 
-	subject := fmt.Sprintf("P40LA — %d cuota%s que vencen hoy (%s)", len(due), plural(len(due)), formatAmount(total, ""))
-	content := renderDebtDueContent(due)
+	format, err := s.settingsService.GetCurrencyFormat(ctx)
+	if err != nil {
+		format = DefaultCurrencyFormat()
+	}
+
+	subject := fmt.Sprintf("P40LA — %d cuota%s que vencen hoy (%s)", len(due), plural(len(due)), formatAmount(total, "", format))
+	content := renderDebtDueContent(due, format)
 
 	html := s.emailService.RenderTemplate(subject, content)
 	return s.emailService.Send(ctx, recipients, subject, html)

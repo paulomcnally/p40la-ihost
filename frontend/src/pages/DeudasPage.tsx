@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -18,6 +19,7 @@ export default function DeudasPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
   const { currencies, loadAll } = useAppStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
 
@@ -187,10 +189,10 @@ export default function DeudasPage() {
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-sm font-semibold">
-                    {currency?.symbol}{debt.installment_amount.toFixed(2)}/{t('deudas.installment').toLowerCase()}
+                    {formatMoney(debt.installment_amount, currency?.symbol)}/{t('deudas.installment').toLowerCase()}
                   </p>
                   <span className="text-xs text-text-secondary">
-                    {debt.currency_code} {debt.total.toFixed(2)}
+                    {debt.currency_code} {formatMoney(debt.total)}
                   </span>
                 </div>
               </div>
