@@ -155,7 +155,12 @@ func (s *BillSummaryScheduler) sendSummaryEmail(ctx context.Context, pending []m
 	}
 
 	subject := fmt.Sprintf("P40LA — Resumen de facturas pendientes (%d pendientes)", len(pending))
-	content := renderBillSummaryContent(pending)
+
+	format, err := s.settingsService.GetCurrencyFormat(ctx)
+	if err != nil {
+		format = DefaultCurrencyFormat()
+	}
+	content := renderBillSummaryContent(pending, format)
 
 	html := s.emailService.RenderTemplate(subject, content)
 	return s.emailService.Send(ctx, recipients, subject, html)

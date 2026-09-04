@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -14,6 +15,7 @@ export default function DebtBillsPage() {
   const { id } = useParams()
   const { t } = useI18nStore()
   const { currencies } = useAppStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [debt, setDebt] = useState<Debt | null>(null)
   const [bills, setBills] = useState<DebtBill[]>([])
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
@@ -71,7 +73,7 @@ export default function DebtBillsPage() {
 
       <div className="mb-4 flex items-center gap-2 flex-wrap text-sm text-text-secondary">
         <span className="bg-card rounded-ios-sm px-3 py-1 shadow-ios">
-          {t('deudas.total')}: {currency?.symbol || debt.currency_code}{debt.total.toFixed(2)}
+          {t('deudas.total')}: {formatMoney(debt.total, currency?.symbol || debt.currency_code)}
         </span>
         <span className="bg-card rounded-ios-sm px-3 py-1 shadow-ios">
           {debt.installments_total} {t('deudas.installment').toLowerCase()}(s)
@@ -104,7 +106,7 @@ export default function DebtBillsPage() {
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <p className="text-base font-semibold">
-                  {currency?.symbol || bill.currency_code}{bill.amount.toFixed(2)}
+                  {formatMoney(bill.amount, currency?.symbol || bill.currency_code)}
                 </p>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                   bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'

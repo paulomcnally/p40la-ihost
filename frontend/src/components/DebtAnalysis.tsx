@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import LoadingSpinner from './LoadingSpinner'
 import DebtPayModal from './DebtPayModal'
@@ -30,13 +31,10 @@ function donutWedge(cx: number, cy: number, outerR: number, innerR: number, star
   ].join(' ')
 }
 
-function formatMoney(code: string, amount: number) {
-  return `${code} ${amount.toFixed(2)}`
-}
-
 export default function DebtAnalysis() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
@@ -208,7 +206,7 @@ export default function DebtAnalysis() {
                 <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">{t('deudas.analysis_needed')}</p>
                 <p className="text-2xl sm:text-3xl font-bold text-amber-500 dark:text-amber-400">
                   {[...totals.entries()].map(([cur, e]) => (
-                    <span key={cur} className="mr-3">{formatMoney(cur, e.pending)}</span>
+                    <span key={cur} className="mr-3">{cur} {formatMoney(e.pending)}</span>
                   ))}
                 </p>
               </div>
@@ -232,17 +230,17 @@ export default function DebtAnalysis() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <SummaryCard
               label={t('deudas.analysis_total_due')}
-              lines={[...totals.entries()].map(([cur, e]) => formatMoney(cur, e.total))}
+              lines={[...totals.entries()].map(([cur, e]) => `${cur} ${formatMoney(e.total)}`)}
               color="text-text"
             />
             <SummaryCard
               label={t('deudas.analysis_paid')}
-              lines={[...totals.entries()].map(([cur, e]) => formatMoney(cur, e.paid))}
+              lines={[...totals.entries()].map(([cur, e]) => `${cur} ${formatMoney(e.paid)}`)}
               color="text-emerald-600 dark:text-emerald-400"
             />
             <SummaryCard
               label={t('deudas.analysis_pending')}
-              lines={[...totals.entries()].map(([cur, e]) => formatMoney(cur, e.pending))}
+              lines={[...totals.entries()].map(([cur, e]) => `${cur} ${formatMoney(e.pending)}`)}
               color="text-amber-500 dark:text-amber-400"
             />
           </div>
@@ -265,7 +263,7 @@ export default function DebtAnalysis() {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-xs text-text-secondary">{t('deudas.analysis_pending')}</span>
-                    <span className="text-lg font-bold">{displayCurrency}{' '}{pendingAll.toFixed(2)}</span>
+                    <span className="text-lg font-bold">{displayCurrency}{' '}{formatMoney(pendingAll)}</span>
                   </div>
                 </div>
                 <div className="flex-1 w-full min-w-0">
@@ -275,7 +273,7 @@ export default function DebtAnalysis() {
                         <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
                         <span className="flex-1 text-sm truncate">{seg.label}</span>
                         <span className="text-sm font-semibold shrink-0">
-                          {displayCurrency}{' '}{(seg.value || 0).toFixed(2)}
+                          {displayCurrency}{' '}{formatMoney(seg.value || 0)}
                           <span className="text-text-secondary font-normal"> ({Math.round(((seg.value || 0) / Math.max(1, donutData.reduce((s, d) => s + d.value, 0))) * 100)}%)</span>
                         </span>
                       </div>
@@ -298,15 +296,15 @@ export default function DebtAnalysis() {
                     <div key={d.name}>
                       <div className="flex items-center justify-between gap-3 mb-1.5">
                         <span className="text-sm font-medium truncate">{d.name}</span>
-                        <span className="text-sm font-semibold shrink-0">{formatMoney(displayCurrency, total)}</span>
+                        <span className="text-sm font-semibold shrink-0">{displayCurrency} {formatMoney(total)}</span>
                       </div>
                       <div className="h-2 rounded-full bg-border overflow-hidden flex">
                         <div className="h-full bg-success" style={{ width: `${paidPctDebt}%` }} />
                         <div className="h-full bg-amber-400" style={{ width: `${pendingPctDebt}%` }} />
                       </div>
                       <div className="flex items-center justify-between gap-3 mt-1 text-xs text-text-secondary">
-                        <span>{t('deudas.analysis_paid')}: {formatMoney(displayCurrency, d.paid)}</span>
-                        <span>{t('deudas.analysis_pending')}: {formatMoney(displayCurrency, d.pending)}</span>
+                        <span>{t('deudas.analysis_paid')}: {displayCurrency} {formatMoney(d.paid)}</span>
+                        <span>{t('deudas.analysis_pending')}: {displayCurrency} {formatMoney(d.pending)}</span>
                       </div>
                     </div>
                   )
@@ -340,7 +338,7 @@ export default function DebtAnalysis() {
                         <p className="text-xs text-text-secondary">
                           {t('deudas.installment')} #{bill.installment_number} · {bill.institution_name} · {bill.due_date}
                         </p>
-                        <p className="text-sm font-semibold mt-1">{formatMoney(bill.currency_code || 'NIO', bill.amount)}</p>
+                        <p className="text-sm font-semibold mt-1">{bill.currency_code || 'NIO'} {formatMoney(bill.amount)}</p>
                       </div>
                       <Icon name="chevron" className="w-4 h-4 text-text-secondary shrink-0" />
                     </button>

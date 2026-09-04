@@ -182,6 +182,25 @@
       "symbol": "Symbol",
       "create": "Add currency"
     },
+    "currency_format": {
+      "title": "Currency format",
+      "presets": "Quick presets",
+      "presets_hint": "Apply a common format convention with one click.",
+      "preset_ni": "Nicaragua (1,000.00)",
+      "preset_us": "US (1,000.00)",
+      "preset_eu": "Europe (1.000,00)",
+      "thousands": "Thousands separator",
+      "decimal": "Decimal separator",
+      "digits": "Decimal digits",
+      "preview": "Preview",
+      "sep_comma": "Comma (,)",
+      "sep_point": "Period (.)",
+      "sep_space": "Space ( )",
+      "sep_apostrophe": "Apostrophe (')",
+      "sep_none": "None",
+      "saved": "Currency format updated",
+      "save_error": "Error saving format"
+    },
     "email_alerts": {
       "title": "Email Alerts",
       "subtitle": "Receive car insurance alerts by email",

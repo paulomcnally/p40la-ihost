@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -13,6 +14,7 @@ import type { Salary } from '../types'
 export default function SalariesPage() {
   const navigate = useNavigate()
   const { currencies, loadCurrencies } = useAppStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { t } = useI18nStore()
   const [salaries, setSalaries] = useState<Salary[]>([])
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
@@ -96,7 +98,7 @@ export default function SalariesPage() {
               </div>
               <h3 className="font-semibold text-base">{salary.employer}</h3>
               <p className="text-sm text-text-secondary mt-1">
-                {currency?.symbol}{salary.amount.toFixed(2)}
+                {formatMoney(salary.amount, currency?.symbol)}
               </p>
               <p className="text-xs text-text-secondary mt-1">
                 {t('salaries.payment_day')}: {salary.payment_day}

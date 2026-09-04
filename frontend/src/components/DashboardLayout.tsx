@@ -1,7 +1,8 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useI18nStore } from '../stores/i18nStore'
 import { useAuthStore } from '../stores/authStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from '../components/Icons'
 import Sidebar from '../components/Sidebar'
 
@@ -10,7 +11,12 @@ export default function DashboardLayout() {
   const location = useLocation()
   const { t } = useI18nStore()
   const { logout } = useAuthStore()
+  const loadCurrencyFormat = useCurrencyFormatStore(s => s.load)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    loadCurrencyFormat()
+  }, [loadCurrencyFormat])
 
   const activeBase = location.pathname.split('/')[1] || 'home'
 

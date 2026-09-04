@@ -183,6 +183,25 @@
       "symbol": "Símbolo",
       "create": "Agregar moneda"
     },
+    "currency_format": {
+      "title": "Formato de moneda",
+      "presets": "Formatos rápidos",
+      "presets_hint": "Aplica una convención de formato de un solo clic.",
+      "preset_ni": "Nicaragua (1,000.00)",
+      "preset_us": "EE.UU. (1,000.00)",
+      "preset_eu": "Europa (1.000,00)",
+      "thousands": "Separador de miles",
+      "decimal": "Separador decimal",
+      "digits": "Dígitos decimales",
+      "preview": "Vista previa",
+      "sep_comma": "Coma (,)",
+      "sep_point": "Punto (.)",
+      "sep_space": "Espacio ( )",
+      "sep_apostrophe": "Apóstrofo (')",
+      "sep_none": "Ninguno",
+      "saved": "Formato de moneda actualizado",
+      "save_error": "Error al guardar el formato"
+    },
     "email_alerts": {
       "title": "Alertas por Email",
       "subtitle": "Recibir alertas de seguros de autos por email",

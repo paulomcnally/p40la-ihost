@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from '../components/Icons'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -10,6 +11,7 @@ import type { Auto, AutoService } from '../types'
 export default function AutoShowPage() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [auto, setAuto] = useState<Auto | null>(null)
   const [insurance, setInsurance] = useState<AutoService[]>([])
   const [loading, setLoading] = useState(true)
@@ -148,7 +150,7 @@ export default function AutoShowPage() {
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-semibold">${item.suggested_amount.toFixed(2)}</p>
+                          <p className="text-sm font-semibold">{formatMoney(item.suggested_amount)}</p>
                           <p className="text-xs text-text-secondary">{item.frequency === 'monthly' ? 'Mensual' : 'Anual'}</p>
                           {item.start_date && (
                             <p className="text-xs text-text-secondary mt-0.5">

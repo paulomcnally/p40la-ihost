@@ -11,7 +11,7 @@ import (
 
 // renderBillSummaryContent construye el HTML del cuerpo del email de resumen
 // diario de facturas pendientes, agrupado por casa (SPEC-031).
-func renderBillSummaryContent(pending []models.PendingBillDetail) string {
+func renderBillSummaryContent(pending []models.PendingBillDetail, format CurrencyFormat) string {
 	if len(pending) == 0 {
 		return "<p>No hay facturas pendientes.</p>"
 	}
@@ -42,7 +42,7 @@ func renderBillSummaryContent(pending []models.PendingBillDetail) string {
 			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, esc(institution)))
 			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, esc(d.ServiceName)))
 			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, esc(formatPeriod(d.Month, d.Year))))
-			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;text-align:right;">%s</td>`, esc(formatAmount(d.Amount, d.CurrencySymbol))))
+			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;text-align:right;">%s</td>`, esc(formatAmount(d.Amount, d.CurrencySymbol, format))))
 			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, badge))
 			b.WriteString("</tr>")
 		}
