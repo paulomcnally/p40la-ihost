@@ -1,20 +1,20 @@
 ---
 title: "Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz"
 id: "SPEC-033"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-16"
-updated: "2026-08-16 (pending_release)"
+updated: "2026-09-04 (released)"
 github_issue: 33
 ---
 
 # Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz
 
 **ID**: SPEC-033  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-16  
-**Actualizado**: 2026-08-16 (pending_release)
+**Actualizado**: 2026-09-04 (released)
 
 ---
 
@@ -614,3 +614,4 @@ key: bill_summary  → title "Resumen diario de facturas"
 | 2026-08-16 | paulomcnally | Cambios iterativos solicitados por el usuario: (1) estado "Configurado" con botón "Reconfigurar" que limpia credenciales y resetea toggles a OFF (REQ-020, CA-016); (2) fix de persistencia: los toggles de VM no deben pisarse entre sí en updates parciales (REQ-021, CA-017). |
 | 2026-08-16 | paulomcnally | Estado a `in_progress`. Desarrollo iniciado en rama `feature/SPEC-032-033-alertas-multicanal`. |
 | 2026-08-16 | paulomcnally | Desarrollo completado y validado en local por el usuario. Criterios de aceptación pasan. Estado a `pending_release`. |
+| 2026-09-04 | paulomcnally | Release. Implementada en `main` (commit `824ca16`). Issue #33 ya cerrado en GitHub con label `spec/released`; sync del archivo local y tracker. |

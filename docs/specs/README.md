@@ -9,9 +9,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 58 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 3 🟣 |
-| **Pending release** | 2 🟠 |
-| **Released** | 53 🟢 |
+| **In progress** | 2 🟣 |
+| **Pending release** | 0 🟠 |
+| **Released** | 56 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-058 |
 
@@ -35,7 +35,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-012 | Analizador de facturas Claro: internet residencial e internet móvil | released | 2026-08-15 | paulomcnally |
 | SPEC-013 | Mejora de UI para gestión de analizadores en instituciones | released | 2026-08-15 | paulomcnally |
 | SPEC-014 | UI de subida de facturas con análisis automático + fix overflow BillsPage | released | 2026-08-15 | paulomcnally |
-| SPEC-015 | CI/CD con GitHub Actions: build multi-arch por tag | in_progress | 2026-08-15 | paulomcnally |
+| SPEC-015 | CI/CD con GitHub Actions: build multi-arch por tag | released | 2026-08-15 | paulomcnally |
 | SPEC-016 | Permitir borrar el campo día de facturación con validación por toast | released | 2026-08-15 | paulomcnally |
 | SPEC-017 | Responsive BillsPage: tabla en desktop, cards en móvil | released | 2026-08-15 | p40la-ihost-team |
 | SPEC-018 | Estado de pago dinámico en cards de servicios | released | 2026-08-15 | paulomcnally |
@@ -52,8 +52,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-029 | Sistema de Envío de Mails y Alertas Diarias de Seguros Vencidos | released | 2026-08-16 | paulomcnally |
 | SPEC-030 | Email informativo al generar factura automática | released | 2026-08-16 | paulomcnally |
 | SPEC-031 | Resumen diario de facturas pendientes por email | released | 2026-08-16 | paulomcnally |
-| SPEC-032 | Sección Alertas en Configuraciones con toggles por funcionalidad de mail | pending_release | 2026-08-16 | paulomcnally |
-| SPEC-033 | Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz | pending_release | 2026-08-16 | paulomcnally |
+| SPEC-032 | Sección Alertas en Configuraciones con toggles por funcionalidad de mail | released | 2026-08-16 | paulomcnally |
+| SPEC-033 | Alertas multicanal con Voice Monkey (Alexa): sistema robusto de alertas con formato mail y voz | released | 2026-08-16 | paulomcnally |
 | SPEC-034 | Estado Configurado y botón Reconfigurar para SMTP (mirror UI de Voice Monkey) | released | 2026-08-16 | paulomcnally |
 | SPEC-035 | Destinatarios con modal: alta/baja de emails con guardado automático | released | 2026-08-16 | paulomcnally |
 | SPEC-036 | Sección de ayuda/info en configuración SMTP y Voice Monkey (Alexa) | released | 2026-08-16 | paulomcnally |
@@ -148,4 +148,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-057 released.*
+*Última actualización de este tracker: 2026-09-04 — SPEC-015/032/033 released, SPEC-057 released.*
