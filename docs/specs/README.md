@@ -9,9 +9,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 58 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 2 🟣 |
+| **In progress** | 1 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 56 🟢 |
+| **Released** | 57 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-058 |
 
@@ -78,7 +78,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-055 | Análisis de Deudas por Mes con Gráficos en la página de Deudas | released | 2026-09-04 | p40la-ihost-team |
 | SPEC-056 | Build nativo ARM64 con runner ubuntu-24.04-arm en GitHub Actions | released | 2026-09-04 | p40la-ihost-team |
 | SPEC-057 | Fix iconos invisibles en iOS Safari (iPhone) | released | 2026-09-04 | paulomcnally |
-| SPEC-058 | Formato de moneda configurable con default Nicaragua (1,000.00) | in_progress | 2026-09-04 | paulomcnally |
+| SPEC-058 | Formato de moneda configurable con default Nicaragua (1,000.00) | released | 2026-09-04 | paulomcnally |
 
 ---
 
@@ -148,4 +148,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-015/032/033 released, SPEC-057 released.*
+*Última actualización de este tracker: 2026-09-04 — SPEC-058 released.*
