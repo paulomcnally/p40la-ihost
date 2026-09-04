@@ -43,6 +43,7 @@ Como ya existe el endpoint `GET /api/debt-bills?year=&month=` (usado por el cale
 3. **REQ-008**: Acción de marcar como pagada una cuota pendiente directamente desde la vista Análisis (reutilizando `DebtPayModal`).
 4. **REQ-011**: Selector de moneda en la pestaña Análisis para ver únicamente los registros de una moneda a la vez (sin mezclar monedas). Incluye la opción "Todas las monedas". Los totales, el donut, las barras y el listado se recalculan según la moneda seleccionada.
 5. **REQ-012**: Cada cuota del listado de Análisis es **clickeable** y navega al detalle de su deuda (`/deudas/{debt_id}`). La acción Pagar sigue disponible sin disparar la navegación.
+6. **REQ-013**: **Buscador** en la sección "Cuotas del mes" de Análisis para filtrar por descripción de la deuda, institución o número de cuota, evitando hacer scroll para encontrar un registro.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -161,6 +162,7 @@ Sin endpoints nuevos. No hay contratos que modificar.
 - [ ] CA-009: Dado el filtro de moneda, cuando el usuario elige "Todas las monedas", entonces se vuelven a mostrar los registros de todas las monedas.
 - [ ] CA-010: Dado `/deudas` recién abierto, entonces la pestaña por defecto es **Análisis** y los tabs (Análisis, Calendario, Deudas) muestran su icono correspondiente.
 - [ ] CA-011: Dado el listado de cuotas en Análisis, cuando el usuario hace click en una cuota (sin tocar Pagar), entonces navega al detalle de esa deuda.
+- [ ] CA-012: Dado el buscador de "Cuotas del mes", cuando el usuario escribe texto, entonces la lista filtra por descripción de deuda, institución o número de cuota.
 
 ### 5.2 No funcionales
 
@@ -189,6 +191,7 @@ Sin endpoints nuevos. No hay contratos que modificar.
 | 6 | Filtro/selector de moneda en Análisis (cambio iterativo solicitado por usuario) | 0.5 día | Fase 2 |
 | 7 | Tab Análisis por defecto + iconos en los tabs (cambios iterativos solicitados por usuario) | 0.25 día | Fase 1 |
 | 8 | Cuota clickeable hacia el detalle de la deuda (cambio iterativo solicitado por usuario) | 0.25 día | Fase 2 |
+| 9 | Buscador en "Cuotas del mes" (cambio iterativo solicitado por usuario) | 0.25 día | Fase 2 |
 
 ### 6.2 Milestones
 
