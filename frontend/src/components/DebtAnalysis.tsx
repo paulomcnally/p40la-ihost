@@ -44,6 +44,7 @@ export default function DebtAnalysis() {
   const [loading, setLoading] = useState(true)
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
   const [currencyFilter, setCurrencyFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
 
   const isCurrent = year === now.getFullYear() && month === now.getMonth() + 1
 
@@ -94,6 +95,17 @@ export default function DebtAnalysis() {
     () => (currencyFilter === 'all' ? bills : bills.filter((b) => (b.currency_code || 'NIO') === currencyFilter)),
     [bills, currencyFilter]
   )
+
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return filteredBills
+    return filteredBills.filter(
+      (b) =>
+        (b.debt_description || '').toLowerCase().includes(q) ||
+        (b.institution_name || '').toLowerCase().includes(q) ||
+        String(b.installment_number).includes(q)
+    )
+  }, [filteredBills, search])
 
   const totals = useMemo(() => {
     const byCurrency = new Map<string, { total: number; paid: number; pending: number }>()
@@ -305,8 +317,18 @@ export default function DebtAnalysis() {
 
           <div>
             <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-2">{t('deudas.analysis_installments_title')}</h3>
+            <div className="relative mb-2">
+              <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('deudas.analysis_search_placeholder')}
+                className="w-full pl-9 pr-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-card min-h-[44px]"
+              />
+            </div>
             <div className="space-y-2">
-              {filteredBills.map((bill) => (
+              {searchResults.map((bill) => (
                 <div key={bill.id} className="bg-card rounded-ios shadow-ios p-3 sm:p-4">
                   <div className="flex items-center justify-between gap-3">
                     <button
@@ -341,6 +363,9 @@ export default function DebtAnalysis() {
                 </div>
               ))}
             </div>
+            {searchResults.length === 0 && (
+              <p className="text-sm text-text-secondary mt-3">{t('deudas.analysis_no_results')}</p>
+            )}
           </div>
         </div>
       )}
