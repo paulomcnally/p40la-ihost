@@ -93,6 +93,12 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - Cards con hover effect y menú de acciones (3 puntos) que aparece al hacer hover.
 - Modales de confirmación para acciones destructivas (eliminar).
 
+### 4.3 Inputs y darkmode (obligatorio)
+
+- **Todo** `input`, `select` y `textarea` DEBE usar los tokens de color del tema: `bg-card` para el fondo y `text-text`/`text-text-secondary` para el texto. Jamás colores hardcodeados (ej: `bg-white`, `dark:bg-[#2c2c2e]`, `text-black`).
+- El color de texto de los form controls nativos lo fija la regla global en `frontend/src/index.css` (`input, select, textarea { color: rgb(var(--color-text)); background-color: rgb(var(--color-card)); color-scheme: light dark; }`). No duplicarla por formulario.
+- **Todo formulario/modal nuevo debe verificarse en darkmode** antes de considerarse completo: texto y placeholders legibles (placeholder usa `--color-text-secondary`). Si se omite, la spec no pasa a `pending_release`.
+
 ---
 
 ## 5. Convenciones de Código Go

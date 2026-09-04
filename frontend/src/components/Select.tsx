@@ -74,7 +74,7 @@ export default function Select({ options, value, onChange, placeholder, searchab
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 border border-border rounded-ios-sm bg-card hover:border-primary/50 focus:outline-none focus:border-primary transition-colors text-left"
+        className="w-full flex items-center justify-between px-3 py-2 border border-border rounded-ios-sm bg-card hover:border-primary/50 focus:outline-none focus:border-primary transition-colors text-left text-text"
       >
         <span className={selected ? '' : 'text-text-secondary'}>
           {selected?.label || placeholder || 'Seleccionar...'}

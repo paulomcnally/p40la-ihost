@@ -27,6 +27,10 @@ Describir en 2-3 párrafos:
 
 Consideraciones específicas de iHost: impacto en memoria, almacenamiento, SQLite, etc.
 
+Consideraciones de UI obligatorias para specs que toquen formularios:
+- Todo `input`/`select`/`textarea` DEBE usar los tokens de color del tema (`bg-card`, `text-text`, `text-text-secondary`). Jamás colores hardcodeados (ej: `bg-white`, `dark:bg-[#2c2c2e]`).
+- Todo formulario nuevo debe verificarse en darkmode antes de considerarse completo: texto y placeholders legibles.
+
 ## 2. Requerimientos
 
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
@@ -138,6 +142,7 @@ Entidad: [Nombre]
 
 - [ ] CA-001: Dado [contexto], cuando [acción], entonces [resultado esperado]
 - [ ] CA-002: Dado [contexto], cuando [acción], entonces [resultado esperado]
+- [ ] CA-DARK: Si la spec toca formularios/modales, los inputs usan tokens del tema (`bg-card`, `text-text`) y se verificó legibilidad en darkmode (texto y placeholders).
 
 ### 5.2 No funcionales
 
