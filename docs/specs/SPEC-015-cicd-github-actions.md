@@ -1,18 +1,20 @@
 ---
 title: "CI/CD con GitHub Actions: build multi-arch por tag"
 id: "SPEC-015"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-15"
-updated: "2026-08-15"
-github_issue: null
+updated: "2026-09-04 (released)"
+github_issue: 59
 ---
 
 # CI/CD con GitHub Actions: build multi-arch por tag
 
 **ID**: SPEC-015  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
+**Creado**: 2026-08-15  
+**Actualizado**: 2026-09-04 (released)  
 
 ---
 
@@ -66,3 +68,11 @@ on:
 ## 5. Archivos a crear
 
 - `.github/workflows/docker-publish.yml`
+
+## 6. Historial de Cambios
+
+| Fecha | Autor | Descripción |
+|-------|-------|-------------|
+| 2026-08-15 | paulomcnally | Creación inicial de la especificación: CI/CD con GitHub Actions, build multi-arch por tag `v*`. |
+| 2026-08-15 | paulomcnally | Implementación: workflow `docker-publish.yml`, Dockerfile a Go 1.24, `.dockerignore` y `scripts/build.sh` (commit `e78c32a`). Evolucionada luego por SPEC-027 (script de release con bump) y SPEC-056 (build nativo ARM64). |
+| 2026-09-04 | paulomcnally | Release. Workflow en uso en producción (releases a Docker Hub con tags `v*`). Código en `main`.

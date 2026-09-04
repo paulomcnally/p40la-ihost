@@ -1,20 +1,20 @@
 ---
 title: "Sección Alertas en Configuraciones con toggles por funcionalidad de mail"
 id: "SPEC-032"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-08-16"
-updated: "2026-08-16 (pending_release)"
+updated: "2026-09-04 (released)"
 github_issue: 32
 ---
 
 # Sección Alertas en Configuraciones con toggles por funcionalidad de mail
 
 **ID**: SPEC-032  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-08-16  
-**Actualizado**: 2026-08-16 (pending_release)
+**Actualizado**: 2026-09-04 (released)
 
 ---
 
@@ -402,3 +402,4 @@ El toggle usa el estilo de switch iOS existente en el proyecto (si existe compon
 | 2026-08-16 | paulomcnally | Creación inicial de la especificación. Toggles opt-in por funcionalidad de mail (seguros, factura automática, resumen diario), apagados por defecto. SMTP como acordeón colapsado. |
 | 2026-08-16 | paulomcnally | Estado a `in_progress`. Desarrollo iniciado en rama `feature/SPEC-032-033-alertas-multicanal`. Implementación integrada con SPEC-033 (tabla `alerts` como almacenamiento unificado de `mail_enabled`/`voice_enabled` — ADR-005 de SPEC-033). |
 | 2026-08-16 | paulomcnally | Desarrollo completado y validado en local por el usuario. Criterios de aceptación pasan. Estado a `pending_release`. |
+| 2026-09-04 | paulomcnally | Release. Implementada en `main` (commit `824ca16`). Issue #32 ya cerrado en GitHub con label `spec/released`; sync del archivo local y tracker. |
