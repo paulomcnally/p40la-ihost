@@ -9,9 +9,10 @@ import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtCalendar from '../components/DebtCalendar'
+import DebtAnalysis from '../components/DebtAnalysis'
 import type { Debt, Institution } from '../types'
 
-type TabKey = 'calendario' | 'deudas'
+type TabKey = 'calendario' | 'deudas' | 'analisis'
 
 export default function DeudasPage() {
   const navigate = useNavigate()
@@ -108,6 +109,7 @@ export default function DeudasPage() {
           [
             { key: 'calendario', label: t('deudas.tab_calendar') },
             { key: 'deudas', label: t('deudas.tab_debts') },
+            { key: 'analisis', label: t('deudas.tab_analysis') },
           ] as { key: TabKey; label: string }[]
         ).map((item) => (
           <button
@@ -126,6 +128,8 @@ export default function DeudasPage() {
 
       {tab === 'calendario' ? (
         <DebtCalendar />
+      ) : tab === 'analisis' ? (
+        <DebtAnalysis />
       ) : debts.length === 0 ? (
         <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
