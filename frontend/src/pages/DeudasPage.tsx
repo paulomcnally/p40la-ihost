@@ -9,16 +9,17 @@ import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtCalendar from '../components/DebtCalendar'
+import DebtAnalysis from '../components/DebtAnalysis'
 import type { Debt, Institution } from '../types'
 
-type TabKey = 'calendario' | 'deudas'
+type TabKey = 'calendario' | 'deudas' | 'analisis'
 
 export default function DeudasPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
   const { currencies, loadAll } = useAppStore()
   const [searchParams, setSearchParams] = useSearchParams()
-  const tab = (searchParams.get('tab') as TabKey | null) ?? 'calendario'
+  const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
 
   const [debts, setDebts] = useState<Debt[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])
@@ -50,8 +51,7 @@ export default function DeudasPage() {
   }, [deleteTarget, loadDebts])
 
   const setTab = (key: TabKey) => {
-    if (key === 'calendario') setSearchParams({}, { replace: false })
-    else setSearchParams({ tab: key })
+    setSearchParams({ tab: key }, { replace: false })
   }
 
   if (loading) return <LoadingSpinner />
@@ -106,19 +106,21 @@ export default function DeudasPage() {
       <div className="flex gap-2 mb-4">
         {(
           [
-            { key: 'calendario', label: t('deudas.tab_calendar') },
-            { key: 'deudas', label: t('deudas.tab_debts') },
-          ] as { key: TabKey; label: string }[]
+            { key: 'analisis', label: t('deudas.tab_analysis'), icon: 'chart' },
+            { key: 'calendario', label: t('deudas.tab_calendar'), icon: 'calendar' },
+            { key: 'deudas', label: t('deudas.tab_debts'), icon: 'credit' },
+          ] as { key: TabKey; label: string; icon: string }[]
         ).map((item) => (
           <button
             key={item.key}
             onClick={() => setTab(item.key)}
-            className={`px-4 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] ${
+            className={`px-4 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] inline-flex items-center gap-1.5 ${
               tab === item.key
                 ? 'bg-primary text-white'
                 : 'bg-card text-text-secondary hover:bg-border'
             }`}
           >
+            <Icon name={item.icon} className="w-4 h-4" />
             {item.label}
           </button>
         ))}
@@ -126,6 +128,8 @@ export default function DeudasPage() {
 
       {tab === 'calendario' ? (
         <DebtCalendar />
+      ) : tab === 'analisis' ? (
+        <DebtAnalysis />
       ) : debts.length === 0 ? (
         <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
