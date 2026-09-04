@@ -1,7 +1,7 @@
 ---
 title: "Build nativo ARM64 con runner ubuntu-24.04-arm en GitHub Actions"
 id: "SPEC-056"
-status: "in_progress"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-09-04"
 updated: "2026-09-04"
@@ -11,7 +11,7 @@ github_issue: 56
 # Build nativo ARM64 con runner ubuntu-24.04-arm en GitHub Actions
 
 **ID**: SPEC-056  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: p40la-ihost-team  
 **Creado**: 2026-09-04  
 **Actualizado**: 2026-09-04
@@ -193,3 +193,5 @@ Sin cambios. No aplica.
 | 2026-09-04 | p40la-ihost-team | Creación inicial de la especificación. |
 | 2026-09-04 | p40la-ihost-team | Cambio de estado a `in_progress` para inicio de desarrollo. |
 | 2026-09-04 | p40la-ihost-team | Implementación completada en `.github/workflows/docker-publish.yml`: matriz con `runs_on`/`needs_qemu`, `runs-on: ${{ matrix.runs_on }}` y QEMU condicional. Refinamiento: `needs_qemu` solo para arm/v7 (amd64 nativo x64 y arm64 nativo ARM no lo requieren). Pendiente validación con tag de prueba. |
+| 2026-09-04 | p40la-ihost-team | Validación con tag de prueba `v0.4.18` (run #33923447167): los 3 jobs build pasaron. El job `linux/arm64` corrió en runner `ubuntu-24.04-arm` (labels confirmados) con QEMU omitido; amd64 y arm/v7 en `ubuntu-latest`. Manifest multi-arch `0.4.18` verificado en Docker Hub con las 3 plataformas. Se canceló el run de `v0.4.17` que fallaba por timeout (QEMU emulación arm64). |
+| 2026-09-04 | p40la-ihost-team | **Release**: commits `5c4ff5d` (implementación) y `31911a1` (QEMU solo arm/v7) mergeados a `main` y pusheados. Validado y liberado en el release `v0.4.18`. Issue #56 cerrado con label `spec/released`. |
