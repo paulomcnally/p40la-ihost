@@ -9,7 +9,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs_on }}
     strategy:
       matrix:
         platform:
@@ -19,10 +19,16 @@ jobs:
         include:
           - platform: linux/amd64
             tag_suffix: amd64
+            runs_on: ubuntu-latest
+            needs_qemu: "true"
           - platform: linux/arm/v7
             tag_suffix: armv7
+            runs_on: ubuntu-latest
+            needs_qemu: "true"
           - platform: linux/arm64
             tag_suffix: arm64
+            runs_on: ubuntu-24.04-arm
+            needs_qemu: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -34,6 +40,7 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
+        if: matrix.needs_qemu == 'true'
         uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
