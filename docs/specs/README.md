@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 54 |
+| **Total de specs** | 55 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 2 🟣 |
+| **In progress** | 3 🟣 |
 | **Pending release** | 2 🟠 |
 | **Released** | 50 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-054 |
+| **Último ID usado** | SPEC-055 |
 
 ---
 
@@ -75,6 +75,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-052 | Fix deprecación Node.js 20 en GitHub Actions del build Docker | in_progress | 2026-09-03 | p40la-ihost-team |
 | SPEC-053 | Modo oscuro configurable con default activo | released | 2026-09-03 | p40la-ihost-team |
 | SPEC-054 | Módulo Deudas: CRUD con generación automática de cuotas y vista Calendario | released | 2026-09-04 | p40la-ihost-team |
+| SPEC-055 | Análisis de Deudas por Mes con Gráficos en la página de Deudas | in_progress | 2026-09-04 | p40la-ihost-team |
 
 ---
 
@@ -144,4 +145,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-054 released.*
+*Última actualización de este tracker: 2026-09-04 — SPEC-055 en draft.*
