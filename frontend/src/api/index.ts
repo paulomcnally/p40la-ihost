@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig } from '../types'
+import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -230,5 +230,16 @@ salaries: {
     update: (id: number, body: { pension_category_id: number; amount: number; currency: string; is_active: boolean; auto_generate: boolean }) =>
       put<ChildSupportConfig>(`/api/pension/configs/${id}`, body),
     delete: (id: number) => del(`/api/pension/configs/${id}`),
+  },
+  debts: {
+    list: () => get<Debt[]>('/api/debts'),
+    get: (id: number) => get<Debt>(`/api/debts/${id}`),
+    create: (body: Partial<Debt>) => post<Debt>('/api/debts', body),
+    update: (id: number, body: Partial<Debt>) => put<Debt>(`/api/debts/${id}`, body),
+    delete: (id: number) => del(`/api/debts/${id}`),
+    listBills: (debtId: number) => get<DebtBill[]>(`/api/debts/${debtId}/bills`),
+    billsByMonth: (year: number, month: number) => get<DebtBill[]>(`/api/debt-bills?year=${year}&month=${month}`),
+    payBill: (id: number, body: { paid_at: string; payment_reference?: string }) =>
+      put<DebtBill>(`/api/debt-bills/${id}/pay`, body),
   },
 }

@@ -228,3 +228,41 @@ export interface ChildSupportConfig {
   created_at: string
   updated_at: string
 }
+
+export type DebtStatus = 'activa' | 'inactiva' | 'finalizada'
+
+export interface Debt {
+  id: number
+  institution_id: number
+  institution_name?: string
+  identifier: string
+  description: string
+  total: number
+  principal: number
+  currency_id: number
+  currency_code?: string
+  installments_total: number
+  installment_amount: number
+  interest_rate: number
+  payment_day: number
+  start_date: string
+  status: DebtStatus
+  created_at: string
+  updated_at: string
+}
+
+export interface DebtBill {
+  id: number
+  debt_id: number
+  debt_description?: string
+  institution_name?: string
+  currency_code?: string
+  installment_number: number
+  due_date: string
+  amount: number
+  status: 'pending' | 'paid'
+  paid_at?: string
+  payment_reference?: string
+  created_at: string
+  updated_at: string
+}
