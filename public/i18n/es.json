@@ -58,6 +58,8 @@
     "analysis_empty_subtitle": "Navega a otro mes para ver el análisis de tus deudas",
     "analysis_current_month": "Mes actual",
     "analysis_all_currencies": "Todas las monedas",
+    "analysis_search_placeholder": "Buscar cuota por deuda, institución o número...",
+    "analysis_no_results": "Sin cuotas que coincidan con la búsqueda",
     "analysis_others": "Otros",
     "creditor": "Acreedor",
     "identifier": "Identificador",
