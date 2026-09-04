@@ -37,7 +37,7 @@ Esta spec migra la construcción de `linux/arm64` a un runner nativo `ubuntu-24.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
-1. **REQ-005**: El paso `Set up QEMU` debe saltarse (o ser inofensivo) en el runner nativo ARM64, evitando trabajo innecesario.
+1. **REQ-005**: El paso `Set up QEMU` debe ejecutarse **solo** para `linux/arm/v7` (única plataforma que sigue emulada en el runner x64). amd64 es nativo x64 y arm64 es nativo ARM, por lo que no requieren QEMU.
 2. **REQ-006**: No alterar inputs de las actions ya versionadas (checkout v5, qemu v4, buildx v4, login v4, build-push v7) salvo lo estrictamente necesario para el `runs-on` condicional.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
@@ -79,8 +79,8 @@ Esta spec migra la construcción de `linux/arm64` a un runner nativo `ubuntu-24.
 
 **ADR-002: QEMU condicional solo donde hace falta**
 - **Contexto**: El runner ARM nativo no necesita QEMU para compilar arm64; el runner x64 sí lo necesita para amd64 y arm/v7.
-- **Decisión**: Agregar un flag `needs_qemu` en el bloque `include:` y condicionar el paso `Set up QEMU` con `if: matrix.needs_qemu == 'true'`.
-- **Consecuencias**: En el runner ARM el paso se omite; en el runner x64 se mantiene el comportamiento actual.
+- **Decisión**: Agregar un flag `needs_qemu` en el bloque `include:` y condicionar el paso `Set up QEMU` con `if: matrix.needs_qemu == 'true'`. Queda activo únicamente para `linux/arm/v7`; amd64 (nativo x64) y arm64 (nativo ARM) lo omiten.
+- **Consecuencias**: En el runner ARM el paso se omite; en amd64 (nativo) también; solo arm/v7 lo mantiene en el runner x64.
 
 **ADR-003: El job `merge` permanece en `ubuntu-latest`**
 - **Contexto**: El job `merge` solo crea el manifest multi-arch con `docker buildx imagetools`, sin compilar nada.
@@ -134,7 +134,7 @@ Sin cambios. No aplica.
 ### 5.1 Funcionales
 
 - [ ] CA-001: El job `build` usa `runs-on: ${{ matrix.runs_on }}` con `ubuntu-24.04-arm` para `linux/arm64` y `ubuntu-latest` para `linux/amd64`/`linux/arm/v7`.
-- [ ] CA-002: El paso `Set up QEMU` se ejecuta solo cuando `matrix.needs_qemu == 'true'` (amd64 y arm/v7), y se omite en el runner ARM.
+- [ ] CA-002: El paso `Set up QEMU` se ejecuta solo cuando `matrix.needs_qemu == 'true'` (únicamente arm/v7), y se omite en amd64 y arm64.
 - [ ] CA-003: La matriz conserva las 3 plataformas (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) y sus tags (`-amd64`, `-armv7`, `-arm64`).
 - [ ] CA-004: El job `merge` sigue creando el manifest multi-arch con tags `<version>` y `latest`.
 - [ ] CA-005: El workflow se dispara con un tag `v*` de prueba y los 3 jobs `build` pasan correctamente.
@@ -192,4 +192,4 @@ Sin cambios. No aplica.
 |-------|-------|-------------|
 | 2026-09-04 | p40la-ihost-team | Creación inicial de la especificación. |
 | 2026-09-04 | p40la-ihost-team | Cambio de estado a `in_progress` para inicio de desarrollo. |
-| 2026-09-04 | p40la-ihost-team | Implementación completada en `.github/workflows/docker-publish.yml`: matriz con `runs_on`/`needs_qemu`, `runs-on: ${{ matrix.runs_on }}` y QEMU condicional. Pendiente validación con tag de prueba. |
+| 2026-09-04 | p40la-ihost-team | Implementación completada en `.github/workflows/docker-publish.yml`: matriz con `runs_on`/`needs_qemu`, `runs-on: ${{ matrix.runs_on }}` y QEMU condicional. Refinamiento: `needs_qemu` solo para arm/v7 (amd64 nativo x64 y arm64 nativo ARM no lo requieren). Pendiente validación con tag de prueba. |
