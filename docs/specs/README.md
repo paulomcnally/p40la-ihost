@@ -9,9 +9,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 56 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 3 🟣 |
+| **In progress** | 2 🟣 |
 | **Pending release** | 2 🟠 |
-| **Released** | 51 🟢 |
+| **Released** | 52 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-056 |
 
@@ -76,7 +76,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-053 | Modo oscuro configurable con default activo | released | 2026-09-03 | p40la-ihost-team |
 | SPEC-054 | Módulo Deudas: CRUD con generación automática de cuotas y vista Calendario | released | 2026-09-04 | p40la-ihost-team |
 | SPEC-055 | Análisis de Deudas por Mes con Gráficos en la página de Deudas | released | 2026-09-04 | p40la-ihost-team |
-| SPEC-056 | Build nativo ARM64 con runner ubuntu-24.04-arm en GitHub Actions | in_progress | 2026-09-04 | p40la-ihost-team |
+| SPEC-056 | Build nativo ARM64 con runner ubuntu-24.04-arm en GitHub Actions | released | 2026-09-04 | p40la-ihost-team |
 
 ---
 
@@ -146,4 +146,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-056 in_progress.*
+*Última actualización de este tracker: 2026-09-04 — SPEC-056 released.*
