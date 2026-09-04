@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from './Icons'
 import LoadingSpinner from './LoadingSpinner'
 import DebtPayModal from './DebtPayModal'
+import Select from './Select'
 import type { DebtBill } from '../types'
 
 const PALETTE = ['#0a84ff', '#ff9f0a', '#30d158', '#ff375f', '#bf5af2', '#64d2ff', '#ffd60a', '#5e5ce6']
@@ -33,6 +35,7 @@ function formatMoney(code: string, amount: number) {
 }
 
 export default function DebtAnalysis() {
+  const navigate = useNavigate()
   const { t } = useI18nStore()
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
@@ -40,6 +43,7 @@ export default function DebtAnalysis() {
   const [bills, setBills] = useState<DebtBill[]>([])
   const [loading, setLoading] = useState(true)
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
+  const [currencyFilter, setCurrencyFilter] = useState<string>('all')
 
   const isCurrent = year === now.getFullYear() && month === now.getMonth() + 1
 
@@ -78,9 +82,22 @@ export default function DebtAnalysis() {
     setMonth(now.getMonth() + 1)
   }
 
+  const currencyOptions = useMemo(() => {
+    const codes = [...new Set(bills.map((b) => b.currency_code || 'NIO'))].sort()
+    return [
+      { value: 'all', label: t('deudas.analysis_all_currencies') },
+      ...codes.map((c) => ({ value: c, label: c })),
+    ]
+  }, [bills, t])
+
+  const filteredBills = useMemo(
+    () => (currencyFilter === 'all' ? bills : bills.filter((b) => (b.currency_code || 'NIO') === currencyFilter)),
+    [bills, currencyFilter]
+  )
+
   const totals = useMemo(() => {
     const byCurrency = new Map<string, { total: number; paid: number; pending: number }>()
-    for (const b of bills) {
+    for (const b of filteredBills) {
       const cur = b.currency_code || 'NIO'
       const entry = byCurrency.get(cur) || { total: 0, paid: 0, pending: 0 }
       entry.total += b.amount
@@ -89,17 +106,18 @@ export default function DebtAnalysis() {
       byCurrency.set(cur, entry)
     }
     return byCurrency
-  }, [bills])
+  }, [filteredBills])
 
   const totalAll = useMemo(() => [...totals.values()].reduce((s, e) => s + e.total, 0), [totals])
   const paidAll = useMemo(() => [...totals.values()].reduce((s, e) => s + e.paid, 0), [totals])
   const pendingAll = useMemo(() => [...totals.values()].reduce((s, e) => s + e.pending, 0), [totals])
   const paidPct = totalAll > 0 ? Math.round((paidAll / totalAll) * 100) : 0
   const mainCurrency = [...totals.entries()].sort((a, b) => b[1].pending - a[1].pending)[0]?.[0] || ''
+  const displayCurrency = currencyFilter !== 'all' ? currencyFilter : mainCurrency
 
   const byDebt = useMemo(() => {
     const map = new Map<string, { total: number; paid: number; pending: number }>()
-    for (const b of bills) {
+    for (const b of filteredBills) {
       const key = b.debt_description || `#${b.debt_id}`
       const entry = map.get(key) || { total: 0, paid: 0, pending: 0 }
       entry.total += b.amount
@@ -110,7 +128,7 @@ export default function DebtAnalysis() {
     return [...map.entries()]
       .map(([name, v]) => ({ name, ...v }))
       .sort((a, b) => b.pending - a.pending)
-  }, [bills])
+  }, [filteredBills])
 
   const donutData = useMemo(() => {
     const totalPending = byDebt.reduce((s, d) => s + d.pending, 0)
@@ -132,15 +150,22 @@ export default function DebtAnalysis() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-1 bg-card rounded-ios shadow-ios px-2 py-1">
-          <button onClick={goPrev} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg transition-colors" aria-label="prev">
-            <Icon name="chevron" className="w-4 h-4 rotate-180" />
-          </button>
-          <span className="text-sm font-semibold min-w-28 text-center whitespace-nowrap">{periodLabel}</span>
-          <button onClick={goNext} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg transition-colors" aria-label="next">
-            <Icon name="chevron" className="w-4 h-4" />
-          </button>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1 bg-card rounded-ios shadow-ios px-2 py-1">
+            <button onClick={goPrev} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg transition-colors" aria-label="prev">
+              <Icon name="chevron" className="w-4 h-4 rotate-180" />
+            </button>
+            <span className="text-sm font-semibold min-w-28 text-center whitespace-nowrap">{periodLabel}</span>
+            <button onClick={goNext} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg transition-colors" aria-label="next">
+              <Icon name="chevron" className="w-4 h-4" />
+            </button>
+          </div>
+          {currencyOptions.length > 1 && (
+            <div className="w-44">
+              <Select options={currencyOptions} value={currencyFilter} onChange={(v) => setCurrencyFilter(String(v))} />
+            </div>
+          )}
         </div>
         {!isCurrent && (
           <button
@@ -228,7 +253,7 @@ export default function DebtAnalysis() {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-xs text-text-secondary">{t('deudas.analysis_pending')}</span>
-                    <span className="text-lg font-bold">{mainCurrency}{' '}{pendingAll.toFixed(2)}</span>
+                    <span className="text-lg font-bold">{displayCurrency}{' '}{pendingAll.toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="flex-1 w-full min-w-0">
@@ -238,7 +263,7 @@ export default function DebtAnalysis() {
                         <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
                         <span className="flex-1 text-sm truncate">{seg.label}</span>
                         <span className="text-sm font-semibold shrink-0">
-                          {mainCurrency}{' '}{(seg.value || 0).toFixed(2)}
+                          {displayCurrency}{' '}{(seg.value || 0).toFixed(2)}
                           <span className="text-text-secondary font-normal"> ({Math.round(((seg.value || 0) / Math.max(1, donutData.reduce((s, d) => s + d.value, 0))) * 100)}%)</span>
                         </span>
                       </div>
@@ -261,15 +286,15 @@ export default function DebtAnalysis() {
                     <div key={d.name}>
                       <div className="flex items-center justify-between gap-3 mb-1.5">
                         <span className="text-sm font-medium truncate">{d.name}</span>
-                        <span className="text-sm font-semibold shrink-0">{formatMoney(mainCurrency, total)}</span>
+                        <span className="text-sm font-semibold shrink-0">{formatMoney(displayCurrency, total)}</span>
                       </div>
                       <div className="h-2 rounded-full bg-border overflow-hidden flex">
                         <div className="h-full bg-success" style={{ width: `${paidPctDebt}%` }} />
                         <div className="h-full bg-amber-400" style={{ width: `${pendingPctDebt}%` }} />
                       </div>
                       <div className="flex items-center justify-between gap-3 mt-1 text-xs text-text-secondary">
-                        <span>{t('deudas.analysis_paid')}: {formatMoney(mainCurrency, d.paid)}</span>
-                        <span>{t('deudas.analysis_pending')}: {formatMoney(mainCurrency, d.pending)}</span>
+                        <span>{t('deudas.analysis_paid')}: {formatMoney(displayCurrency, d.paid)}</span>
+                        <span>{t('deudas.analysis_pending')}: {formatMoney(displayCurrency, d.pending)}</span>
                       </div>
                     </div>
                   )
@@ -281,29 +306,37 @@ export default function DebtAnalysis() {
           <div>
             <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-2">{t('deudas.analysis_installments_title')}</h3>
             <div className="space-y-2">
-              {bills.map((bill) => (
-                <div key={bill.id} className="bg-card rounded-ios shadow-ios p-4 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{bill.debt_description}</p>
-                    <p className="text-xs text-text-secondary">
-                      {t('deudas.installment')} #{bill.installment_number} · {bill.institution_name} · {bill.due_date}
-                    </p>
-                    <p className="text-sm font-semibold mt-1">{formatMoney(bill.currency_code || 'NIO', bill.amount)}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                      bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
-                    }`}>
-                      {t(`bills.status_${bill.status}`)}
-                    </span>
-                    {bill.status === 'pending' && (
-                      <button
-                        onClick={() => setPayTarget(bill)}
-                        className="text-xs font-semibold text-primary hover:underline min-h-[36px]"
-                      >
-                        {t('deudas.pay')}
-                      </button>
-                    )}
+              {filteredBills.map((bill) => (
+                <div key={bill.id} className="bg-card rounded-ios shadow-ios p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      onClick={() => navigate(`/deudas/${bill.debt_id}`)}
+                      className="flex-1 min-w-0 flex items-center gap-3 text-left min-h-[44px] group"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{bill.debt_description}</p>
+                        <p className="text-xs text-text-secondary">
+                          {t('deudas.installment')} #{bill.installment_number} · {bill.institution_name} · {bill.due_date}
+                        </p>
+                        <p className="text-sm font-semibold mt-1">{formatMoney(bill.currency_code || 'NIO', bill.amount)}</p>
+                      </div>
+                      <Icon name="chevron" className="w-4 h-4 text-text-secondary shrink-0" />
+                    </button>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                        bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
+                      }`}>
+                        {t(`bills.status_${bill.status}`)}
+                      </span>
+                      {bill.status === 'pending' && (
+                        <button
+                          onClick={() => setPayTarget(bill)}
+                          className="text-xs font-semibold text-primary hover:underline min-h-[36px]"
+                        >
+                          {t('deudas.pay')}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
