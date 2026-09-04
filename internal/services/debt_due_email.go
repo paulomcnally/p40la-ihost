@@ -9,7 +9,7 @@ import (
 
 // renderDebtDueContent construye el HTML del email diario que agrupa todas las
 // cuotas de deudas que vencen hoy, con el total del día (SPEC-054).
-func renderDebtDueContent(due []models.DebtBill) string {
+func renderDebtDueContent(due []models.DebtBill, format CurrencyFormat) string {
 	if len(due) == 0 {
 		return "<p>No hay cuotas de deudas que venzan hoy.</p>"
 	}
@@ -42,13 +42,13 @@ func renderDebtDueContent(due []models.DebtBill) string {
 		b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, esc(description)))
 		b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">Cuota #%d</td>`, bill.InstallmentNumber))
 		b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, esc(bill.DueDate)))
-		b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;text-align:right;">%s</td>`, esc(formatAmount(bill.Amount, bill.CurrencyCode))))
+		b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;text-align:right;">%s</td>`, esc(formatAmount(bill.Amount, bill.CurrencyCode, format))))
 		b.WriteString("</tr>")
 
 		total += bill.Amount
 	}
 
-	b.WriteString(fmt.Sprintf(`<tr><td colspan="4" style="padding:12px;border-bottom:1px solid #e5e5ea;text-align:right;font-weight:700;">Total del día</td><td style="padding:12px;border-bottom:1px solid #e5e5ea;text-align:right;font-weight:700;">%s</td></tr>`, esc(formatAmount(total, firstCurrency(due)))))
+	b.WriteString(fmt.Sprintf(`<tr><td colspan="4" style="padding:12px;border-bottom:1px solid #e5e5ea;text-align:right;font-weight:700;">Total del día</td><td style="padding:12px;border-bottom:1px solid #e5e5ea;text-align:right;font-weight:700;">%s</td></tr>`, esc(formatAmount(total, firstCurrency(due), format))))
 	b.WriteString("</table>")
 
 	b.WriteString(`<p style="margin-top:24px;color:#8e8e93;font-size:13px;">`)

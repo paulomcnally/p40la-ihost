@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -14,6 +15,7 @@ import type { Service } from '../types'
 export default function ServicesPage() {
   const navigate = useNavigate()
   const { homes, currencies, loadAll } = useAppStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { t } = useI18nStore()
   const [services, setServices] = useState<Service[]>([])
   const [homeFilter, setHomeFilter] = useState<number | null>(null)
@@ -150,7 +152,7 @@ export default function ServicesPage() {
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-xs text-text-secondary">
-                    {currency?.symbol}{svc.suggested_amount.toFixed(2)} · {t(`frequency.${svc.frequency}`)}
+                    {formatMoney(svc.suggested_amount, currency?.symbol)} · {t(`frequency.${svc.frequency}`)}
                   </p>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                     svc.latest_bill_status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' :

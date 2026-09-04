@@ -16,7 +16,7 @@ func TestBuildBillCreatedEmail_FixedMonthly(t *testing.T) {
 	}
 	bill := &models.Bill{Month: 8, Year: 2026, Amount: 1500}
 
-	title, html := buildBillCreatedEmail(svc, bill, "C$")
+	title, html := buildBillCreatedEmail(svc, bill, "C$", DefaultCurrencyFormat())
 
 	if title != "Nueva factura generada — Internet residencial" {
 		t.Errorf("título incorrecto: %q", title)
@@ -24,7 +24,7 @@ func TestBuildBillCreatedEmail_FixedMonthly(t *testing.T) {
 	checks := []string{
 		"Hola,",
 		"Agosto 2026",
-		"C$1500.00",
+		"C$1,500.00",
 		"Este monto es <strong>fijo</strong>",
 		"Institución:</strong> Claro",
 		"Servicio:</strong> Internet residencial",
@@ -44,7 +44,7 @@ func TestBuildBillCreatedEmail_VariableYearly(t *testing.T) {
 	}
 	bill := &models.Bill{Month: 0, Year: 2026, Amount: 300}
 
-	title, html := buildBillCreatedEmail(svc, bill, "$")
+	title, html := buildBillCreatedEmail(svc, bill, "$", DefaultCurrencyFormat())
 
 	if title != "Nueva factura generada — Seguro auto" {
 		t.Errorf("título incorrecto: %q", title)
@@ -64,7 +64,7 @@ func TestBuildBillCreatedEmail_WithoutInstitution(t *testing.T) {
 	svc := &models.Service{Name: "Luz", BillingType: "variable"}
 	bill := &models.Bill{Month: 1, Year: 2026, Amount: 100}
 
-	_, html := buildBillCreatedEmail(svc, bill, "")
+	_, html := buildBillCreatedEmail(svc, bill, "", DefaultCurrencyFormat())
 
 	if !strings.Contains(html, "Institución:</strong> —") {
 		t.Errorf("institución ausente no se muestra como —")
@@ -90,10 +90,10 @@ func TestFormatPeriod(t *testing.T) {
 }
 
 func TestFormatAmount(t *testing.T) {
-	if got := formatAmount(1500, "C$"); got != "C$1500.00" {
+	if got := formatAmount(1500, "C$", DefaultCurrencyFormat()); got != "C$1,500.00" {
 		t.Errorf("formatAmount con símbolo = %q", got)
 	}
-	if got := formatAmount(300, ""); got != "300.00" {
+	if got := formatAmount(300, "", DefaultCurrencyFormat()); got != "300.00" {
 		t.Errorf("formatAmount sin símbolo = %q", got)
 	}
 }
@@ -132,7 +132,7 @@ func TestRenderBillSummaryContent_GroupedByHome(t *testing.T) {
 		},
 	}
 
-	html := renderBillSummaryContent(pending)
+	html := renderBillSummaryContent(pending, DefaultCurrencyFormat())
 
 	if !strings.Contains(html, "2 facturas pendientes") {
 		t.Errorf("no aparece el contador de pendientes")
@@ -146,13 +146,13 @@ func TestRenderBillSummaryContent_GroupedByHome(t *testing.T) {
 	if !strings.Contains(html, "Hace 20 días") {
 		t.Errorf("badge de antigüedad 20 días no aparece")
 	}
-	if !strings.Contains(html, "C$1500.00") || !strings.Contains(html, "$100.00") {
+	if !strings.Contains(html, "C$1,500.00") || !strings.Contains(html, "$100.00") {
 		t.Errorf("montos con moneda no aparecen")
 	}
 }
 
 func TestRenderBillSummaryContent_Empty(t *testing.T) {
-	html := renderBillSummaryContent(nil)
+	html := renderBillSummaryContent(nil, DefaultCurrencyFormat())
 	if !strings.Contains(html, "No hay facturas pendientes") {
 		t.Errorf("contenido vacío incorrecto: %s", html)
 	}
@@ -168,7 +168,7 @@ func TestRenderBillSummaryContent_EscapesHTML(t *testing.T) {
 		},
 	}
 
-	html := renderBillSummaryContent(pending)
+	html := renderBillSummaryContent(pending, DefaultCurrencyFormat())
 
 	if strings.Contains(html, "<script>alert(1)</script>") {
 		t.Errorf("HTML no escapado en servicio")

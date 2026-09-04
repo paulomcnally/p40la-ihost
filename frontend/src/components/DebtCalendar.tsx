@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import DebtPayModal from './DebtPayModal'
 import type { DebtBill } from '../types'
@@ -17,6 +18,7 @@ function dateKey(d: Date): string {
 
 export default function DebtCalendar() {
   const { t, lang } = useI18nStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
@@ -140,7 +142,7 @@ export default function DebtCalendar() {
             {selectedBills.length > 0 && (
               <span className="text-sm text-text-secondary">
                 {t('deudas.total_day')}:{' '}
-                <strong>{selectedBills[0].currency_code}{totalDay.toFixed(2)}</strong>
+                <strong>{formatMoney(totalDay, selectedBills[0].currency_code)}</strong>
               </span>
             )}
           </div>
@@ -159,7 +161,7 @@ export default function DebtCalendar() {
                       {t('deudas.installment')} #{b.installment_number} · {b.institution_name}
                     </p>
                     <p className="text-sm font-semibold mt-1">
-                      {b.currency_code}{b.amount.toFixed(2)}
+                      {formatMoney(b.amount, b.currency_code)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">

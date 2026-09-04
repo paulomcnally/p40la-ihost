@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -103,6 +104,7 @@ function EmptyCard({ title, subtitle, actionLabel, onAction }: {
 export default function RegistrosPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const now = new Date()
@@ -691,7 +693,7 @@ export default function RegistrosPage() {
                 if (!salaryReceivedAmount || diff === 0) return null
                 return (
                   <p className={`text-xs mt-1 ${diff > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                    {diff > 0 ? '+' : ''}{diff.toFixed(2)} {salaryModal.currency}
+                    {diff > 0 ? '+' : ''}{formatMoney(diff)} {salaryModal.currency}
                   </p>
                 )
               })()}
@@ -783,10 +785,11 @@ function SummaryCard({ label, amount, currency, color }: {
   currency: string
   color: string
 }) {
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   return (
     <div className="bg-card rounded-ios shadow-ios p-3 sm:p-4">
       <p className="text-text-secondary text-xs font-medium uppercase tracking-wide">{label}</p>
-      <p className={`text-lg sm:text-xl font-bold mt-1 ${color}`}>{currency} {amount.toFixed(2)}</p>
+      <p className={`text-lg sm:text-xl font-bold mt-1 ${color}`}>{currency} {formatMoney(amount)}</p>
     </div>
   )
 }
@@ -798,6 +801,7 @@ function SalaryCard({ sp, isClosed, t, onMarkReceived, onMarkPending }: {
   onMarkReceived: () => void
   onMarkPending: () => void
 }) {
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const received = sp.status === 'received'
   return (
     <div className="bg-card rounded-ios shadow-ios p-4">
@@ -808,7 +812,7 @@ function SalaryCard({ sp, isClosed, t, onMarkReceived, onMarkPending }: {
           </div>
           <div>
             <p className="text-sm font-semibold">{sp.employer}</p>
-            <p className="text-xs text-text-secondary">{sp.currency} {Number(sp.amount).toFixed(2)}</p>
+            <p className="text-xs text-text-secondary">{sp.currency} {formatMoney(Number(sp.amount))}</p>
           </div>
         </div>
         {received ? (
@@ -840,7 +844,7 @@ function SalaryCard({ sp, isClosed, t, onMarkReceived, onMarkPending }: {
             <div>
               <p className="text-text-secondary">{t('salaryPayments.receivedAmount')}</p>
               <p className={`mt-0.5 font-medium ${Number(sp.received_amount) > Number(sp.amount) ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                {sp.currency} {Number(sp.received_amount).toFixed(2)}
+                {sp.currency} {formatMoney(Number(sp.received_amount))}
               </p>
             </div>
           )}
@@ -869,6 +873,7 @@ function RecordCard({ record, isClosed, t, onEdit, onPay, onReject, onMarkPendin
   onReject: () => void
   onMarkPending: () => void
 }) {
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
@@ -884,7 +889,7 @@ function RecordCard({ record, isClosed, t, onEdit, onPay, onReject, onMarkPendin
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <p className="font-semibold text-sm">{record.currency} {Number(record.amount).toFixed(2)}</p>
+          <p className="font-semibold text-sm">{record.currency} {formatMoney(Number(record.amount))}</p>
           {record.status === 'pending' ? (
             !isClosed ? (
               <div className="flex items-center gap-1">
@@ -945,7 +950,7 @@ function RecordCard({ record, isClosed, t, onEdit, onPay, onReject, onMarkPendin
             <div className="col-span-2 sm:col-span-4">
               <p className="text-text-secondary">{t('registros.currency_conversion')}</p>
               <p className="text-text mt-0.5">
-                {record.original_currency} {Number(record.original_amount).toFixed(2)} × {Number(record.exchange_rate || 0).toFixed(4)} = {record.currency} {Number(record.amount).toFixed(2)}
+                {record.original_currency} {formatMoney(Number(record.original_amount))} × {Number(record.exchange_rate || 0).toFixed(4)} = {record.currency} {formatMoney(Number(record.amount))}
               </p>
             </div>
           )}

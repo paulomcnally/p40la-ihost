@@ -19,17 +19,13 @@ func pensionPeriod(month, year int) string {
 	return fmt.Sprintf("%s %d", monthName(month), year)
 }
 
-func pensionAmount(amount float64, currency string) string {
-	return fmt.Sprintf("%s %.2f", currency, amount)
-}
-
 func pensionChildLabel(record *models.SupportRecord) string {
 	return fmt.Sprintf("%s — %s", record.ChildName, record.CategoryName)
 }
 
 // buildPensionRecordsCreatedEmail construye el email de "registros creados"
 // al generar un mes (salarios + registros de manutención).
-func buildPensionRecordsCreatedEmail(createdSalaryPayments []models.SalaryPayment, createdSupportRecords []models.SupportRecord, year, month int) (title, contentHTML string) {
+func buildPensionRecordsCreatedEmail(createdSalaryPayments []models.SalaryPayment, createdSupportRecords []models.SupportRecord, year, month int, format CurrencyFormat) (title, contentHTML string) {
 	period := pensionPeriod(month, year)
 	total := len(createdSalaryPayments) + len(createdSupportRecords)
 	title = fmt.Sprintf("Pensión — %d registro(s) creado(s) — %s", total, period)
@@ -40,7 +36,7 @@ func buildPensionRecordsCreatedEmail(createdSalaryPayments []models.SalaryPaymen
 	if len(createdSalaryPayments) > 0 {
 		b += "<p><strong>Salarios generados:</strong></p><ul>"
 		for _, sp := range createdSalaryPayments {
-			b += fmt.Sprintf("<li>%s — %s</li>", sp.Employer, pensionAmount(sp.Amount, sp.Currency))
+			b += fmt.Sprintf("<li>%s — %s</li>", sp.Employer, pensionAmount(sp.Amount, sp.Currency, format))
 		}
 		b += "</ul>"
 	}
@@ -48,7 +44,7 @@ func buildPensionRecordsCreatedEmail(createdSalaryPayments []models.SalaryPaymen
 	if len(createdSupportRecords) > 0 {
 		b += "<p><strong>Registros de manutención generados:</strong></p><ul>"
 		for _, r := range createdSupportRecords {
-			b += fmt.Sprintf("<li>%s — %s</li>", pensionChildLabel(&r), pensionAmount(r.Amount, r.Currency))
+			b += fmt.Sprintf("<li>%s — %s</li>", pensionChildLabel(&r), pensionAmount(r.Amount, r.Currency, format))
 		}
 		b += "</ul>"
 	}
@@ -58,7 +54,7 @@ func buildPensionRecordsCreatedEmail(createdSalaryPayments []models.SalaryPaymen
 }
 
 // buildPensionRecordPaidEmail construye el email al marcar un registro como pagado.
-func buildPensionRecordPaidEmail(record *models.SupportRecord) (title, contentHTML string) {
+func buildPensionRecordPaidEmail(record *models.SupportRecord, format CurrencyFormat) (title, contentHTML string) {
 	period := pensionPeriod(record.Month, record.Year)
 	title = fmt.Sprintf("Pensión — Pago registrado — %s", period)
 
@@ -77,7 +73,7 @@ func buildPensionRecordPaidEmail(record *models.SupportRecord) (title, contentHT
   Notificación automática del módulo Pensión Alimenticia.
 </p>`,
 		pensionChildLabel(record),
-		pensionAmount(record.Amount, record.Currency),
+		pensionAmount(record.Amount, record.Currency, format),
 		formatTimePtr(record.PaidAt),
 		strOrDash(record.PaymentMethod),
 		strOrDash(record.PaymentReference),
@@ -86,7 +82,7 @@ func buildPensionRecordPaidEmail(record *models.SupportRecord) (title, contentHT
 }
 
 // buildPensionSalaryReceivedEmail construye el email al marcar un salario como recibido.
-func buildPensionSalaryReceivedEmail(payment *models.SalaryPayment) (title, contentHTML string) {
+func buildPensionSalaryReceivedEmail(payment *models.SalaryPayment, format CurrencyFormat) (title, contentHTML string) {
 	period := pensionPeriod(payment.Month, payment.Year)
 	title = fmt.Sprintf("Pensión — Salario recibido — %s", period)
 
@@ -105,8 +101,8 @@ func buildPensionSalaryReceivedEmail(payment *models.SalaryPayment) (title, cont
   Notificación automática del módulo Pensión Alimenticia.
 </p>`,
 		payment.Employer,
-		pensionAmount(payment.Amount, payment.Currency),
-		pensionAmount(floatOr(payment.ReceivedAmount, payment.Amount), payment.Currency),
+		pensionAmount(payment.Amount, payment.Currency, format),
+		pensionAmount(floatOr(payment.ReceivedAmount, payment.Amount), payment.Currency, format),
 		formatTimePtr(payment.ReceivedAt),
 		strOrDash(payment.Notes),
 	)
@@ -114,7 +110,7 @@ func buildPensionSalaryReceivedEmail(payment *models.SalaryPayment) (title, cont
 }
 
 // buildPensionRecordRejectedEmail construye el email al rechazar un registro.
-func buildPensionRecordRejectedEmail(record *models.SupportRecord, reason string) (title, contentHTML string) {
+func buildPensionRecordRejectedEmail(record *models.SupportRecord, reason string, format CurrencyFormat) (title, contentHTML string) {
 	period := pensionPeriod(record.Month, record.Year)
 	title = fmt.Sprintf("Pensión — Registro rechazado — %s", period)
 
@@ -131,14 +127,14 @@ func buildPensionRecordRejectedEmail(record *models.SupportRecord, reason string
   Notificación automática del módulo Pensión Alimenticia.
 </p>`,
 		pensionChildLabel(record),
-		pensionAmount(record.Amount, record.Currency),
+		pensionAmount(record.Amount, record.Currency, format),
 		reason,
 	)
 	return title, contentHTML
 }
 
 // buildPensionMonthClosingEmail construye el resumen al cerrar un mes.
-func buildPensionMonthClosingEmail(records []models.SupportRecord, salaryPayments []models.SalaryPayment, year, month int) (title, contentHTML string) {
+func buildPensionMonthClosingEmail(records []models.SupportRecord, salaryPayments []models.SalaryPayment, year, month int, format CurrencyFormat) (title, contentHTML string) {
 	period := pensionPeriod(month, year)
 	title = fmt.Sprintf("Pensión — Cierre de mes — %s", period)
 
@@ -168,16 +164,16 @@ func buildPensionMonthClosingEmail(records []models.SupportRecord, salaryPayment
 			if sp.Status == "received" {
 				status = "recibido"
 			}
-			b += fmt.Sprintf("<li>%s — %s (%s)</li>", sp.Employer, pensionAmount(sp.Amount, sp.Currency), status)
+			b += fmt.Sprintf("<li>%s — %s (%s)</li>", sp.Employer, pensionAmount(sp.Amount, sp.Currency, format), status)
 		}
 		b += "</ul>"
 	}
 
 	b += "<p><strong>Registros de manutención:</strong></p>"
 	b += "<ul>"
-	b += fmt.Sprintf("<li><strong>Pagados:</strong> %d — %s</li>", paid, pensionAmount(paidAmount, "NIO"))
-	b += fmt.Sprintf("<li><strong>Pendientes:</strong> %d — %s</li>", pending, pensionAmount(pendingAmount, "NIO"))
-	b += fmt.Sprintf("<li><strong>Rechazados:</strong> %d — %s</li>", rejected, pensionAmount(rejectedAmount, "NIO"))
+	b += fmt.Sprintf("<li><strong>Pagados:</strong> %d — %s</li>", paid, pensionAmount(paidAmount, "NIO", format))
+	b += fmt.Sprintf("<li><strong>Pendientes:</strong> %d — %s</li>", pending, pensionAmount(pendingAmount, "NIO", format))
+	b += fmt.Sprintf("<li><strong>Rechazados:</strong> %d — %s</li>", rejected, pensionAmount(rejectedAmount, "NIO", format))
 	b += "</ul>"
 
 	b += "<p style=\"margin-top:24px;color:#8e8e93;font-size:13px;\">Notificación automática del módulo Pensión Alimenticia.</p>"

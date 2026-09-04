@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
+import { useAppStore } from '../stores/appStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import type { Service } from '../types'
 
@@ -10,6 +12,8 @@ interface AddInsuranceModalProps {
 }
 
 export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsuranceModalProps) {
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
+  const { currencies, loadCurrencies } = useAppStore()
   const [services, setServices] = useState<Service[]>([])
   const [search, setSearch] = useState('')
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null)
@@ -25,7 +29,8 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
       setServices(data || [])
       setLoading(false)
     })
-  }, [autoId])
+    loadCurrencies()
+  }, [autoId, loadCurrencies])
 
   const filtered = services.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase())
@@ -83,7 +88,7 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{svc.name}</p>
-                    <p className="text-xs text-text-secondary">${svc.suggested_amount.toFixed(2)} · {svc.frequency === 'monthly' ? 'Mensual' : 'Anual'}</p>
+                    <p className="text-xs text-text-secondary">{formatMoney(svc.suggested_amount, currencies.find(c => c.id === svc.currency_id)?.symbol)} · {svc.frequency === 'monthly' ? 'Mensual' : 'Anual'}</p>
                   </div>
                 </button>
               ))}
