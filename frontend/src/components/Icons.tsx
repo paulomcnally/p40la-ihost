@@ -1,6 +1,6 @@
-import { createElement } from 'react'
+import { cloneElement, isValidElement, createElement } from 'react'
 
-const icons: Record<string, React.ReactNode> = {
+const icons: Record<string, React.ReactElement> = {
   menu: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
     createElement('line', { x1: 3, y1: 12, x2: 21, y2: 12 }),
     createElement('line', { x1: 3, y1: 6, x2: 21, y2: 6 }),
@@ -643,9 +643,14 @@ const iconKeys = Object.keys(icons).filter(n =>
 
 export function Icon({ name, className = '' }: { name: string; className?: string }) {
   const icon = icons[name] || icons.other
+  const svg = isValidElement(icon)
+    ? cloneElement(icon as React.ReactElement<any>, className
+        ? { className: 'w-full h-full' }
+        : { width: '1em', height: '1em' })
+    : icon
   return (
     <span className={`inline-flex items-center justify-center ${className}`}>
-      {icon}
+      {svg}
     </span>
   )
 }
