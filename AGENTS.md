@@ -1,6 +1,6 @@
 # AGENTS.md - Reglas del Repositorio
 
-> **Última actualización**: 2026-08-13  
+> **Última actualización**: 2026-09-04  
 > **Proyecto**: p40la-ihost  
 > **Sistema de specs**: v1.2
 
@@ -159,6 +159,23 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 - Verificar con `docker buildx imagetools inspect <image>` que existan los 3 manifests.
 - Esta regla aplica a CUALQUIER imagen Docker del proyecto, sin excepciones.
 
+### ️ Regla CRÍTICA: Acceso a la DB de producción en el iHost (SSH)
+
+La app corre como add-on Docker en un **SONOFF iHost**. La DB SQLite vive en el **volumen Docker `p40la`** (montado en `/app/data` dentro del contenedor). El iHost **NO tiene SSH nativo** (puerto 22 cerrado, no existe "Developer Mode"); el acceso se logra con el add-on Docker **`capiloky/sonoff-ssh`** (port host `2222` → container `22`, volumen `p40la` montado). **Guía completa para agentes: `docs/ssh-ihost-access.md`.**
+
+- **Credenciales SSH**: `ssh sshuser@ihost.local -p 2222` con password `password`; sudo con el mismo password (`echo "password" | sudo -S <cmd>`).
+- **Sin `sshpass` en la dev machine**: usar Python `paramiko` (disponible). No usar `base64` en args (falla con `Argument list too long`); para subir archivos usar stdin de `exec_command` (`cat > archivo`). **SFTP NO disponible**.
+- **`sqlite3` NO viene instalado** en el contenedor SSH: instalar una vez con `sudo apt-get install -y sqlite3`.
+- **Regla de oro de operación**: si una petición del usuario implica manipular la DB del volumen (`data` de producción), el agente DEBE:
+  1. Pedir al usuario detener el contenedor `p40la-ihost` ANTES de cualquier escritura (modo WAL: `app.db-wal` activo con el server corriendo → corrupción).
+  2. **Respaldar siempre** antes de modificar: `sudo sqlite3 /app/data/app.db ".backup '/app/data/backups/<fecha>-<motivo>/app.db'"` + verificar `PRAGMA integrity_check;` + descargar copia local a `/home/paulomcnally/p40la-db-backups/`.
+  3. Probar el SQL en local sobre una copia del backup antes de aplicarlo en producción.
+  4. Ejecutar cambios multi-tabla envueltos en `BEGIN/COMMIT` vía `sudo sqlite3 /app/data/app.db ".read /tmp/script.sql"`.
+  5. Verificar conteos e integridad, luego pedir al usuario arrancar el contenedor.
+- **No modificar el esquema SQLite** de `debts`/`debt_bills` (política del usuario); solo insertar/actualizar datos. Ver SPEC-054 para el modelo de deudas.
+- Verificar siempre el server con `curl -s http://ihost.local:8088/health` → `{"status":"ok"}`.
+- Para autenticar endpoints protegidos, crear usuarios de prueba en la DB del volumen siguiendo el proceso de la sección 0 (aplicar vía SSH a `/app/data/app.db`).
+
 ### Pruebas locales obligatorias
 
 - **Todo cambio significativo debe probarse en local** (tests, build, ejecución básica) antes de intentar commits o push.
@@ -203,7 +220,8 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 │   │   │   └── spec-template.md # Template base
 │   │   └── SPEC-XXX-*.md        # Especificaciones
 │   ├── project-rules.md         # Reglas de stack y arquitectura
-│   └── infrastructure.md        # Infraestructura y deploy
+│   ├── infrastructure.md        # Infraestructura y deploy
+│   └── ssh-ihost-access.md      # Guía de acceso SSH a la DB del iHost
 ├── AGENTS.md                    # Este archivo
 ├── opencode.json               # Configuración de opencode
 ├── src/                        # Código fuente backend
