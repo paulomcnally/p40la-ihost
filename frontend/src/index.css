@@ -39,6 +39,19 @@ body {
   color: rgb(var(--color-text));
 }
 
+input,
+select,
+textarea {
+  color: rgb(var(--color-text));
+  background-color: rgb(var(--color-card));
+  color-scheme: light dark;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgb(var(--color-text-secondary));
+}
+
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(100%); }
   to { opacity: 1; transform: translateX(0); }

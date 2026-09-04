@@ -1,7 +1,7 @@
 ---
 title: "Fix global de texto de inputs en darkmode en todos los formularios + regla para futuras specs"
 id: "SPEC-060"
-status: "draft"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-04"
 updated: "2026-09-04"
@@ -11,7 +11,7 @@ github_issue: 61
 # Fix global de texto de inputs en darkmode en todos los formularios + regla para futuras specs
 
 **ID**: SPEC-060  
-**Estado**: draft  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-04  
 **Actualizado**: 2026-09-04
@@ -177,19 +177,19 @@ Sin cambios. No hay endpoints nuevos ni modificados.
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: En darkmode, el texto es legible en los inputs de TODOS los formularios: Deudas, Servicios, Instituciones, Hijos, Notificaciones, Salarios, Categorías, Monedas, Facturas, Autos, Login, Setup, Settings, Registros.
-- [ ] CA-002: En darkmode, el texto es legible en los inputs de TODOS los modales: PayBill, DebtPay, UploadBill, AddInsurance, EmailRecipients, Delete, IconPicker, Select (búsqueda y valor seleccionado).
-- [ ] CA-003: En darkmode, los placeholders usan `--color-text-secondary` (legibles pero distinguibles del texto escrito).
-- [ ] CA-004: En darkmode, los controles nativos (input de fecha, calendario del navegador, autofill) se renderizan con esquema oscuro (`color-scheme: light dark`).
-- [ ] CA-005: En modo claro no hay regresión visual en ningún input (mismos colores que antes).
-- [ ] CA-006: `SettingsPage` deja de usar `bg-white dark:bg-[#2c2c2e]` y usa `bg-card`.
-- [ ] CA-007: Existe la regla en `AGENTS.md` que obliga a usar tokens de color del tema en inputs y verificar darkmode en formularios nuevos.
-- [ ] CA-008: Existe la regla en `docs/project-rules.md` y en el template de specs (criterios de aceptación para specs con formularios).
+- [x] CA-001: En darkmode, el texto es legible en los inputs de TODOS los formularios: Deudas, Servicios, Instituciones, Hijos, Notificaciones, Salarios, Categorías, Monedas, Facturas, Autos, Login, Setup, Settings, Registros.
+- [x] CA-002: En darkmode, el texto es legible en los inputs de TODOS los modales: PayBill, DebtPay, UploadBill, AddInsurance, EmailRecipients, Delete, IconPicker, Select (búsqueda y valor seleccionado).
+- [x] CA-003: En darkmode, los placeholders usan `--color-text-secondary` (legibles pero distinguibles del texto escrito).
+- [x] CA-004: En darkmode, los controles nativos (input de fecha, calendario del navegador, autofill) se renderizan con esquema oscuro (`color-scheme: light dark`).
+- [x] CA-005: En modo claro no hay regresión visual en ningún input (mismos colores que antes).
+- [x] CA-006: `SettingsPage` deja de usar `bg-white dark:bg-[#2c2c2e]` y usa `bg-card`.
+- [x] CA-007: Existe la regla en `AGENTS.md` que obliga a usar tokens de color del tema en inputs y verificar darkmode en formularios nuevos.
+- [x] CA-008: Existe la regla en `docs/project-rules.md` y en el template de specs (criterios de aceptación para specs con formularios).
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: El bundle del frontend no crece de forma apreciable (< 1 KB) y no se agregan dependencias.
-- [ ] CA-NF-002: El build de Vite (`npm run build` en `frontend/`) pasa sin errores y el server local sirve el CSS actualizado.
+- [x] CA-NF-001: El bundle del frontend no crece de forma apreciable (< 1 KB) y no se agregan dependencias.
+- [x] CA-NF-002: El build de Vite (`npm run build` en `frontend/`) pasa sin errores y el server local sirve el CSS actualizado.
 
 ### 5.3 Testing
 
@@ -238,3 +238,4 @@ Sin cambios. No hay endpoints nuevos ni modificados.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-04 | paulomcnally | Creación inicial de la especificación |
+| 2026-09-04 | paulomcnally | Implementación: regla CSS global en `index.css` (color + background + `color-scheme` + placeholder), `SettingsPage` usa `bg-card`, `Select.tsx` trigger con `text-text`, reglas permanentes en AGENTS.md/project-rules.md/spec-template. Released en main (frontend-only, sin backend ni DB). |
