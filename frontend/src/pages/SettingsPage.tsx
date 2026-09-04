@@ -393,7 +393,7 @@ export default function SettingsPage() {
   const emailNeedsConfig = emailAlertsEnabled && !emailActive
   const vmNeedsConfig = vmEnabled && !vmActive
 
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-white dark:bg-[#2c2c2e] min-h-[44px]'
+  const inputCls = 'w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-card min-h-[44px]'
   const labelCls = 'text-sm font-medium text-text-secondary mb-1'
 
   return (
