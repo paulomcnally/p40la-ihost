@@ -32,6 +32,7 @@ type Handler struct {
 	monthClosing         *MonthClosingHandlers
 	config               *ChildSupportConfigHandlers
 	pensionDashboard     *PensionDashboardHandlers
+	debt                 *DebtHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -58,6 +59,7 @@ func NewHandler(
 	monthClosing *MonthClosingHandlers,
 	config *ChildSupportConfigHandlers,
 	pensionDashboard *PensionDashboardHandlers,
+	debt *DebtHandlers,
 ) *Handler {
 	return &Handler{
 		auth:                auth,
@@ -82,6 +84,7 @@ func NewHandler(
 		monthClosing:        monthClosing,
 		config:              config,
 		pensionDashboard:    pensionDashboard,
+		debt:                debt,
 	}
 }
 

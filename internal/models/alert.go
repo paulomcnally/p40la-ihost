@@ -23,6 +23,9 @@ const (
 	AlertKeyBillCreated = "bill_created"
 	AlertKeyBillSummary = "bill_summary"
 
+	// Alerta de cuotas de deudas que vencen hoy (SPEC-054).
+	AlertKeyDebtDue = "debt_due"
+
 	// Alertas del módulo Pensión Alimenticia (SPEC-051).
 	AlertKeyPensionRecordsCreated = "pension_records_created"
 	AlertKeyPensionRecordPaid     = "pension_record_paid"

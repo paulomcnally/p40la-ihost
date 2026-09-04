@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS debt_bills;
+DROP TABLE IF EXISTS debts;

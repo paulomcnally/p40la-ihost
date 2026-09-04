@@ -98,7 +98,7 @@ export default function Select({ options, value, onChange, placeholder, searchab
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar..."
-                  className="w-full px-2 py-1.5 text-sm border border-border rounded-ios-sm focus:outline-none focus:border-primary"
+                  className="w-full px-2 py-1.5 text-sm border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-card"
                 />
               </div>
             )}
