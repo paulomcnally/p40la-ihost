@@ -29,6 +29,9 @@ import SalaryFormPage from './pages/SalaryFormPage'
 import CategoriasPage from './pages/CategoriasPage'
 import CategoryFormPage from './pages/CategoryFormPage'
 import RegistrosPage from './pages/RegistrosPage'
+import DeudasPage from './pages/DeudasPage'
+import DebtFormPage from './pages/DebtFormPage'
+import DebtBillsPage from './pages/DebtBillsPage'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -107,6 +110,10 @@ function App() {
                   <Route path="pension/notificaciones" element={<NotificationsPage />} />
                   <Route path="pension/notificaciones/new" element={<NotificationFormPage />} />
                   <Route path="pension/notificaciones/edit/:id" element={<NotificationFormPage />} />
+                  <Route path="deudas" element={<DeudasPage />} />
+                  <Route path="deudas/new" element={<DebtFormPage />} />
+                  <Route path="deudas/edit/:id" element={<DebtFormPage />} />
+                  <Route path="deudas/:id" element={<DebtBillsPage />} />
                 </Route>
               </Routes>
             </AuthGuard>

@@ -82,6 +82,8 @@ func main() {
 	salaryPaymentStorage := storage.NewSalaryPaymentStorage(database)
 	monthClosingStorage := storage.NewMonthClosingStorage(database)
 	childSupportConfigStorage := storage.NewChildSupportConfigStorage(database)
+	debtStorage := storage.NewDebtStorage(database)
+	debtBillStorage := storage.NewDebtBillStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -108,6 +110,7 @@ func main() {
 	childSupportConfigService := services.NewChildSupportConfigService(childSupportConfigStorage, childStorage, pensionCategoryStorage)
 	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage)
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
+	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
@@ -125,6 +128,10 @@ func main() {
 	billSummaryScheduler := services.NewBillSummaryScheduler(billStorage, emailService, systemSettingsService, alertService, voiceMonkeyService)
 	billSummaryScheduler.Start()
 	defer billSummaryScheduler.Stop()
+
+	debtDueScheduler := services.NewDebtDueScheduler(debtBillStorage, emailService, systemSettingsService, alertService)
+	debtDueScheduler.Start()
+	defer debtDueScheduler.Stop()
 
 	settingsHandlers := api.NewSettingsHandlers(appSettingsService)
 	systemSettingsHandlers := api.NewSystemSettingsHandlers(systemSettingsService, emailService, voiceMonkeyService)
@@ -147,8 +154,9 @@ func main() {
 	monthClosingHandlers := api.NewMonthClosingHandlers(monthClosingService, pensionNotificationService)
 	configHandlers := api.NewChildSupportConfigHandlers(childSupportConfigService)
 	pensionDashboardHandlers := api.NewPensionDashboardHandlers(pensionGenerationService)
+	debtHandlers := api.NewDebtHandlers(debtService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers)
 
 	router := api.BuildRouter(handler, authService, "./public")
 
