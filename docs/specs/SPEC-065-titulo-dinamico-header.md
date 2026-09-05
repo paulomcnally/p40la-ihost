@@ -292,3 +292,4 @@ Sin cambios de API. Toda la información de títulos ya está disponible en las 
 |-------|-------|-------------|
 | 2026-09-04 | paulomcnally | Creación inicial de la especificación (ID renumerado de 063 a 065 por colisión con otra sesión) |
 | 2026-09-04 | paulomcnally | Estado a in_progress. Implementación: store `pageTitleStore` + hook `usePageTitle`, modificación de `DashboardLayout`, claves i18n nuevas (`autos.*`, `institutions.*`, `notifications.title`) en es/en, y `usePageTitle` aplicado en todas las páginas (detalles, tabs, listas y forms new/edit). Build OK. Server local en :8090 para evaluación. |
+| 2026-09-04 | paulomcnally | Release: criterios de aceptación en pass, estado a `released`. Commit de implementación `2bd5a32` mergeado a `main` (issue #66 cerrado). |
