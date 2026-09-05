@@ -7,6 +7,7 @@ interface AppState {
   currencies: Currency[]
   loading: boolean
   loadHomes: () => Promise<void>
+  setHomes: (homes: Home[]) => void
   loadCurrencies: () => Promise<void>
   loadAll: () => Promise<void>
 }
@@ -20,6 +21,8 @@ export const useAppStore = create<AppState>((set) => ({
     const homes = await api.homes.list()
     set({ homes: homes || [] })
   },
+
+  setHomes: (homes) => set({ homes }),
 
   loadCurrencies: async () => {
     const currencies = await api.currencies.list()
