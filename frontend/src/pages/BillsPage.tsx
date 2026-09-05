@@ -73,15 +73,6 @@ export default function BillsPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4 sm:mb-5">
-        <button
-          onClick={() => navigate('/services')}
-          className="flex items-center gap-1 text-text-secondary hover:text-text transition-colors min-h-[44px]"
-        >
-          <Icon name="back" className="w-4 h-4" />
-          {t('menu.services')}
-        </button>
-      </div>
       <div className="flex items-center justify-between mb-4 sm:mb-5">
         <div>
           <h2 className="text-lg sm:text-2xl font-bold">{service.name}</h2>
