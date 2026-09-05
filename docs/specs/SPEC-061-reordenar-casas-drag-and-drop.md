@@ -39,7 +39,7 @@ La interacción debe adaptarse al dispositivo: en **desktop** (grid de 2-3 colum
 5. **REQ-005**: Las casas existentes reciben un `sort_order` de backfill que preserva el orden alfabético actual (para no reordenar de forma abrupta en el upgrade).
 6. **REQ-006**: Al crear una casa nueva, se agrega al final del orden actual.
 7. **REQ-007**: Al arrastrar, se aplica una actualización visual optimista (el orden cambia al instante) y, si el guardado falla, se revierte y se muestra un toast de error.
-8. **REQ-008**: Toda la card es arrastrable (grab en cualquier punto). En desktop se muestra `cursor-grab` + elevación sutil en hover y un handle de agarre pequeño que se revela en hover; en mobile el handle es siempre visible como pista de que se puede reordenar. Sin íconos de agarre fijos en esquinas pegados a otros controles.
+8. **REQ-008**: Toda la card es arrastrable (grab en cualquier punto). En desktop se muestra `cursor-grab` + elevación sutil en hover. El handle de agarre es una **franja vertical de alto completo al lado izquierdo de la card** con ícono de grip vertical centrado (pista visual siempre visible, con mayor énfasis en hover). Sin íconos flotantes en el centro o pegados a otros controles.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -231,7 +231,7 @@ Entidad: homes (tabla existente)
 - [ ] CA-004: Tras aplicar la migración, las casas existentes conservan su orden alfabético previo (backfill correcto).
 - [ ] CA-005: Una casa nueva se agrega al final del orden.
 - [ ] CA-006: Si el guardado del orden falla, la UI revierte al orden anterior y muestra un toast de error.
-- [ ] CA-007: Pista visual de arrastre en hover (desktop: cursor grab + handle revelado) y siempre (mobile: handle visible). Sin íconos fijos pegados a otros controles.
+- [ ] CA-007: Pista visual de arrastre en hover (desktop: cursor grab + elevación) y siempre (mobile). El handle es una franja vertical de alto completo al lado izquierdo de la card, sin íconos flotantes en el centro ni pegados a otros controles.
 - [ ] CA-008: El scroll mobile no se interfiere al arrastrar (drag por long-press; los controles con `data-no-dnd` siguen respondiendo a su tap).
 - [ ] CA-009: El reordenamiento funciona por teclado (tab al handle, espacio/enter para levantar, flechas para mover, escape para cancelar).
 
@@ -312,3 +312,4 @@ Entidad: homes (tabla existente)
 | 2026-09-04 | paulomcnally | Creación inicial de la especificación. Alcance: solo Casas; flujo genérico documentado en sección 9 para replicarlo en otras páginas a futuro. |
 | 2026-09-04 | paulomcnally | Estado a `in_progress`. Inicio del desarrollo en rama `feature/SPEC-061` (worktree aislado). |
 | 2026-09-04 | paulomcnally | Cambio de UX solicitado en evaluación manual: se reemplaza el handle fijo en la esquina (junto al menú) por **toda la card arrastrable** + handle revelado en hover (desktop) / siempre visible (mobile) + **long-press** en mobile, excluyendo controles interactivos con `data-no-dnd`. Basado en investigación de patrones de apps TODO-list (Todoist/Things/Notion/Trello, NN/g). |
+| 2026-09-04 | paulomcnally | Ajuste de handle en evaluación manual: el handle pasa de estar centrado arriba a ser una **franja vertical de alto completo al lado izquierdo** de la card, con el ícono de grip vertical centrado y padding izquierdo en el contenido de la card para dejarlo visible. |

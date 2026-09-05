@@ -75,9 +75,9 @@ export default function HomesPage() {
           <SortableCard
             key={home.id}
             id={home.id}
-            handle={<Icon name="grip" className="w-4 h-4" />}
+            handle={<Icon name="gripVertical" className="w-4 h-4" />}
             handleAriaLabel={t('home.reorder')}
-            className="relative bg-card rounded-ios shadow-ios p-4 hover:shadow-ios-lg transition-shadow"
+            className="relative bg-card rounded-ios shadow-ios p-4 pl-10 hover:shadow-ios-lg transition-shadow"
           >
             <CardMenu
               options={[
