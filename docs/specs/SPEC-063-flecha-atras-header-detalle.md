@@ -217,4 +217,5 @@ Sin cambios. No hay endpoints nuevos ni modificados.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-04 | paulomcnally | Creación inicial de la especificación |
-| 2026-09-04 | paulomcnally | Implementación: `BACK_ROUTES` + flecha atrás en header de `DashboardLayout` (reemplaza hamburguesa en móvil en detalle/formularios), eliminados links "← Título" del contenido en `DebtBillsPage`, `BillsPage` y `AutoShowPage`, clave i18n `app.back`, regla de UI en project-rules.md/AGENTS.md/spec-template.md. Criterios de aceptación en pass tras pruebas manuales del usuario. Released en main (frontend-only, sin backend ni DB). |
+| 2026-09-04 | paulomcnally | Implementación: `BACK_ROUTES` + flecha atrás en header de `DashboardLayout` (reemplaza hamburguesa en móvil en detalle/formularios), eliminados links "← Título" del contenido en `DebtBillsPage`, `BillsPage` y `AutoShowPage`, clave i18n `app.back`, regla de UI en project-rules.md/AGENTS.md/spec-template.md. Criterios de aceptación en pass tras pruebas manuales del usuario. |
+| 2026-09-04 | paulomcnally | Released en main via merge `2b3b45d` (rama `feature/SPEC-063`, frontend-only, sin backend ni DB). Issue #64 cerrado. |
