@@ -1,7 +1,7 @@
 ---
 title: "Selector de casas con modal de búsqueda en la página de Servicios"
 id: "SPEC-062"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-04"
 updated: "2026-09-04"
@@ -11,7 +11,7 @@ github_issue: 63
 # Selector de casas con modal de búsqueda en la página de Servicios
 
 **ID**: SPEC-062  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-04  
 **Actualizado**: 2026-09-04
@@ -32,7 +32,7 @@ Es un cambio **100% frontend** sin impacto en backend ni SQLite: solo se reempla
 
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
 
-1. **REQ-001**: Reemplazar el dropdown `Select` de filtro de casas en `ServicesPage.tsx` por una sección/botón clickeable que abra un modal de selección de casas.
+1. **REQ-001**: Reemplazar el dropdown `Select` de filtro de casas en `ServicesPage.tsx` por una sección/botón clickeable que abra un modal de selección de casas. El botón se ubica en el **header** de la página, alineado a la derecha junto al menú de crear (`CreateMenu`), para no dejar espacio vacío a la derecha en desktop (cambio iterativo solicitado por el usuario en evaluación).
 2. **REQ-002**: El botón muestra el texto "Casas" (`services.homes`) cuando no hay filtro aplicado, o el nombre de la casa seleccionada cuando hay una casa elegida.
 3. **REQ-003**: El modal incluye un campo de búsqueda donde se puede escribir el nombre de una casa; el listado de casas se filtra en tiempo real de forma case-insensitive.
 4. **REQ-004**: Al seleccionar una casa en el modal, se aplica el filtro a la lista de servicios, el modal se cierra y el botón muestra el nombre de la casa seleccionada.
@@ -107,7 +107,7 @@ Es un cambio **100% frontend** sin impacto en backend ni SQLite: solo se reempla
 - **Ubicación**: `frontend/src/components/HousePickerModal.tsx`
 
 #### 4.2.2 Modificaciones en `ServicesPage.tsx`
-- **Responsabilidad**: Reemplazar el bloque `Select` (líneas 78-89) por el botón + estado de modal.
+- **Responsabilidad**: Reemplazar el bloque `Select` (líneas 78-89) por el botón + estado de modal, ubicado en el **header** de la página (fila del título), agrupado a la derecha junto a `CreateMenu` en un contenedor `flex items-center gap-2`. El botón es compacto (`inline-flex`, sin `w-full` ni `max-w-xs`), con ícono de casa, texto y chevron; el nombre de la casa se trunca en pantallas pequeñas.
 - **Interfaz**: Nuevo estado `pickerOpen: boolean`. Al seleccionar: `setHomeFilter(id)` y cerrar modal; con "Todas las casas": `setHomeFilter(null)`.
 - **Dependencias**: `HousePickerModal`.
 - **Ubicación**: `frontend/src/pages/ServicesPage.tsx`
@@ -136,17 +136,17 @@ Sin cambios de API. El botón y el modal operan sobre `useAppStore().homes` y el
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado el listado de servicios sin filtro, el botón muestra "Casas"; al hacer click se abre el modal con el listado de casas y un campo de búsqueda enfocado.
-- [ ] CA-002: Dado el modal abierto, al escribir texto en la búsqueda se filtran las casas en tiempo real (case-insensitive, por nombre).
-- [ ] CA-003: Dado el modal abierto, al seleccionar una casa el modal se cierra, la lista de servicios se filtra y el botón muestra el nombre de la casa seleccionada.
-- [ ] CA-004: Dado un filtro de casa activo, al elegir "Todas las casas" en el modal el filtro se limpia, se muestran todos los servicios y el botón vuelve a mostrar "Casas".
-- [ ] CA-005: Dado el modal abierto, al presionar `Escape` o clickear fuera se cierra sin cambiar el filtro.
-- [ ] CA-DARK: El input de búsqueda usa tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó legibilidad en darkmode (texto y placeholder). No usar `bg-white`/`text-black` ni colores hardcodeados.
+- [x] CA-001: Dado el listado de servicios sin filtro, el botón (en el header, junto al menú de crear) muestra "Casas"; al hacer click se abre el modal con el listado de casas y un campo de búsqueda enfocado.
+- [x] CA-002: Dado el modal abierto, al escribir texto en la búsqueda se filtran las casas en tiempo real (case-insensitive, por nombre).
+- [x] CA-003: Dado el modal abierto, al seleccionar una casa el modal se cierra, la lista de servicios se filtra y el botón muestra el nombre de la casa seleccionada.
+- [x] CA-004: Dado un filtro de casa activo, al elegir "Todas las casas" en el modal el filtro se limpia, se muestran todos los servicios y el botón vuelve a mostrar "Casas".
+- [x] CA-005: Dado el modal abierto, al presionar `Escape` o clickear fuera se cierra sin cambiar el filtro.
+- [x] CA-DARK: El input de búsqueda usa tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó legibilidad en darkmode (texto y placeholder). No usar `bg-white`/`text-black` ni colores hardcodeados.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: No se agregan dependencias nuevas al proyecto y el bundle frontend no aumenta de forma significativa.
-- [ ] CA-NF-002: Sin cambios en backend, base de datos o endpoints.
+- [x] CA-NF-001: No se agregan dependencias nuevas al proyecto y el bundle frontend no aumenta de forma significativa.
+- [x] CA-NF-002: Sin cambios en backend, base de datos o endpoints.
 
 ### 5.3 Testing
 
@@ -192,3 +192,6 @@ Sin cambios de API. El botón y el modal operan sobre `useAppStore().homes` y el
 | 2026-09-04 | paulomcnally | Creación inicial de la especificación |
 | 2026-09-04 | paulomcnally | Cambio de estado a `pending_execution` |
 | 2026-09-04 | paulomcnally | Cambio de estado a `in_progress` e inicio del desarrollo |
+| 2026-09-04 | paulomcnally | Cambio iterativo durante evaluación: mover el selector de casas al header (derecha, junto a `CreateMenu`) como botón compacto, para evitar espacio vacío en desktop. Actualiza REQ-001, sección 4.2.2 y CA-001. |
+| 2026-09-04 | paulomcnally | Usuario confirma pruebas manuales satisfactorias. Criterios de aceptación en `pass`. Estado a `released`. |
+| 2026-09-04 | paulomcnally | Release: merge `feature/SPEC-062` a `main` (commit `844aeec`) y push a origin/main. Issue #63 cerrado con label `spec/released`. |
