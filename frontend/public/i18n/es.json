@@ -12,7 +12,8 @@
     "close": "Cerrar",
     "confirm": "¿Estás seguro?",
     "search": "Buscar",
-    "filter": "Filtrar"
+    "filter": "Filtrar",
+    "back": "Volver"
   },
   "menu": {
     "home": "Casa",
