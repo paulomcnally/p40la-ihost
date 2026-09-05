@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 63 |
+| **Total de specs** | 65 |
 | **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 1 🟣 |
+| **In progress** | 2 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 61 🟢 |
+| **Released** | 62 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-063 |
+| **Último ID usado** | SPEC-065 |
 
 ---
 
@@ -82,8 +82,10 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-059 | Scripts para tareas recurrentes del agente (test-user y check-server) para reducir tokens del prompt | released | 2026-09-04 | p40la-ihost-team |
 | SPEC-060 | Fix global de texto de inputs en darkmode en todos los formularios + regla para futuras specs | released | 2026-09-04 | paulomcnally |
 | SPEC-061 | Reordenar casas con drag & drop en la página de Casas | released | 2026-09-04 | paulomcnally |
-| SPEC-062 | Selector de casas con modal de búsqueda en la página de Servicios | in_progress | 2026-09-04 | paulomcnally |
-| SPEC-063 | Flecha atrás en el header para páginas de detalle en lugar del link '← Título' + regla de UI permanente | draft | 2026-09-04 | paulomcnally |
+| SPEC-062 | Selector de casas con modal de búsqueda en la página de Servicios | released | 2026-09-04 | paulomcnally |
+| SPEC-063 | Flecha atrás en el header para páginas de detalle en lugar del link '← Título' + regla de UI permanente | in_progress | 2026-09-04 | paulomcnally |
+| SPEC-064 | Progreso visual de cuotas en detalle de deuda | in_progress | 2026-09-04 | paulomcnally |
+| SPEC-065 | Títulos dinámicos en el header según la página cargada | draft | 2026-09-04 | paulomcnally |
 
 ---
 
@@ -153,4 +155,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-061 liberada (drag & drop para reordenar casas).*
+*Última actualización de este tracker: 2026-09-04 — SPEC-065 creada en draft (títulos dinámicos en el header según la página cargada).*
