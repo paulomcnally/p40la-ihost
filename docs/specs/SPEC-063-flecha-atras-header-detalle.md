@@ -1,7 +1,7 @@
 ---
 title: "Flecha atrás en el header para páginas de detalle en lugar del link '← Título' + regla de UI permanente"
 id: "SPEC-063"
-status: "draft"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-04"
 updated: "2026-09-04"
@@ -11,7 +11,7 @@ github_issue: 64
 # Flecha atrás en el header para páginas de detalle en lugar del link '← Título' + regla de UI permanente
 
 **ID**: SPEC-063  
-**Estado**: draft  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-04  
 **Actualizado**: 2026-09-04
@@ -153,21 +153,21 @@ Sin cambios. No hay endpoints nuevos ni modificados.
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: En `/deudas/:id` ya NO existe el link "← Deudas" dentro del contenido; el header (móvil) muestra una flecha atrás que navega a `/deudas`.
-- [ ] CA-002: En `/services/bills/:serviceId` ya NO existe el link "← Servicios" dentro del contenido; el header (móvil) muestra una flecha atrás que navega a `/services`.
-- [ ] CA-003: En `/autos/:id` ya NO existe el link "← Volver" dentro del contenido; el header (móvil) muestra una flecha atrás que navega a `/autos`.
-- [ ] CA-004: En páginas de listado raíz (ej: `/home`, `/services`, `/deudas`, `/autos`, `/settings`, `/institutions`) el header sigue mostrando la hamburguesa en móvil (no hay flecha atrás).
-- [ ] CA-005: El título de sección del header se mantiene correcto en las páginas de detalle (derivado de `activeBase`).
-- [ ] CA-006: En desktop (lg+) no hay regresión: el sidebar sigue fijo y no aparecen elementos nuevos en el header.
-- [ ] CA-007: (P1) El mapa `BACK_ROUTES` cubre las páginas de formulario/edición de REQ-006 y el header muestra la flecha en cada una.
-- [ ] CA-008: Existe la regla en `docs/project-rules.md` (Reglas de UI) que obliga a usar la flecha del header en páginas de detalle y prohíbe links "← Título" en el contenido.
-- [ ] CA-009: Existe la referencia a la regla en `AGENTS.md` y en el template de specs (criterios de aceptación para páginas de detalle).
-- [ ] CA-DARK: Si se tocan componentes visuales con texto/placeholders, se mantienen los tokens del tema (`bg-card`, `text-text`); verificar legibilidad en darkmode.
+- [x] CA-001: En `/deudas/:id` ya NO existe el link "← Deudas" dentro del contenido; el header (móvil) muestra una flecha atrás que navega a `/deudas`.
+- [x] CA-002: En `/services/bills/:serviceId` ya NO existe el link "← Servicios" dentro del contenido; el header (móvil) muestra una flecha atrás que navega a `/services`.
+- [x] CA-003: En `/autos/:id` ya NO existe el link "← Volver" dentro del contenido; el header (móvil) muestra una flecha atrás que navega a `/autos`.
+- [x] CA-004: En páginas de listado raíz (ej: `/home`, `/services`, `/deudas`, `/autos`, `/settings`, `/institutions`) el header sigue mostrando la hamburguesa en móvil (no hay flecha atrás).
+- [x] CA-005: El título de sección del header se mantiene correcto en las páginas de detalle (derivado de `activeBase`).
+- [x] CA-006: En desktop (lg+) no hay regresión: el sidebar sigue fijo y no aparecen elementos nuevos en el header.
+- [x] CA-007: (P1) El mapa `BACK_ROUTES` cubre las páginas de formulario/edición de REQ-006 y el header muestra la flecha en cada una.
+- [x] CA-008: Existe la regla en `docs/project-rules.md` (Reglas de UI) que obliga a usar la flecha del header en páginas de detalle y prohíbe links "← Título" en el contenido.
+- [x] CA-009: Existe la referencia a la regla en `AGENTS.md` y en el template de specs (criterios de aceptación para páginas de detalle).
+- [x] CA-DARK: Si se tocan componentes visuales con texto/placeholders, se mantienen los tokens del tema (`bg-card`, `text-text`); verificar legibilidad en darkmode.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: El bundle del frontend no crece de forma apreciable (< 1 KB) y no se agregan dependencias.
-- [ ] CA-NF-002: El build de Vite (`npm run build` en `frontend/`) pasa sin errores y el server local sirve el bundle actualizado.
+- [x] CA-NF-001: El bundle del frontend no crece de forma apreciable (< 1 KB) y no se agregan dependencias.
+- [x] CA-NF-002: El build de Vite (`npm run build` en `frontend/`) pasa sin errores y el server local sirve el bundle actualizado.
 
 ### 5.3 Testing
 
@@ -217,3 +217,5 @@ Sin cambios. No hay endpoints nuevos ni modificados.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-04 | paulomcnally | Creación inicial de la especificación |
+| 2026-09-04 | paulomcnally | Implementación: `BACK_ROUTES` + flecha atrás en header de `DashboardLayout` (reemplaza hamburguesa en móvil en detalle/formularios), eliminados links "← Título" del contenido en `DebtBillsPage`, `BillsPage` y `AutoShowPage`, clave i18n `app.back`, regla de UI en project-rules.md/AGENTS.md/spec-template.md. Criterios de aceptación en pass tras pruebas manuales del usuario. |
+| 2026-09-04 | paulomcnally | Released en main via merge `2b3b45d` (rama `feature/SPEC-063`, frontend-only, sin backend ni DB). Issue #64 cerrado. |

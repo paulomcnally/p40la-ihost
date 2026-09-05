@@ -31,6 +31,9 @@ Consideraciones de UI obligatorias para specs que toquen formularios:
 - Todo `input`/`select`/`textarea` DEBE usar los tokens de color del tema (`bg-card`, `text-text`, `text-text-secondary`). Jamás colores hardcodeados (ej: `bg-white`, `dark:bg-[#2c2c2e]`).
 - Todo formulario nuevo debe verificarse en darkmode antes de considerarse completo: texto y placeholders legibles.
 
+Consideraciones de UI obligatorias para specs que creen páginas de detalle o formularios con lista padre:
+- La acción "volver a la lista" va en el header (flecha atrás que reemplaza la hamburguesa en móvil) vía el mapa `BACK_ROUTES` de `frontend/src/components/DashboardLayout.tsx`. Nunca crear links "← Título" dentro del contenido. Ver SPEC-063.
+
 ## 2. Requerimientos
 
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
@@ -143,6 +146,7 @@ Entidad: [Nombre]
 - [ ] CA-001: Dado [contexto], cuando [acción], entonces [resultado esperado]
 - [ ] CA-002: Dado [contexto], cuando [acción], entonces [resultado esperado]
 - [ ] CA-DARK: Si la spec toca formularios/modales, los inputs usan tokens del tema (`bg-card`, `text-text`) y se verificó legibilidad en darkmode (texto y placeholders).
+- [ ] CA-BACK: Si la spec crea una página de detalle o formulario con lista padre, el retorno se hace con la flecha atrás del header (registrada en `BACK_ROUTES`) y NO existen links "← Título" dentro del contenido.
 
 ### 5.2 No funcionales
 
