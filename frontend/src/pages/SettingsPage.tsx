@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { Icon } from '../components/Icons'
 import Toggle from '../components/Toggle'
 import Select from '../components/Select'
@@ -47,6 +48,7 @@ export default function SettingsPage() {
   const navigate = useNavigate()
   const { currencies, loadCurrencies } = useAppStore()
   const { t } = useI18nStore()
+  usePageTitle(t('settings.title'))
   const { showToast } = useToast()
   const { thousandsSeparator, decimalSeparator, decimalDigits, updateFormat } = useCurrencyFormatStore()
   const loadCurrencyFormat = useCurrencyFormatStore(s => s.load)

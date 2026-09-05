@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
@@ -10,9 +12,12 @@ import type { Auto } from '../types'
 
 export default function AutosPage() {
   const navigate = useNavigate()
+  const { t } = useI18nStore()
   const [autos, setAutos] = useState<Auto[]>([])
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [loading, setLoading] = useState(true)
+
+  usePageTitle(t('autos.title'))
 
   const loadAutos = useCallback(async () => {
     const data = await api.autos.list()

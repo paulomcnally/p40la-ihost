@@ -7,11 +7,11 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | Métrica | Valor |
 |---------|-------|
 | **Total de specs** | 65 |
-| **En draft** | 1 🟡 |
+| **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 64 🟢 |
+| **Released** | 65 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-065 |
 
@@ -85,7 +85,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-062 | Selector de casas con modal de búsqueda en la página de Servicios | released | 2026-09-04 | paulomcnally |
 | SPEC-063 | Flecha atrás en el header para páginas de detalle en lugar del link '← Título' + regla de UI permanente | released | 2026-09-04 | paulomcnally |
 | SPEC-064 | Progreso visual de cuotas en detalle de deuda | released | 2026-09-04 | paulomcnally |
-| SPEC-065 | Títulos dinámicos en el header según la página cargada | draft | 2026-09-04 | paulomcnally |
+| SPEC-065 | Títulos dinámicos en el header según la página cargada | released | 2026-09-04 | paulomcnally |
 
 ---
 
@@ -155,4 +155,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-063 liberada (flecha atrás en header para páginas de detalle).*
+*Última actualización de este tracker: 2026-09-04 — SPEC-065 released (títulos dinámicos en el header según la página cargada).*

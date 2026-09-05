@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
@@ -36,6 +37,8 @@ export default function DebtBillsPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  usePageTitle(debt?.description ?? null)
 
   const progress = useMemo(() => {
     const paidBills = bills.filter((b) => b.status === 'paid')

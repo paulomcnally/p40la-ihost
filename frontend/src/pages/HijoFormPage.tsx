@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import { useToast } from '../components/Toast'
@@ -32,6 +33,8 @@ export default function HijoFormPage() {
       })
     }
   }, [id, isEdit])
+
+  usePageTitle(isEdit ? (firstName ? `${firstName} ${lastName}`.trim() : null) : t('hijos.create'))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

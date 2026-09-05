@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
+import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { Icon, iconNames } from '../components/Icons'
 import { useToast } from '../components/Toast'
 import type { Auto } from '../types'
@@ -11,6 +13,7 @@ export default function AutoFormPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const { showToast } = useToast()
+  const { t } = useI18nStore()
   const isEdit = !!id
   const [year, setYear] = useState(new Date().getFullYear())
   const [model, setModel] = useState('')
@@ -42,6 +45,8 @@ export default function AutoFormPage() {
       })
     }
   }, [id, isEdit])
+
+  usePageTitle(isEdit ? (brand ? `${brand} ${model}`.trim() : null) : t('autos.create'))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

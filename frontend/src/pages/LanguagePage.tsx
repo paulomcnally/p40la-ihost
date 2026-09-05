@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { useAppStore } from '../stores/appStore'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -7,6 +8,7 @@ import { Icon } from '../components/Icons'
 export default function LanguagePage() {
   const navigate = useNavigate()
   const { t, lang, load } = useI18nStore()
+  usePageTitle(t('settings.language.title'))
   const { loadAll } = useAppStore()
 
   const handleSelect = async (newLang: string) => {
