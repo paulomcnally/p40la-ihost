@@ -7,11 +7,11 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | Métrica | Valor |
 |---------|-------|
 | **Total de specs** | 63 |
-| **En draft** | 2 🟡 |
+| **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 1 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 60 🟢 |
+| **Released** | 61 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-063 |
 
@@ -81,7 +81,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-058 | Formato de moneda configurable con default Nicaragua (1,000.00) | released | 2026-09-04 | paulomcnally |
 | SPEC-059 | Scripts para tareas recurrentes del agente (test-user y check-server) para reducir tokens del prompt | released | 2026-09-04 | p40la-ihost-team |
 | SPEC-060 | Fix global de texto de inputs en darkmode en todos los formularios + regla para futuras specs | released | 2026-09-04 | paulomcnally |
-| SPEC-061 | Reordenar casas con drag & drop en la página de Casas | draft | 2026-09-04 | paulomcnally |
+| SPEC-061 | Reordenar casas con drag & drop en la página de Casas | released | 2026-09-04 | paulomcnally |
 | SPEC-062 | Selector de casas con modal de búsqueda en la página de Servicios | in_progress | 2026-09-04 | paulomcnally |
 | SPEC-063 | Flecha atrás en el header para páginas de detalle en lugar del link '← Título' + regla de UI permanente | draft | 2026-09-04 | paulomcnally |
 
@@ -153,4 +153,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-063 creada en draft (flecha atrás en header para páginas de detalle).*
+*Última actualización de este tracker: 2026-09-04 — SPEC-061 liberada (drag & drop para reordenar casas).*
