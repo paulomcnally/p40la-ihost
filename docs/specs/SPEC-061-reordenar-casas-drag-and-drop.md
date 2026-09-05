@@ -1,7 +1,7 @@
 ---
 title: "Reordenar casas con drag & drop en la página de Casas"
 id: "SPEC-061"
-status: "draft"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-04"
 updated: "2026-09-04"
@@ -11,7 +11,7 @@ github_issue: 62
 # Reordenar casas con drag & drop en la página de Casas
 
 **ID**: SPEC-061  
-**Estado**: draft  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-04  
 **Actualizado**: 2026-09-04
@@ -39,13 +39,13 @@ La interacción debe adaptarse al dispositivo: en **desktop** (grid de 2-3 colum
 5. **REQ-005**: Las casas existentes reciben un `sort_order` de backfill que preserva el orden alfabético actual (para no reordenar de forma abrupta en el upgrade).
 6. **REQ-006**: Al crear una casa nueva, se agrega al final del orden actual.
 7. **REQ-007**: Al arrastrar, se aplica una actualización visual optimista (el orden cambia al instante) y, si el guardado falla, se revierte y se muestra un toast de error.
-8. **REQ-008**: Se muestra una pista visual (drag handle o hint) indicando que las cards se pueden arrastrar.
+8. **REQ-008**: El drag se inicia **solo desde el handle** (franja vertical de alto completo al lado izquierdo de la card, con ícono de grip vertical centrado). El resto de la card NO es arrastrable: la franja es la única zona de agarre (pista visual siempre visible, con mayor énfasis en hover). Sin íconos flotantes en el centro ni pegados a otros controles.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
-1. **REQ-009**: El drag debe ser accesible también por teclado (tab + espacio/enter + flechas) usando el `KeyboardSensor` de dnd-kit.
+1. **REQ-009**: El drag debe ser accesible también por teclado (tab + espacio/enter + flechas) usando el `KeyboardSensor` de dnd-kit, con el handle de agarre como activador.
 2. **REQ-010**: Documentar el **flujo genérico de reordenamiento** (backend + frontend) en la spec para poder replicarlo en otras páginas (servicios, autos, instituciones, pensiones, etc.) en specs futuras.
-3. **REQ-011**: No romper el drag al hacer scroll de la página en mobile (long-press o activación por handle antes de arrastrar para no interferir con el scroll nativo).
+3. **REQ-011**: En mobile, el drag se activa con **long-press** (~250-300ms) en cualquier parte de la card, de modo que el scroll nativo de la página no se interfiere. Los elementos interactivos (botón de menú de la card) se excluyen del drag con `data-no-dnd`.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -71,6 +71,11 @@ La interacción debe adaptarse al dispositivo: en **desktop** (grid de 2-3 colum
 - Investigación sobre DnD (fuentes: clauderic/dnd-kit discussion #306, guías 2026 de dnd-kit, comparativas de librerías DnD React):
   - **HTML5 Drag and Drop API nativo**: solo mouse/pen; **no soporta touch** (Chrome, Firefox, Safari); sin keyboard; requiere código adicional y polyfills. Descartado por el requisito mobile.
   - **Pointer Events + dnd-kit**: un solo stream de eventos para mouse/touch/pen, sensor de teclado incluido, ~14 kB core / ~25 kB con sortable+modifiers (gzip). Estándar de facto para React sortable.
+- Investigación de patrones UX de reordenamiento en apps TODO-list (NN/g "Drag-and-Drop: How to Design for Ease of Use", saasui.design, Tim Graf, y apps como Todoist/Things/Notion/Trello):
+  - **Cards/objetos simples** → toda la card es arrastrable (no un handle en esquina); la señal es `cursor-grab` + elevación/sombra sutil en hover. Un grip fijo pegado a un botón (menú) genera "drag-versus-click confusion" (anti-patrón).
+  - **Mobile** → el drag se inicia con **long-press** (~250-500ms); el scroll nativo no se interfiere. No hay hover.
+  - **Handle como activador**: el grip sirve como activador de teclado y como pista visual (revelado en hover en desktop, siempre visible en mobile).
+  - Elementos interactivos dentro de un objeto arrastrable se excluyen del drag (patrón `data-no-dnd`, usado en implementaciones reales con dnd-kit).
 
 ### 3.2 Opciones evaluadas
 
@@ -94,9 +99,9 @@ La interacción debe adaptarse al dispositivo: en **desktop** (grid de 2-3 colum
 - **Decisión**: El cliente envía `{ "ids": [5, 2, 8, ...] }` (todos los IDs activos en el nuevo orden); el server asigna `sort_order = índice` dentro de una transacción y valida que los IDs pertenezcan a casas activas.
 - **Consecuencias**: Una sola petición por drag, idempotente, simple de validar. Es el patrón estándar para listas sortables.
 
-**ADR-003**: `@dnd-kit` para el frontend (drag con mouse, touch y teclado).
-- **Contexto**: El requisito exige drag en desktop (2D en grid) y mobile (vertical), además de accesibilidad por teclado.
-- **Decisión**: Usar `@dnd-kit/core`, `@dnd-kit/sortable` y `@dnd-kit/utilities`. El build de React se hace fuera del iHost; el incremento de bundle no afecta la memoria del servidor.
+**ADR-003**: `@dnd-kit` para el frontend (drag con mouse, touch y teclado), con toda la card arrastrable.
+- **Contexto**: El requisito exige drag en desktop (2D en grid) y mobile (vertical), además de accesibilidad por teclado. El patrón de UX investigado para cards (Todoist/Things/Notion/Trello) indica que el objeto completo debe ser arrastrable, con handle solo como activador de teclado/pista visual, y long-press en mobile.
+- **Decisión**: Usar `@dnd-kit/core`, `@dnd-kit/sortable` y `@dnd-kit/utilities` con `MouseSensor` (distancia 6) + `TouchSensor` (long-press delay ~250ms) + `KeyboardSensor`. Sensores custom que rechazan la activación cuando el evento nace en un elemento `[data-no-dnd]` (para no interferir con el botón de menú de la card). El build de React se hace fuera del iHost; el incremento de bundle no afecta la memoria del servidor.
 - **Consecuencias**: Interacción consistente en todas las entradas. El código de sortable queda aislado en componentes reutilizables (ver sección 4) para poder aplicarse a otras páginas.
 
 ## 4. Diseño Técnico
@@ -165,13 +170,15 @@ ALTER TABLE homes DROP COLUMN sort_order;
 - **`frontend/src/api/index.ts`**: `reorder: (ids: number[]) => put('/api/homes/reorder', { ids })`.
 
 #### 4.2.5 Frontend — componentes reutilizables de sortable (flujo genérico)
-- **`frontend/src/components/sortable/SortableGrid.tsx`**: wrapper genérico que recibe `items: {id, ...}[]`, `onReorder(orderedIds)`, `children` (render de cada card) y usa `DndContext` + `SortableContext` con `rectSortingStrategy` (grid) o `verticalListSortingStrategy` (lista). Expone un prop `strategy` para soportar grid (desktop) y lista (mobile) sin código duplicado.
-- **`frontend/src/components/sortable/SortableCard.tsx`**: wrapper de `useSortable` que aplica `transform`/`transition` (vía `CSS.Transform.toString`), activa el drag por handle y muestra estilo `opacity/drop-shadow` al arrastrar.
-- **`frontend/src/hooks/useSortableOrder.ts`** (opcional, P1): hook que recibe `items` y `apiReorderFn`; maneja el estado local del orden (optimistic update con `arrayMove`), llama a la API en `onDragEnd`, y revierte con toast de error si falla.
+- **`frontend/src/components/sortable/SortableGrid.tsx`**: wrapper genérico que recibe `items: {id, ...}[]`, `onReorder(orderedIds)`, `children` (render de cada card) y usa `DndContext` + `SortableContext` con `rectSortingStrategy` (grid) o `verticalListSortingStrategy` (lista). Expone un prop `layout` para soportar grid (desktop) y lista (mobile) sin código duplicado. Configura los sensores: `MouseSensor` (distance 6), `TouchSensor` (delay 250/tolerance 8, long-press) y `KeyboardSensor` (`sortableKeyboardCoordinates`).
+- **`frontend/src/components/sortable/dndSensors.ts`**: subclases `NoDndMouseSensor`/`NoDndTouchSensor` de dnd-kit que **rechazan la activación** cuando el evento nace en un elemento `[data-no-dnd]`. Permite tener toda la card arrastrable sin romper el tap/click de los botones internos (menú de la card).
+- **`frontend/src/components/sortable/SortableCard.tsx`**: wrapper de `useSortable` que aplica `transform`/`transition` (vía `CSS.Transform.toString`), hace **toda la card arrastrable** (listeners en el nodo) con `cursor-grab` + elevación al arrastrar. El handle de agarre (grip) se usa como activador de teclado y como pista visual: sutil en hover (desktop) y siempre visible en mobile. Clase `group` para el efecto hover.
+- **`frontend/src/hooks/useSortableOrder.ts`**: hook que recibe `items` y `apiReorderFn`; maneja el estado local del orden (optimistic update con `arrayMove`), llama a la API en `onDragEnd`, y revierte con toast de error si falla.
 
 #### 4.2.6 Frontend — HomesPage
 - Envolver el grid actual (`HomesPage.tsx:56`) en `SortableGrid` con `rectSortingStrategy` y las cards en `SortableCard`.
-- Añadir un drag handle (ícono `drag`/`grip`) dentro de cada card, visible en hover en desktop y siempre en mobile (ver REQ-008/REQ-011).
+- **Solo el handle inicia el drag** (franja vertical izquierda de alto completo con ícono `gripVertical`); el resto de la card no es arrastrable. El handle se ilumina en hover y muestra `cursor-grab`. La card conserva su padding izquierdo (`pl-10`) para que la franja no se solape con el contenido.
+- El botón de menú (`CardMenu`) conserva `data-no-dnd` (y `onKeyDown` con `stopPropagation`) como defensa para que su tap/click/teclado nunca inicien un drag.
 - En `onDragEnd`: `arrayMove(homes, oldIndex, newIndex)` optimista + `api.homes.reorder(nuevosIds)`; rollback con toast de error en caso de fallo.
 - Empty state y menú de creación (`CreateMenu`) permanecen sin cambios.
 
@@ -218,21 +225,21 @@ Entidad: homes (tabla existente)
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: En desktop (≥2 columnas), arrastrar una card hacia los costados o arriba/abajo la recoloca en la posición prevista y el orden se mantiene tras recargar la página.
-- [ ] CA-002: En mobile (1 columna), arrastrar hacia arriba/abajo recoloca la card y el orden persiste tras recargar.
-- [ ] CA-003: El endpoint `PUT /api/homes/reorder` persiste `sort_order` correctamente (verificado contra SQLite con `PRAGMA`/query) y solo afecta casas activas.
-- [ ] CA-004: Tras aplicar la migración, las casas existentes conservan su orden alfabético previo (backfill correcto).
-- [ ] CA-005: Una casa nueva se agrega al final del orden.
-- [ ] CA-006: Si el guardado del orden falla, la UI revierte al orden anterior y muestra un toast de error.
-- [ ] CA-007: Hay una pista visual (handle/hint) de que las cards son arrastrables, visible en hover (desktop) y siempre (mobile).
-- [ ] CA-008: El scroll de la página en mobile no se interfiere al arrastrar una card (activación por handle o long-press).
-- [ ] CA-009: El reordenamiento funciona por teclado (tab al handle, espacio/enter para levantar, flechas para mover, escape para cancelar).
+- [x] CA-001: En desktop (≥2 columnas), arrastrar una card hacia los costados o arriba/abajo la recoloca en la posición prevista y el orden se mantiene tras recargar la página.
+- [x] CA-002: En mobile (1 columna), arrastrar hacia arriba/abajo recoloca la card y el orden persiste tras recargar.
+- [x] CA-003: El endpoint `PUT /api/homes/reorder` persiste `sort_order` correctamente (verificado contra SQLite con `PRAGMA`/query) y solo afecta casas activas.
+- [x] CA-004: Tras aplicar la migración, las casas existentes conservan su orden alfabético previo (backfill correcto).
+- [x] CA-005: Una casa nueva se agrega al final del orden.
+- [x] CA-006: Si el guardado del orden falla, la UI revierte al orden anterior y muestra un toast de error.
+- [x] CA-007: Pista visual de arrastre en el handle (franja vertical izquierda de alto completo): visible siempre, con énfasis en hover. Sin íconos flotantes en el centro ni pegados a otros controles.
+- [x] CA-008: El drag se inicia SOLO desde la franja del handle; el resto de la card no es arrastrable. El scroll mobile no se interfiere (long-press en la franja; los controles con `data-no-dnd` siguen respondiendo a su tap).
+- [x] CA-009: El reordenamiento funciona por teclado (tab al handle, espacio/enter para levantar, flechas para mover, escape para cancelar).
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: Reordenar N casas requiere 1 petición HTTP y 1 transacción SQLite.
-- [ ] CA-NF-002: Sin nuevas dependencias en el runtime Go del iHost; el bundle del frontend crece ≤ ~30 kB gzip.
-- [ ] CA-NF-003: El estado de la card arrastrada (sombra/opacidad) y el handle son legibles en darkmode.
+- [x] CA-NF-001: Reordenar N casas requiere 1 petición HTTP y 1 transacción SQLite.
+- [x] CA-NF-002: Sin nuevas dependencias en el runtime Go del iHost; el bundle del frontend crece ≤ ~30 kB gzip.
+- [x] CA-NF-003: El estado de la card arrastrada (sombra/opacidad) y el handle son legibles en darkmode.
 
 ### 5.3 Testing
 
@@ -303,3 +310,8 @@ Entidad: homes (tabla existente)
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-04 | paulomcnally | Creación inicial de la especificación. Alcance: solo Casas; flujo genérico documentado en sección 9 para replicarlo en otras páginas a futuro. |
+| 2026-09-04 | paulomcnally | Estado a `in_progress`. Inicio del desarrollo en rama `feature/SPEC-061` (worktree aislado). |
+| 2026-09-04 | paulomcnally | Cambio de UX solicitado en evaluación manual: se reemplaza el handle fijo en la esquina (junto al menú) por **toda la card arrastrable** + handle revelado en hover (desktop) / siempre visible (mobile) + **long-press** en mobile, excluyendo controles interactivos con `data-no-dnd`. Basado en investigación de patrones de apps TODO-list (Todoist/Things/Notion/Trello, NN/g). |
+| 2026-09-04 | paulomcnally | Ajuste de handle en evaluación manual: el handle pasa de estar centrado arriba a ser una **franja vertical de alto completo al lado izquierdo** de la card, con el ícono de grip vertical centrado y padding izquierdo en el contenido de la card para dejarlo visible. |
+| 2026-09-04 | paulomcnally | Ajuste en evaluación manual: el drag pasa a iniciarse **solo desde la franja del handle**; el resto de la card ya no es arrastrable (se eliminan los listeners de arrastre del nodo de la card y el `cursor-grab`/elevación en hover del cuerpo). |
+| 2026-09-04 | paulomcnally | **Release**: pruebas manuales satisfactorias (usuario), criterios de aceptación en pass. Merge `feature/SPEC-061` → `main` y estado a `released`. |

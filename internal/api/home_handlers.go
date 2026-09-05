@@ -13,6 +13,10 @@ type homeRequest struct {
 	Address string `json:"address"`
 }
 
+type homeReorderRequest struct {
+	IDs []int64 `json:"ids"`
+}
+
 // HomeHandlers agrupa los handlers de hogares.
 type HomeHandlers struct {
 	service *services.HomeService
@@ -103,6 +107,20 @@ func (h *HomeHandlers) DeleteHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Hogar eliminado"})
+}
+
+// ReorderHomes persiste el orden de los hogares según el array de IDs recibido.
+func (h *HomeHandlers) ReorderHomes(w http.ResponseWriter, r *http.Request) {
+	var req homeReorderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
+		return
+	}
+	if err := h.service.Reorder(r.Context(), req.IDs); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]string{"message": "Orden actualizado"})
 }
 
 // HomeCountResponse expone la cantidad de hogares.

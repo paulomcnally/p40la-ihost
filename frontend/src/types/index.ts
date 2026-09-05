@@ -2,6 +2,7 @@ export interface Home {
   id: number
   name: string
   address: string
+  sort_order: number
 }
 
 export interface Currency {
