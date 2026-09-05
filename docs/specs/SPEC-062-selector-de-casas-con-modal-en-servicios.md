@@ -194,3 +194,4 @@ Sin cambios de API. El botón y el modal operan sobre `useAppStore().homes` y el
 | 2026-09-04 | paulomcnally | Cambio de estado a `in_progress` e inicio del desarrollo |
 | 2026-09-04 | paulomcnally | Cambio iterativo durante evaluación: mover el selector de casas al header (derecha, junto a `CreateMenu`) como botón compacto, para evitar espacio vacío en desktop. Actualiza REQ-001, sección 4.2.2 y CA-001. |
 | 2026-09-04 | paulomcnally | Usuario confirma pruebas manuales satisfactorias. Criterios de aceptación en `pass`. Estado a `released`. |
+| 2026-09-04 | paulomcnally | Release: merge `feature/SPEC-062` a `main` (commit `844aeec`) y push a origin/main. Issue #63 cerrado con label `spec/released`. |

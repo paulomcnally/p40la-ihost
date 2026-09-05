@@ -7,8 +7,8 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
+import Select from '../components/Select'
 import DeleteModal from '../components/DeleteModal'
-import HousePickerModal from '../components/HousePickerModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type { Service } from '../types'
 
@@ -20,7 +20,6 @@ export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([])
   const [homeFilter, setHomeFilter] = useState<number | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
-  const [pickerOpen, setPickerOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -72,22 +71,21 @@ export default function ServicesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
         <h2 className="text-xl sm:text-2xl font-bold">{t('services.title')}</h2>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-ios-sm bg-card hover:border-primary/50 focus:outline-none focus:border-primary transition-colors text-sm"
-          >
-            <Icon name="home" className="w-4 h-4 text-text-secondary shrink-0" />
-            <span className={homeFilter ? 'max-w-32 truncate' : 'text-text-secondary'}>
-              {homeFilter ? homes.find(h => h.id === homeFilter)?.name : t('services.homes')}
-            </span>
-            <Icon name="chevron" className="w-4 h-4 text-text-secondary shrink-0" />
-          </button>
-          <CreateMenu options={createOptions} />
-        </div>
+        <CreateMenu options={createOptions} />
+      </div>
+      <div className="mb-4 sm:mb-5 max-w-xs">
+        <Select
+          options={[
+            { value: '', label: t('services.all_homes') },
+            ...homes.map(h => ({ value: String(h.id), label: h.name })),
+          ]}
+          value={homeFilter ?? ''}
+          onChange={(v) => setHomeFilter(v ? Number(v) : null)}
+          placeholder={t('services.all_homes')}
+          searchable
+        />
       </div>
       {services.length === 0 ? (
         <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
@@ -179,13 +177,6 @@ export default function ServicesPage() {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
-      <HousePickerModal
-        isOpen={pickerOpen}
-        homes={homes}
-        selectedHomeId={homeFilter}
-        onSelect={setHomeFilter}
-        onClose={() => setPickerOpen(false)}
-      />
     </div>
   )
 }

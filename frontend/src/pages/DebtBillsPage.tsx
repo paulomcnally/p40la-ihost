@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
@@ -8,6 +8,7 @@ import { Icon } from '../components/Icons'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtPayModal from '../components/DebtPayModal'
+import DonutChart from '../components/DonutChart'
 import type { Debt, DebtBill } from '../types'
 
 export default function DebtBillsPage() {
@@ -37,11 +38,43 @@ export default function DebtBillsPage() {
     load()
   }, [load])
 
+  const progress = useMemo(() => {
+    const paidBills = bills.filter((b) => b.status === 'paid')
+    const pendingBills = bills.filter((b) => b.status === 'pending')
+    const totalCount = debt?.installments_total ?? 0
+    const paidCount = paidBills.length
+    const pct = totalCount > 0 ? Math.round((paidCount / totalCount) * 100) : 0
+    const paidAmount = paidBills.reduce((s, b) => s + b.amount, 0)
+    const pendingAmount = pendingBills.reduce((s, b) => s + b.amount, 0)
+    return {
+      paidCount,
+      pendingCount: pendingBills.length,
+      totalCount,
+      pct,
+      paidAmount,
+      pendingAmount,
+      donutSegments: [
+        { label: t('deudas.progress_paid'), value: paidAmount, color: '#30d158' },
+        { label: t('deudas.progress_pending'), value: pendingAmount, color: '#ff9f0a' },
+      ],
+    }
+  }, [bills, debt, t])
+
   if (loading) return <LoadingSpinner />
 
   if (!debt) return <div className="text-center py-8 text-text-secondary">Loading...</div>
 
   const currency = currencies.find((c) => c.id === debt.currency_id)
+  const symbol = currency?.symbol || debt.currency_code
+  const installmentLabel = (debt.installments_total === 1 ? t('deudas.installment') : t('deudas.installments')).toLowerCase()
+
+  const pctColorClass =
+    progress.pct === 100
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : progress.pct === 0
+      ? 'text-text-secondary'
+      : 'text-amber-600 dark:text-amber-400'
+
   const billMenuOptions = (bill: DebtBill): CardMenuOption[] => {
     const options: CardMenuOption[] = []
     if (bill.status === 'pending') {
@@ -71,12 +104,51 @@ export default function DebtBillsPage() {
         </div>
       </div>
 
+      <div className="bg-card rounded-ios shadow-ios p-4 sm:p-5 mb-4">
+        <div className="flex items-center gap-4">
+          <DonutChart
+            segments={progress.donutSegments}
+            size={104}
+            thickness={13}
+            centerValue={`${progress.pct}%`}
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-text-secondary mb-1">
+              {t('deudas.progress_label')}
+            </p>
+            <p className={`text-2xl sm:text-3xl font-bold ${pctColorClass}`}>
+              {progress.paidCount} {t('deudas.of')} {progress.totalCount} {installmentLabel}
+            </p>
+            <div className="h-2 rounded-full bg-border overflow-hidden mt-2">
+              <div
+                className="h-full rounded-full bg-success transition-all"
+                style={{ width: `${progress.pct}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 mt-2 text-xs text-text-secondary">
+              <span className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-success shrink-0" />
+                <span className="truncate">
+                  {t('deudas.progress_paid')}: {formatMoney(progress.paidAmount, symbol)} ({progress.paidCount})
+                </span>
+              </span>
+              <span className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-warning shrink-0" />
+                <span className="truncate">
+                  {t('deudas.progress_pending')}: {formatMoney(progress.pendingAmount, symbol)} ({progress.pendingCount})
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="mb-4 flex items-center gap-2 flex-wrap text-sm text-text-secondary">
         <span className="bg-card rounded-ios-sm px-3 py-1 shadow-ios">
           {t('deudas.total')}: {formatMoney(debt.total, currency?.symbol || debt.currency_code)}
         </span>
         <span className="bg-card rounded-ios-sm px-3 py-1 shadow-ios">
-          {debt.installments_total} {t('deudas.installment').toLowerCase()}(s)
+          {progress.paidCount} {t('deudas.of')} {debt.installments_total} {installmentLabel}
         </span>
         <span className="bg-card rounded-ios-sm px-3 py-1 shadow-ios">
           {t('deudas.payment_day')}: {debt.payment_day}
