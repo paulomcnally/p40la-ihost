@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -16,6 +17,7 @@ export default function SalariesPage() {
   const { currencies, loadCurrencies } = useAppStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { t } = useI18nStore()
+  usePageTitle(t('salaries.title'))
   const [salaries, setSalaries] = useState<Salary[]>([])
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [loading, setLoading] = useState(true)

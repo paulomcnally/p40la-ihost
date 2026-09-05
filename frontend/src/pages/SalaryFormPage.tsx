@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -49,6 +50,8 @@ export default function SalaryFormPage() {
       setCurrencyId(currencies[0].id)
     }
   }, [currencies, isEdit])
+
+  usePageTitle(isEdit ? (employer || null) : t('salaries.create'))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

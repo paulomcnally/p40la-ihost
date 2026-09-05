@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import type { Home } from '../types'
@@ -15,6 +16,8 @@ export default function HomeFormPage() {
   const [name, setName] = useState('')
   const [address, setAddress] = useState('')
   const [loading, setLoading] = useState(false)
+
+  usePageTitle(isEdit ? (name || null) : t('home.create'))
 
   useEffect(() => {
     if (isEdit) {

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -172,6 +173,7 @@ export default function RegistrosPage() {
 
   const isClosed = closing.closed
   const periodLabel = `${t(`months.${month}`)} ${year}`
+  usePageTitle(periodLabel)
 
   const loadData = useCallback(async () => {
     setLoading(true)
