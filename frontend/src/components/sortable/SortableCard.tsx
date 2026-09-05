@@ -10,11 +10,9 @@ interface SortableCardProps {
   className?: string
 }
 
-// Card reordenable dentro de un SortableGrid. Toda la card es arrastrable
-// (listeners en el nodo). El handle (si se provee) actúa como activador de
-// teclado y como pista visual: sutil en hover (desktop), siempre visible en
-// mobile. `touch-none` en el handle evita interferir con el scroll en touch;
-// el resto de la card mantiene el scroll nativo (drag por long-press).
+// Card reordenable dentro de un SortableGrid. El drag se inicia SOLO desde el
+// handle (activador): el resto de la card no es arrastrable. `touch-none` en el
+// handle evita interferir con el scroll en touch (drag por long-press en mobile).
 export function SortableCard({ id, children, handle, handleAriaLabel, className = '' }: SortableCardProps) {
   const {
     attributes,
@@ -33,20 +31,14 @@ export function SortableCard({ id, children, handle, handleAriaLabel, className 
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`group ${className} cursor-grab active:cursor-grabbing ${isDragging ? 'shadow-ios-lg' : ''}`}
-    >
+    <div ref={setNodeRef} style={style} className={`${className} ${isDragging ? 'shadow-ios-lg' : ''}`}>
       {handle ? (
         <span
           ref={setActivatorNodeRef}
           {...attributes}
           {...listeners}
           aria-label={handleAriaLabel}
-          className="absolute inset-y-0 left-0 z-30 flex w-8 cursor-grab active:cursor-grabbing touch-none items-center justify-center rounded-l-ios text-text-secondary opacity-60 group-hover:opacity-100 group-hover:text-text group-hover:bg-bg/40 transition-opacity"
+          className="absolute inset-y-0 left-0 z-30 flex w-8 cursor-grab active:cursor-grabbing touch-none items-center justify-center rounded-l-ios text-text-secondary opacity-60 hover:opacity-100 hover:text-text hover:bg-bg/40 transition-opacity"
         >
           {handle}
         </span>

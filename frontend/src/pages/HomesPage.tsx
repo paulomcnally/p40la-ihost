@@ -77,7 +77,7 @@ export default function HomesPage() {
             id={home.id}
             handle={<Icon name="gripVertical" className="w-4 h-4" />}
             handleAriaLabel={t('home.reorder')}
-            className="relative bg-card rounded-ios shadow-ios p-4 pl-10 hover:shadow-ios-lg transition-shadow"
+            className="relative bg-card rounded-ios shadow-ios p-4 pl-10"
           >
             <CardMenu
               options={[
