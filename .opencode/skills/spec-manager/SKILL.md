@@ -92,20 +92,22 @@ gh issue comment <número> --body "<comentario>"
 
 ### 1. Crear una nueva spec
 
-Cuando el usuario pide crear una spec:
+Cuando el usuario pide crear una spec (SPEC-066):
 
+0. **Verificar el worktree** (obligatorio): ejecutar `./scripts/check-worktree.sh`. Si no se está en un worktree de spec, crearlo primero con `/spec worktree` (el checkout principal es de SOLO LECTURA para agentes). Toda la spec (archivo + README + código) se crea DENTRO del worktree.
 1. **Investigar** el requerimiento usando websearch/webfetch si es necesario
 2. **Generar ID**: Buscar el último número en `docs/specs/README.md` y asignar `SPEC-XXX` (3 dígitos, zero-padded)
 3. **Crear archivo**: `docs/specs/SPEC-XXX-<titulo-breve>.md` con campo `github_issue: null`
 4. **Documentar completamente** usando el template como guía
-5. **Actualizar tracker**: Agregar al `docs/specs/README.md` con estado inicial `draft`
-6. **Crear issue de GitHub**:
+5. **Crear issue de GitHub**:
    ```bash
    OUTPUT=$(gh issue create --title "SPEC-XXX: Título" --label "spec/draft" --body "<cuerpo resumido>" 2>&1)
    ISSUE_NUM=$(echo "$OUTPUT" | grep -oP '\d+$')
    ```
-7. **Actualizar frontmatter**: Cambiar `github_issue: null` a `github_issue: <número>`
-8. **Confirmar**: Informar al usuario el ID asignado y URL del issue
+6. **Actualizar frontmatter**: Cambiar `github_issue: null` a `github_issue: <número>`
+7. **Confirmar**: Informar al usuario el ID asignado y URL del issue
+
+> **Nota (SPEC-066)**: el README tracker (`docs/specs/README.md`) NO se actualiza al crear la spec ni al cambiar de estado intermedio. Se actualiza **solo en el release** (merge a `main`). El estado vivo de las specs abiertas se consulta en GitHub (labels) o con `/spec list`.
 
 ### 2. Contador de specs
 
@@ -128,8 +130,9 @@ Cuando el usuario menciona que una spec cambió de estado:
    - Si falla GitHub: continuar con warning `"⚠️ No se pudo actualizar el issue de GitHub"`
 4. **Actualizar archivo local**: Cambiar `status:` en el frontmatter
 5. **Actualizar historial**: Agregar entrada con fecha y descripción del cambio
-6. **Actualizar README.md**: Cambiar el estado en la tabla de tracking
-7. **Confirmar**: Informar al usuario
+6. **Confirmar**: Informar al usuario
+
+> **Nota (SPEC-066)**: NO actualizar el README tracker en estados intermedios. El README (`docs/specs/README.md`) se actualiza solo en el release.
 
 ### 4. Reglas de documentación
 
@@ -205,14 +208,15 @@ Tomar una spec en `pending_execution` y empezar desarrollo.
 ### `/spec worktree <ID>`
 Crear un worktree aislado para desarrollar una spec en su propia rama, sin pisar el trabajo de otras sesiones.
 
-**Regla crítica**: cada ventana/sesión trabaja en su PROPIO worktree. Compartir un checkout git hace que operaciones como `checkout`/`reset` destruyan el trabajo sin commitear de otras sesiones.
+**Regla crítica (SPEC-066)**: cada ventana/sesión trabaja en su PROPIO worktree. Compartir un checkout git hace que operaciones como `checkout`/`reset` destruyan el trabajo sin commitear de otras sesiones. El checkout principal (`main`) es de SOLO LECTURA para agentes: no se edita código ni se ejecutan git ops allí.
 
-1. Validar que la spec exista en `docs/specs/`
-2. Ejecutar: `./scripts/new-worktree.sh <SPEC-ID>`
-3. Informar al usuario el directorio aislado creado (ej: `../p40la-ihost-spec-034`) y pedir que abra una NUEVA ventana de opencode allí
-4. **NUNCA** ejecutar `git checkout`/`switch`/`reset`/`stash`/`clean` sobre el worktree principal compartido ni sobre worktrees de otras sesiones
-5. Toda operación git de la spec se hace DENTRO del worktree propio
-6. **Limpieza al liberar**: cuando la spec pasa a `released`, el worktree y su rama se eliminan (ver sección "Release"). Limpieza manual de referencia:
+1. Ejecutar `./scripts/check-worktree.sh` para verificar dónde está corriendo la sesión; si no está en un worktree, continuar aquí
+2. Validar que la spec exista en `docs/specs/`
+3. Ejecutar: `./scripts/new-worktree.sh <SPEC-ID>` (valida que `main` esté limpio antes de crear)
+4. Informar al usuario el directorio aislado creado (ej: `../p40la-ihost-spec-034`) y pedir que abra una NUEVA ventana de opencode allí
+5. **NUNCA** ejecutar `git checkout`/`switch`/`reset`/`stash`/`clean` sobre el worktree principal compartido ni sobre worktrees de otras sesiones
+6. Toda operación git de la spec (incluida la creación del archivo de spec) se hace DENTRO del worktree propio
+7. **Limpieza al liberar**: cuando la spec pasa a `released`, el worktree y su rama se eliminan (ver sección "Release"). Limpieza manual de referencia:
    ```bash
    git worktree remove ../p40la-ihost-spec-XXX
    git branch -d feature/SPEC-XXX
