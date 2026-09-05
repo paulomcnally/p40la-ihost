@@ -1,17 +1,17 @@
 ---
 title: "Fix deprecación Node.js 20 en GitHub Actions del build Docker"
 id: "SPEC-052"
-status: "in_progress"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-09-03"
-updated: "2026-09-03"
+updated: "2026-09-04"
 github_issue: 52
 ---
 
 # Fix deprecación Node.js 20 en GitHub Actions del build Docker
 
 **ID**: SPEC-052  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: p40la-ihost-team  
 **Creado**: 2026-09-03  
 **Actualizado**: 2026-09-03
@@ -123,17 +123,17 @@ Sin cambios. No aplica.
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: `actions/checkout` queda en `@v5` en el workflow.
-- [ ] CA-002: `docker/setup-qemu-action` queda en `@v4`.
-- [ ] CA-003: `docker/setup-buildx-action` queda en `@v4` en los jobs `build` y `merge`.
-- [ ] CA-004: `docker/login-action` queda en `@v4` en los jobs `build` y `merge`.
-- [ ] CA-005: `docker/build-push-action` queda en `@v7`.
-- [ ] CA-006: No se alteró ningún input (`with:`) ni paso `run:` del workflow.
+- [x] CA-001: `actions/checkout` queda en `@v5` en el workflow.
+- [x] CA-002: `docker/setup-qemu-action` queda en `@v4`.
+- [x] CA-003: `docker/setup-buildx-action` queda en `@v4` en los jobs `build` y `merge`.
+- [x] CA-004: `docker/login-action` queda en `@v4` en los jobs `build` y `merge`.
+- [x] CA-005: `docker/build-push-action` queda en `@v7`.
+- [x] CA-006: No se alteró ningún input (`with:`) ni paso `run:` del workflow.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: Al ejecutar el workflow (tag `v*`), el warning "Node.js 20 is deprecated" desaparece de los logs del job `build` (`linux/amd64`).
-- [ ] CA-NF-002: Las 3 plataformas (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) se construyen y el manifest multi-arch se crea correctamente.
+- [x] CA-NF-001: Al ejecutar el workflow (tag `v*`), el warning "Node.js 20 is deprecated" desaparece de los logs del job `build` (`linux/amd64`).
+- [x] CA-NF-002: Las 3 plataformas (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) se construyen y el manifest multi-arch se crea correctamente.
 
 ### 5.3 Testing
 
@@ -183,3 +183,4 @@ Sin cambios. No aplica.
 | 2026-09-03 | p40la-ihost-team | Creación inicial de la especificación. |
 | 2026-09-03 | p40la-ihost-team | Cambio de estado a `in_progress` para inicio de desarrollo. |
 | 2026-09-03 | p40la-ihost-team | Implementación completada y mergeada a `main` (merge `c3ae98b`). Release diferido al próximo bump de versión por pedido del usuario (workflow se dispara solo con tags `v*`). Se mantiene `in_progress`. |
+| 2026-09-04 | p40la-ihost-team | Liberada como `released` por decisión del usuario. Código ya en `main` (merge `c3ae98b`); sin cambios de código adicionales. |

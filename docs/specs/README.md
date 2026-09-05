@@ -9,9 +9,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 60 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 1 🔵 |
-| **In progress** | 2 🟣 |
+| **In progress** | 1 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 57 🟢 |
+| **Released** | 58 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-060 |
 
@@ -72,7 +72,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-049 | Backend de Registros Mensuales de Pensión Alimenticia (support_records, salary_payments, month_closings) | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-050 | Página de Registros Mensuales de Pensión Alimenticia (frontend, replicar child-support/records de P4OLA) | released | 2026-09-02 | p40la-ihost-team |
 | SPEC-051 | Emails y Generación Mensual de Registros de Pensión Alimenticia | released | 2026-09-02 | p40la-ihost-team |
-| SPEC-052 | Fix deprecación Node.js 20 en GitHub Actions del build Docker | in_progress | 2026-09-03 | p40la-ihost-team |
+| SPEC-052 | Fix deprecación Node.js 20 en GitHub Actions del build Docker | released | 2026-09-03 | p40la-ihost-team |
 | SPEC-053 | Modo oscuro configurable con default activo | released | 2026-09-03 | p40la-ihost-team |
 | SPEC-054 | Módulo Deudas: CRUD con generación automática de cuotas y vista Calendario | released | 2026-09-04 | p40la-ihost-team |
 | SPEC-055 | Análisis de Deudas por Mes con Gráficos en la página de Deudas | released | 2026-09-04 | p40la-ihost-team |
@@ -150,4 +150,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-060 released, SPEC-059 (pending_execution) por otra sesión.*
+*Última actualización de este tracker: 2026-09-04 — SPEC-052 released, SPEC-060 released, SPEC-059 en desarrollo.*
