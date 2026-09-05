@@ -9,9 +9,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 65 |
 | **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 2 🟣 |
+| **In progress** | 1 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 62 🟢 |
+| **Released** | 63 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-065 |
 
@@ -84,7 +84,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-061 | Reordenar casas con drag & drop en la página de Casas | released | 2026-09-04 | paulomcnally |
 | SPEC-062 | Selector de casas con modal de búsqueda en la página de Servicios | released | 2026-09-04 | paulomcnally |
 | SPEC-063 | Flecha atrás en el header para páginas de detalle en lugar del link '← Título' + regla de UI permanente | in_progress | 2026-09-04 | paulomcnally |
-| SPEC-064 | Progreso visual de cuotas en detalle de deuda | in_progress | 2026-09-04 | paulomcnally |
+| SPEC-064 | Progreso visual de cuotas en detalle de deuda | released | 2026-09-04 | paulomcnally |
 | SPEC-065 | Títulos dinámicos en el header según la página cargada | draft | 2026-09-04 | paulomcnally |
 
 ---
