@@ -66,6 +66,17 @@ if git branch --list "${BRANCH_NAME}" | grep -q "${BRANCH_NAME}"; then
 fi
 
 # -----------------------------------------------------------------------------
+# Validar que el checkout principal (main) esté limpio
+# -----------------------------------------------------------------------------
+# Evita la colisión multi-sesión: si `main` tiene cambios sin commitear (de esta
+# u otra sesión), no se crea el worktree. Ver SPEC-066 y AGENTS.md.
+
+MAIN_WT="$(git worktree list --porcelain 2>/dev/null | head -1 | sed 's/^worktree //')"
+if [[ -n "${MAIN_WT}" && -n "$(git -C "${MAIN_WT}" status --porcelain 2>/dev/null)" ]]; then
+  error "El checkout principal (${MAIN_WT}) tiene cambios sin commitear. Commiteá o revertí esos cambios antes de crear un worktree (ver AGENTS.md / SPEC-066)."
+fi
+
+# -----------------------------------------------------------------------------
 # Sincronizar main con origin
 # -----------------------------------------------------------------------------
 
