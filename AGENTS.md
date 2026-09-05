@@ -27,15 +27,11 @@ Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, 
 
 - **NUNCA ejecutar `rm -f data/app.db` ni ningún comando que elimine la base de datos del usuario.** La DB local es producción. Si se necesitan pruebas limpias, usar `/tmp/test-app.db`.
 - **Usar SIEMPRE `killall` para matar procesos, NUNCA `pkill`.** `pkill` falla silenciosamente en este entorno. Comando correcto: `killall p40la-ihost`.
-- **Verificar SIEMPRE que el server responde antes de informar al usuario que puede acceder.** Después de levantar el servidor, ejecutar `curl -s http://localhost:8088/health` y confirmar respuesta `{"status":"ok"}`. Solo entonces informar al usuario. Si no responde, revisar logs (`/tmp/p40la-server.log`) y reiniciar.
+- **Verificar SIEMPRE que el server responde antes de informar al usuario que puede acceder.** Ejecutar `./scripts/check-server.sh` (revisa `GET /health` esperando `{"status":"ok"}`, con reintentos; en fallo muestra el log y sale con error). Solo entonces informar al usuario. Si no responde, revisar el log y reiniciar.
 - **Seguir siempre el patrón de UI existente.** Para páginas de listado: cards con menú de acciones (3 puntos) + EmptyCard (título, descripción, botón) cuando no hay registros. Nunca formularios inline en listados. Referencia: `HomesPage.tsx`.
 - **Inputs SIEMPRE con tokens del tema, jamás colores hardcodeados.** Todo `input`/`select`/`textarea` DEBE usar `bg-card` (fondo) y `text-text`/`text-text-secondary` (texto/placeholder). Nunca `bg-white`, `dark:bg-[#2c2c2e]` ni `text-black`. El color global de los form controls lo fija `frontend/src/index.css`; no duplicarlo por formulario. **Todo formulario nuevo debe verificarse en darkmode** (texto y placeholders legibles) antes de considerarse completo. Ver SPEC-060.
 - **Validar prerequisitos en backend Y frontend.** Si una entidad depende de otra (ej: servicios → instituciones), validar en ambos lados y redirigir al formulario de la dependencia si no existe.
-- **Crear usuarios de prueba directamente en la DB cuando se necesite autenticar.** El agente tiene permiso y obligación de crear usuarios vía SQLite para poder probar endpoints protegidos. Proceso:
-  1. Generar hash: `go run /tmp/genhash.go` (requiere un Go file con `bcrypt.GenerateFromPassword([]byte("test1234"), 10)`)
-  2. Insertar: `sqlite3 data/app.db "INSERT INTO users (email, password_hash) VALUES ('test@test.com', '$HASH');"`
-  3. Login: `curl -s -c /tmp/cookies.txt http://localhost:8088/api/login -X POST -H 'Content-Type: application/json' -d '{"email":"test@test.com","password":"test1234"}'`
-  4. Usar cookies: `curl -s -b /tmp/cookies.txt http://localhost:8088/api/...`
+- **Crear usuarios de prueba directamente en la DB cuando se necesite autenticar.** El agente tiene permiso y obligación de crear usuarios vía SQLite para poder probar endpoints protegidos. Ejecutar `./scripts/create-test-user.sh`: crea/actualiza el usuario (default `test@test.com` / `test1234`), hace login y deja las cookies en `/tmp/cookies.txt`. Personalizable con `EMAIL`, `PASSWORD`, `DB_PATH` y `PORT`. Usar luego: `curl -s -b /tmp/cookies.txt http://localhost:8088/api/...`
 - **La fuente de verdad del i18n es `frontend/public/i18n/`, NO `public/i18n/`.** El build de Vite (`npm run build` en `frontend/`) usa `emptyOutDir: true` sobre `public/`: borra TODO su contenido y lo regenera desde `frontend/public/` (copia `i18n/`, `index.html`, assets). Por lo tanto:
   - Cualquier cambio de traducción se edita SIEMPRE en `frontend/public/i18n/{es,en}.json`.
   - Nunca editar `public/i18n/*.json` directamente: esos archivos son salida del build y se sobrescriben/perden en el próximo `npm run build`.
@@ -175,7 +171,7 @@ La app corre como add-on Docker en un **SONOFF iHost**. La DB SQLite vive en el 
   5. Verificar conteos e integridad, luego pedir al usuario arrancar el contenedor.
 - **No modificar el esquema SQLite** de `debts`/`debt_bills` (política del usuario); solo insertar/actualizar datos. Ver SPEC-054 para el modelo de deudas.
 - Verificar siempre el server con `curl -s http://ihost.local:8088/health` → `{"status":"ok"}`.
-- Para autenticar endpoints protegidos, crear usuarios de prueba en la DB del volumen siguiendo el proceso de la sección 0 (aplicar vía SSH a `/app/data/app.db`).
+- Para autenticar endpoints protegidos contra la DB del volumen (`/app/data/app.db`), generar el hash con `go run ./scripts/genhash.go <password>` y aplicar el INSERT vía SSH (el script `create-test-user.sh` es solo local por ahora; la variante remota es trabajo futuro, ver SPEC-059 REQ-011).
 
 ### Pruebas locales obligatorias
 
