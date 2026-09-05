@@ -46,7 +46,7 @@ export function SortableCard({ id, children, handle, handleAriaLabel, className 
           {...attributes}
           {...listeners}
           aria-label={handleAriaLabel}
-          className="absolute top-3 left-1/2 -translate-x-1/2 z-30 cursor-grab active:cursor-grabbing touch-none p-1 rounded-ios text-text-secondary opacity-60 group-hover:opacity-100 group-hover:text-text transition-opacity"
+          className="absolute inset-y-0 left-0 z-30 flex w-8 cursor-grab active:cursor-grabbing touch-none items-center justify-center rounded-l-ios text-text-secondary opacity-60 group-hover:opacity-100 group-hover:text-text group-hover:bg-bg/40 transition-opacity"
         >
           {handle}
         </span>
