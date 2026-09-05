@@ -18,13 +18,13 @@ func NewHomeStorage(db *sql.DB) *HomeStorage {
 	return &HomeStorage{db: db}
 }
 
-// List devuelve todos los hogares no eliminados.
+// List devuelve todos los hogares no eliminados en el orden definido por el usuario.
 func (s *HomeStorage) List(ctx context.Context) ([]models.Home, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, name, address, deleted_at, created_at, updated_at
+		SELECT id, name, address, sort_order, deleted_at, created_at, updated_at
 		FROM homes
 		WHERE deleted_at IS NULL
-		ORDER BY name
+		ORDER BY sort_order ASC, name ASC
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("listar hogares: %w", err)
@@ -37,7 +37,7 @@ func (s *HomeStorage) List(ctx context.Context) ([]models.Home, error) {
 // GetByID busca un hogar por su ID.
 func (s *HomeStorage) GetByID(ctx context.Context, id int64) (*models.Home, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, name, address, deleted_at, created_at, updated_at
+		SELECT id, name, address, sort_order, deleted_at, created_at, updated_at
 		FROM homes
 		WHERE id = ? AND deleted_at IS NULL
 	`, id)
@@ -55,11 +55,20 @@ func (s *HomeStorage) Count(ctx context.Context) (int64, error) {
 	return count, nil
 }
 
-// Create inserta un nuevo hogar.
+// Create inserta un nuevo hogar al final del orden actual.
 func (s *HomeStorage) Create(ctx context.Context, name, address string) (*models.Home, error) {
+	var nextOrder int64
+	if err := s.db.QueryRowContext(ctx, `
+		SELECT COALESCE(MAX(sort_order), -1) + 1
+		FROM homes
+		WHERE deleted_at IS NULL
+	`).Scan(&nextOrder); err != nil {
+		return nil, fmt.Errorf("calcular siguiente orden de hogar: %w", err)
+	}
+
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO homes (name, address) VALUES (?, ?)
-	`, name, address)
+		INSERT INTO homes (name, address, sort_order) VALUES (?, ?, ?)
+	`, name, address, nextOrder)
 	if err != nil {
 		return nil, fmt.Errorf("insertar hogar: %w", err)
 	}
@@ -96,11 +105,49 @@ func (s *HomeStorage) SoftDelete(ctx context.Context, id int64) error {
 	return nil
 }
 
+// Reorder persiste el orden de los hogares según el array de IDs recibido.
+// El índice de cada ID en el array define su sort_order. Es atómico: si algún
+// ID no existe o está eliminado, la transacción se revierte.
+func (s *HomeStorage) Reorder(ctx context.Context, ids []int64) error {
+	if len(ids) == 0 {
+		return fmt.Errorf("lista de IDs vacía")
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("iniciar transacción de reordenamiento: %w", err)
+	}
+	defer tx.Rollback()
+
+	for idx, id := range ids {
+		result, err := tx.ExecContext(ctx, `
+			UPDATE homes
+			SET sort_order = ?, updated_at = CURRENT_TIMESTAMP
+			WHERE id = ? AND deleted_at IS NULL
+		`, idx, id)
+		if err != nil {
+			return fmt.Errorf("reordenar hogar %d: %w", id, err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("obtener filas afectadas del hogar %d: %w", id, err)
+		}
+		if affected == 0 {
+			return fmt.Errorf("hogar %d no existe o está eliminado", id)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("confirmar reordenamiento: %w", err)
+	}
+	return nil
+}
+
 func scanHome(row *sql.Row) (*models.Home, error) {
 	var h models.Home
 	var deletedAt sql.NullTime
 	var address sql.NullString
-	if err := row.Scan(&h.ID, &h.Name, &address, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
+	if err := row.Scan(&h.ID, &h.Name, &address, &h.SortOrder, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -119,7 +166,7 @@ func scanHomes(rows *sql.Rows) ([]models.Home, error) {
 		var h models.Home
 		var deletedAt sql.NullTime
 		var address sql.NullString
-		if err := rows.Scan(&h.ID, &h.Name, &address, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
+		if err := rows.Scan(&h.ID, &h.Name, &address, &h.SortOrder, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear hogar: %w", err)
 		}
 		if deletedAt.Valid {
