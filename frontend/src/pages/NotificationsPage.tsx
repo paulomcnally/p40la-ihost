@@ -7,11 +7,13 @@ import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import type { Notification } from '../types'
 
 export default function NotificationsPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
+  usePageTitle(t('notifications.title'))
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [loading, setLoading] = useState(true)

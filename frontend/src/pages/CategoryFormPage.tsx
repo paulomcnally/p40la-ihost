@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import Toggle from '../components/Toggle'
@@ -31,6 +32,8 @@ export default function CategoryFormPage() {
       })
     }
   }, [id, isEdit])
+
+  usePageTitle(isEdit ? (name || null) : t('categorias.create'))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

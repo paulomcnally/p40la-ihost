@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -17,6 +18,7 @@ export default function ServicesPage() {
   const { homes, currencies, loadAll } = useAppStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { t } = useI18nStore()
+  usePageTitle(t('services.title'))
   const [services, setServices] = useState<Service[]>([])
   const [homeFilter, setHomeFilter] = useState<number | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)

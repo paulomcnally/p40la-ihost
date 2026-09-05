@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -52,6 +53,8 @@ export default function BillFormPage() {
       load()
     }
   }, [id, isEdit])
+
+  usePageTitle(isEdit ? t('bills.edit') : t('bills.create'))
 
   if (!serviceId) {
     navigate('/services')

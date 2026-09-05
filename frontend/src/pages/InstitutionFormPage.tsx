@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -64,6 +65,8 @@ export default function InstitutionFormPage() {
       // ignore
     }
   }
+
+  usePageTitle(isEdit ? (formData.name || null) : t('institutions.create'))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

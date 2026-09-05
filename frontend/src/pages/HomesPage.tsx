@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -18,6 +19,7 @@ export default function HomesPage() {
   const navigate = useNavigate()
   const { homes, loadHomes, setHomes } = useAppStore()
   const { t } = useI18nStore()
+  usePageTitle(t('home.title'))
   const { showToast } = useToast()
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [loading, setLoading] = useState(true)

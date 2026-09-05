@@ -170,6 +170,16 @@
     "payment_reference": "Referencia del pago",
     "payment_reference_placeholder": "Ej: número de transacción"
   },
+  "institutions": {
+    "title": "Instituciones",
+    "create": "Nueva institución",
+    "edit": "Editar institución"
+  },
+  "autos": {
+    "title": "Autos",
+    "create": "Nuevo auto",
+    "edit": "Editar auto"
+  },
   "settings": {
     "title": "Configuración",
     "subtitle": "Ajustes de la aplicación",
@@ -299,6 +309,7 @@
     }
   },
   "notifications": {
+    "title": "Notificaciones",
     "create": "Nueva notificación",
     "edit": "Editar notificación",
     "empty_title": "No hay notificaciones",

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -13,6 +14,7 @@ import type { Child } from '../types'
 export default function HijosPage() {
   const navigate = useNavigate()
   const { t, lang } = useI18nStore()
+  usePageTitle(t('hijos.title'))
   const [children, setChildren] = useState<Child[]>([])
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [loading, setLoading] = useState(true)
