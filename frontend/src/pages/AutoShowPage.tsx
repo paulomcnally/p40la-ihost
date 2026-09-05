@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -10,7 +10,6 @@ import AddInsuranceModal from '../components/AddInsuranceModal'
 import type { Auto, AutoService } from '../types'
 
 export default function AutoShowPage() {
-  const navigate = useNavigate()
   const { id } = useParams()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [auto, setAuto] = useState<Auto | null>(null)
@@ -59,14 +58,6 @@ export default function AutoShowPage() {
 
   return (
     <div>
-      <button
-        onClick={() => navigate('/autos')}
-        className="flex items-center gap-2 text-text-secondary hover:text-text mb-4 transition-colors"
-      >
-        <Icon name="back" className="w-5 h-5" />
-        <span className="text-sm font-medium">Volver</span>
-      </button>
-
       <div className="bg-card rounded-ios shadow-ios p-4 sm:p-6 mb-6">
         <div className="flex items-start gap-4">
           <div className="w-14 h-14 rounded-ios bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">

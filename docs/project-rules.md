@@ -99,6 +99,13 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - El color de texto de los form controls nativos lo fija la regla global en `frontend/src/index.css` (`input, select, textarea { color: rgb(var(--color-text)); background-color: rgb(var(--color-card)); color-scheme: light dark; }`). No duplicarla por formulario.
 - **Todo formulario/modal nuevo debe verificarse en darkmode** antes de considerarse completo: texto y placeholders legibles (placeholder usa `--color-text-secondary`). Si se omite, la spec no pasa a `pending_release`.
 
+### 4.4 Navegación de retorno en páginas de detalle (obligatorio)
+
+- **Las páginas de detalle (y formularios de crear/editar) NO deben tener links "← Título" dentro del contenido.** La acción "volver a la lista" se muestra como flecha atrás en el header: en móvil reemplaza la hamburguesa que abre el sidebar (`lg:hidden`); en desktop la vuelta se hace desde el sidebar fijo.
+- Para registrar una ruta con retorno, agregar una entrada al mapa `BACK_ROUTES` en `frontend/src/components/DashboardLayout.tsx` (patrón de pathname → ruta destino de la lista). Ver SPEC-063.
+- En páginas de listado raíz (`/home`, `/services`, `/deudas`, `/autos`, `/settings`, etc.) el header sigue mostrando la hamburguesa en móvil: no agregar flecha atrás.
+- Si se omite esta regla en una spec con páginas de detalle, la spec no pasa a `pending_release`.
+
 ---
 
 ## 5. Convenciones de Código Go

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
@@ -13,7 +13,6 @@ import DonutChart from '../components/DonutChart'
 import type { Debt, DebtBill } from '../types'
 
 export default function DebtBillsPage() {
-  const navigate = useNavigate()
   const { id } = useParams()
   const { t } = useI18nStore()
   const { currencies } = useAppStore()
@@ -88,15 +87,6 @@ export default function DebtBillsPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4 sm:mb-5">
-        <button
-          onClick={() => navigate('/deudas')}
-          className="flex items-center gap-1 text-text-secondary hover:text-text transition-colors min-h-[44px]"
-        >
-          <Icon name="back" className="w-4 h-4" />
-          {t('menu.deudas')}
-        </button>
-      </div>
       <div className="flex items-center justify-between mb-4 sm:mb-5">
         <div>
           <h2 className="text-lg sm:text-2xl font-bold">{debt.description}</h2>
