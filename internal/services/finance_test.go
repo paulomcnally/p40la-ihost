@@ -231,10 +231,19 @@ func TestBillPayBill(t *testing.T) {
 	}
 
 	// Con comprobante y referencia: persistir campos.
+	// La factura auto-generada usa el periodo actual (generateCurrentBill → time.Now),
+	// así que las siguientes se derivan de ella para no depender de la fecha.
+	nextPeriod := func(y, m int) (int, int) {
+		if m == 12 {
+			return y + 1, 1
+		}
+		return y, m + 1
+	}
+	y2, m2 := nextPeriod(bill.Year, bill.Month)
 	second, err := billSvc.Create(ctx, &models.Bill{
 		ServiceID: svc.ID,
-		Year:      2026,
-		Month:     9,
+		Year:      y2,
+		Month:     m2,
 		Amount:    60,
 		Status:    "pending",
 	})
@@ -253,10 +262,11 @@ func TestBillPayBill(t *testing.T) {
 	}
 
 	// Comprobante inválido debe fallar.
+	y3, m3 := nextPeriod(y2, m2)
 	third, err := billSvc.Create(ctx, &models.Bill{
 		ServiceID: svc.ID,
-		Year:      2026,
-		Month:     10,
+		Year:      y3,
+		Month:     m3,
 		Amount:    70,
 		Status:    "pending",
 	})

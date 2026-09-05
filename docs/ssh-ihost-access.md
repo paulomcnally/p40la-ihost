@@ -138,7 +138,7 @@ Siempre re-verificar con consultas de conteo (ej. `SELECT status, COUNT(*) FROM 
 3. **No modificar el esquema SQLite.** La tabla `debts`/`debt_bills` se respeta tal cual; solo se insertan/actualizan datos (política del usuario). Ver `docs/specs/SPEC-054-modulo-deudas-calendario.md` para el modelo.
 4. **Detener la escritura atómica**: envolver cambios multi-tabla en `BEGIN; ... COMMIT;` dentro de un solo `sqlite3 ".read archivo.sql"`.
 5. **Usar `killall`, nunca `pkill`,** en procesos del iHost.
-6. **Crear usuarios de prueba en la DB cuando se necesite autenticar** a endpoints protegidos (ver AGENTS.md §0). El hash bcrypt se genera en local con `go run /tmp/genhash.go`.
+6. **Crear usuarios de prueba en la DB cuando se necesite autenticar** a endpoints protegidos (ver AGENTS.md §0). El hash bcrypt se genera en local con `go run ./scripts/genhash.go <password>`; el INSERT se aplica vía SSH a `/app/data/app.db` con `.parameter set` (el script `scripts/create-test-user.sh` es solo para la DB local).
 
 ---
 
