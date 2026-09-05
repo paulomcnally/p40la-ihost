@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 61 |
+| **Total de specs** | 60 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 1 🟣 |
+| **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 60 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-061 |
+| **Último ID usado** | SPEC-060 |
 
 ---
 
@@ -81,7 +81,6 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-058 | Formato de moneda configurable con default Nicaragua (1,000.00) | released | 2026-09-04 | paulomcnally |
 | SPEC-059 | Scripts para tareas recurrentes del agente (test-user y check-server) para reducir tokens del prompt | released | 2026-09-04 | p40la-ihost-team |
 | SPEC-060 | Fix global de texto de inputs en darkmode en todos los formularios + regla para futuras specs | released | 2026-09-04 | paulomcnally |
-| SPEC-061 | Reordenar casas con drag & drop en la página de Casas | in_progress | 2026-09-04 | paulomcnally |
 
 ---
 
@@ -151,4 +150,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-061 creada en draft (drag & drop para reordenar casas).*
+*Última actualización de este tracker: 2026-09-04 — Todas las specs released (SPEC-059, SPEC-052 y SPEC-060 liberadas).*

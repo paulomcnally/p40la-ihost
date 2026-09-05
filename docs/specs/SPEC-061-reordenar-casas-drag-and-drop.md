@@ -1,7 +1,7 @@
 ---
 title: "Reordenar casas con drag & drop en la página de Casas"
 id: "SPEC-061"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-04"
 updated: "2026-09-04"
@@ -11,7 +11,7 @@ github_issue: 62
 # Reordenar casas con drag & drop en la página de Casas
 
 **ID**: SPEC-061  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-04  
 **Actualizado**: 2026-09-04
@@ -225,21 +225,21 @@ Entidad: homes (tabla existente)
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: En desktop (≥2 columnas), arrastrar una card hacia los costados o arriba/abajo la recoloca en la posición prevista y el orden se mantiene tras recargar la página.
-- [ ] CA-002: En mobile (1 columna), arrastrar hacia arriba/abajo recoloca la card y el orden persiste tras recargar.
-- [ ] CA-003: El endpoint `PUT /api/homes/reorder` persiste `sort_order` correctamente (verificado contra SQLite con `PRAGMA`/query) y solo afecta casas activas.
-- [ ] CA-004: Tras aplicar la migración, las casas existentes conservan su orden alfabético previo (backfill correcto).
-- [ ] CA-005: Una casa nueva se agrega al final del orden.
-- [ ] CA-006: Si el guardado del orden falla, la UI revierte al orden anterior y muestra un toast de error.
-- [ ] CA-007: Pista visual de arrastre en el handle (franja vertical izquierda de alto completo): visible siempre, con énfasis en hover. Sin íconos flotantes en el centro ni pegados a otros controles.
-- [ ] CA-008: El drag se inicia SOLO desde la franja del handle; el resto de la card no es arrastrable. El scroll mobile no se interfiere (long-press en la franja; los controles con `data-no-dnd` siguen respondiendo a su tap).
-- [ ] CA-009: El reordenamiento funciona por teclado (tab al handle, espacio/enter para levantar, flechas para mover, escape para cancelar).
+- [x] CA-001: En desktop (≥2 columnas), arrastrar una card hacia los costados o arriba/abajo la recoloca en la posición prevista y el orden se mantiene tras recargar la página.
+- [x] CA-002: En mobile (1 columna), arrastrar hacia arriba/abajo recoloca la card y el orden persiste tras recargar.
+- [x] CA-003: El endpoint `PUT /api/homes/reorder` persiste `sort_order` correctamente (verificado contra SQLite con `PRAGMA`/query) y solo afecta casas activas.
+- [x] CA-004: Tras aplicar la migración, las casas existentes conservan su orden alfabético previo (backfill correcto).
+- [x] CA-005: Una casa nueva se agrega al final del orden.
+- [x] CA-006: Si el guardado del orden falla, la UI revierte al orden anterior y muestra un toast de error.
+- [x] CA-007: Pista visual de arrastre en el handle (franja vertical izquierda de alto completo): visible siempre, con énfasis en hover. Sin íconos flotantes en el centro ni pegados a otros controles.
+- [x] CA-008: El drag se inicia SOLO desde la franja del handle; el resto de la card no es arrastrable. El scroll mobile no se interfiere (long-press en la franja; los controles con `data-no-dnd` siguen respondiendo a su tap).
+- [x] CA-009: El reordenamiento funciona por teclado (tab al handle, espacio/enter para levantar, flechas para mover, escape para cancelar).
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: Reordenar N casas requiere 1 petición HTTP y 1 transacción SQLite.
-- [ ] CA-NF-002: Sin nuevas dependencias en el runtime Go del iHost; el bundle del frontend crece ≤ ~30 kB gzip.
-- [ ] CA-NF-003: El estado de la card arrastrada (sombra/opacidad) y el handle son legibles en darkmode.
+- [x] CA-NF-001: Reordenar N casas requiere 1 petición HTTP y 1 transacción SQLite.
+- [x] CA-NF-002: Sin nuevas dependencias en el runtime Go del iHost; el bundle del frontend crece ≤ ~30 kB gzip.
+- [x] CA-NF-003: El estado de la card arrastrada (sombra/opacidad) y el handle son legibles en darkmode.
 
 ### 5.3 Testing
 
@@ -314,3 +314,4 @@ Entidad: homes (tabla existente)
 | 2026-09-04 | paulomcnally | Cambio de UX solicitado en evaluación manual: se reemplaza el handle fijo en la esquina (junto al menú) por **toda la card arrastrable** + handle revelado en hover (desktop) / siempre visible (mobile) + **long-press** en mobile, excluyendo controles interactivos con `data-no-dnd`. Basado en investigación de patrones de apps TODO-list (Todoist/Things/Notion/Trello, NN/g). |
 | 2026-09-04 | paulomcnally | Ajuste de handle en evaluación manual: el handle pasa de estar centrado arriba a ser una **franja vertical de alto completo al lado izquierdo** de la card, con el ícono de grip vertical centrado y padding izquierdo en el contenido de la card para dejarlo visible. |
 | 2026-09-04 | paulomcnally | Ajuste en evaluación manual: el drag pasa a iniciarse **solo desde la franja del handle**; el resto de la card ya no es arrastrable (se eliminan los listeners de arrastre del nodo de la card y el `cursor-grab`/elevación en hover del cuerpo). |
+| 2026-09-04 | paulomcnally | **Release**: pruebas manuales satisfactorias (usuario), criterios de aceptación en pass. Merge `feature/SPEC-061` → `main` y estado a `released`. |
