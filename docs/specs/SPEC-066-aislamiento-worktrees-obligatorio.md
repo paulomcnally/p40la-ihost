@@ -1,7 +1,7 @@
 ---
 title: "Aislamiento estricto de sesiones: worktrees obligatorios y main de solo lectura"
 id: "SPEC-066"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-04"
 updated: "2026-09-04"
@@ -11,7 +11,7 @@ github_issue: 67
 # Aislamiento estricto de sesiones: worktrees obligatorios y main de solo lectura
 
 **ID**: SPEC-066  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-04  
 **Actualizado**: 2026-09-04
@@ -220,3 +220,5 @@ Sin cambios de API. Los scripts son la interfaz nueva:
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-04 | paulomcnally | Creación inicial de la especificación. Propuesta tras el incidente de colisión multi-sesión en SPEC-064: worktrees obligatorios, main de solo lectura para agentes, guards mecánicos en scripts y creación de specs dentro del worktree. |
+| 2026-09-04 | paulomcnally | Implementación (en worktree `p40la-ihost-spec-066`): `check-worktree.sh` (guard de arranque), `new-worktree.sh` valida que `main` esté limpio, AGENTS.md con regla "main de solo lectura" y skill spec-manager con flujo worktree-primero (README tracker solo al release). Guards probados: worktree→OK, main→aborta, main sucio→aborta. |
+| 2026-09-04 | paulomcnally | **Release**: merge fast-forward de `feature/SPEC-066` a `main` (commit `ea25a76`). Validado por el usuario en local. Estado `released`. |

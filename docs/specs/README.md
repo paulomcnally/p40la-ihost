@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 65 |
+| **Total de specs** | 66 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 65 🟢 |
+| **Released** | 66 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-065 |
+| **Último ID usado** | SPEC-066 |
 
 ---
 
@@ -86,6 +86,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-063 | Flecha atrás en el header para páginas de detalle en lugar del link '← Título' + regla de UI permanente | released | 2026-09-04 | paulomcnally |
 | SPEC-064 | Progreso visual de cuotas en detalle de deuda | released | 2026-09-04 | paulomcnally |
 | SPEC-065 | Títulos dinámicos en el header según la página cargada | released | 2026-09-04 | paulomcnally |
+| SPEC-066 | Aislamiento estricto de sesiones: worktrees obligatorios y main de solo lectura | released | 2026-09-04 | paulomcnally |
 
 ---
 
@@ -155,4 +156,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-065 released (títulos dinámicos en el header según la página cargada).*
+*Última actualización de este tracker: 2026-09-04 — SPEC-066 released (aislamiento estricto de sesiones con worktrees obligatorios y main de solo lectura).*
