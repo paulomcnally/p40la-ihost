@@ -2,10 +2,9 @@ import { useMemo } from 'react'
 import {
   DndContext,
   KeyboardSensor,
-  PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
+  closestCenter,
   type DragEndEvent,
 } from '@dnd-kit/core'
 import {
@@ -15,6 +14,7 @@ import {
   rectSortingStrategy,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
+import { NoDndMouseSensor, NoDndTouchSensor } from './dndSensors'
 
 interface SortableGridProps<T extends { id: number }> {
   items: T[]
@@ -25,7 +25,7 @@ interface SortableGridProps<T extends { id: number }> {
 }
 
 // Grid/listado sortable reutilizable. `onReorder` recibe el array de IDs en el
-// nuevo orden al soltar el drag (mouse, touch o teclado).
+// nuevo orden al soltar el drag (mouse, touch con long-press o teclado).
 export function SortableGrid<T extends { id: number }>({
   items,
   onReorder,
@@ -34,7 +34,8 @@ export function SortableGrid<T extends { id: number }>({
   children,
 }: SortableGridProps<T>) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(NoDndMouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(NoDndTouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
