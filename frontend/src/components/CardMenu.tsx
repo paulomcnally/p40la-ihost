@@ -48,10 +48,12 @@ export default function CardMenu({ options }: { options: CardMenuOption[] }) {
     <div className="absolute top-3 right-3 z-50">
       <button
         ref={btnRef}
+        data-no-dnd
         onClick={(e) => {
           e.stopPropagation()
           toggle()
         }}
+        onKeyDown={(e) => e.stopPropagation()}
         className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg transition-colors"
         aria-label="Acciones"
       >
