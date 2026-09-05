@@ -96,7 +96,9 @@
     "create": "New home",
     "edit": "Edit home",
     "empty": "You haven't created any home yet.",
-    "select": "Select home"
+    "select": "Select home",
+    "reorder": "Drag to reorder",
+    "order_error": "Could not save the order"
   },
   "services": {
     "title": "Services",

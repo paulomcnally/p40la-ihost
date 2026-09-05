@@ -56,3 +56,18 @@ func (s *HomeService) Update(ctx context.Context, id int64, name, address string
 func (s *HomeService) Delete(ctx context.Context, id int64) error {
 	return s.storage.SoftDelete(ctx, id)
 }
+
+// Reorder persiste el orden de los hogares según el array de IDs recibido.
+func (s *HomeService) Reorder(ctx context.Context, ids []int64) error {
+	if len(ids) == 0 {
+		return fmt.Errorf("la lista de IDs es requerida")
+	}
+	seen := make(map[int64]bool, len(ids))
+	for _, id := range ids {
+		if seen[id] {
+			return fmt.Errorf("ID duplicado en la lista: %d", id)
+		}
+		seen[id] = true
+	}
+	return s.storage.Reorder(ctx, ids)
+}

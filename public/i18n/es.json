@@ -96,7 +96,9 @@
     "create": "Nueva casa",
     "edit": "Editar casa",
     "empty": "No has creado ninguna casa todavía.",
-    "select": "Seleccionar casa"
+    "select": "Seleccionar casa",
+    "reorder": "Arrastrar para reordenar",
+    "order_error": "No se pudo guardar el orden"
   },
   "services": {
     "title": "Servicios",

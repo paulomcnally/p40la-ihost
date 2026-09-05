@@ -62,6 +62,7 @@ export const api = {
     create: (body: Partial<Home>) => post<Home>('/api/homes', body),
     update: (id: number, body: Partial<Home>) => put<Home>(`/api/homes/${id}`, body),
     delete: (id: number) => del(`/api/homes/${id}`),
+    reorder: (ids: number[]) => put<{ message: string }>('/api/homes/reorder', { ids }),
   },
   services: {
     list: (homeId?: number) => get<Service[]>(homeId ? `/api/services?home_id=${homeId}` : '/api/services'),
