@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -22,6 +23,8 @@ export default function DeudasPage() {
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
+  const tabTitle = tab === 'calendario' ? t('deudas.tab_calendar') : tab === 'deudas' ? t('deudas.tab_debts') : t('deudas.tab_analysis')
+  usePageTitle(tabTitle)
 
   const [debts, setDebts] = useState<Debt[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])

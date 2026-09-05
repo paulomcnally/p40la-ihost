@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useI18nStore } from '../stores/i18nStore'
 import { useAuthStore } from '../stores/authStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
+import { usePageTitleStore } from '../stores/pageTitleStore'
 import { Icon } from '../components/Icons'
 import Sidebar from '../components/Sidebar'
 
@@ -29,6 +30,7 @@ export default function DashboardLayout() {
   const { t } = useI18nStore()
   const { logout } = useAuthStore()
   const loadCurrencyFormat = useCurrencyFormatStore(s => s.load)
+  const pageTitle = usePageTitleStore((s) => s.title)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function DashboardLayout() {
                 <Icon name="menu" className="w-5 h-5" />
               </button>
             )}
-            <h1 className="text-base sm:text-lg font-semibold">{t(`${activeBase}.title`, t('app.title'))}</h1>
+            <h1 className="text-base sm:text-lg font-semibold min-w-0 truncate">{pageTitle ?? t(`${activeBase}.title`, t('app.title'))}</h1>
           </div>
           <div className="flex items-center gap-2">
             <button

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -13,6 +14,7 @@ import type { Institution, InstitutionCategory } from '../types'
 export default function InstitutionsPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
+  usePageTitle(t('institutions.title'))
   const { showToast } = useToast()
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [categories, setCategories] = useState<InstitutionCategory[]>([])

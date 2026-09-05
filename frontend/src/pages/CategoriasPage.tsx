@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -12,6 +13,7 @@ import type { PensionCategory } from '../types'
 export default function CategoriasPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
+  usePageTitle(t('categorias.title'))
   const [categories, setCategories] = useState<PensionCategory[]>([])
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [loading, setLoading] = useState(true)

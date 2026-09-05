@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import DeleteModal from '../components/DeleteModal'
@@ -25,6 +26,8 @@ export default function CurrencyFormPage() {
       }
     }
   }, [id, isEdit, currencies])
+
+  usePageTitle(isEdit ? (formData.name || null) : t('settings.currencies.title'))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

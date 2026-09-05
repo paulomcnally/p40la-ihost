@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -46,6 +47,8 @@ export default function BillsPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  usePageTitle(service?.name ?? null)
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return

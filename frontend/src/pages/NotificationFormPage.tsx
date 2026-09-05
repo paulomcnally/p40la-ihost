@@ -4,6 +4,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import { useToast } from '../components/Toast'
 import { useI18nStore } from '../stores/i18nStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import type { Notification } from '../types'
 
 export default function NotificationFormPage() {
@@ -30,6 +31,8 @@ export default function NotificationFormPage() {
       })
     }
   }, [id, isEdit])
+
+  usePageTitle(isEdit ? (name || null) : t('notifications.create'))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { Icon } from '../components/Icons'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -30,6 +31,8 @@ export default function AutoShowPage() {
   useEffect(() => {
     Promise.all([loadAuto(), loadInsurance()]).finally(() => setLoading(false))
   }, [])
+
+  usePageTitle(auto ? `${auto.brand} ${auto.model}` : null)
 
   const handleAddInsurance = useCallback(async () => {
     await loadInsurance()
