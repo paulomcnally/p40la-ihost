@@ -8,17 +8,30 @@ import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
+import { SortableGrid } from '../components/sortable/SortableGrid'
+import { SortableCard } from '../components/sortable/SortableCard'
+import { useSortableOrder } from '../hooks/useSortableOrder'
+import { useToast } from '../components/Toast'
+import type { Home } from '../types'
 
 export default function HomesPage() {
   const navigate = useNavigate()
-  const { homes, loadHomes } = useAppStore()
+  const { homes, loadHomes, setHomes } = useAppStore()
   const { t } = useI18nStore()
+  const { showToast } = useToast()
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadHomes().finally(() => setLoading(false))
   }, [])
+
+  const { handleReorder } = useSortableOrder<Home>({
+    items: homes,
+    setItems: setHomes,
+    onPersist: (ids) => api.homes.reorder(ids),
+    onError: () => showToast(t('home.order_error'), 'error'),
+  })
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return
@@ -53,12 +66,18 @@ export default function HomesPage() {
         <h2 className="text-xl sm:text-2xl font-bold">{t('home.title')}</h2>
         <CreateMenu options={createOptions} />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {homes.map((home) => (
-          <div
+      <SortableGrid
+        items={homes}
+        onReorder={handleReorder}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
+      >
+        {(home) => (
+          <SortableCard
             key={home.id}
-            onClick={() => {}}
-            className="bg-card rounded-ios shadow-ios p-4 relative cursor-pointer hover:shadow-ios-lg transition-shadow"
+            id={home.id}
+            handle={<Icon name="grip" className="w-4 h-4" />}
+            handleAriaLabel={t('home.reorder')}
+            className="relative bg-card rounded-ios shadow-ios p-4 hover:shadow-ios-lg transition-shadow"
           >
             <CardMenu
               options={[
@@ -73,9 +92,9 @@ export default function HomesPage() {
             {home.address && (
               <p className="text-sm text-text-secondary mt-1">{home.address}</p>
             )}
-          </div>
-        ))}
-      </div>
+          </SortableCard>
+        )}
+      </SortableGrid>
       {deleteTarget && (
         <DeleteModal
           title={t('app.confirm')}
