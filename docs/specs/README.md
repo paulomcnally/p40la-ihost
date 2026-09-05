@@ -8,10 +8,10 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 |---------|-------|
 | **Total de specs** | 60 |
 | **En draft** | 0 🟡 |
-| **Pending execution** | 1 🔵 |
-| **In progress** | 1 🟣 |
+| **Pending execution** | 0 🔵 |
+| **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 58 🟢 |
+| **Released** | 60 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-060 |
 
@@ -79,7 +79,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-056 | Build nativo ARM64 con runner ubuntu-24.04-arm en GitHub Actions | released | 2026-09-04 | p40la-ihost-team |
 | SPEC-057 | Fix iconos invisibles en iOS Safari (iPhone) | released | 2026-09-04 | paulomcnally |
 | SPEC-058 | Formato de moneda configurable con default Nicaragua (1,000.00) | released | 2026-09-04 | paulomcnally |
-| SPEC-059 | Scripts para tareas recurrentes del agente (test-user y check-server) para reducir tokens del prompt | pending_execution | 2026-09-04 | p40la-ihost-team |
+| SPEC-059 | Scripts para tareas recurrentes del agente (test-user y check-server) para reducir tokens del prompt | released | 2026-09-04 | p40la-ihost-team |
 | SPEC-060 | Fix global de texto de inputs en darkmode en todos los formularios + regla para futuras specs | released | 2026-09-04 | paulomcnally |
 
 ---
@@ -150,4 +150,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-052 released, SPEC-060 released, SPEC-059 en desarrollo.*
+*Última actualización de este tracker: 2026-09-04 — Todas las specs released (SPEC-059, SPEC-052 y SPEC-060 liberadas).*

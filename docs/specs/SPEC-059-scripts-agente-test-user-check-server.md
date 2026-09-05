@@ -1,7 +1,7 @@
 ---
 title: "Scripts para tareas recurrentes del agente (test-user y check-server) para reducir tokens del prompt"
 id: "SPEC-059"
-status: "in_progress"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-09-04"
 updated: "2026-09-04"
@@ -11,7 +11,7 @@ github_issue: 60
 # Scripts para tareas recurrentes del agente (test-user y check-server) para reducir tokens del prompt
 
 **ID**: SPEC-059  
-**Estado**: pending_execution  
+**Estado**: released  
 **Autor**: p40la-ihost-team  
 **Creado**: 2026-09-04  
 **Actualizado**: 2026-09-04
@@ -166,19 +166,19 @@ Entidad: users (sin cambios de esquema)
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Ejecutar `./scripts/create-test-user.sh` sobre una DB de prueba crea el usuario `test@test.com`, hace login y deja `/tmp/cookies.txt` con cookie válida.
-- [ ] CA-002: Ejecutar el script dos veces es idempotente (no duplica el usuario; actualiza el hash).
-- [ ] CA-003: Con `EMAIL`/`PASSWORD` personalizados, el login contra la API funciona con esas credenciales.
-- [ ] CA-004: El hash en DB no está corrompido (login exitoso lo demuestra; `$` del hash intacto).
-- [ ] CA-005: `./scripts/check-server.sh` con server arriba responde OK en ≤10s.
-- [ ] CA-006: `./scripts/check-server.sh` con server caído imprime las últimas líneas del log y sale con código 1.
-- [ ] CA-007: AGENTS.md referencia los scripts en una línea y ya no contiene los 4 pasos manuales ni el proceso de `/tmp/genhash.go`.
-- [ ] CA-008: `go test ./...` pasa completo (incluye el fix de `TestBillPayBill`).
+- [x] CA-001: Ejecutar `./scripts/create-test-user.sh` sobre una DB de prueba crea el usuario `test@test.com`, hace login y deja `/tmp/cookies.txt` con cookie válida.
+- [x] CA-002: Ejecutar el script dos veces es idempotente (no duplica el usuario; actualiza el hash).
+- [x] CA-003: Con `EMAIL`/`PASSWORD` personalizados, el login contra la API funciona con esas credenciales.
+- [x] CA-004: El hash en DB no está corrompido (login exitoso lo demuestra; `$` del hash intacto).
+- [x] CA-005: `./scripts/check-server.sh` con server arriba responde OK en ≤10s.
+- [x] CA-006: `./scripts/check-server.sh` con server caído imprime las últimas líneas del log y sale con código 1.
+- [x] CA-007: AGENTS.md referencia los scripts en una línea y ya no contiene los 4 pasos manuales ni el proceso de `/tmp/genhash.go`.
+- [x] CA-008: `go test ./...` pasa completo (incluye el fix de `TestBillPayBill`).
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: Sin cambios en el binario servidor, la imagen Docker ni la DB de producción.
-- [ ] CA-NF-002: El script no imprime el hash ni el password en claro.
+- [x] CA-NF-001: Sin cambios en el binario servidor, la imagen Docker ni la DB de producción.
+- [x] CA-NF-002: El script no imprime el hash ni el password en claro.
 
 ### 5.3 Testing
 
@@ -226,3 +226,4 @@ Entidad: users (sin cambios de esquema)
 |-------|-------|-------------|
 | 2026-09-04 | p40la-ihost-team | Creación inicial de la especificación |
 | 2026-09-04 | p40la-ihost-team | REQ-013: fix test time-dependent `TestBillPayBill` (periodos derivados de la factura auto-generada) |
+| 2026-09-04 | p40la-ihost-team | Implementación (commit `0800926`): `scripts/create-test-user.sh`, `scripts/check-server.sh`, `scripts/genhash.go`, AGENTS.md y ssh-ihost-access actualizados, fix `TestBillPayBill`. Merge a `main` y release. |
