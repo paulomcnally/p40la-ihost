@@ -2,20 +2,24 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
+import { useAppStore } from '../stores/appStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { Icon } from '../components/Icons'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import AddInsuranceModal from '../components/AddInsuranceModal'
+import CardMenu from '../components/CardMenu'
 import type { Auto, AutoService } from '../types'
 
 export default function AutoShowPage() {
   const { id } = useParams()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
+  const { currencies, loadCurrencies } = useAppStore()
   const [auto, setAuto] = useState<Auto | null>(null)
   const [insurance, setInsurance] = useState<AutoService[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editInsurance, setEditInsurance] = useState<AutoService | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ serviceId: number; serviceName: string } | null>(null)
 
   const loadAuto = useCallback(async () => {
@@ -29,6 +33,7 @@ export default function AutoShowPage() {
   }, [id])
 
   useEffect(() => {
+    loadCurrencies()
     Promise.all([loadAuto(), loadInsurance()]).finally(() => setLoading(false))
   }, [])
 
@@ -109,7 +114,7 @@ export default function AutoShowPage() {
                     return (
                       <div
                         key={item.id}
-                        className={`flex items-center gap-3 p-3 rounded-ios-sm border border-border ${
+                        className={`relative flex items-center gap-3 p-3 rounded-ios-sm border border-border ${
                           !item.active ? 'bg-gray-50 opacity-60 dark:bg-[#2c2c2e]' : 'bg-bg'
                         }`}
                       >
@@ -143,8 +148,8 @@ export default function AutoShowPage() {
                             )}
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-semibold">{formatMoney(item.suggested_amount)}</p>
+                        <div className="text-right flex-shrink-0 pr-8">
+                          <p className="text-sm font-semibold">{formatMoney(item.suggested_amount, currencies.find(c => c.id === item.currency_id)?.symbol)}</p>
                           <p className="text-xs text-text-secondary">{item.frequency === 'monthly' ? 'Mensual' : 'Anual'}</p>
                           {item.start_date && (
                             <p className="text-xs text-text-secondary mt-0.5">
@@ -152,12 +157,12 @@ export default function AutoShowPage() {
                             </p>
                           )}
                         </div>
-                        <button
-                          onClick={() => setDeleteTarget({ serviceId: item.service_id, serviceName: item.service_name })}
-                          className="p-2 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 dark:text-gray-500 dark:hover:text-red-400"
-                        >
-                          <Icon name="delete" className="w-4 h-4" />
-                        </button>
+                        <CardMenu
+                          options={[
+                            { label: 'Editar', icon: 'edit', onClick: () => setEditInsurance(item) },
+                            { label: 'Eliminar', icon: 'delete', danger: true, onClick: () => setDeleteTarget({ serviceId: item.service_id, serviceName: item.service_name }) },
+                          ]}
+                        />
                       </div>
                     )
                   })}
@@ -173,6 +178,17 @@ export default function AutoShowPage() {
           autoId={Number(id)}
           onAdd={handleAddInsurance}
           onCancel={() => setShowAddModal(false)}
+        />
+      )}
+      {editInsurance && (
+        <AddInsuranceModal
+          autoId={Number(id)}
+          insurance={editInsurance}
+          onAdd={() => {
+            setEditInsurance(null)
+            loadInsurance()
+          }}
+          onCancel={() => setEditInsurance(null)}
         />
       )}
       {deleteTarget && (

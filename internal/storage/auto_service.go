@@ -25,7 +25,7 @@ func (s *AutoServiceStorage) ListByAuto(ctx context.Context, autoID int64) ([]mo
 			asv.id, asv.auto_id, asv.service_id, asv.coverage_type,
 			asv.policy_number, asv.certificate, asv.insurer_number,
 			svc.name, COALESCE(inst.name, ''), svc.institution_id,
-			svc.suggested_amount, svc.frequency, svc.icon_key, svc.active,
+			svc.currency_id, svc.suggested_amount, svc.frequency, svc.icon_key, svc.active,
 			svc.start_date, svc.end_date, svc.is_recurring,
 			asv.created_at
 		FROM auto_services asv
@@ -49,7 +49,7 @@ func (s *AutoServiceStorage) ListByAuto(ctx context.Context, autoID int64) ([]mo
 			&d.ID, &d.AutoID, &d.ServiceID, &d.CoverageType,
 			&d.PolicyNumber, &certificate, &d.InsurerNumber,
 			&d.ServiceName, &d.InstitutionName, &institutionID,
-			&d.SuggestedAmount, &d.Frequency, &d.IconKey, &d.Active,
+			&d.CurrencyID, &d.SuggestedAmount, &d.Frequency, &d.IconKey, &d.Active,
 			&startDate, &endDate, &d.IsRecurring,
 			&createdAt,
 		); err != nil {
@@ -92,6 +92,26 @@ func (s *AutoServiceStorage) Create(ctx context.Context, autoID, serviceID int64
 		return nil, fmt.Errorf("obtener id de seguro: %w", err)
 	}
 	return &models.AutoService{ID: id, AutoID: autoID, ServiceID: serviceID, CoverageType: coverageType, PolicyNumber: policyNumber, Certificate: certPtr, InsurerNumber: insurerNumber}, nil
+}
+
+// Update actualiza los datos de póliza de un seguro asociado a un auto.
+func (s *AutoServiceStorage) Update(ctx context.Context, autoID, serviceID int64, coverageType, policyNumber, certificate, insurerNumber string) (bool, error) {
+	var certPtr *string
+	if certificate != "" {
+		certPtr = &certificate
+	}
+	result, err := s.db.ExecContext(ctx, `
+		UPDATE auto_services SET coverage_type = ?, policy_number = ?, certificate = ?, insurer_number = ?
+		WHERE auto_id = ? AND service_id = ?
+	`, coverageType, policyNumber, certPtr, insurerNumber, autoID, serviceID)
+	if err != nil {
+		return false, fmt.Errorf("actualizar seguro: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("verificar actualización de seguro: %w", err)
+	}
+	return affected > 0, nil
 }
 
 // Delete elimina la asociación de un seguro.
