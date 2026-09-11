@@ -44,6 +44,7 @@ export interface AutoService {
   service_name: string
   institution_name: string
   institution_id?: number
+  currency_id: number
   suggested_amount: number
   frequency: string
   icon_key: string

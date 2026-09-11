@@ -41,6 +41,30 @@ func (s *AutoServiceService) Create(ctx context.Context, autoID, serviceID int64
 	return s.autoServiceStorage.Create(ctx, autoID, serviceID, coverageType, policyNumber, certificate, insurerNumber)
 }
 
+// Update actualiza los datos de póliza de un seguro asociado a un auto.
+func (s *AutoServiceService) Update(ctx context.Context, autoID, serviceID int64, coverageType, policyNumber, certificate, insurerNumber string) error {
+	if coverageType != "daños_a_terceros" && coverageType != "full_cover" {
+		return fmt.Errorf("el tipo de cobertura debe ser 'daños_a_terceros' o 'full_cover'")
+	}
+	policyNumber = strings.TrimSpace(policyNumber)
+	insurerNumber = strings.TrimSpace(insurerNumber)
+	certificate = strings.TrimSpace(certificate)
+	if policyNumber == "" {
+		return fmt.Errorf("el número de póliza es requerido")
+	}
+	if insurerNumber == "" {
+		return fmt.Errorf("el número de aseguradora es requerido")
+	}
+	exists, err := s.autoServiceStorage.Update(ctx, autoID, serviceID, coverageType, policyNumber, certificate, insurerNumber)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("el seguro no existe")
+	}
+	return nil
+}
+
 // Delete elimina un seguro de un auto.
 func (s *AutoServiceService) Delete(ctx context.Context, autoID, serviceID int64) error {
 	return s.autoServiceStorage.Delete(ctx, autoID, serviceID)
