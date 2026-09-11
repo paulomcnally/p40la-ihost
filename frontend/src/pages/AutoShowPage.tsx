@@ -64,12 +64,12 @@ export default function AutoShowPage() {
             <Icon name={auto.icon} className="w-8 h-8" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl sm:text-2xl font-bold">{auto.brand} {auto.model}</h2>
-            <p className="text-text-secondary mt-1">{auto.year} · {auto.color} · {auto.placa}</p>
+            <h2 className="text-xl sm:text-2xl font-bold break-words">{auto.brand} {auto.model}</h2>
+            <p className="text-text-secondary mt-1 break-words">{auto.year} · {auto.color} · {auto.placa}</p>
             <div className="mt-3 space-y-1 text-sm text-text-secondary">
-              <p><span className="font-medium">Motor:</span> {auto.motor}</p>
-              <p><span className="font-medium">Chasis:</span> {auto.chasis}</p>
-              <p><span className="font-medium">VIN:</span> {auto.vin}</p>
+              <p className="break-words"><span className="font-medium">Motor:</span> {auto.motor}</p>
+              <p className="break-words"><span className="font-medium">Chasis:</span> {auto.chasis}</p>
+              <p className="break-words"><span className="font-medium">VIN:</span> {auto.vin}</p>
             </div>
           </div>
         </div>
@@ -98,10 +98,10 @@ export default function AutoShowPage() {
           <div className="space-y-4">
             {Object.entries(groupedByInstitution).map(([instName, items]) => (
               <div key={instName}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon name="building" className="w-4 h-4 text-text-secondary" />
-                  <span className="text-sm font-semibold text-text-secondary">{instName}</span>
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full dark:bg-[#2c2c2e] dark:text-gray-400">{items.length}</span>
+                <div className="flex items-center gap-2 mb-2 min-w-0">
+                  <Icon name="building" className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                  <span className="text-sm font-semibold text-text-secondary truncate">{instName}</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full dark:bg-[#2c2c2e] dark:text-gray-400 flex-shrink-0">{items.length}</span>
                 </div>
                 <div className="space-y-2">
                   {items.map((item) => {
@@ -109,55 +109,57 @@ export default function AutoShowPage() {
                     return (
                       <div
                         key={item.id}
-                        className={`flex items-center gap-3 p-3 rounded-ios-sm border border-border ${
+                        className={`rounded-ios-sm border border-border p-3 ${
                           !item.active ? 'bg-gray-50 opacity-60 dark:bg-[#2c2c2e]' : 'bg-bg'
                         }`}
                       >
-                        <div className={`w-9 h-9 rounded-ios flex items-center justify-center flex-shrink-0 ${
-                          item.active ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400 dark:bg-[#2c2c2e] dark:text-gray-500'
-                        }`}>
-                          <Icon name={item.icon_key || 'other'} className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{item.service_name}</p>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                              item.coverage_type === 'full_cover' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                            }`}>
-                              {item.coverage_type === 'full_cover' ? 'Full Cover' : 'Daños a terceros'}
-                            </span>
-                            <span className="text-xs text-text-secondary">Póliza: {item.policy_number}</span>
-                            <span className="text-xs text-text-secondary">Aseguradora: {item.insurer_number}</span>
-                            {item.certificate && (
-                              <span className="text-xs text-text-secondary">Certificado: {item.certificate}</span>
-                            )}
-                            {!item.active && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400">
-                                Inactivo
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-ios flex items-center justify-center flex-shrink-0 ${
+                            item.active ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400 dark:bg-[#2c2c2e] dark:text-gray-500'
+                          }`}>
+                            <Icon name={item.icon_key || 'other'} className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{item.service_name}</p>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                item.coverage_type === 'full_cover' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                              }`}>
+                                {item.coverage_type === 'full_cover' ? 'Full Cover' : 'Daños a terceros'}
                               </span>
-                            )}
-                            {isExpired && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                                Vencido
-                              </span>
+                              <span className="text-xs text-text-secondary break-all">Póliza: {item.policy_number}</span>
+                              <span className="text-xs text-text-secondary break-all">Aseguradora: {item.insurer_number}</span>
+                              {item.certificate && (
+                                <span className="text-xs text-text-secondary break-all">Certificado: {item.certificate}</span>
+                              )}
+                              {!item.active && (
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400">
+                                  Inactivo
+                                </span>
+                              )}
+                              {isExpired && (
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                                  Vencido
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0 min-w-0 max-w-[45%]">
+                            <p className="text-sm font-semibold break-words">{formatMoney(item.suggested_amount)}</p>
+                            <p className="text-xs text-text-secondary">{item.frequency === 'monthly' ? 'Mensual' : 'Anual'}</p>
+                            {item.start_date && (
+                              <p className="text-xs text-text-secondary mt-0.5 break-words">
+                                {item.start_date}{item.end_date ? ` → ${item.end_date}` : ''}
+                              </p>
                             )}
                           </div>
+                          <button
+                            onClick={() => setDeleteTarget({ serviceId: item.service_id, serviceName: item.service_name })}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 dark:text-gray-500 dark:hover:text-red-400"
+                          >
+                            <Icon name="delete" className="w-4 h-4" />
+                          </button>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-semibold">{formatMoney(item.suggested_amount)}</p>
-                          <p className="text-xs text-text-secondary">{item.frequency === 'monthly' ? 'Mensual' : 'Anual'}</p>
-                          {item.start_date && (
-                            <p className="text-xs text-text-secondary mt-0.5">
-                              {item.start_date}{item.end_date ? ` → ${item.end_date}` : ''}
-                            </p>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => setDeleteTarget({ serviceId: item.service_id, serviceName: item.service_name })}
-                          className="p-2 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 dark:text-gray-500 dark:hover:text-red-400"
-                        >
-                          <Icon name="delete" className="w-4 h-4" />
-                        </button>
                       </div>
                     )
                   })}

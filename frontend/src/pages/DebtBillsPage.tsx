@@ -88,9 +88,9 @@ export default function DebtBillsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 sm:mb-5">
-        <div>
-          <h2 className="text-lg sm:text-2xl font-bold">{debt.description}</h2>
-          <p className="text-sm text-text-secondary">
+        <div className="min-w-0">
+          <h2 className="text-lg sm:text-2xl font-bold break-words">{debt.description}</h2>
+          <p className="text-sm text-text-secondary break-words">
             {debt.institution_name}
             {debt.identifier && ` · ${debt.identifier}`} · {t(`deudas.status_${debt.status}`)}
           </p>

@@ -79,7 +79,7 @@ export default function HijosPage() {
               <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center mb-3">
                 <Icon name="baby" className="w-6 h-6" />
               </div>
-              <h3 className="font-semibold text-base">{child.first_name} {child.last_name}</h3>
+              <h3 className="font-semibold text-base truncate">{child.first_name} {child.last_name}</h3>
               <p className="text-sm text-text-secondary mt-1">
                 {formatAge(age, t)} · {formatDate(child.birth_date, lang)}
               </p>

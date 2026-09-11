@@ -166,7 +166,7 @@ export default function DebtAnalysis() {
             <button onClick={goPrev} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg transition-colors" aria-label="prev">
               <Icon name="chevron" className="w-4 h-4 rotate-180" />
             </button>
-            <span className="text-sm font-semibold min-w-28 text-center whitespace-nowrap">{periodLabel}</span>
+            <span className="text-sm font-semibold min-w-28 text-center">{periodLabel}</span>
             <button onClick={goNext} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg transition-colors" aria-label="next">
               <Icon name="chevron" className="w-4 h-4" />
             </button>
@@ -383,7 +383,7 @@ function SummaryCard({ label, lines, color }: { label: string; lines: string[]; 
   return (
     <div className="bg-card rounded-ios shadow-ios p-3 sm:p-4">
       <p className="text-text-secondary text-xs font-medium uppercase tracking-wide">{label}</p>
-      <div className={`mt-1 text-lg sm:text-xl font-bold ${color}`}>
+      <div className={`mt-1 text-lg sm:text-xl font-bold break-words ${color}`}>
         {lines.map((line) => (
           <p key={line}>{line}</p>
         ))}

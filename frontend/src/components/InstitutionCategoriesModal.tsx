@@ -120,7 +120,7 @@ export default function InstitutionCategoriesModal({ isOpen, onClose }: Institut
                   value={formData.key}
                   onChange={e => setFormData(prev => ({ ...prev, key: e.target.value }))}
                   placeholder="ej: insurance"
-                  className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] text-sm"
+                  className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
                   required
                   disabled={!!editing}
                   pattern="[a-z][a-z0-9_]*"
@@ -135,7 +135,7 @@ export default function InstitutionCategoriesModal({ isOpen, onClose }: Institut
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] text-sm"
+                className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
                 required
               />
             </div>
@@ -145,7 +145,7 @@ export default function InstitutionCategoriesModal({ isOpen, onClose }: Institut
                 type="text"
                 value={formData.description}
                 onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] text-sm"
+                className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
               />
             </div>
             <div>
