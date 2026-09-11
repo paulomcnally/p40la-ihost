@@ -76,7 +76,7 @@ export default function CategoriasPage() {
             <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center mb-3">
               <Icon name="tag" className="w-6 h-6" />
             </div>
-            <h3 className="font-semibold text-base">{category.name}</h3>
+            <h3 className="font-semibold text-base truncate">{category.name}</h3>
             {category.description && (
               <p className="text-sm text-text-secondary mt-1 line-clamp-2">{category.description}</p>
             )}

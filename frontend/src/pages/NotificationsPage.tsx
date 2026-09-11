@@ -87,7 +87,7 @@ export default function NotificationsPage() {
                   {notification.active ? t('notifications.active') : t('notifications.inactive')}
                 </span>
               </div>
-              <h3 className="font-semibold text-base">{notification.name}</h3>
+              <h3 className="font-semibold text-base truncate">{notification.name}</h3>
               <p className="text-sm text-text-secondary mt-1 break-all">{notification.email}</p>
             </div>
           ))}

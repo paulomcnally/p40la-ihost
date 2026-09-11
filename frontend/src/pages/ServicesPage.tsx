@@ -133,7 +133,7 @@ export default function ServicesPage() {
                     <Icon name={svc.icon_key || 'other'} className="w-6 h-6" />
                   </div>
                 </div>
-                <h3 className="font-semibold text-base">{svc.name}</h3>
+                <h3 className="font-semibold text-base truncate">{svc.name}</h3>
                 <p className="text-sm text-text-secondary mt-1">
                   {svc.institution && `${svc.institution} · `}{home?.name || ''}
                 </p>

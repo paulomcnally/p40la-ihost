@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 66 |
+| **Total de specs** | 67 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 66 🟢 |
+| **Released** | 67 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-066 |
+| **Último ID usado** | SPEC-068 |
 
 ---
 
@@ -87,6 +87,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-064 | Progreso visual de cuotas en detalle de deuda | released | 2026-09-04 | paulomcnally |
 | SPEC-065 | Títulos dinámicos en el header según la página cargada | released | 2026-09-04 | paulomcnally |
 | SPEC-066 | Aislamiento estricto de sesiones: worktrees obligatorios y main de solo lectura | released | 2026-09-04 | paulomcnally |
+| SPEC-068 | Fix zoom móvil global (todas las páginas) | released | 2026-09-11 | p40la-ihost-team |
 
 ---
 
@@ -156,4 +157,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-04 — SPEC-066 released (aislamiento estricto de sesiones con worktrees obligatorios y main de solo lectura).*
+*Última actualización de este tracker: 2026-09-11 — SPEC-068 released (fix zoom móvil global: font-size 16px en form controls, touch-action en interactivos, eliminación de overflow horizontal en todas las páginas).*

@@ -467,14 +467,14 @@ export default function RegistrosPage() {
   return (
     <div>
       {/* Header con selector de mes y menú de acciones */}
-      <div className="flex items-center justify-between mb-4 sm:mb-5">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-5">
         <h2 className="text-xl sm:text-2xl font-bold">{t('registros.title')}</h2>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 bg-card rounded-ios shadow-ios px-2 py-1">
             <button onClick={prevMonth} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg transition-colors" aria-label="prev">
               <Icon name="chevron" className="w-4 h-4 rotate-180" />
             </button>
-            <span className="text-sm font-semibold min-w-28 text-center whitespace-nowrap">{periodLabel}</span>
+            <span className="text-sm font-semibold min-w-28 text-center">{periodLabel}</span>
             <button onClick={nextMonth} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg transition-colors" aria-label="next">
               <Icon name="chevron" className="w-4 h-4" />
             </button>
@@ -791,7 +791,7 @@ function SummaryCard({ label, amount, currency, color }: {
   return (
     <div className="bg-card rounded-ios shadow-ios p-3 sm:p-4">
       <p className="text-text-secondary text-xs font-medium uppercase tracking-wide">{label}</p>
-      <p className={`text-lg sm:text-xl font-bold mt-1 ${color}`}>{currency} {formatMoney(amount)}</p>
+      <p className={`text-lg sm:text-xl font-bold mt-1 break-words ${color}`}>{currency} {formatMoney(amount)}</p>
     </div>
   )
 }
