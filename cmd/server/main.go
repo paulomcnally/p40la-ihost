@@ -111,6 +111,7 @@ func main() {
 	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage)
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
 	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
+	webhookService := services.NewWebhookService(systemSettingsStorage, systemSettingsService, serviceStorage, billStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
@@ -155,8 +156,14 @@ func main() {
 	configHandlers := api.NewChildSupportConfigHandlers(childSupportConfigService)
 	pensionDashboardHandlers := api.NewPensionDashboardHandlers(pensionGenerationService)
 	debtHandlers := api.NewDebtHandlers(debtService)
+	webhookHandlers := api.NewWebhookHandlers(webhookService, serviceService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers)
+
+	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
+	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {
+		slog.Error("backfill webhook_uuid de servicios", "error", err)
+	}
 
 	router := api.BuildRouter(handler, authService, "./public")
 

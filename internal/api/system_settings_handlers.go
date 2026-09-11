@@ -85,6 +85,12 @@ type settingsRequest struct {
 	// Email alerts master toggle (SPEC-037).
 	EmailAlertsEnabled *bool `json:"email_alerts_enabled,omitempty"`
 
+	// Webhooks master toggle (SPEC-069).
+	WebhookEnabled *bool `json:"webhook_enabled,omitempty"`
+
+	// Base URL de los webhooks (SPEC-069). Default: http://ihost.local:8088.
+	WebhookBaseURL *string `json:"webhook_base_url,omitempty"`
+
 	// Formato de moneda (SPEC-058).
 	CurrencyThousandsSeparator *string `json:"currency_thousands_separator,omitempty"`
 	CurrencyDecimalSeparator   *string `json:"currency_decimal_separator,omitempty"`
@@ -128,6 +134,18 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
+	webhookEnabled, err := h.settings.GetWebhookEnabled(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	webhookBaseURL, err := h.settings.GetWebhookBaseURL(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
 	currencyFormat, err := h.settings.GetCurrencyFormat(r.Context())
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
@@ -149,6 +167,8 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"voicemonkey_send_alerts":      vm.SendAlerts,
 		"voicemonkey_configured":       vm.Configured,
 		"email_alerts_enabled":         emailAlertsEnabled,
+		"webhook_enabled":              webhookEnabled,
+		"webhook_base_url":             webhookBaseURL,
 		"currency_thousands_separator": currencyFormat.ThousandsSeparator,
 		"currency_decimal_separator":   currencyFormat.DecimalSeparator,
 		"currency_decimal_digits":      currencyFormat.DecimalDigits,
@@ -245,6 +265,22 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		}
 	}
 
+	// Webhooks master toggle (SPEC-069).
+	if req.WebhookEnabled != nil {
+		if err := h.settings.SetWebhookEnabled(r.Context(), *req.WebhookEnabled); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+	}
+
+	// Base URL de los webhooks (SPEC-069).
+	if req.WebhookBaseURL != nil {
+		if err := h.settings.SetWebhookBaseURL(r.Context(), *req.WebhookBaseURL); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+	}
+
 	// Formato de moneda (SPEC-058). Se valida en el service (whitelist).
 	if req.CurrencyThousandsSeparator != nil {
 		if err := h.settings.SetCurrencyThousandsSeparator(r.Context(), *req.CurrencyThousandsSeparator); err != nil {
@@ -269,12 +305,16 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 	smtp, _ := h.settings.GetSMTPConfigPublic(r.Context())
 	vm, _ := h.settings.GetVoiceMonkeyConfigPublic(r.Context())
 	emailAlertsEnabled, _ := h.settings.GetEmailAlertsEnabled(r.Context())
+	webhookEnabled, _ := h.settings.GetWebhookEnabled(r.Context())
+	webhookBaseURL, _ := h.settings.GetWebhookBaseURL(r.Context())
 	currencyFormat, _ := h.settings.GetCurrencyFormat(r.Context())
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour":      hour,
 		"smtp_configured":              smtp.Configured,
 		"voicemonkey_configured":       vm.Configured,
 		"email_alerts_enabled":         emailAlertsEnabled,
+		"webhook_enabled":              webhookEnabled,
+		"webhook_base_url":             webhookBaseURL,
 		"currency_thousands_separator": currencyFormat.ThousandsSeparator,
 		"currency_decimal_separator":   currencyFormat.DecimalSeparator,
 		"currency_decimal_digits":      currencyFormat.DecimalDigits,

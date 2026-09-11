@@ -71,6 +71,11 @@ export const api = {
     update: (id: number, body: Partial<Service>) => put<Service>(`/api/services/${id}`, body),
     delete: (id: number) => del(`/api/services/${id}`),
     getAnalyzerOptions: (id: number) => get<Array<{id: number, institution_id: number, analyzer_id: string, analyzer_name: string}>>(`/api/services/${id}/analyzer-options`),
+    regenerateWebhook: (id: number) => post<{ webhook_uuid: string; webhook_url: string }>(`/api/services/${id}/webhook/regenerate`, {}),
+  },
+  webhooks: {
+    getApiKey: () => get<{ api_key: string }>('/api/webhook/key'),
+    regenerateApiKey: () => post<{ api_key: string }>('/api/webhook/key/regenerate', {}),
   },
   bills: {
     list: (serviceId: number) => get<Bill[]>(`/api/services/${serviceId}/bills`),
@@ -121,6 +126,8 @@ export const api = {
       voicemonkey_send_alerts: boolean
       voicemonkey_configured: boolean
       email_alerts_enabled: boolean
+      webhook_enabled: boolean
+      webhook_base_url: string
       currency_thousands_separator: string
       currency_decimal_separator: string
       currency_decimal_digits: number

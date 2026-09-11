@@ -11,6 +11,7 @@ import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import HousePickerModal from '../components/HousePickerModal'
 import LoadingSpinner from '../components/LoadingSpinner'
+import WebhookModal from '../components/WebhookModal'
 import type { Service } from '../types'
 
 export default function ServicesPage() {
@@ -24,6 +25,7 @@ export default function ServicesPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [webhookService, setWebhookService] = useState<Service | null>(null)
 
   useEffect(() => {
     loadAll().finally(() => setLoading(false))
@@ -122,6 +124,7 @@ export default function ServicesPage() {
               >
                 <CardMenu
                   options={[
+                    { label: t('services.webhook_title'), icon: 'link', onClick: () => setWebhookService(svc) },
                     { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/services/edit/${svc.id}`) },
                     { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget({ id: svc.id, name: svc.name }) },
                   ]}
@@ -188,6 +191,9 @@ export default function ServicesPage() {
         onSelect={setHomeFilter}
         onClose={() => setPickerOpen(false)}
       />
+      {webhookService && (
+        <WebhookModal service={webhookService} onClose={() => setWebhookService(null)} />
+      )}
     </div>
   )
 }

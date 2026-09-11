@@ -116,6 +116,21 @@ func (s *BillStorage) UpdateFromExtracted(ctx context.Context, billID int64, amo
 	return nil
 }
 
+// UpdateWebhookFields actualiza los campos descriptivos provistos por el
+// webhook (SPEC-069): monto, número de factura y drive_url. No toca status,
+// paid_at ni payment_reference (el estado se gestiona según el status enviado).
+func (s *BillStorage) UpdateWebhookFields(ctx context.Context, billID int64, amount float64, invoiceNumber, driveURL string) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE bills
+		SET amount = ?, invoice_number = ?, drive_url = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND deleted_at IS NULL
+	`, amount, invoiceNumber, driveURL, billID)
+	if err != nil {
+		return fmt.Errorf("actualizar factura desde webhook: %w", err)
+	}
+	return nil
+}
+
 // Pay marca una factura como pagada persistiendo la fecha de pago, el
 // comprobante (Google Drive, opcional) y la referencia del pago (opcional, SPEC-043).
 func (s *BillStorage) Pay(ctx context.Context, id int64, paidAt time.Time, driveURL, paymentReference string) (*models.Bill, error) {
@@ -129,6 +144,21 @@ func (s *BillStorage) Pay(ctx context.Context, id int64, paidAt time.Time, drive
 		return nil, fmt.Errorf("marcar factura como pagada: %w", err)
 	}
 	return s.GetByID(ctx, id)
+}
+
+// MarkPending revierte una factura a pendiente limpiando paid_at y
+// payment_reference (SPEC-069). Se usa cuando el webhook envía status "pending".
+func (s *BillStorage) MarkPending(ctx context.Context, id int64) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE bills
+		SET status = 'pending', paid_at = NULL, payment_reference = NULL,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND deleted_at IS NULL
+	`, id)
+	if err != nil {
+		return fmt.Errorf("marcar factura como pendiente: %w", err)
+	}
+	return nil
 }
 
 // SoftDelete marca una factura como eliminada.

@@ -22,6 +22,16 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.HandleFunc("POST /api/logout", handler.Logout)
 	mux.Handle("GET /api/me", authMiddleware(http.HandlerFunc(handler.Me)))
 
+	// Webhooks de facturas por servicio (SPEC-069). Autenticados por api_key
+	// global vía header X-Webhook-Key, no por sesión.
+	webhookAuth := WebhookAuthMiddleware(handler.webhooks.webhooks)
+	mux.Handle("POST /webhooks/{uuid}", webhookAuth(http.HandlerFunc(handler.webhooks.UpsertBill)))
+
+	// Gestión de la api_key global y del uuid de webhook (autenticado por sesión)
+	mux.Handle("GET /api/webhook/key", authMiddleware(http.HandlerFunc(handler.webhooks.GetWebhookKey)))
+	mux.Handle("POST /api/webhook/key/regenerate", authMiddleware(http.HandlerFunc(handler.webhooks.RegenerateWebhookKey)))
+	mux.Handle("POST /api/services/{id}/webhook/regenerate", authMiddleware(http.HandlerFunc(handler.webhooks.RegenerateServiceWebhookUUID)))
+
 	// APIs de configuraciones
 	mux.Handle("GET /api/settings", authMiddleware(http.HandlerFunc(handler.settings.GetSettings)))
 	mux.Handle("POST /api/settings/language", authMiddleware(http.HandlerFunc(handler.settings.SetLanguage)))

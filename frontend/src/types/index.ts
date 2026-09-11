@@ -30,6 +30,7 @@ export interface Service {
   start_date?: string
   end_date?: string
   is_recurring: boolean
+  webhook_uuid?: string
   latest_bill_status: 'paid' | 'pending' | null
 }
 
