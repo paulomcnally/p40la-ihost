@@ -19,6 +19,7 @@ type DocumentService struct {
 	serviceStorage  *storage.ServiceStorage
 	billStorage     *storage.BillStorage
 	instStorage     *storage.InstitutionStorage
+	history         *storage.BillHistoryStorage
 }
 
 func NewDocumentService(serviceStorage *storage.ServiceStorage, billStorage *storage.BillStorage, instStorage *storage.InstitutionStorage) *DocumentService {
@@ -27,6 +28,12 @@ func NewDocumentService(serviceStorage *storage.ServiceStorage, billStorage *sto
 		billStorage:     billStorage,
 		instStorage:     instStorage,
 	}
+}
+
+// SetBillHistoryStorage habilita el registro de auditoría de facturas
+// (SPEC-070). Si no se configura, los flujos existentes no registran historial.
+func (s *DocumentService) SetBillHistoryStorage(h *storage.BillHistoryStorage) {
+	s.history = h
 }
 
 var allowedMimeTypes = map[string]bool{
@@ -123,6 +130,7 @@ func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID
 		return nil, false, false, fmt.Errorf("verificar factura existente: %w", err)
 	}
 	if existing != nil {
+		before := *existing
 		err := s.billStorage.UpdateFromExtracted(ctx, existing.ID, extracted.Amount, extracted.InvoiceNumber, fileHash)
 		if err != nil {
 			return nil, false, false, fmt.Errorf("actualizando factura: %w", err)
@@ -130,6 +138,9 @@ func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID
 		existing.Amount = extracted.Amount
 		existing.InvoiceNumber = extracted.InvoiceNumber
 		existing.FileHash = fileHash
+		if err := recordBillHistory(ctx, s.history, existing.ID, models.BillActionUpdated, models.BillSourceDashboard, diffBillChanges(&before, existing)); err != nil {
+			return nil, false, false, fmt.Errorf("registrar historial de factura: %w", err)
+		}
 		return existing, true, false, nil
 	}
 
@@ -149,6 +160,9 @@ func (s *DocumentService) CreateBillFromExtracted(ctx context.Context, serviceID
 	b, err := s.billStorage.Create(ctx, bill)
 	if err != nil {
 		return nil, false, false, err
+	}
+	if err := recordBillHistory(ctx, s.history, b.ID, models.BillActionCreated, models.BillSourceDashboard, nil); err != nil {
+		return nil, false, false, fmt.Errorf("registrar historial de factura: %w", err)
 	}
 	return b, false, false, nil
 }

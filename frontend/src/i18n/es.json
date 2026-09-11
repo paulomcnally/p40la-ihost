@@ -183,7 +183,22 @@
     "receipt": "Comprobante",
     "receipt_hint": "Link de Google Drive (opcional)",
     "payment_reference": "Referencia del pago",
-    "payment_reference_placeholder": "Ej: número de transacción"
+    "payment_reference_placeholder": "Ej: número de transacción",
+    "history": "Historial",
+    "history_empty": "Sin cambios registrados.",
+    "history_action_created": "Creada",
+    "history_action_updated": "Editada",
+    "history_action_paid": "Pagada",
+    "history_source_dashboard": "Dashboard",
+    "history_source_webhook": "Webhook",
+    "field_amount": "Monto",
+    "field_invoice_number": "Número de factura",
+    "field_status": "Estado",
+    "field_drive_url": "Enlace de Drive",
+    "field_year": "Año",
+    "field_month": "Mes",
+    "field_payment_reference": "Referencia del pago",
+    "field_paid_at": "Fecha de pago"
   },
   "institutions": {
     "title": "Instituciones",

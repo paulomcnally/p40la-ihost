@@ -136,6 +136,30 @@ func (h *BillHandlers) DeleteBill(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Factura eliminada"})
 }
 
+// GetBillHistory responde con el historial de auditoría de una factura (SPEC-070).
+func (h *BillHandlers) GetBillHistory(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+	bill, err := h.service.GetByID(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	if bill == nil {
+		respondError(w, http.StatusNotFound, "not_found", "Factura no encontrada")
+		return
+	}
+	history, err := h.service.History(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, history)
+}
+
 // PayBill marca una factura como pagada (SPEC-043). Requiere paid_at; drive_url
 // (comprobante Google Drive) y payment_reference son opcionales.
 func (h *BillHandlers) PayBill(w http.ResponseWriter, r *http.Request) {

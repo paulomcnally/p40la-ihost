@@ -23,6 +23,7 @@ type WebhookService struct {
 	settings       *SystemSettingsService
 	services       *storage.ServiceStorage
 	bills          *storage.BillStorage
+	history        *storage.BillHistoryStorage
 }
 
 // NewWebhookService crea un nuevo WebhookService.
@@ -38,6 +39,12 @@ func NewWebhookService(
 		services:       services,
 		bills:          bills,
 	}
+}
+
+// SetBillHistoryStorage habilita el registro de auditoría de facturas
+// (SPEC-070). Si no se configura, los flujos existentes no registran historial.
+func (s *WebhookService) SetBillHistoryStorage(h *storage.BillHistoryStorage) {
+	s.history = h
 }
 
 // IsEnabled indica si la feature de webhooks está habilitada (Settings).
@@ -144,16 +151,24 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 			if err != nil {
 				return nil, err
 			}
+			before := *created
 			created, err = s.bills.Pay(ctx, created.ID, paidAt, strings.TrimSpace(p.DriveURL), strings.TrimSpace(p.PaymentReference))
 			if err != nil {
 				return nil, fmt.Errorf("marcar factura como pagada: %w", err)
 			}
+			if err := recordBillHistory(ctx, s.history, created.ID, models.BillActionPaid, models.BillSourceWebhook, diffBillChanges(&before, created)); err != nil {
+				return nil, fmt.Errorf("registrar historial de factura: %w", err)
+			}
+		}
+		if err := recordBillHistory(ctx, s.history, created.ID, models.BillActionCreated, models.BillSourceWebhook, nil); err != nil {
+			return nil, fmt.Errorf("registrar historial de factura: %w", err)
 		}
 		return &models.WebhookResult{Bill: created, Created: true}, nil
 	}
 
 	// Actualizar la factura existente. Un status "paid" explícito marca el pago;
 	// un status "pending" explícito revierte la factura a pendiente.
+	before := *existing
 	switch status {
 	case "paid":
 		if existing.Status != "paid" {
@@ -169,6 +184,9 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 			if err != nil {
 				return nil, fmt.Errorf("marcar factura como pagada: %w", err)
 			}
+			if err := recordBillHistory(ctx, s.history, existing.ID, models.BillActionPaid, models.BillSourceWebhook, diffBillChanges(&before, existing)); err != nil {
+				return nil, fmt.Errorf("registrar historial de factura: %w", err)
+			}
 		} else {
 			// Ya estaba pagada: actualizar datos descriptivos sin tocar el pago.
 			if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL)); err != nil {
@@ -177,6 +195,9 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 			existing, err = s.bills.GetByID(ctx, existing.ID)
 			if err != nil {
 				return nil, err
+			}
+			if err := recordBillHistory(ctx, s.history, existing.ID, models.BillActionUpdated, models.BillSourceWebhook, diffBillChanges(&before, existing)); err != nil {
+				return nil, fmt.Errorf("registrar historial de factura: %w", err)
 			}
 		}
 	case "pending":
@@ -192,6 +213,9 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 		if err != nil {
 			return nil, err
 		}
+		if err := recordBillHistory(ctx, s.history, existing.ID, models.BillActionUpdated, models.BillSourceWebhook, diffBillChanges(&before, existing)); err != nil {
+			return nil, fmt.Errorf("registrar historial de factura: %w", err)
+		}
 	default:
 		// Status omitido: actualizar solo datos descriptivos, no tocar el estado.
 		if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL)); err != nil {
@@ -200,6 +224,9 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 		existing, err = s.bills.GetByID(ctx, existing.ID)
 		if err != nil {
 			return nil, err
+		}
+		if err := recordBillHistory(ctx, s.history, existing.ID, models.BillActionUpdated, models.BillSourceWebhook, diffBillChanges(&before, existing)); err != nil {
+			return nil, fmt.Errorf("registrar historial de factura: %w", err)
 		}
 	}
 

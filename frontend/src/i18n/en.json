@@ -182,7 +182,22 @@
     "receipt": "Receipt",
     "receipt_hint": "Google Drive link (optional)",
     "payment_reference": "Payment reference",
-    "payment_reference_placeholder": "E.g. transaction number"
+    "payment_reference_placeholder": "E.g. transaction number",
+    "history": "History",
+    "history_empty": "No changes recorded.",
+    "history_action_created": "Created",
+    "history_action_updated": "Edited",
+    "history_action_paid": "Paid",
+    "history_source_dashboard": "Dashboard",
+    "history_source_webhook": "Webhook",
+    "field_amount": "Amount",
+    "field_invoice_number": "Invoice number",
+    "field_status": "Status",
+    "field_drive_url": "Drive link",
+    "field_year": "Year",
+    "field_month": "Month",
+    "field_payment_reference": "Payment reference",
+    "field_paid_at": "Payment date"
   },
   "institutions": {
     "title": "Institutions",

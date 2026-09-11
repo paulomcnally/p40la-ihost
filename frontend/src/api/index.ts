@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill } from '../types'
+import type { Home, Currency, Service, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -80,6 +80,7 @@ export const api = {
   bills: {
     list: (serviceId: number) => get<Bill[]>(`/api/services/${serviceId}/bills`),
     get: (id: number) => get<Bill>(`/api/bills/${id}`),
+    history: (id: number) => get<BillHistoryEntry[]>(`/api/bills/${id}/history`),
     create: (body: Partial<Bill>) => post<Bill>('/api/bills', body),
     update: (id: number, body: Partial<Bill>) => put<Bill>(`/api/bills/${id}`, body),
     delete: (id: number) => del(`/api/bills/${id}`),

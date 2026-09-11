@@ -11,6 +11,7 @@ import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import PayBillModal from '../components/PayBillModal'
 import UploadBillModal from '../components/UploadBillModal'
+import BillHistoryModal from '../components/BillHistoryModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import WebhookModal from '../components/WebhookModal'
 import type { Bill, Service } from '../types'
@@ -30,6 +31,7 @@ export default function BillsPage() {
   const [service, setService] = useState<Service | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
   const [payTarget, setPayTarget] = useState<Bill | null>(null)
+  const [historyTarget, setHistoryTarget] = useState<Bill | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [webhookOpen, setWebhookOpen] = useState(false)
@@ -62,6 +64,7 @@ export default function BillsPage() {
   const billMenuOptions = (bill: Bill): CardMenuOption[] => {
     const options: CardMenuOption[] = [
       { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/bills/edit/${bill.id}?service=${serviceId}`) },
+      { label: t('bills.history'), icon: 'clock', onClick: () => setHistoryTarget(bill) },
     ]
     if (bill.status === 'pending') {
       options.push({ label: t('bills.pay'), icon: 'credit', onClick: () => setPayTarget(bill) })
@@ -193,6 +196,12 @@ export default function BillsPage() {
           bill={payTarget}
           onClose={() => setPayTarget(null)}
           onSuccess={load}
+        />
+      )}
+      {historyTarget && (
+        <BillHistoryModal
+          bill={historyTarget}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
       <UploadBillModal
