@@ -48,7 +48,7 @@ for r in data.get("results", []):
     versions=$(echo "$response" | grep -o '"name":"[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*"' | grep -o '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*')
   fi
 
-  echo "$versions" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1
+  echo "$versions" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true
 }
 
 # Indica si una versión ya existe en el JSON de Docker Hub.
@@ -122,9 +122,12 @@ log "Consultando tags en Docker Hub: ${REPO}..."
 RESPONSE=$(curl -fsSL "${DOCKER_HUB_API}" 2>/dev/null) || error "No se pudo consultar Docker Hub API en ${DOCKER_HUB_API}"
 
 LATEST_VERSION=$(parse_latest_version "$RESPONSE")
-[[ -n "${LATEST_VERSION}" ]] || error "No se encontró ninguna versión semver válida (X.Y.Z) en Docker Hub"
 
-log "Última versión publicada en Docker Hub: ${LATEST_VERSION}"
+if [[ -n "${LATEST_VERSION}" ]]; then
+  log "Última versión publicada en Docker Hub: ${LATEST_VERSION}"
+else
+  log "No hay versiones publicadas en Docker Hub (primera release)."
+fi
 
 # -----------------------------------------------------------------------------
 # Calcular nueva versión
@@ -136,11 +139,15 @@ if [[ $# -ge 1 ]]; then
     error "Versión inválida: ${NEW_VERSION}. Debe seguir semver (X.Y.Z)."
   fi
   log "Usando versión manual: ${NEW_VERSION}"
-else
+elif [[ -n "${LATEST_VERSION}" ]]; then
   IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_VERSION}"
   NEW_PATCH=$((PATCH + 1))
   NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
   log "Calculando bump automático de patch: ${LATEST_VERSION} → ${NEW_VERSION}"
+else
+  INITIAL_VERSION=$(jq -r '.version' frontend/package.json 2>/dev/null || echo "0.1.0")
+  NEW_VERSION="${INITIAL_VERSION}"
+  log "Primera release: usando versión inicial ${NEW_VERSION}"
 fi
 
 # -----------------------------------------------------------------------------
