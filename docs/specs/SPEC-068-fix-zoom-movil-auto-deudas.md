@@ -226,3 +226,4 @@ Sin cambios en endpoints.
 |-------|-------|-------------|
 | 2026-09-11 | p40la-ihost-team | Creación inicial de la especificación |
 | 2026-09-11 | p40la-ihost-team | Implementación completa: fix global `index.css` (font-size 16px, text-size-adjust, touch-action), cards de seguros responsive en AutoShowPage, DebtCalendar, auditoría global de overflow e inputs text-sm. Build OK, pruebas manuales móvil satisfactorias. |
+| 2026-09-11 | p40la-ihost-team | Release: merge a `main`, issue #70 cerrado con label `spec/released`. Commit: `SPEC-068: fix zoom móvil global (font-size 16px, touch-action, overflow horizontal)`. |
