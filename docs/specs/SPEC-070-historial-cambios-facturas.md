@@ -1,7 +1,7 @@
 ---
 title: "Historial de cambios de facturas (auditoría)"
 id: "SPEC-070"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-11"
 updated: "2026-09-11"
@@ -11,7 +11,7 @@ github_issue: 73
 # Historial de cambios de facturas (auditoría)
 
 **ID**: SPEC-070  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-11  
 **Actualizado**: 2026-09-11
@@ -294,3 +294,5 @@ type BillHistory struct {
 | 2026-09-11 | paulomcnally | Creación inicial de la especificación |
 | 2026-09-11 | paulomcnally | Spec cancelada a petición del usuario |
 | 2026-09-11 | paulomcnally | Spec reactivada (cancelled → pending_execution → in_progress) para implementación a petición del usuario |
+| 2026-09-11 | paulomcnally | Implementación completa: migración 0028, BillHistoryStorage, registro en BillService/WebhookService/DocumentService, endpoint GET /api/bills/{id}/history, BillHistoryModal en el menú de 3 puntos, i18n es/en. Tests y build verdes. |
+| 2026-09-11 | paulomcnally | Release: merge a main (commit 7823a2b) |
