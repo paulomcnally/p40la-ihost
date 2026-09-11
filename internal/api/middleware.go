@@ -12,6 +12,21 @@ type contextKey string
 
 const userContextKey contextKey = "user"
 
+// WebhookAuthMiddleware valida la api_key global de webhooks (header
+// X-Webhook-Key) y, si es válida, deja pasar la solicitud. SPEC-069.
+func WebhookAuthMiddleware(webhooks *services.WebhookService) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			provided := r.Header.Get("X-Webhook-Key")
+			if provided == "" || !webhooks.ValidateWebhookKey(r.Context(), provided) {
+				respondError(w, http.StatusUnauthorized, "unauthorized", "api_key de webhook inválida")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // AuthMiddleware valida la sesión y, si es válida, inyecta el usuario en el contexto.
 func AuthMiddleware(auth *services.AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

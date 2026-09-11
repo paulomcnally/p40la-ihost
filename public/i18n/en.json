@@ -135,7 +135,21 @@
     "billing_type": "Billing type",
     "billing_day": "Billing day",
     "billing_day_required": "Billing day is required for automatic billing",
-    "auto_generate": "Auto generation"
+    "auto_generate": "Auto generation",
+    "webhook_title": "Webhooks",
+    "webhook_url": "Webhook URL",
+    "webhook_url_desc": "Send a POST with the bill month and year. If it doesn't exist it's created, if it exists it's updated.",
+    "webhook_copy": "Copy URL",
+    "webhook_copied": "URL copied",
+    "webhook_regenerate": "Regenerate UUID",
+    "webhook_regenerated": "Webhook regenerated. Update the URL in the external client.",
+    "webhook_api_key": "Webhook API key",
+    "webhook_api_key_desc": "Sent in the X-Webhook-Key header of every request.",
+    "webhook_api_key_copy": "Copy API key",
+    "webhook_regenerate_key": "Regenerate API key",
+    "webhook_key_regenerated": "API key regenerated. Update it in the external client.",
+    "webhook_schema_desc": "The POST body uses this schema (year, month and amount are required; status can be \"pending\" or \"paid\").",
+    "webhook_disabled_hint": "The webhook feature is disabled. Enable it from Settings."
   },
   "frequency": {
     "monthly": "Monthly",
@@ -306,6 +320,23 @@
         "open_speakers": "View my speakers",
         "step4": "Copy the corresponding Device and paste it into the \"Device\" field."
       }
+    },
+    "webhooks": {
+      "title": "Webhooks",
+      "enable": "Enable webhooks",
+      "enable_hint": "Allow external projects to create or update bills via API.",
+      "api_key": "Global API key",
+      "api_key_desc": "Sent in the X-Webhook-Key header of every webhook request.",
+      "copy": "Copy API key",
+      "copied": "API key copied",
+      "regenerate": "Regenerate API key",
+      "regenerate_confirm": "Do you want to regenerate the webhook API key? External integrations will stop working until you update the key.",
+      "regenerated": "API key regenerated",
+      "base_url": "Webhook base URL",
+      "base_url_desc": "Base URL for service webhooks. Defaults to the iHost.",
+      "base_url_saved": "Base URL saved",
+      "disabled_hint": "Webhooks are disabled. Endpoints will respond 403 until you enable this option.",
+      "needs_config_hint": "Turn the toggle on to enable the webhook feature."
     }
   },
   "notifications": {

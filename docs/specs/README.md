@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 67 |
+| **Total de specs** | 68 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 67 🟢 |
+| **Released** | 68 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-068 |
+| **Último ID usado** | SPEC-069 |
 
 ---
 
@@ -89,6 +89,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-066 | Aislamiento estricto de sesiones: worktrees obligatorios y main de solo lectura | released | 2026-09-04 | paulomcnally |
 | SPEC-067 | Editar seguros de auto (vencidos o no) con menú de 3 puntos en la vista del auto | released | 2026-09-11 | paulomcnally |
 | SPEC-068 | Fix zoom móvil global (todas las páginas) | released | 2026-09-11 | p40la-ihost-team |
+| SPEC-069 | Webhooks por servicio para facturas | released | 2026-09-11 | paulomcnally |
 
 ---
 
@@ -158,4 +159,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-11 — SPEC-067 (editar seguros de auto con menú de 3 puntos) y SPEC-068 (fix zoom móvil global) released.*
+*Última actualización de este tracker: 2026-09-11 — SPEC-069 (webhooks por servicio para facturas) released.*

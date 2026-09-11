@@ -12,6 +12,7 @@ import DeleteModal from '../components/DeleteModal'
 import PayBillModal from '../components/PayBillModal'
 import UploadBillModal from '../components/UploadBillModal'
 import LoadingSpinner from '../components/LoadingSpinner'
+import WebhookModal from '../components/WebhookModal'
 import type { Bill, Service } from '../types'
 
 const MONTHS = [
@@ -31,6 +32,7 @@ export default function BillsPage() {
   const [payTarget, setPayTarget] = useState<Bill | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [webhookOpen, setWebhookOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!serviceId) return
@@ -84,6 +86,7 @@ export default function BillsPage() {
         <CreateMenu options={[
           { label: 'Subir factura', icon: 'upload', onClick: () => setUploadOpen(true) },
           { label: t('bills.create'), icon: 'plus', onClick: () => navigate(`/bills/new?service=${serviceId}`) },
+          { label: t('services.webhook_title'), icon: 'link', onClick: () => setWebhookOpen(true) },
         ]} />
       </div>
       {bills.length === 0 ? (
@@ -199,6 +202,9 @@ export default function BillsPage() {
         onClose={() => setUploadOpen(false)}
         onSaved={load}
       />
+      {webhookOpen && service && (
+        <WebhookModal service={service} onClose={() => setWebhookOpen(false)} />
+      )}
     </div>
   )
 }

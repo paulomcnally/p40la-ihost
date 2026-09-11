@@ -20,7 +20,7 @@ const serviceColumns = `
 	id, home_id, name, institution, currency_id, frequency,
 	suggested_amount, active, icon_key, billing_type, billing_day, auto_generate,
 	institution_id, institution_analyzer_id,
-	start_date, end_date, is_recurring,
+	start_date, end_date, is_recurring, webhook_uuid,
 	(SELECT b.status FROM bills b WHERE b.service_id = services.id AND (b.amount > 0 OR b.invoice_number != '') ORDER BY b.year DESC, b.month DESC, b.id DESC LIMIT 1) AS latest_bill_status,
 	deleted_at, created_at, updated_at
 `
@@ -50,6 +50,14 @@ func (s *ServiceStorage) GetByID(ctx context.Context, id int64) (*models.Service
 	return scanService(row)
 }
 
+// FindByWebhookUUID busca un servicio activo por su webhook_uuid (SPEC-069).
+func (s *ServiceStorage) FindByWebhookUUID(ctx context.Context, uuid string) (*models.Service, error) {
+	row := s.db.QueryRowContext(ctx,
+		"SELECT "+serviceColumns+" FROM services WHERE webhook_uuid = ? AND deleted_at IS NULL", uuid,
+	)
+	return scanService(row)
+}
+
 func (s *ServiceStorage) Count(ctx context.Context, homeID *int64) (int64, error) {
 	query := "SELECT COUNT(*) FROM services WHERE deleted_at IS NULL"
 	var args []any
@@ -67,9 +75,9 @@ func (s *ServiceStorage) Count(ctx context.Context, homeID *int64) (int64, error
 
 func (s *ServiceStorage) Create(ctx context.Context, svc *models.Service) (*models.Service, error) {
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO services (home_id, name, institution, currency_id, frequency, suggested_amount, active, icon_key, billing_type, billing_day, auto_generate, institution_id, institution_analyzer_id, start_date, end_date, is_recurring)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, svc.HomeID, svc.Name, svc.Institution, svc.CurrencyID, svc.Frequency, svc.SuggestedAmount, svc.Active, svc.IconKey, svc.BillingType, svc.BillingDay, svc.AutoGenerate, svc.InstitutionID, svc.InstitutionAnalyzerID, svc.StartDate, svc.EndDate, svc.IsRecurring)
+		INSERT INTO services (home_id, name, institution, currency_id, frequency, suggested_amount, active, icon_key, billing_type, billing_day, auto_generate, institution_id, institution_analyzer_id, start_date, end_date, is_recurring, webhook_uuid)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, svc.HomeID, svc.Name, svc.Institution, svc.CurrencyID, svc.Frequency, svc.SuggestedAmount, svc.Active, svc.IconKey, svc.BillingType, svc.BillingDay, svc.AutoGenerate, svc.InstitutionID, svc.InstitutionAnalyzerID, svc.StartDate, svc.EndDate, svc.IsRecurring, svc.WebhookUUID)
 	if err != nil {
 		return nil, fmt.Errorf("insertar servicio: %w", err)
 	}
@@ -97,6 +105,18 @@ func (s *ServiceStorage) Update(ctx context.Context, svc *models.Service) (*mode
 	return s.GetByID(ctx, svc.ID)
 }
 
+// SetWebhookUUID asigna (o reemplaza) el webhook_uuid de un servicio (SPEC-069).
+func (s *ServiceStorage) SetWebhookUUID(ctx context.Context, id int64, uuid string) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE services SET webhook_uuid = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND deleted_at IS NULL
+	`, uuid, id)
+	if err != nil {
+		return fmt.Errorf("asignar webhook_uuid a servicio: %w", err)
+	}
+	return nil
+}
+
 func (s *ServiceStorage) SoftDelete(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE services SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL
@@ -115,9 +135,10 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	var latestBillStatus sql.NullString
 	var startDate, endDate sql.NullString
 	var institution sql.NullString
+	var webhookUUID sql.NullString
 	if err := row.Scan(&svc.ID, &svc.HomeID, &svc.Name, &institution, &svc.CurrencyID,
 		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
-		&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring,
+		&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring, &webhookUUID,
 		&latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -125,6 +146,7 @@ func scanService(row *sql.Row) (*models.Service, error) {
 		return nil, fmt.Errorf("escanear servicio: %w", err)
 	}
 	svc.Institution = institution.String
+	svc.WebhookUUID = webhookUUID.String
 	if billingDay.Valid {
 		v := int(billingDay.Int64)
 		svc.BillingDay = &v
@@ -160,13 +182,15 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 		var latestBillStatus sql.NullString
 		var startDate, endDate sql.NullString
 		var institution sql.NullString
+		var webhookUUID sql.NullString
 		if err := rows.Scan(&svc.ID, &svc.HomeID, &svc.Name, &institution, &svc.CurrencyID,
 			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
-			&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring,
+			&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring, &webhookUUID,
 			&latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear servicio: %w", err)
 		}
 		svc.Institution = institution.String
+		svc.WebhookUUID = webhookUUID.String
 		if billingDay.Valid {
 			v := int(billingDay.Int64)
 			svc.BillingDay = &v

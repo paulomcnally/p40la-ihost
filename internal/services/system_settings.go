@@ -302,6 +302,49 @@ func (s *SystemSettingsService) SetEmailAlertsEnabled(ctx context.Context, enabl
 	return s.setBoolSetting(ctx, EmailAlertsEnabledKey, enabled)
 }
 
+// ---- Webhooks master toggle (SPEC-069) ----
+
+// WebhookEnabledKey es la key del toggle maestro de la feature de webhooks.
+const WebhookEnabledKey = "webhook_enabled"
+
+// WebhookBaseURLKey es la key de la base URL de los webhooks (SPEC-069).
+const WebhookBaseURLKey = "webhook_base_url"
+
+// DefaultWebhookBaseURL es la base URL por defecto de los webhooks.
+const DefaultWebhookBaseURL = "http://ihost.local:8088"
+
+// GetWebhookEnabled indica si la feature de webhooks está habilitada.
+func (s *SystemSettingsService) GetWebhookEnabled(ctx context.Context) (bool, error) {
+	return s.getBoolSetting(ctx, WebhookEnabledKey)
+}
+
+// SetWebhookEnabled persiste el toggle maestro de webhooks.
+func (s *SystemSettingsService) SetWebhookEnabled(ctx context.Context, enabled bool) error {
+	return s.setBoolSetting(ctx, WebhookEnabledKey, enabled)
+}
+
+// GetWebhookBaseURL devuelve la base URL de los webhooks. Si no está
+// configurada, usa el default `http://ihost.local:8088` (SPEC-069).
+func (s *SystemSettingsService) GetWebhookBaseURL(ctx context.Context) (string, error) {
+	val, err := s.storage.Get(ctx, WebhookBaseURLKey)
+	if err != nil {
+		return "", err
+	}
+	if val == "" {
+		return DefaultWebhookBaseURL, nil
+	}
+	return val, nil
+}
+
+// SetWebhookBaseURL persiste la base URL de los webhooks.
+func (s *SystemSettingsService) SetWebhookBaseURL(ctx context.Context, baseURL string) error {
+	baseURL = strings.TrimSpace(strings.TrimRight(baseURL, "/"))
+	if baseURL == "" {
+		baseURL = DefaultWebhookBaseURL
+	}
+	return s.storage.Set(ctx, WebhookBaseURLKey, baseURL)
+}
+
 // ---- Voice Monkey configuration (SPEC-033) ----
 
 // Claves de config de Voice Monkey en system_settings.

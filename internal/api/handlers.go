@@ -33,6 +33,7 @@ type Handler struct {
 	config               *ChildSupportConfigHandlers
 	pensionDashboard     *PensionDashboardHandlers
 	debt                 *DebtHandlers
+	webhooks             *WebhookHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -60,6 +61,7 @@ func NewHandler(
 	config *ChildSupportConfigHandlers,
 	pensionDashboard *PensionDashboardHandlers,
 	debt *DebtHandlers,
+	webhooks *WebhookHandlers,
 ) *Handler {
 	return &Handler{
 		auth:                auth,
@@ -85,6 +87,7 @@ func NewHandler(
 		config:              config,
 		pensionDashboard:    pensionDashboard,
 		debt:                debt,
+		webhooks:            webhooks,
 	}
 }
 

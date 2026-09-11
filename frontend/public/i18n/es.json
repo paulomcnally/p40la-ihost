@@ -135,7 +135,21 @@
     "billing_type": "Tipo de facturación",
     "billing_day": "Día de facturación",
     "billing_day_required": "El día de facturación es requerido para facturación automática",
-    "auto_generate": "Generación automática"
+    "auto_generate": "Generación automática",
+    "webhook_title": "Webhooks",
+    "webhook_url": "URL del webhook",
+    "webhook_url_desc": "Envía un POST con el mes y año de la factura. Si no existe la crea, si existe la actualiza.",
+    "webhook_copy": "Copiar URL",
+    "webhook_copied": "URL copiada",
+    "webhook_regenerate": "Regenerar UUID",
+    "webhook_regenerated": "Webhook regenerado. Actualiza la URL en el cliente externo.",
+    "webhook_api_key": "API key del webhook",
+    "webhook_api_key_desc": "Se envía en el header X-Webhook-Key de cada solicitud.",
+    "webhook_api_key_copy": "Copiar API key",
+    "webhook_regenerate_key": "Regenerar API key",
+    "webhook_key_regenerated": "API key regenerada. Actualízala en el cliente externo.",
+    "webhook_schema_desc": "El cuerpo del POST usa este schema (year, month y amount obligatorios; status puede ser \"pending\" o \"paid\").",
+    "webhook_disabled_hint": "La feature de webhooks está deshabilitada. Actívala desde Configuración."
   },
   "frequency": {
     "monthly": "Mensual",
@@ -307,6 +321,23 @@
         "open_speakers": "Ver mis altavoces",
         "step4": "Copiá el Device correspondiente y pegalo en el campo \"Device\"."
       }
+    },
+    "webhooks": {
+      "title": "Webhooks",
+      "enable": "Habilitar webhooks",
+      "enable_hint": "Permite que proyectos externos creen o actualicen facturas vía API.",
+      "api_key": "API key global",
+      "api_key_desc": "Se envía en el header X-Webhook-Key de cada solicitud al webhook.",
+      "copy": "Copiar API key",
+      "copied": "API key copiada",
+      "regenerate": "Regenerar API key",
+      "regenerate_confirm": "¿Querés regenerar la API key de webhooks? Las integraciones externas dejarán de funcionar hasta que actualices la clave.",
+      "regenerated": "API key regenerada",
+      "base_url": "URL base del webhook",
+      "base_url_desc": "URL base para los webhooks de los servicios. Por defecto apunta al iHost.",
+      "base_url_saved": "URL base guardada",
+      "disabled_hint": "Los webhooks están deshabilitados. Los endpoints responderán 403 hasta que actives esta opción.",
+      "needs_config_hint": "Activa el toggle para habilitar la feature de webhooks."
     }
   },
   "notifications": {

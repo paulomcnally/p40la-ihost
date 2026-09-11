@@ -88,10 +88,23 @@ func (s *ServiceService) GetByID(ctx context.Context, id int64) (*models.Service
 	return s.services.GetByID(ctx, id)
 }
 
+// FindByWebhookUUID busca un servicio activo por su webhook_uuid (SPEC-069).
+func (s *ServiceService) FindByWebhookUUID(ctx context.Context, uuid string) (*models.Service, error) {
+	return s.services.FindByWebhookUUID(ctx, uuid)
+}
+
 // Create crea un nuevo servicio y genera su factura inicial si está activo.
 func (s *ServiceService) Create(ctx context.Context, svc *models.Service) (*models.Service, error) {
 	if err := s.validate(ctx, svc); err != nil {
 		return nil, err
+	}
+
+	if svc.WebhookUUID == "" {
+		uuid, err := NewWebhookUUID()
+		if err != nil {
+			return nil, err
+		}
+		svc.WebhookUUID = uuid
 	}
 
 	created, err := s.services.Create(ctx, svc)
@@ -104,6 +117,47 @@ func (s *ServiceService) Create(ctx context.Context, svc *models.Service) (*mode
 	}
 
 	return created, nil
+}
+
+// EnsureWebhookUUIDs asigna un webhook_uuid a todos los servicios que no lo
+// tengan (backfill de servicios existentes, REQ-010 SPEC-069).
+func (s *ServiceService) EnsureWebhookUUIDs(ctx context.Context) error {
+	list, err := s.services.List(ctx, nil)
+	if err != nil {
+		return err
+	}
+	for _, svc := range list {
+		if svc.WebhookUUID != "" {
+			continue
+		}
+		uuid, err := NewWebhookUUID()
+		if err != nil {
+			return err
+		}
+		if err := s.services.SetWebhookUUID(ctx, svc.ID, uuid); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// RegenerateWebhookUUID reemplaza el webhook_uuid de un servicio (REQ-007).
+func (s *ServiceService) RegenerateWebhookUUID(ctx context.Context, id int64) (*models.Service, error) {
+	svc, err := s.services.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if svc == nil {
+		return nil, nil
+	}
+	uuid, err := NewWebhookUUID()
+	if err != nil {
+		return nil, err
+	}
+	if err := s.services.SetWebhookUUID(ctx, id, uuid); err != nil {
+		return nil, err
+	}
+	return s.services.GetByID(ctx, id)
 }
 
 // Update actualiza un servicio existente.
