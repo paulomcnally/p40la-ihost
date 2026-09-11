@@ -26,6 +26,7 @@ type AutoServiceDetail struct {
 	ServiceName      string  `json:"service_name"`
 	InstitutionName  string  `json:"institution_name"`
 	InstitutionID    *int64  `json:"institution_id,omitempty"`
+	CurrencyID       int64   `json:"currency_id"`
 	SuggestedAmount  float64 `json:"suggested_amount"`
 	Frequency        string  `json:"frequency"`
 	IconKey          string  `json:"icon_key"`

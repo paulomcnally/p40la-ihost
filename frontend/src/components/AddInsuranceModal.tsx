@@ -3,34 +3,37 @@ import { api } from '../api'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
-import type { Service } from '../types'
+import type { AutoService, Service } from '../types'
 
 interface AddInsuranceModalProps {
   autoId: number
   onAdd: () => void
   onCancel: () => void
+  insurance?: AutoService | null
 }
 
-export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsuranceModalProps) {
+export default function AddInsuranceModal({ autoId, onAdd, onCancel, insurance }: AddInsuranceModalProps) {
+  const isEditing = !!insurance
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { currencies, loadCurrencies } = useAppStore()
   const [services, setServices] = useState<Service[]>([])
   const [search, setSearch] = useState('')
-  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null)
-  const [coverageType, setCoverageType] = useState<'daños_a_terceros' | 'full_cover'>('daños_a_terceros')
-  const [policyNumber, setPolicyNumber] = useState('')
-  const [certificate, setCertificate] = useState('')
-  const [insurerNumber, setInsurerNumber] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(insurance?.service_id ?? null)
+  const [coverageType, setCoverageType] = useState<'daños_a_terceros' | 'full_cover'>(insurance?.coverage_type ?? 'daños_a_terceros')
+  const [policyNumber, setPolicyNumber] = useState(insurance?.policy_number ?? '')
+  const [certificate, setCertificate] = useState(insurance?.certificate ?? '')
+  const [insurerNumber, setInsurerNumber] = useState(insurance?.insurer_number ?? '')
+  const [loading, setLoading] = useState(!isEditing)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
+    if (isEditing) return
     api.autos.availableServices(autoId).then((data) => {
       setServices(data || [])
       setLoading(false)
     })
     loadCurrencies()
-  }, [autoId, loadCurrencies])
+  }, [autoId, isEditing, loadCurrencies])
 
   const filtered = services.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase())
@@ -39,14 +42,18 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
   const handleSubmit = async () => {
     if (!selectedServiceId) return
     setSubmitting(true)
+    const body = {
+      coverage_type: coverageType,
+      policy_number: policyNumber,
+      certificate: certificate || undefined,
+      insurer_number: insurerNumber
+    }
     try {
-      await api.autos.addService(autoId, {
-        service_id: selectedServiceId,
-        coverage_type: coverageType,
-        policy_number: policyNumber,
-        certificate: certificate || undefined,
-        insurer_number: insurerNumber
-      })
+      if (isEditing && insurance) {
+        await api.autos.updateService(autoId, insurance.service_id, body)
+      } else {
+        await api.autos.addService(autoId, { service_id: selectedServiceId, ...body })
+      }
       onAdd()
     } catch {
       setSubmitting(false)
@@ -57,44 +64,48 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onCancel}>
       <div className="bg-card rounded-ios shadow-ios w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-border">
-          <h3 className="text-lg font-bold">Agregar Seguro</h3>
-          <input
-            type="text"
-            placeholder="Buscar servicio..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full mt-3 px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-          />
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
-            <p className="text-text-secondary text-center py-4">Cargando...</p>
-          ) : filtered.length === 0 ? (
-            <p className="text-text-secondary text-center py-4">No hay servicios disponibles</p>
-          ) : (
-            <div className="space-y-2">
-              {filtered.map(svc => (
-                <button
-                  key={svc.id}
-                  onClick={() => setSelectedServiceId(svc.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-ios-sm border text-left transition-colors ${
-                    selectedServiceId === svc.id
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <div className="w-9 h-9 rounded-ios bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                    <Icon name={svc.icon_key || 'other'} className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{svc.name}</p>
-                    <p className="text-xs text-text-secondary">{formatMoney(svc.suggested_amount, currencies.find(c => c.id === svc.currency_id)?.symbol)} · {svc.frequency === 'monthly' ? 'Mensual' : 'Anual'}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
+          <h3 className="text-lg font-bold">{isEditing ? 'Editar Seguro' : 'Agregar Seguro'}</h3>
+          {!isEditing && (
+            <input
+              type="text"
+              placeholder="Buscar servicio..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full mt-3 px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            />
           )}
         </div>
+        {!isEditing && (
+          <div className="flex-1 overflow-y-auto p-4">
+            {loading ? (
+              <p className="text-text-secondary text-center py-4">Cargando...</p>
+            ) : filtered.length === 0 ? (
+              <p className="text-text-secondary text-center py-4">No hay servicios disponibles</p>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map(svc => (
+                  <button
+                    key={svc.id}
+                    onClick={() => setSelectedServiceId(svc.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-ios-sm border text-left transition-colors ${
+                      selectedServiceId === svc.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-ios bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                      <Icon name={svc.icon_key || 'other'} className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{svc.name}</p>
+                      <p className="text-xs text-text-secondary">{formatMoney(svc.suggested_amount, currencies.find(c => c.id === svc.currency_id)?.symbol)} · {svc.frequency === 'monthly' ? 'Mensual' : 'Anual'}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {selectedServiceId && (
           <div className="p-4 border-t border-border">
             <p className="text-sm font-medium mb-2">Tipo de cobertura</p>
@@ -166,7 +177,7 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel }: AddInsura
                 disabled={submitting}
                 className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors min-h-[44px]"
               >
-                {submitting ? 'Asociando...' : 'Asociar'}
+                {submitting ? (isEditing ? 'Guardando...' : 'Asociando...') : (isEditing ? 'Guardar' : 'Asociar')}
               </button>
             </div>
           </div>

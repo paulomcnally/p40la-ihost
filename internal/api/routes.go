@@ -105,6 +105,7 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	// APIs de seguros de autos
 	mux.Handle("GET /api/autos/{id}/services", authMiddleware(http.HandlerFunc(handler.autoService.ListAutoServices)))
 	mux.Handle("POST /api/autos/{id}/services", authMiddleware(http.HandlerFunc(handler.autoService.CreateAutoService)))
+	mux.Handle("PUT /api/autos/{id}/services/{service_id}", authMiddleware(http.HandlerFunc(handler.autoService.UpdateAutoService)))
 	mux.Handle("DELETE /api/autos/{id}/services/{service_id}", authMiddleware(http.HandlerFunc(handler.autoService.DeleteAutoService)))
 	mux.Handle("GET /api/autos/{id}/available-services", authMiddleware(http.HandlerFunc(handler.autoService.ListAvailableServices)))
 
