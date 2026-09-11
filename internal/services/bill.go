@@ -17,11 +17,18 @@ var driveURLRegex = regexp.MustCompile(`^https?://(drive\.google\.com|docs\.goog
 type BillService struct {
 	storage  *storage.BillStorage
 	services *storage.ServiceStorage
+	history  *storage.BillHistoryStorage
 }
 
 // NewBillService crea un nuevo BillService.
 func NewBillService(st *storage.BillStorage, services *storage.ServiceStorage) *BillService {
 	return &BillService{storage: st, services: services}
+}
+
+// SetBillHistoryStorage habilita el registro de auditoría de facturas
+// (SPEC-070). Si no se configura, los flujos existentes no registran historial.
+func (s *BillService) SetBillHistoryStorage(h *storage.BillHistoryStorage) {
+	s.history = h
 }
 
 // ListByService devuelve las facturas de un servicio.
@@ -34,12 +41,27 @@ func (s *BillService) GetByID(ctx context.Context, id int64) (*models.Bill, erro
 	return s.storage.GetByID(ctx, id)
 }
 
+// History devuelve el historial de auditoría de una factura (SPEC-070).
+func (s *BillService) History(ctx context.Context, id int64) ([]models.BillHistory, error) {
+	if s.history == nil {
+		return []models.BillHistory{}, nil
+	}
+	return s.history.ListByBill(ctx, id)
+}
+
 // Create crea una nueva factura.
 func (s *BillService) Create(ctx context.Context, bill *models.Bill) (*models.Bill, error) {
 	if err := s.validate(ctx, bill, true); err != nil {
 		return nil, err
 	}
-	return s.storage.Create(ctx, bill)
+	created, err := s.storage.Create(ctx, bill)
+	if err != nil {
+		return nil, err
+	}
+	if err := recordBillHistory(ctx, s.history, created.ID, models.BillActionCreated, models.BillSourceDashboard, nil); err != nil {
+		return nil, fmt.Errorf("registrar historial de factura: %w", err)
+	}
+	return created, nil
 }
 
 // Update actualiza una factura existente.
@@ -50,7 +72,21 @@ func (s *BillService) Update(ctx context.Context, bill *models.Bill) (*models.Bi
 	if err := s.validate(ctx, bill, false); err != nil {
 		return nil, err
 	}
-	return s.storage.Update(ctx, bill)
+	before, err := s.storage.GetByID(ctx, bill.ID)
+	if err != nil {
+		return nil, err
+	}
+	if before == nil {
+		return nil, fmt.Errorf("la factura no existe")
+	}
+	updated, err := s.storage.Update(ctx, bill)
+	if err != nil {
+		return nil, err
+	}
+	if err := recordBillHistory(ctx, s.history, updated.ID, models.BillActionUpdated, models.BillSourceDashboard, diffBillChanges(before, updated)); err != nil {
+		return nil, fmt.Errorf("registrar historial de factura: %w", err)
+	}
+	return updated, nil
 }
 
 // Delete elimina lógicamente una factura.
@@ -85,7 +121,15 @@ func (s *BillService) PayBill(ctx context.Context, id int64, paidAt time.Time, d
 		return nil, fmt.Errorf("el enlace de Google Drive no es válido")
 	}
 
-	return s.storage.Pay(ctx, id, paidAt, driveURL, strings.TrimSpace(paymentReference))
+	before := *bill
+	paid, err := s.storage.Pay(ctx, id, paidAt, driveURL, strings.TrimSpace(paymentReference))
+	if err != nil {
+		return nil, err
+	}
+	if err := recordBillHistory(ctx, s.history, paid.ID, models.BillActionPaid, models.BillSourceDashboard, diffBillChanges(&before, paid)); err != nil {
+		return nil, fmt.Errorf("registrar historial de factura: %w", err)
+	}
+	return paid, nil
 }
 
 func (s *BillService) validate(ctx context.Context, bill *models.Bill, isNew bool) error {

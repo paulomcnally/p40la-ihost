@@ -23,11 +23,14 @@ func newTestWebhook(t *testing.T) (*WebhookService, *ServiceService, *BillServic
 	homeStorage := storage.NewHomeStorage(database)
 	serviceStorage := storage.NewServiceStorage(database)
 	billStorage := storage.NewBillStorage(database)
+	historyStorage := storage.NewBillHistoryStorage(database)
 
 	serviceSvc := NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
 	billSvc := NewBillService(billStorage, serviceStorage)
+	billSvc.SetBillHistoryStorage(historyStorage)
 	settingsSvc := NewSystemSettingsService(systemSettingsStorage)
 	webhookSvc := NewWebhookService(systemSettingsStorage, settingsSvc, serviceStorage, billStorage)
+	webhookSvc.SetBillHistoryStorage(historyStorage)
 
 	if err := serviceSvc.EnsureWebhookUUIDs(ctx); err != nil {
 		t.Fatalf("backfill uuid: %v", err)
@@ -273,6 +276,100 @@ func TestWebhookUpsertValidation(t *testing.T) {
 		if _, err := webhookSvc.UpsertBill(ctx, svc, &tc); err == nil {
 			t.Errorf("caso %d: se esperaba error de validación", i)
 		}
+	}
+}
+
+func TestWebhookHistoryRecordsPaidWithAmountZero(t *testing.T) {
+	webhookSvc, serviceSvc, billSvc := newTestWebhook(t)
+	ctx := context.Background()
+	svc := createTestService(t, webhookSvc, serviceSvc)
+
+	// Crear pendiente con monto 350.5.
+	if _, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year:   2026,
+		Month:  4,
+		Amount: 350.5,
+	}); err != nil {
+		t.Fatalf("crear pendiente: %v", err)
+	}
+
+	// Webhook con amount 0 y status paid (caso reportado por el usuario).
+	res, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year:          2026,
+		Month:         4,
+		Amount:        0,
+		InvoiceNumber: "FAC0252065392026",
+		Status:        "paid",
+	})
+	if err != nil {
+		t.Fatalf("UpsertBill paid: %v", err)
+	}
+	if res.Bill.Status != "paid" || res.Bill.Amount != 0 {
+		t.Fatalf("estado/monto esperados paid/0, got %s/%f", res.Bill.Status, res.Bill.Amount)
+	}
+
+	history, err := billSvc.History(ctx, res.Bill.ID)
+	if err != nil {
+		t.Fatalf("listar historial: %v", err)
+	}
+	events := history
+	if len(events) < 2 {
+		t.Fatalf("se esperaban al menos 2 eventos, got %d", len(events))
+	}
+	paid := events[0]
+	if paid.Action != models.BillActionPaid || paid.Source != models.BillSourceWebhook {
+		t.Errorf("evento esperado paid/webhook, got %s/%s", paid.Action, paid.Source)
+	}
+	foundAmountChange := false
+	for _, c := range paid.Changes {
+		if c.Field == "amount" {
+			foundAmountChange = true
+			if c.Old.(float64) != 350.5 || c.New.(float64) != 0 {
+				t.Errorf("diff amount incorrecto: %v -> %v", c.Old, c.New)
+			}
+		}
+	}
+	if !foundAmountChange {
+		t.Errorf("el diff debería incluir amount 350.5 -> 0, got %+v", paid.Changes)
+	}
+}
+
+func TestWebhookHistorySkipsNoop(t *testing.T) {
+	webhookSvc, serviceSvc, billSvc := newTestWebhook(t)
+	ctx := context.Background()
+	svc := createTestService(t, webhookSvc, serviceSvc)
+
+	if _, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 3, Amount: 100, InvoiceNumber: "INV-NOOP",
+	}); err != nil {
+		t.Fatalf("crear: %v", err)
+	}
+	// Reenviar exactamente los mismos valores: no debe crear evento updated.
+	if _, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 3, Amount: 100, InvoiceNumber: "INV-NOOP",
+	}); err != nil {
+		t.Fatalf("reenviar: %v", err)
+	}
+
+	bills, err := billSvc.ListByService(ctx, svc.ID)
+	if err != nil {
+		t.Fatalf("listar: %v", err)
+	}
+	var target *models.Bill
+	for i := range bills {
+		if bills[i].Year == 2026 && bills[i].Month == 3 {
+			target = &bills[i]
+		}
+	}
+	if target == nil {
+		t.Fatal("factura no encontrada")
+	}
+	events, err := billSvc.History(ctx, target.ID)
+	if err != nil {
+		t.Fatalf("listar historial: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("noop no debe crear evento, got %d", len(events))
 	}
 }
 

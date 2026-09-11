@@ -84,6 +84,7 @@ func main() {
 	childSupportConfigStorage := storage.NewChildSupportConfigStorage(database)
 	debtStorage := storage.NewDebtStorage(database)
 	debtBillStorage := storage.NewDebtBillStorage(database)
+	billHistoryStorage := storage.NewBillHistoryStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -95,8 +96,10 @@ func main() {
 	homeService := services.NewHomeService(homeStorage)
 	serviceService := services.NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
 	billService := services.NewBillService(billStorage, serviceStorage)
+	billService.SetBillHistoryStorage(billHistoryStorage)
 	institutionService := services.NewInstitutionService(institutionStorage)
 	documentService := services.NewDocumentService(serviceStorage, billStorage, institutionStorage)
+	documentService.SetBillHistoryStorage(billHistoryStorage)
 	autoService := services.NewAutoService(autoStorage)
 	autoInsuranceService := services.NewAutoServiceService(autoServiceStorage)
 	institutionCategoryService := services.NewInstitutionCategoryService(institutionCategoryStorage)
@@ -112,6 +115,7 @@ func main() {
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
 	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
 	webhookService := services.NewWebhookService(systemSettingsStorage, systemSettingsService, serviceStorage, billStorage)
+	webhookService.SetBillHistoryStorage(billHistoryStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {

@@ -99,6 +99,21 @@ export interface Bill {
   payment_reference?: string
 }
 
+export interface FieldChange {
+  field: string
+  old?: unknown
+  new?: unknown
+}
+
+export interface BillHistoryEntry {
+  id: number
+  bill_id: number
+  action: 'created' | 'updated' | 'paid'
+  source: 'dashboard' | 'webhook'
+  changes?: FieldChange[]
+  created_at: string
+}
+
 export interface Settings {
   language: string
 }
