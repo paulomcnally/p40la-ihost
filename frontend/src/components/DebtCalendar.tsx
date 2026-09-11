@@ -137,10 +137,10 @@ export default function DebtCalendar() {
 
       {selectedDay && (
         <div className="mt-4 bg-card rounded-ios shadow-ios p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold">{selectedDay}</h4>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h4 className="font-semibold min-w-0 truncate">{selectedDay}</h4>
             {selectedBills.length > 0 && (
-              <span className="text-sm text-text-secondary">
+              <span className="text-sm text-text-secondary shrink-0">
                 {t('deudas.total_day')}:{' '}
                 <strong>{formatMoney(totalDay, selectedBills[0].currency_code)}</strong>
               </span>
@@ -164,8 +164,8 @@ export default function DebtCalendar() {
                       {formatMoney(b.amount, b.currency_code)}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                  <div className="flex flex-col items-end gap-2 shrink-0 min-w-0">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
                       b.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
                     }`}>
                       {t(`bills.status_${b.status}`)}

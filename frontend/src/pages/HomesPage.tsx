@@ -90,7 +90,7 @@ export default function HomesPage() {
             <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center mb-3">
               <Icon name="home" className="w-6 h-6" />
             </div>
-            <h3 className="font-semibold text-base">{home.name}</h3>
+            <h3 className="font-semibold text-base truncate">{home.name}</h3>
             {home.address && (
               <p className="text-sm text-text-secondary mt-1">{home.address}</p>
             )}

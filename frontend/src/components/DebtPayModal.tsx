@@ -62,7 +62,7 @@ export default function DebtPayModal({ bill, onClose, onSuccess }: DebtPayModalP
             <Icon name="credit" className="w-full h-full" />
           </div>
           <h3 className="text-lg sm:text-xl font-semibold mb-1 text-center">{t('deudas.pay')}</h3>
-          <p className="text-sm text-text-secondary text-center mb-5">
+          <p className="text-sm text-text-secondary text-center mb-5 break-words">
             {bill.debt_description} — {t('deudas.installment')} #{bill.installment_number}
           </p>
 

@@ -111,7 +111,7 @@ export default function InstitutionsPage() {
               <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center mb-3">
                 <Icon name={catIcon || 'building'} className="w-6 h-6" />
               </div>
-              <h3 className="font-semibold text-base">{inst.name}</h3>
+              <h3 className="font-semibold text-base truncate">{inst.name}</h3>
               {catName && (
                 <span className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                   {catName}
