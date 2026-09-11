@@ -13,7 +13,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Pending release** | 0 🟠 |
 | **Released** | 67 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-067 |
+| **Último ID usado** | SPEC-068 |
 
 ---
 
@@ -88,6 +88,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-065 | Títulos dinámicos en el header según la página cargada | released | 2026-09-04 | paulomcnally |
 | SPEC-066 | Aislamiento estricto de sesiones: worktrees obligatorios y main de solo lectura | released | 2026-09-04 | paulomcnally |
 | SPEC-067 | Editar seguros de auto (vencidos o no) con menú de 3 puntos en la vista del auto | released | 2026-09-11 | paulomcnally |
+| SPEC-068 | Fix zoom móvil global (todas las páginas) | released | 2026-09-11 | p40la-ihost-team |
 
 ---
 
@@ -157,4 +158,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-11 — SPEC-067 released (editar seguros de auto con menú de 3 puntos).*
+*Última actualización de este tracker: 2026-09-11 — SPEC-067 (editar seguros de auto con menú de 3 puntos) y SPEC-068 (fix zoom móvil global) released.*

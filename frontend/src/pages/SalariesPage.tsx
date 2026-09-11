@@ -98,7 +98,7 @@ export default function SalariesPage() {
                   </span>
                 )}
               </div>
-              <h3 className="font-semibold text-base">{salary.employer}</h3>
+              <h3 className="font-semibold text-base truncate">{salary.employer}</h3>
               <p className="text-sm text-text-secondary mt-1">
                 {formatMoney(salary.amount, currency?.symbol)}
               </p>

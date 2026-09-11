@@ -175,8 +175,8 @@ export default function DeudasPage() {
                     <Icon name="credit" className="w-6 h-6" />
                   </div>
                 </div>
-                <h3 className="font-semibold text-base">{debt.description}</h3>
-                <p className="text-sm text-text-secondary mt-1">
+                <h3 className="font-semibold text-base truncate">{debt.description}</h3>
+                <p className="text-sm text-text-secondary mt-1 truncate">
                   {debt.institution_name}
                   {debt.identifier && ` · ${debt.identifier}`}
                 </p>

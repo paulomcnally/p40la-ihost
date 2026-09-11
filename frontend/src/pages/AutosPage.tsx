@@ -77,8 +77,8 @@ export default function AutosPage() {
             <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center mb-3">
               <Icon name={auto.icon} className="w-6 h-6" />
             </div>
-            <h3 className="font-semibold text-base">{auto.brand} {auto.model}</h3>
-            <p className="text-sm text-text-secondary mt-1">{auto.year} · {auto.color} · {auto.placa}</p>
+            <h3 className="font-semibold text-base truncate">{auto.brand} {auto.model}</h3>
+            <p className="text-sm text-text-secondary mt-1 truncate">{auto.year} · {auto.color} · {auto.placa}</p>
           </div>
         ))}
       </div>

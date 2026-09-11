@@ -62,7 +62,7 @@ export default function HousePickerModal({ isOpen, homes, selectedHomeId, onSele
             placeholder={t('services.search_home')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary text-sm min-h-[44px]"
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
           />
         </div>
 
