@@ -14,7 +14,7 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
 )
 
-func newWebhookTestHandlers(t *testing.T) (*WebhookHandlers, *services.ServiceService, *services.WebhookService, *services.HomeService, *services.CurrencyService, *services.SystemSettingsService) {
+func newWebhookTestHandlers(t *testing.T) (*WebhookHandlers, *services.ServiceService, *services.WebhookService, *services.HomeService, *services.CurrencyService, *services.SystemSettingsService, *services.BillService) {
 	t.Helper()
 	database, err := db.OpenDB(":memory:", "../../migrations")
 	if err != nil {
@@ -32,6 +32,7 @@ func newWebhookTestHandlers(t *testing.T) (*WebhookHandlers, *services.ServiceSe
 	homeSvc := services.NewHomeService(homeStorage)
 	currencySvc := services.NewCurrencyService(currencyStorage)
 	serviceSvc := services.NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
+	billSvc := services.NewBillService(billStorage, serviceStorage)
 	settingsSvc := services.NewSystemSettingsService(systemSettingsStorage)
 	webhookSvc := services.NewWebhookService(systemSettingsStorage, settingsSvc, serviceStorage, billStorage)
 
@@ -42,11 +43,11 @@ func newWebhookTestHandlers(t *testing.T) (*WebhookHandlers, *services.ServiceSe
 		t.Fatalf("habilitar webhooks: %v", err)
 	}
 
-	return NewWebhookHandlers(webhookSvc, serviceSvc), serviceSvc, webhookSvc, homeSvc, currencySvc, settingsSvc
+	return NewWebhookHandlers(webhookSvc, serviceSvc), serviceSvc, webhookSvc, homeSvc, currencySvc, settingsSvc, billSvc
 }
 
 func TestWebhookUpsertBillHandler(t *testing.T) {
-	h, serviceSvc, webhookSvc, homeSvc, currencySvc, _ := newWebhookTestHandlers(t)
+	h, serviceSvc, webhookSvc, homeSvc, currencySvc, _, _ := newWebhookTestHandlers(t)
 	ctx := context.Background()
 
 	home, err := homeSvc.Create(ctx, "Casa Webhook", "")
@@ -144,7 +145,7 @@ func TestWebhookUpsertBillHandler(t *testing.T) {
 }
 
 func TestWebhookDisabledReturns403(t *testing.T) {
-	h, serviceSvc, webhookSvc, homeSvc, currencySvc, settingsSvc := newWebhookTestHandlers(t)
+	h, serviceSvc, webhookSvc, homeSvc, currencySvc, settingsSvc, _ := newWebhookTestHandlers(t)
 	ctx := context.Background()
 
 	home, err := homeSvc.Create(ctx, "Casa Webhook", "")
@@ -185,8 +186,88 @@ func TestWebhookDisabledReturns403(t *testing.T) {
 	}
 }
 
+func TestWebhookUpsertReactivatesSoftDeletedHandler(t *testing.T) {
+	h, serviceSvc, webhookSvc, homeSvc, currencySvc, _, billSvc := newWebhookTestHandlers(t)
+	ctx := context.Background()
+
+	home, err := homeSvc.Create(ctx, "Casa Webhook", "")
+	if err != nil {
+		t.Fatalf("crear hogar: %v", err)
+	}
+	currencies, _ := currencySvc.List(ctx)
+	svc, err := serviceSvc.Create(ctx, &models.Service{
+		HomeID:          home.ID,
+		Name:            "Internet",
+		Institution:     "Claro",
+		CurrencyID:      currencies[0].ID,
+		Frequency:       services.FrequencyMonthly,
+		SuggestedAmount: 45,
+		Active:          true,
+		IconKey:         "internet",
+	})
+	if err != nil {
+		t.Fatalf("crear servicio: %v", err)
+	}
+
+	key, _ := webhookSvc.GetOrCreateWebhookKey(ctx)
+
+	// Crear la factura del período.
+	if _, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 8, Amount: 975.97, InvoiceNumber: "FAC-OLD",
+	}); err != nil {
+		t.Fatalf("crear factura: %v", err)
+	}
+	bills, err := billSvc.ListByService(ctx, svc.ID)
+	if err != nil {
+		t.Fatalf("listar facturas: %v", err)
+	}
+	var target *models.Bill
+	for i := range bills {
+		if bills[i].Year == 2026 && bills[i].Month == 8 {
+			target = &bills[i]
+		}
+	}
+	if target == nil {
+		t.Fatal("factura del período no encontrada")
+	}
+
+	// Soft-delete desde la UI (mismo flujo que DELETE /api/bills/{id}).
+	if err := billSvc.Delete(ctx, target.ID); err != nil {
+		t.Fatalf("soft-delete: %v", err)
+	}
+
+	handler := WebhookAuthMiddleware(webhookSvc)(http.HandlerFunc(h.UpsertBill))
+
+	// Reenviar el mismo período: antes del fix daba 400 UNIQUE; ahora 200.
+	payload, _ := json.Marshal(models.WebhookBillPayload{Year: 2026, Month: 8, Amount: 990.0, InvoiceNumber: "FAC-NEW"})
+	req := httptest.NewRequest(http.MethodPost, "/webhooks/"+svc.WebhookUUID, bytes.NewReader(payload))
+	req.Header.Set("X-Webhook-Key", key)
+	req.SetPathValue("uuid", svc.WebhookUUID)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("reenvío sobre soft-deleted esperaba 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var res models.WebhookResult
+	if err := json.Unmarshal(rr.Body.Bytes(), &res); err != nil {
+		t.Fatalf("decodificar respuesta: %v", err)
+	}
+	if res.Created {
+		t.Error("se esperaba created=false al reactivar una fila soft-deleted")
+	}
+	if res.Bill.ID != target.ID {
+		t.Errorf("se debería conservar el id original, got %d (esperado %d)", res.Bill.ID, target.ID)
+	}
+	if res.Bill.DeletedAt != nil {
+		t.Error("la factura reactivada no debe tener deleted_at")
+	}
+	if res.Bill.Amount != 990.0 {
+		t.Errorf("monto esperado 990.0, got %f", res.Bill.Amount)
+	}
+}
+
 func TestWebhookKeyHandlers(t *testing.T) {
-	h, _, webhookSvc, _, _, _ := newWebhookTestHandlers(t)
+	h, _, webhookSvc, _, _, _, _ := newWebhookTestHandlers(t)
 	ctx := context.Background()
 
 	rr := httptest.NewRecorder()
