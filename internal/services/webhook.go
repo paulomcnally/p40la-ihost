@@ -5,9 +5,13 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	sqlite "modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
@@ -108,6 +112,12 @@ func (s *WebhookService) ValidateWebhookKey(ctx context.Context, provided string
 // UpsertBill crea o actualiza la factura del período (service, year, month)
 // según el payload del webhook (REQ-003/REQ-004). Devuelve el resultado y si
 // la factura fue creada o actualizada.
+//
+// Resiliencia al soft-delete (SPEC-071): si una factura del período fue borrada
+// lógicamente desde la UI (deleted_at seteado), la fila sigue ocupando la clave
+// UNIQUE(service_id, year, month) y el INSERT falla con SQLITE_CONSTRAINT_UNIQUE
+// (2067). En ese caso se recupera la fila soft-deleted, se reactiva y se
+// actualiza con el payload, en lugar de propagar el error 400.
 func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service, p *models.WebhookBillPayload) (*models.WebhookResult, error) {
 	if err := validateWebhookPayload(service, p); err != nil {
 		return nil, err
@@ -144,6 +154,19 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 		}
 		created, err := s.bills.Create(ctx, bill)
 		if err != nil {
+			// (2067) SQLITE_CONSTRAINT_UNIQUE: la clave la ocupa una fila
+			// soft-deleted del mismo período. Recuperar y reactivar (SPEC-071).
+			if isUniqueConstraintError(err) {
+				existing, rerr := s.recoverSoftDeletedBill(ctx, service.ID, p.Year, month)
+				if rerr != nil {
+					return nil, rerr
+				}
+				updated, uerr := s.applyWebhookUpdate(ctx, existing, status, p)
+				if uerr != nil {
+					return nil, uerr
+				}
+				return &models.WebhookResult{Bill: updated, Created: false}, nil
+			}
 			return nil, fmt.Errorf("crear factura: %w", err)
 		}
 		if status == "paid" {
@@ -168,7 +191,19 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 
 	// Actualizar la factura existente. Un status "paid" explícito marca el pago;
 	// un status "pending" explícito revierte la factura a pendiente.
+	updated, err := s.applyWebhookUpdate(ctx, existing, status, p)
+	if err != nil {
+		return nil, err
+	}
+	return &models.WebhookResult{Bill: updated, Created: false}, nil
+}
+
+// applyWebhookUpdate aplica el payload del webhook sobre una factura existente
+// (o recién reactivada): actualiza campos descriptivos y gestiona el estado
+// según el status enviado. Registra el historial de auditoría (SPEC-070).
+func (s *WebhookService) applyWebhookUpdate(ctx context.Context, existing *models.Bill, status string, p *models.WebhookBillPayload) (*models.Bill, error) {
 	before := *existing
+	var err error
 	switch status {
 	case "paid":
 		if existing.Status != "paid" {
@@ -229,8 +264,34 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 			return nil, fmt.Errorf("registrar historial de factura: %w", err)
 		}
 	}
+	return existing, nil
+}
 
-	return &models.WebhookResult{Bill: existing, Created: false}, nil
+// recoverSoftDeletedBill recupera la factura soft-deleted del período y la
+// reactiva (SPEC-071). Devuelve error si no existe (race) o falla la query.
+func (s *WebhookService) recoverSoftDeletedBill(ctx context.Context, serviceID int64, year, month int) (*models.Bill, error) {
+	softDeleted, err := s.bills.FindByServicePeriodIncludingDeleted(ctx, serviceID, year, month)
+	if err != nil {
+		return nil, fmt.Errorf("buscar factura soft-deleted: %w", err)
+	}
+	if softDeleted == nil {
+		return nil, fmt.Errorf("recuperar factura soft-deleted: no existe fila para el período %d/%d", year, month)
+	}
+	if err := s.bills.Reactivate(ctx, softDeleted.ID); err != nil {
+		return nil, fmt.Errorf("reactivar factura soft-deleted: %w", err)
+	}
+	return s.bills.GetByID(ctx, softDeleted.ID)
+}
+
+// isUniqueConstraintError detecta un conflicto SQLITE_CONSTRAINT_UNIQUE (2067)
+// usando el tipo de error de modernc.org/sqlite, con fallback por string por
+// robustez ante otros drivers (SPEC-071).
+func isUniqueConstraintError(err error) bool {
+	var sqliteErr *sqlite.Error
+	if errors.As(err, &sqliteErr) && sqliteErr.Code() == sqlite3.SQLITE_CONSTRAINT_UNIQUE {
+		return true
+	}
+	return strings.Contains(err.Error(), "constraint failed")
 }
 
 func validateWebhookPayload(service *models.Service, p *models.WebhookBillPayload) error {

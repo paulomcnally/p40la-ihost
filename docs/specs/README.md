@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 69 |
+| **Total de specs** | 70 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 69 🟢 |
+| **Released** | 70 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-070 |
+| **Último ID usado** | SPEC-071 |
 
 ---
 
@@ -91,6 +91,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-068 | Fix zoom móvil global (todas las páginas) | released | 2026-09-11 | p40la-ihost-team |
 | SPEC-069 | Webhooks por servicio para facturas | released | 2026-09-11 | paulomcnally |
 | SPEC-070 | Historial de cambios de facturas (auditoría) | released | 2026-09-11 | paulomcnally |
+| SPEC-071 | Webhook: reactivar facturas soft-deleted en vez de fallar con UNIQUE | released | 2026-09-12 | paulomcnally |
 
 ---
 
@@ -160,4 +161,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-11 — SPEC-070 (historial de cambios de facturas, auditoría) released.*
+*Última actualización de este tracker: 2026-09-12 — SPEC-071 (webhook: reactivar facturas soft-deleted en vez de fallar con UNIQUE) released.*
