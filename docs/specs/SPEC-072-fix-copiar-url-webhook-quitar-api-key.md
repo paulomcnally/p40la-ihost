@@ -1,7 +1,7 @@
 ---
 title: "Fix copiar URL de webhook en modal de servicio y quitar API key"
 id: "SPEC-072"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-12"
 updated: "2026-09-12"
@@ -11,7 +11,7 @@ github_issue: 75
 # Fix copiar URL de webhook en modal de servicio y quitar API key
 
 **ID**: SPEC-072  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-12  
 **Actualizado**: 2026-09-12
@@ -177,3 +177,4 @@ Sin cambios en backend. La utilidad de frontend no expone API.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-12 | paulomcnally | Creación inicial de la especificación |
+| 2026-09-12 | paulomcnally | Implementación completada y liberada (issue #75). Commit: SPEC-072 (merge a main) |

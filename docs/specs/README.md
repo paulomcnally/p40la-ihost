@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 70 |
+| **Total de specs** | 71 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 70 🟢 |
+| **Released** | 71 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-071 |
+| **Último ID usado** | SPEC-072 |
 
 ---
 
@@ -92,6 +92,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-069 | Webhooks por servicio para facturas | released | 2026-09-11 | paulomcnally |
 | SPEC-070 | Historial de cambios de facturas (auditoría) | released | 2026-09-11 | paulomcnally |
 | SPEC-071 | Webhook: reactivar facturas soft-deleted en vez de fallar con UNIQUE | released | 2026-09-12 | paulomcnally |
+| SPEC-072 | Fix copiar URL de webhook en modal de servicio y quitar API key | released | 2026-09-12 | paulomcnally |
 
 ---
 
@@ -161,4 +162,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-12 — SPEC-071 (webhook: reactivar facturas soft-deleted en vez de fallar con UNIQUE) released.*
+*Última actualización de este tracker: 2026-09-12 — SPEC-072 (fix copiar URL webhook modal y quitar API key) released.*
