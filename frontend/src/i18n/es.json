@@ -143,11 +143,6 @@
     "webhook_copied": "URL copiada",
     "webhook_regenerate": "Regenerar UUID",
     "webhook_regenerated": "Webhook regenerado. Actualiza la URL en el cliente externo.",
-    "webhook_api_key": "API key del webhook",
-    "webhook_api_key_desc": "Se envía en el header X-Webhook-Key de cada solicitud.",
-    "webhook_api_key_copy": "Copiar API key",
-    "webhook_regenerate_key": "Regenerar API key",
-    "webhook_key_regenerated": "API key regenerada. Actualízala en el cliente externo.",
     "webhook_schema_desc": "El cuerpo del POST usa este schema (year, month y amount obligatorios; status puede ser \"pending\" o \"paid\").",
     "webhook_disabled_hint": "La feature de webhooks está deshabilitada. Actívala desde Configuración."
   },
