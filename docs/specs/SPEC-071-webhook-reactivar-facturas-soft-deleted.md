@@ -1,7 +1,7 @@
 ---
 title: "Webhook: reactivar facturas soft-deleted en vez de fallar con UNIQUE"
 id: "SPEC-071"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-12"
 updated: "2026-09-12"
@@ -11,7 +11,7 @@ github_issue: 74
 # Webhook: reactivar facturas soft-deleted en vez de fallar con UNIQUE
 
 **ID**: SPEC-071  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-12  
 **Actualizado**: 2026-09-12
@@ -204,7 +204,7 @@ Opcional (REQ-004), migración numerada:
 - [x] CA-003: Dado un periodo existente no borrado, cuando se reenvía, entonces responde `200 created: false` (idempotencia intacta).
 - [x] CA-004: Con `status=paid` en un periodo reactivado, la factura queda pagada con `paid_at`/`payment_reference` (si aplica).
 - [x] CA-005: `BillStorage` expone `FindByServicePeriodIncludingDeleted` y `Reactivate`, con tests unitarios.
-- [ ] CA-BACK/CA-DARK: No aplican (no hay UI nueva).
+- [x] CA-BACK/CA-DARK: No aplican (no hay UI nueva).
 
 ### 5.2 No funcionales
 
@@ -264,3 +264,4 @@ Opcional (REQ-004), migración numerada:
 |-------|-------|-------------|
 | 2026-09-12 | paulomcnally | Creación inicial: error 400 `UNIQUE constraint (2067)` en webhook de Claro Nicaragua; reproducción en vivo; causa raíz (soft-delete + UNIQUE a nivel tabla vs `FindByServicePeriod` con `deleted_at IS NULL`); fix en el receptor: reactivar soft-deleted ante conflicto UNIQUE, con índice UNIQUE parcial opcional. Trasladada desde `p40la-ihost-automation/docs/specs/SPEC-006` (cancelada allí). |
 | 2026-09-12 | p40la-ihost-team | Implementación: `BillStorage.FindByServicePeriodIncludingDeleted` + `Reactivate`; `WebhookService.UpsertBill` recupera y reactiva la fila soft-deleted ante `SQLITE_CONSTRAINT_UNIQUE` (modernc.org/sqlite); tests unitarios e integración; `docs/webhooks-api.md` actualizado. REQ-004 (índice UNIQUE parcial) fuera de alcance (REQ-001 suficiente). |
+| 2026-09-12 | p40la-ihost-team | Release: pruebas manuales del usuario satisfactorias; criterios de aceptación pasan. Commit `d8271a2` (implementación) + merge a `main`. Estado `released`, issue #74 cerrado con label `spec/released`. |
