@@ -1,9 +1,9 @@
 # Webhooks de Facturas por Servicio — Guía de Integración
 
 > **Proyecto**: p40la-ihost (SONOFF iHost)  
-> **Spec**: SPEC-069 — Webhooks por servicio para facturas  
-> **Versión**: 1.0 (2026-09-11)  
-> **Estado**: implementado en rama `feature/SPEC-069`
+> **Spec**: SPEC-069 — Webhooks por servicio para facturas (SPEC-071 — resiliencia al soft-delete)  
+> **Versión**: 1.1 (2026-09-12)  
+> **Estado**: implementado en rama `feature/SPEC-071`
 
 ---
 
@@ -94,8 +94,11 @@ El endpoint hace un **upsert** sobre el par `(service_id, year, month)`:
 | **Existe** y payload trae `status: "pending"` | Actualiza datos descriptivos y **revierte a pendiente** (limpia `paid_at` y `payment_reference`). |
 | **Existe** y payload **omite** `status` | Actualiza solo `amount`, `invoice_number`, `drive_url`. **No toca el estado actual** (si estaba pagada, sigue pagada). |
 | **Reenvío idéntico** | No duplica facturas (idempotente). |
+| **Período con factura soft-deleted** | La factura fue borrada desde la UI (`DELETE /api/bills/{id}`), pero sigue ocupando la clave única. El webhook **la reactiva** y la actualiza con el payload, respondiendo `200` con `created: false` (SPEC-071). |
 
 **Sobre los servicios anuales**: si el servicio tiene `frequency: "yearly"`, el campo `month` del payload **se ignora** y la factura se indexa como `month: 0`. Envialo igual por consistencia o pon `0`.
+
+> **Soft-delete (SPEC-071)**: borrar una factura desde la UI no la elimina físicamente (setea `deleted_at`). Como la tabla `bills` tiene `UNIQUE(service_id, year, month)` a nivel de tabla, la fila borrada sigue bloqueando el período. Desde SPEC-071 el webhook detecta el conflicto de UNIQUE (código SQLite 2067), localiza la fila soft-deleted del mismo período, la reactiva y aplica el payload. Esto es **idempotente**: reenviar el período una segunda vez vuelve a actualizar la misma fila, sin duplicar.
 
 ---
 
@@ -235,9 +238,9 @@ Después de regenerar cualquiera de los dos, el proyecto externo debe actualizar
 |---------|-----|
 | `internal/api/webhook_handlers.go` | Handler `POST /webhooks/{uuid}` + gestión de api_key |
 | `internal/api/middleware.go` | `WebhookAuthMiddleware` (valida `X-Webhook-Key`) |
-| `internal/services/webhook.go` | `WebhookService`: upsert de facturas, api_key, UUID |
+| `internal/services/webhook.go` | `WebhookService`: upsert de facturas, api_key, UUID, recuperación de soft-deleted (SPEC-071) |
 | `internal/services/system_settings.go` | Toggle `webhook_enabled` |
-| `internal/storage/bill.go` | `FindByServicePeriod`, `Create`, `Pay`, `MarkPending`, `UpdateWebhookFields` |
+| `internal/storage/bill.go` | `FindByServicePeriod`, `FindByServicePeriodIncludingDeleted`, `Create`, `Pay`, `MarkPending`, `Reactivate`, `UpdateWebhookFields` |
 | `migrations/0027_add_services_webhook_uuid.up.sql` | Columna `webhook_uuid` en `services` |
 | `frontend/src/components/WebhookModal.tsx` | Modal webhook por servicio |
 | `frontend/src/pages/SettingsPage.tsx` | Sección Webhooks (toggle + api_key) |

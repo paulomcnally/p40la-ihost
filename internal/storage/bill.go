@@ -58,6 +58,19 @@ func (s *BillStorage) FindByServicePeriod(ctx context.Context, serviceID int64, 
 	return scanBill(row)
 }
 
+// FindByServicePeriodIncludingDeleted busca una factura por servicio, año y mes
+// SIN filtrar filas soft-deleted (SPEC-071). Se usa para recuperar una factura
+// borrada lógicamente que sigue ocupando la clave UNIQUE(service_id, year, month).
+func (s *BillStorage) FindByServicePeriodIncludingDeleted(ctx context.Context, serviceID int64, year, month int) (*models.Bill, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
+		       file_hash, paid_at, payment_reference, deleted_at, created_at, updated_at
+		FROM bills
+		WHERE service_id = ? AND year = ? AND month = ?
+	`, serviceID, year, month)
+	return scanBill(row)
+}
+
 // FindByServiceFileHash busca una factura que ya fue importada con ese hash
 // de archivo para el servicio (dedup de subidas, SPEC-041).
 func (s *BillStorage) FindByServiceFileHash(ctx context.Context, serviceID int64, fileHash string) (*models.Bill, error) {
@@ -170,6 +183,21 @@ func (s *BillStorage) SoftDelete(ctx context.Context, id int64) error {
 	`, id)
 	if err != nil {
 		return fmt.Errorf("eliminar factura: %w", err)
+	}
+	return nil
+}
+
+// Reactivate limpia deleted_at de una factura soft-deleted para que vuelva a
+// estar activa (SPEC-071). Se usa cuando el webhook recibe un período cuya
+// factura fue borrada lógicamente desde la UI y sigue ocupando la clave UNIQUE.
+func (s *BillStorage) Reactivate(ctx context.Context, id int64) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE bills
+		SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND deleted_at IS NOT NULL
+	`, id)
+	if err != nil {
+		return fmt.Errorf("reactivar factura: %w", err)
 	}
 	return nil
 }

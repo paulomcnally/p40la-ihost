@@ -439,3 +439,162 @@ func TestServiceWebhookUUIDAssignedAndBackfilled(t *testing.T) {
 		t.Error("el uuid regenerado debe ser distinto")
 	}
 }
+
+func TestWebhookUpsertReactivatesSoftDeletedBill(t *testing.T) {
+	webhookSvc, serviceSvc, billSvc := newTestWebhook(t)
+	ctx := context.Background()
+	svc := createTestService(t, webhookSvc, serviceSvc)
+
+	// 1. Crear la factura del período vía webhook.
+	if _, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 8, Amount: 975.97, InvoiceNumber: "FAC-OLD",
+	}); err != nil {
+		t.Fatalf("crear factura: %v", err)
+	}
+	bills, err := billSvc.ListByService(ctx, svc.ID)
+	if err != nil {
+		t.Fatalf("listar: %v", err)
+	}
+	var target *models.Bill
+	for i := range bills {
+		if bills[i].Year == 2026 && bills[i].Month == 8 {
+			target = &bills[i]
+		}
+	}
+	if target == nil {
+		t.Fatal("factura del período no encontrada")
+	}
+	originalID := target.ID
+
+	// 2. Soft-delete desde la UI (como hace DELETE /api/bills/{id}).
+	if err := billSvc.Delete(ctx, originalID); err != nil {
+		t.Fatalf("soft-delete: %v", err)
+	}
+
+	// 3. Reenviar el mismo período: debe reactivar (no fallar con UNIQUE).
+	res, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 8, Amount: 990.0, InvoiceNumber: "FAC-NEW",
+	})
+	if err != nil {
+		t.Fatalf("UpsertBill sobre soft-deleted: %v", err)
+	}
+	if res.Created {
+		t.Error("se esperaba created=false al reactivar una fila existente")
+	}
+	if res.Bill.ID != originalID {
+		t.Errorf("se debería conservar el id original, got %d (esperado %d)", res.Bill.ID, originalID)
+	}
+	if res.Bill.DeletedAt != nil {
+		t.Error("la factura reactivada no debe tener deleted_at")
+	}
+	if res.Bill.Amount != 990.0 {
+		t.Errorf("monto esperado 990.0, got %f", res.Bill.Amount)
+	}
+	if res.Bill.InvoiceNumber != "FAC-NEW" {
+		t.Errorf("invoice_number esperado FAC-NEW, got %q", res.Bill.InvoiceNumber)
+	}
+
+	// 4. Debe quedar visible en el listado normal.
+	bills, err = billSvc.ListByService(ctx, svc.ID)
+	if err != nil {
+		t.Fatalf("listar tras reactivar: %v", err)
+	}
+	found := false
+	for _, b := range bills {
+		if b.ID == originalID {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("la factura reactivada debe aparecer en el listado")
+	}
+}
+
+func TestWebhookUpsertReactivatedPaidBill(t *testing.T) {
+	webhookSvc, serviceSvc, billSvc := newTestWebhook(t)
+	ctx := context.Background()
+	svc := createTestService(t, webhookSvc, serviceSvc)
+
+	if _, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 9, Amount: 500, Status: "pending",
+	}); err != nil {
+		t.Fatalf("crear: %v", err)
+	}
+	bills, _ := billSvc.ListByService(ctx, svc.ID)
+	var target *models.Bill
+	for i := range bills {
+		if bills[i].Year == 2026 && bills[i].Month == 9 {
+			target = &bills[i]
+		}
+	}
+	if err := billSvc.Delete(ctx, target.ID); err != nil {
+		t.Fatalf("soft-delete: %v", err)
+	}
+
+	// Reenviar con status paid: reactivar y marcar como pagada.
+	res, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year:             2026,
+		Month:            9,
+		Amount:           520,
+		Status:           "paid",
+		PaidAt:           "2026-09-05",
+		PaymentReference: "TXN-071",
+	})
+	if err != nil {
+		t.Fatalf("UpsertBill paid sobre soft-deleted: %v", err)
+	}
+	if res.Bill.Status != "paid" {
+		t.Errorf("estado esperado paid, got %s", res.Bill.Status)
+	}
+	if res.Bill.PaidAt == nil {
+		t.Error("paid_at debería estar seteado")
+	}
+	if res.Bill.PaymentReference != "TXN-071" {
+		t.Errorf("payment_reference esperado TXN-071, got %q", res.Bill.PaymentReference)
+	}
+
+	// Idempotencia: reenviar el mismo período → 200 sin duplicar ni fallar.
+	res2, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 9, Amount: 520, Status: "paid", PaidAt: "2026-09-05",
+	})
+	if err != nil {
+		t.Fatalf("reenvío idempotente: %v", err)
+	}
+	if res2.Created {
+		t.Error("el reenvío no debe crear una factura nueva")
+	}
+	if res2.Bill.ID != res.Bill.ID {
+		t.Error("el reenvío debe mantener el mismo id")
+	}
+}
+
+func TestWebhookUpsertSoftDeletedNotFoundPropagates(t *testing.T) {
+	webhookSvc, serviceSvc, _ := newTestWebhook(t)
+	ctx := context.Background()
+	svc := createTestService(t, webhookSvc, serviceSvc)
+
+	// Período nuevo: el UNIQUE no aplica y se crea normalmente.
+	res, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 10, Amount: 123,
+	})
+	if err != nil {
+		t.Fatalf("crear período nuevo: %v", err)
+	}
+	if !res.Created {
+		t.Error("se esperaba created=true para período nuevo")
+	}
+
+	// Reenviar el período activo: update normal (idempotencia intacta).
+	res2, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 10, Amount: 125,
+	})
+	if err != nil {
+		t.Fatalf("actualizar período activo: %v", err)
+	}
+	if res2.Created {
+		t.Error("se esperaba created=false para período activo")
+	}
+	if res2.Bill.Amount != 125 {
+		t.Errorf("monto esperado 125, got %f", res2.Bill.Amount)
+	}
+}
