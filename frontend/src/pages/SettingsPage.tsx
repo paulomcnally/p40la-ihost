@@ -12,6 +12,7 @@ import HelpPanel from '../components/HelpPanel'
 import { api } from '../api'
 import { useToast } from '../components/Toast'
 import { formatCurrency } from '../utils/currency'
+import { copyToClipboard } from '../utils/clipboard'
 import type { Alert } from '../types'
 
 type HourFormat = '12h' | '24h'
@@ -426,7 +427,7 @@ export default function SettingsPage() {
 
   const handleCopyWebhookKey = async () => {
     try {
-      await navigator.clipboard.writeText(webhookApiKey)
+      await copyToClipboard(webhookApiKey)
       showToast(t('settings.webhooks.copied'), 'success')
     } catch {
       showToast(t('errors.generic'), 'error')

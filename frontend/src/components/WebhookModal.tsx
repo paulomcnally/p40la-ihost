@@ -3,6 +3,7 @@ import { api } from '../api'
 import { Icon } from './Icons'
 import { useI18nStore } from '../stores/i18nStore'
 import { useToast } from './Toast'
+import { copyToClipboard } from '../utils/clipboard'
 import type { Service } from '../types'
 
 interface WebhookModalProps {
@@ -14,7 +15,6 @@ export default function WebhookModal({ service, onClose }: WebhookModalProps) {
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const [webhookUrl, setWebhookUrl] = useState('')
-  const [webhookApiKey, setWebhookApiKey] = useState('')
   const [webhookEnabled, setWebhookEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
 
@@ -24,12 +24,8 @@ export default function WebhookModal({ service, onClose }: WebhookModalProps) {
 
   const loadData = async () => {
     try {
-      const [settings, keyRes] = await Promise.all([
-        api.systemSettings.get(),
-        api.webhooks.getApiKey(),
-      ])
+      const settings = await api.systemSettings.get()
       setWebhookEnabled(settings?.webhook_enabled ?? true)
-      if (keyRes?.api_key) setWebhookApiKey(keyRes.api_key)
       if (service.webhook_uuid) {
         const base = (settings?.webhook_base_url || `${window.location.origin}`).replace(/\/+$/, '')
         setWebhookUrl(`${base}/webhooks/${service.webhook_uuid}`)
@@ -41,9 +37,9 @@ export default function WebhookModal({ service, onClose }: WebhookModalProps) {
     }
   }
 
-  const copyText = async (text: string, toastKey: string) => {
+  const handleCopy = async (text: string, toastKey: string) => {
     try {
-      await navigator.clipboard.writeText(text)
+      await copyToClipboard(text)
       showToast(t(toastKey) || 'Copiado', 'success')
     } catch {
       showToast(t('errors.generic') || 'Error', 'error')
@@ -111,7 +107,7 @@ export default function WebhookModal({ service, onClose }: WebhookModalProps) {
                   />
                   <button
                     type="button"
-                    onClick={() => copyText(webhookUrl, 'services.webhook_copied')}
+                    onClick={() => handleCopy(webhookUrl, 'services.webhook_copied')}
                     className="shrink-0 px-3 py-2 bg-bg border border-border rounded-ios-sm hover:border-primary/50 transition-colors flex items-center gap-1 min-h-[44px] text-sm"
                     title={t('services.webhook_copy')}
                   >
@@ -127,28 +123,6 @@ export default function WebhookModal({ service, onClose }: WebhookModalProps) {
                   </button>
                 </div>
                 <p className="text-xs text-text-secondary mt-1">{t('services.webhook_url_desc')}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('services.webhook_api_key')}</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={webhookApiKey}
-                    placeholder="••••••••"
-                    className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] text-sm font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => copyText(webhookApiKey, 'services.webhook_api_key_copy')}
-                    className="shrink-0 px-3 py-2 bg-bg border border-border rounded-ios-sm hover:border-primary/50 transition-colors flex items-center gap-1 min-h-[44px] text-sm"
-                    title={t('services.webhook_api_key_copy')}
-                  >
-                    <Icon name="copy" className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-xs text-text-secondary mt-1">{t('services.webhook_api_key_desc')}</p>
                 <p className="text-xs text-text-secondary mt-1">{t('services.webhook_schema_desc')}</p>
               </div>
             </div>
