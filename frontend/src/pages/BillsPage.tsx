@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
@@ -14,7 +14,10 @@ import UploadBillModal from '../components/UploadBillModal'
 import BillHistoryModal from '../components/BillHistoryModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import WebhookModal from '../components/WebhookModal'
+import BillAnalysis from '../components/BillAnalysis'
 import type { Bill, Service } from '../types'
+
+type TabKey = 'analisis' | 'facturas'
 
 const MONTHS = [
   '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -27,6 +30,8 @@ export default function BillsPage() {
   const { t } = useI18nStore()
   const { currencies } = useAppStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
   const [bills, setBills] = useState<Bill[]>([])
   const [service, setService] = useState<Service | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
@@ -79,6 +84,10 @@ export default function BillsPage() {
 
   const currency = currencies.find(c => c.id === service.currency_id)
 
+  const setTab = (key: TabKey) => {
+    setSearchParams({ tab: key }, { replace: false })
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4 sm:mb-5">
@@ -92,7 +101,32 @@ export default function BillsPage() {
           { label: t('services.webhook_title'), icon: 'link', onClick: () => setWebhookOpen(true) },
         ]} />
       </div>
-      {bills.length === 0 ? (
+
+      <div className="flex gap-2 mb-4">
+        {(
+          [
+            { key: 'analisis', label: t('bills.tab_analysis'), icon: 'chart' },
+            { key: 'facturas', label: t('bills.tab_bills'), icon: 'bill' },
+          ] as { key: TabKey; label: string; icon: string }[]
+        ).map((item) => (
+          <button
+            key={item.key}
+            onClick={() => setTab(item.key)}
+            className={`px-4 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] inline-flex items-center gap-1.5 ${
+              tab === item.key
+                ? 'bg-primary text-white'
+                : 'bg-card text-text-secondary hover:bg-border'
+            }`}
+          >
+            <Icon name={item.icon} className="w-4 h-4" />
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'analisis' ? (
+        <BillAnalysis serviceId={Number(serviceId)} currencySymbol={currency?.symbol} />
+      ) : bills.length === 0 ? (
         <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
             <Icon name="bill" className="w-full h-full" />

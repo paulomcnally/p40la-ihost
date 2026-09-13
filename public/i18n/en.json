@@ -192,7 +192,31 @@
     "field_year": "Year",
     "field_month": "Month",
     "field_payment_reference": "Payment reference",
-    "field_paid_at": "Payment date"
+    "field_paid_at": "Payment date",
+    "tab_analysis": "Analysis",
+    "tab_bills": "Bills",
+    "analysis_all_years": "All years",
+    "analysis_group_periodo": "By period",
+    "analysis_group_anio": "By year",
+    "analysis_changes_count": "changes detected",
+    "analysis_total": "Total billed",
+    "analysis_paid": "Paid",
+    "analysis_pending": "Pending",
+    "analysis_bills_count": "Bills",
+    "analysis_average": "Average per period",
+    "analysis_periods": "Periods",
+    "analysis_last_change": "Last change",
+    "analysis_evolution": "Amount evolution",
+    "analysis_evolution_subtitle": "The dot changes color when the amount changed vs. the previous period",
+    "analysis_no_changes": "No amount changes between consecutive periods.",
+    "analysis_changes_title": "Detected changes",
+    "analysis_changes_subtitle": "Periods where the amount changed vs. the previous one (click to edit the bill)",
+    "analysis_by_period": "Amount by period",
+    "analysis_by_period_subtitle": "Side-by-side comparison of billed amounts",
+    "analysis_biggest_increase": "Biggest increase",
+    "analysis_biggest_decrease": "Biggest decrease",
+    "analysis_empty": "No bills to analyze",
+    "analysis_empty_subtitle": "Add bills to see the evolution and amount changes"
   },
   "institutions": {
     "title": "Institutions",
@@ -410,7 +434,7 @@
     "updated": "Child updated",
     "save_error": "Error saving"
   },
-"salaries": {
+  "salaries": {
     "title": "Salaries",
     "subtitle": "Register salaries to manage child support.",
     "empty": "You have not registered any salaries yet.",
