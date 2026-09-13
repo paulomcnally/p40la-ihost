@@ -1,7 +1,7 @@
 ---
 title: "Indicador de tráfico de webhooks en cards de servicios (last_webhook_request)"
 id: "SPEC-074"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-12"
 updated: "2026-09-12"
@@ -11,7 +11,7 @@ github_issue: 77
 # Indicador de tráfico de webhooks en cards de servicios (last_webhook_request)
 
 **ID**: SPEC-074  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-12  
 **Actualizado**: 2026-09-12
@@ -193,19 +193,19 @@ ALTER TABLE services DROP COLUMN last_webhook_request;
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado un servicio con webhook, cuando se envía `POST /webhooks/{uuid}` con payload válido, entonces `last_webhook_request` del servicio queda con la fecha/hora del request y aparece en `GET /api/services`.
-- [ ] CA-002: Dado un servicio con webhook, cuando se envía `POST /webhooks/{uuid}` con payload inválido (ej: year fuera de rango), entonces igual se actualiza `last_webhook_request` (el request es tráfico real).
-- [ ] CA-003: Dado un request con UUID inexistente o webhooks deshabilitados, entonces NO se actualiza ningún `last_webhook_request` (no hay servicio match).
-- [ ] CA-004: Dado el listado de servicios en ServicesPage, entonces TODAS las cards muestran el indicador con ícono `link`: fecha relativa ("Hace 10 días", "Hace 2 horas", "Hace 5 minutos") cuando hay `last_webhook_request`, o "Nunca" (estilo gris) cuando es NULL.
-- [ ] CA-005: Dado un servicio sin `last_webhook_request` (NULL), entonces su card muestra "Nunca" en el indicador.
-- [ ] CA-006: Dados servicios existentes antes de la migración, entonces todos quedan con `last_webhook_request = NULL` (sin backfill).
-- [ ] CA-007: La migración `0029` up/down funciona sobre una DB de prueba en local (`/tmp/test-app.db`), y los tests existentes del módulo webhook siguen pasando.
-- [ ] CA-008: Las claves i18n nuevas existen en `frontend/public/i18n/{es,en}.json`, el build de Vite se regenera y el server sirve las claves (`curl /i18n/es.json`).
+- [x] CA-001: Dado un servicio con webhook, cuando se envía `POST /webhooks/{uuid}` con payload válido, entonces `last_webhook_request` del servicio queda con la fecha/hora del request y aparece en `GET /api/services`.
+- [x] CA-002: Dado un servicio con webhook, cuando se envía `POST /webhooks/{uuid}` con payload inválido (ej: year fuera de rango), entonces igual se actualiza `last_webhook_request` (el request es tráfico real).
+- [x] CA-003: Dado un request con UUID inexistente o webhooks deshabilitados, entonces NO se actualiza ningún `last_webhook_request` (no hay servicio match).
+- [x] CA-004: Dado el listado de servicios en ServicesPage, entonces TODAS las cards muestran el indicador con ícono `link`: fecha relativa ("Hace 10 días", "Hace 2 horas", "Hace 5 minutos") cuando hay `last_webhook_request`, o "Nunca" (estilo gris) cuando es NULL.
+- [x] CA-005: Dado un servicio sin `last_webhook_request` (NULL), entonces su card muestra "Nunca" en el indicador.
+- [x] CA-006: Dados servicios existentes antes de la migración, entonces todos quedan con `last_webhook_request = NULL` (sin backfill).
+- [x] CA-007: La migración `0029` up/down funciona sobre una DB de prueba en local (`/tmp/test-app.db`), y los tests existentes del módulo webhook siguen pasando.
+- [x] CA-008: Las claves i18n nuevas existen en `frontend/public/i18n/{es,en}.json`, el build de Vite se regenera y el server sirve las claves (`curl /i18n/es.json`).
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: El registro del timestamp no agrega dependencias nuevas ni más de 1 UPDATE por request de webhook.
-- [ ] CA-NF-002: Sin cambios en el contrato de respuestas de `POST /webhooks/{uuid}` (compatibilidad con clientes externos).
+- [x] CA-NF-001: El registro del timestamp no agrega dependencias nuevas ni más de 1 UPDATE por request de webhook.
+- [x] CA-NF-002: Sin cambios en el contrato de respuestas de `POST /webhooks/{uuid}` (compatibilidad con clientes externos).
 
 ### 5.3 Testing
 
@@ -253,3 +253,5 @@ ALTER TABLE services DROP COLUMN last_webhook_request;
 |-------|-------|-------------|
 | 2026-09-12 | paulomcnally | Creación inicial de la especificación |
 | 2026-09-12 | paulomcnally | Cambio solicitado por usuario: TODAS las cards muestran el indicador con ícono + fecha relativa ("Hace 10 días"); con NULL muestra "Nunca" (REQ-004, ADR-003, CA-004/005 actualizados) |
+| 2026-09-12 | paulomcnally | Implementación (in_progress): migración 0029, campo `LastWebhookRequest` en modelo/storage, `RecordWebhookRequest` en `WebhookService` + handler, indicador con fecha relativa (Intl.RelativeTimeFormat) en todas las cards de ServicesPage, i18n es/en, 3 tests nuevos. Verificado en local con POST reales de webhook (200/400/404). |
+| 2026-09-12 | paulomcnally | Release: merge `feature/SPEC-074` a `main` (commit pendiente de documentar). Estado `released`. |
