@@ -1,0 +1,1 @@
+ALTER TABLE services ADD COLUMN last_webhook_request TIMESTAMP;
