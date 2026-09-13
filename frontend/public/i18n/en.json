@@ -144,7 +144,8 @@
     "webhook_regenerate": "Regenerate UUID",
     "webhook_regenerated": "Webhook regenerated. Update the URL in the external client.",
     "webhook_schema_desc": "The POST body uses this schema (year, month and amount are required; status can be \"pending\" or \"paid\").",
-    "webhook_disabled_hint": "The webhook feature is disabled. Enable it from Settings."
+    "webhook_disabled_hint": "The webhook feature is disabled. Enable it from Settings.",
+    "webhook_never": "Never"
   },
   "frequency": {
     "monthly": "Monthly",
