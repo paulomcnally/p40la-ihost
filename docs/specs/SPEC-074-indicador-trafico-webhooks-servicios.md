@@ -254,4 +254,4 @@ ALTER TABLE services DROP COLUMN last_webhook_request;
 | 2026-09-12 | paulomcnally | Creación inicial de la especificación |
 | 2026-09-12 | paulomcnally | Cambio solicitado por usuario: TODAS las cards muestran el indicador con ícono + fecha relativa ("Hace 10 días"); con NULL muestra "Nunca" (REQ-004, ADR-003, CA-004/005 actualizados) |
 | 2026-09-12 | paulomcnally | Implementación (in_progress): migración 0029, campo `LastWebhookRequest` en modelo/storage, `RecordWebhookRequest` en `WebhookService` + handler, indicador con fecha relativa (Intl.RelativeTimeFormat) en todas las cards de ServicesPage, i18n es/en, 3 tests nuevos. Verificado en local con POST reales de webhook (200/400/404). |
-| 2026-09-12 | paulomcnally | Release: merge `feature/SPEC-074` a `main` (commit pendiente de documentar). Estado `released`. |
+| 2026-09-12 | paulomcnally | Release: merge `feature/SPEC-074` a `main` (commit `6df49c9`). Estado `released`. |
