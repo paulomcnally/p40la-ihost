@@ -12,6 +12,7 @@ import DeleteModal from '../components/DeleteModal'
 import HousePickerModal from '../components/HousePickerModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import WebhookModal from '../components/WebhookModal'
+import { formatRelativeTime } from '../utils/relativeTime'
 import type { Service } from '../types'
 
 export default function ServicesPage() {
@@ -19,6 +20,7 @@ export default function ServicesPage() {
   const { homes, currencies, loadAll } = useAppStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { t } = useI18nStore()
+  const lang = useI18nStore(s => s.lang)
   usePageTitle(t('services.title'))
   const [services, setServices] = useState<Service[]>([])
   const [homeFilter, setHomeFilter] = useState<number | null>(null)
@@ -151,6 +153,16 @@ export default function ServicesPage() {
                       Vencido
                     </span>
                   )}
+                  <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    svc.last_webhook_request
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400'
+                  }`}>
+                    <Icon name="link" className="w-3 h-3" />
+                    {svc.last_webhook_request
+                      ? formatRelativeTime(svc.last_webhook_request, lang)
+                      : t('services.webhook_never')}
+                  </span>
                   {svc.is_recurring && svc.start_date && (
                     <span className="text-xs text-text-secondary">
                       {svc.start_date}{svc.end_date ? ` → ${svc.end_date}` : ' → ∞'}

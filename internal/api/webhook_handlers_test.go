@@ -144,6 +144,86 @@ func TestWebhookUpsertBillHandler(t *testing.T) {
 	}
 }
 
+func TestWebhookRecordsLastWebhookRequest(t *testing.T) {
+	h, serviceSvc, webhookSvc, homeSvc, currencySvc, _, _ := newWebhookTestHandlers(t)
+	ctx := context.Background()
+
+	home, err := homeSvc.Create(ctx, "Casa Webhook", "")
+	if err != nil {
+		t.Fatalf("crear hogar: %v", err)
+	}
+	currencies, _ := currencySvc.List(ctx)
+	svc, err := serviceSvc.Create(ctx, &models.Service{
+		HomeID:          home.ID,
+		Name:            "Internet",
+		Institution:     "Claro",
+		CurrencyID:      currencies[0].ID,
+		Frequency:       services.FrequencyMonthly,
+		SuggestedAmount: 45,
+		Active:          true,
+		IconKey:         "internet",
+	})
+	if err != nil {
+		t.Fatalf("crear servicio: %v", err)
+	}
+
+	got, err := serviceSvc.GetByID(ctx, svc.ID)
+	if err != nil {
+		t.Fatalf("obtener servicio: %v", err)
+	}
+	if got.LastWebhookRequest != nil {
+		t.Fatal("un servicio nuevo no debe tener last_webhook_request")
+	}
+
+	key, _ := webhookSvc.GetOrCreateWebhookKey(ctx)
+	handler := WebhookAuthMiddleware(webhookSvc)(http.HandlerFunc(h.UpsertBill))
+
+	// Payload válido → 200 y registra el request.
+	payload, _ := json.Marshal(models.WebhookBillPayload{Year: 2025, Month: 10, Amount: 88})
+	req := httptest.NewRequest(http.MethodPost, "/webhooks/"+svc.WebhookUUID, bytes.NewReader(payload))
+	req.Header.Set("X-Webhook-Key", key)
+	req.SetPathValue("uuid", svc.WebhookUUID)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("payload válido esperaba 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	got, err = serviceSvc.GetByID(ctx, svc.ID)
+	if err != nil {
+		t.Fatalf("obtener servicio: %v", err)
+	}
+	if got.LastWebhookRequest == nil {
+		t.Error("un request válido debe setear last_webhook_request")
+	}
+
+	// Payload inválido → 400 pero igual registra tráfico (SPEC-074).
+	req = httptest.NewRequest(http.MethodPost, "/webhooks/"+svc.WebhookUUID, bytes.NewReader([]byte(`{"year":2025,"month":13}`)))
+	req.Header.Set("X-Webhook-Key", key)
+	req.SetPathValue("uuid", svc.WebhookUUID)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("body inválido esperaba 400, got %d", rr.Code)
+	}
+	got, err = serviceSvc.GetByID(ctx, svc.ID)
+	if err != nil {
+		t.Fatalf("obtener servicio: %v", err)
+	}
+	if got.LastWebhookRequest == nil {
+		t.Error("un request con payload inválido también es tráfico y debe setear last_webhook_request")
+	}
+
+	// UUID inexistente → 404 y no afecta ningún servicio.
+	req = httptest.NewRequest(http.MethodPost, "/webhooks/no-existe", bytes.NewReader(payload))
+	req.Header.Set("X-Webhook-Key", key)
+	req.SetPathValue("uuid", "no-existe")
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("uuid inexistente esperaba 404, got %d", rr.Code)
+	}
+}
+
 func TestWebhookDisabledReturns403(t *testing.T) {
 	h, serviceSvc, webhookSvc, homeSvc, currencySvc, settingsSvc, _ := newWebhookTestHandlers(t)
 	ctx := context.Background()
@@ -183,6 +263,15 @@ func TestWebhookDisabledReturns403(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	if rr.Code != http.StatusForbidden {
 		t.Fatalf("feature deshabilitada esperaba 403, got %d", rr.Code)
+	}
+
+	// Con la feature deshabilitada no se registra tráfico (SPEC-074).
+	got, err := serviceSvc.GetByID(ctx, svc.ID)
+	if err != nil {
+		t.Fatalf("obtener servicio: %v", err)
+	}
+	if got.LastWebhookRequest != nil {
+		t.Error("con webhooks deshabilitados no debe registrarse last_webhook_request")
 	}
 }
 

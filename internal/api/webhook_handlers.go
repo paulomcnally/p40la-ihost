@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -51,6 +52,12 @@ func (h *WebhookHandlers) UpsertBill(w http.ResponseWriter, r *http.Request) {
 	if svc == nil {
 		respondError(w, http.StatusNotFound, "not_found", "No hay un servicio con ese webhook")
 		return
+	}
+
+	// Registrar tráfico de webhook (SPEC-074): cualquier request que matchee el
+	// UUID cuenta como tráfico real, sin importar la validez del payload.
+	if err := h.webhooks.RecordWebhookRequest(r.Context(), svc.ID); err != nil {
+		slog.Error("registrar último request de webhook", "service_id", svc.ID, "error", err)
 	}
 
 	var payload models.WebhookBillPayload
