@@ -1,7 +1,7 @@
 ---
 title: "Análisis de facturas por servicio con detección de cambios de monto"
 id: "SPEC-073"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-12"
 updated: "2026-09-12"
@@ -11,7 +11,7 @@ github_issue: 76
 # Análisis de facturas por servicio con detección de cambios de monto
 
 **ID**: SPEC-073  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-12  
 **Actualizado**: 2026-09-12
@@ -255,3 +255,4 @@ Sin endpoints nuevos. No hay contratos que modificar.
 |-------|-------|-------------|
 | 2026-09-12 | paulomcnally | Creación inicial de la especificación. Requerimiento de usuario: dos tabs (Análisis \| Facturas) en la página de un servicio, con análisis similar al de Deudas pero sin multi-moneda y enfocado en detectar cambios de monto entre períodos. Se incluyó análisis del gráfico relevante (línea/área de evolución + variación período a período). |
 | 2026-09-12 | paulomcnally | Implementación (in_progress): tabs Análisis/Facturas en `BillsPage` vía `searchParams` (Análisis por defecto); nuevo componente `BillAnalysis` con resumen (total/pagado/pendiente, cantidad, promedio), gráfico de evolución SVG con marcas de cambio (subida ↑ rojo / bajada ↓ verde), lista de cambios con delta absoluto y %, selector de año, toggle por período/año, barras por período y estadísticas (mayor subida/bajada). i18n es/en (24 claves). Cero dependencias nuevas. Build frontend y backend OK. |
+| 2026-09-12 | paulomcnally | Release: merge `feature/SPEC-073` a `main`. Estado `released`. |
