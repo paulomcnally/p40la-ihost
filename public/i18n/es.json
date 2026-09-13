@@ -193,7 +193,31 @@
     "field_year": "Año",
     "field_month": "Mes",
     "field_payment_reference": "Referencia del pago",
-    "field_paid_at": "Fecha de pago"
+    "field_paid_at": "Fecha de pago",
+    "tab_analysis": "Análisis",
+    "tab_bills": "Facturas",
+    "analysis_all_years": "Todos los años",
+    "analysis_group_periodo": "Por período",
+    "analysis_group_anio": "Por año",
+    "analysis_changes_count": "cambios detectados",
+    "analysis_total": "Total facturado",
+    "analysis_paid": "Pagado",
+    "analysis_pending": "Pendiente",
+    "analysis_bills_count": "Facturas",
+    "analysis_average": "Promedio por período",
+    "analysis_periods": "Períodos",
+    "analysis_last_change": "Último cambio",
+    "analysis_evolution": "Evolución del monto",
+    "analysis_evolution_subtitle": "El punto cambia de color cuando el monto varió respecto del período anterior",
+    "analysis_no_changes": "No hay cambios de monto entre períodos consecutivos.",
+    "analysis_changes_title": "Cambios detectados",
+    "analysis_changes_subtitle": "Períodos donde el monto cambió respecto del anterior (click para editar la factura)",
+    "analysis_by_period": "Monto por período",
+    "analysis_by_period_subtitle": "Comparación lado a lado de los montos facturados",
+    "analysis_biggest_increase": "Mayor subida",
+    "analysis_biggest_decrease": "Mayor bajada",
+    "analysis_empty": "No hay facturas para analizar",
+    "analysis_empty_subtitle": "Agrega facturas para ver la evolución y los cambios de monto"
   },
   "institutions": {
     "title": "Instituciones",
@@ -411,7 +435,7 @@
     "updated": "Hijo actualizado",
     "save_error": "Error al guardar"
   },
-"salaries": {
+  "salaries": {
     "title": "Salarios",
     "subtitle": "Registra los salarios para gestionar la pensión alimenticia.",
     "empty": "No has registrado ningún salario todavía.",
