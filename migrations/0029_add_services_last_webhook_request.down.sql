@@ -1,0 +1,1 @@
+ALTER TABLE services DROP COLUMN last_webhook_request;

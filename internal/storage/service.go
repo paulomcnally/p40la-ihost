@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 )
@@ -21,6 +22,7 @@ const serviceColumns = `
 	suggested_amount, active, icon_key, billing_type, billing_day, auto_generate,
 	institution_id, institution_analyzer_id,
 	start_date, end_date, is_recurring, webhook_uuid,
+	last_webhook_request,
 	(SELECT b.status FROM bills b WHERE b.service_id = services.id AND (b.amount > 0 OR b.invoice_number != '') ORDER BY b.year DESC, b.month DESC, b.id DESC LIMIT 1) AS latest_bill_status,
 	deleted_at, created_at, updated_at
 `
@@ -117,6 +119,19 @@ func (s *ServiceStorage) SetWebhookUUID(ctx context.Context, id int64, uuid stri
 	return nil
 }
 
+// SetLastWebhookRequest registra la fecha del último request de webhook
+// recibido por el servicio (SPEC-074).
+func (s *ServiceStorage) SetLastWebhookRequest(ctx context.Context, id int64, at time.Time) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE services SET last_webhook_request = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND deleted_at IS NULL
+	`, at.UTC().Format(time.RFC3339), id)
+	if err != nil {
+		return fmt.Errorf("registrar último request de webhook: %w", err)
+	}
+	return nil
+}
+
 func (s *ServiceStorage) SoftDelete(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE services SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL
@@ -136,10 +151,11 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	var startDate, endDate sql.NullString
 	var institution sql.NullString
 	var webhookUUID sql.NullString
+	var lastWebhookRequest sql.NullTime
 	if err := row.Scan(&svc.ID, &svc.HomeID, &svc.Name, &institution, &svc.CurrencyID,
 		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
 		&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring, &webhookUUID,
-		&latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
+		&lastWebhookRequest, &latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -169,6 +185,9 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	if latestBillStatus.Valid {
 		svc.LatestBillStatus = &latestBillStatus.String
 	}
+	if lastWebhookRequest.Valid {
+		svc.LastWebhookRequest = &lastWebhookRequest.Time
+	}
 	return &svc, nil
 }
 
@@ -183,10 +202,11 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 		var startDate, endDate sql.NullString
 		var institution sql.NullString
 		var webhookUUID sql.NullString
+		var lastWebhookRequest sql.NullTime
 		if err := rows.Scan(&svc.ID, &svc.HomeID, &svc.Name, &institution, &svc.CurrencyID,
 			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
 			&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring, &webhookUUID,
-			&latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
+			&lastWebhookRequest, &latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear servicio: %w", err)
 		}
 		svc.Institution = institution.String
@@ -212,6 +232,9 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 		}
 		if latestBillStatus.Valid {
 			svc.LatestBillStatus = &latestBillStatus.String
+		}
+		if lastWebhookRequest.Valid {
+			svc.LastWebhookRequest = &lastWebhookRequest.Time
 		}
 		services = append(services, svc)
 	}

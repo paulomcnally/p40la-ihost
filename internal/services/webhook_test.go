@@ -440,6 +440,28 @@ func TestServiceWebhookUUIDAssignedAndBackfilled(t *testing.T) {
 	}
 }
 
+func TestRecordWebhookRequest(t *testing.T) {
+	webhookSvc, serviceSvc, _ := newTestWebhook(t)
+	ctx := context.Background()
+	svc := createTestService(t, webhookSvc, serviceSvc)
+
+	if svc.LastWebhookRequest != nil {
+		t.Fatal("el servicio recién creado no debe tener last_webhook_request")
+	}
+
+	if err := webhookSvc.RecordWebhookRequest(ctx, svc.ID); err != nil {
+		t.Fatalf("RecordWebhookRequest: %v", err)
+	}
+
+	got, err := serviceSvc.GetByID(ctx, svc.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.LastWebhookRequest == nil {
+		t.Error("RecordWebhookRequest debe setear last_webhook_request")
+	}
+}
+
 func TestWebhookUpsertReactivatesSoftDeletedBill(t *testing.T) {
 	webhookSvc, serviceSvc, billSvc := newTestWebhook(t)
 	ctx := context.Background()

@@ -109,6 +109,14 @@ func (s *WebhookService) ValidateWebhookKey(ctx context.Context, provided string
 	return subtle.ConstantTimeCompare([]byte(provided), []byte(expected)) == 1
 }
 
+// RecordWebhookRequest registra la fecha del último request de webhook recibido
+// por el servicio (SPEC-074). Se invoca cuando el UUID del webhook matchea un
+// servicio, independientemente de la validez del payload: el request es tráfico
+// real hacia la URL del webhook.
+func (s *WebhookService) RecordWebhookRequest(ctx context.Context, serviceID int64) error {
+	return s.services.SetLastWebhookRequest(ctx, serviceID, time.Now())
+}
+
 // UpsertBill crea o actualiza la factura del período (service, year, month)
 // según el payload del webhook (REQ-003/REQ-004). Devuelve el resultado y si
 // la factura fue creada o actualizada.
