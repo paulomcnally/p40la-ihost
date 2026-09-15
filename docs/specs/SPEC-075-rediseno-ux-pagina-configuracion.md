@@ -1,7 +1,7 @@
 ---
 title: "Rediseño UX de la página de Configuración (índice + subpáginas)"
 id: "SPEC-075"
-status: "pending_execution"
+status: "released"
 author: "Claude (a pedido de paulomcnally)"
 created: "2026-09-14"
 updated: "2026-09-14"
@@ -11,7 +11,7 @@ github_issue: 78
 # Rediseño UX de la página de Configuración (índice + subpáginas)
 
 **ID**: SPEC-075
-**Estado**: pending_execution
+**Estado**: released
 **Autor**: Claude (a pedido de paulomcnally)
 **Creado**: 2026-09-14
 **Actualizado**: 2026-09-14
@@ -228,3 +228,5 @@ Sin cambios. Todas las subpáginas consumen los mismos endpoints ya existentes:
 |-------|-------|-------------|
 | 2026-09-14 | Claude (a pedido de paulomcnally) | Creación inicial de la especificación, a partir de una captura de pantalla y solicitud de rediseño de UX de `/settings`. |
 | 2026-09-14 | opencode | Copiado del spec desde Downloads, issue de GitHub #78 creado, estado movido a `pending_execution`. |
+| 2026-09-14 | opencode | Implementación completa: índice `/settings` + 7 subpáginas, componentes `SettingsNavRow`/`StatusPill`, `BACK_ROUTES`, i18n `nav.*`/`billing.*`, buscador (REQ-016). QA local OK (build, endpoints). |
+| 2026-09-14 | opencode | Release: commit `d055d4f` (implementación) mergeado a `main` y pusheado, estado movido a `released`, issue #78 cerrado. |
