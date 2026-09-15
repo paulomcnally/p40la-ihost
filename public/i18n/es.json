@@ -373,36 +373,6 @@
       "base_url_saved": "URL base guardada",
       "disabled_hint": "Los webhooks están deshabilitados. Los endpoints responderán 403 hasta que actives esta opción.",
       "needs_config_hint": "Activa el toggle para habilitar la feature de webhooks."
-    },
-    "nav": {
-      "search": "Buscar ajuste...",
-      "no_results": "Sin resultados",
-      "section_frequent": "General y alertas",
-      "section_advanced": "Avanzado",
-      "billing": "Facturación automática",
-      "email_alerts": "Alertas por email",
-      "voice_monkey": "Voice Monkey (Alexa)",
-      "currencies": "Monedas",
-      "alerts_subtitle": "{active} de {total} activadas",
-      "recipients_count": "{count} destinatarios",
-      "currencies_count": "{count} monedas",
-      "status_enabled": "Habilitado",
-      "status_disabled": "Deshabilitado",
-      "status_activated": "Activado",
-      "status_deactivated": "Desactivado",
-      "status_configured": "Configurado",
-      "status_pending": "Pendiente"
-    },
-    "billing": {
-      "hour_generation": "Hora de generación",
-      "hour_generation_desc": "Hora del día para generar facturas automáticamente",
-      "alert_check_hour": "Hora de check de alertas",
-      "alert_check_hour_desc": "Hora del día para verificar alertas pendientes",
-      "hour_format": "Formato de hora",
-      "hour_format_desc": "Mostrar horas en formato 12h (AM/PM) o 24h",
-      "hour_generation_saved": "Hora de facturación actualizada",
-      "alert_check_saved": "Hora de check de alertas actualizada",
-      "save_error": "Error al actualizar"
     }
   },
   "notifications": {
