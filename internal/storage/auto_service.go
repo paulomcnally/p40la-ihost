@@ -131,7 +131,8 @@ func (s *AutoServiceStorage) ListAvailableServices(ctx context.Context, autoID i
 		SELECT s.id, s.home_id, s.name, s.institution, s.currency_id, s.frequency,
 			s.suggested_amount, s.active, s.icon_key, s.billing_type, s.billing_day, s.auto_generate,
 			s.institution_id, s.institution_analyzer_id,
-			s.start_date, s.end_date, s.is_recurring,
+			s.start_date, s.end_date, s.is_recurring, s.webhook_uuid,
+			s.last_webhook_request,
 			(SELECT b.status FROM bills b WHERE b.service_id = s.id AND (b.amount > 0 OR b.invoice_number != '') ORDER BY b.year DESC, b.month DESC, b.id DESC LIMIT 1) AS latest_bill_status,
 			s.deleted_at, s.created_at, s.updated_at
 		FROM services s
