@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 74 |
+| **Total de specs** | 75 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 74 🟢 |
+| **Released** | 75 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-074 |
+| **Último ID usado** | SPEC-075 |
 
 ---
 
@@ -95,6 +95,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-072 | Fix copiar URL de webhook en modal de servicio y quitar API key | released | 2026-09-12 | paulomcnally |
 | SPEC-073 | Análisis de facturas por servicio con detección de cambios de monto | released | 2026-09-12 | paulomcnally |
 | SPEC-074 | Indicador de tráfico de webhooks en cards de servicios (last_webhook_request) | released | 2026-09-12 | paulomcnally |
+| SPEC-075 | Rediseño UX de la página de Configuración (índice + subpáginas) | released | 2026-09-14 | Claude (a pedido de paulomcnally) |
 
 ---
 
@@ -164,4 +165,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-12 — SPEC-074 (indicador de tráfico de webhooks en cards de servicios) released.*
+*Última actualización de este tracker: 2026-09-14 — SPEC-075 (Rediseño UX de la página de Configuración) released.*
