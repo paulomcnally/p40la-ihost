@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 75 |
+| **Total de specs** | 76 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 75 🟢 |
+| **Released** | 76 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-075 |
+| **Último ID usado** | SPEC-076 |
 
 ---
 
@@ -96,6 +96,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-073 | Análisis de facturas por servicio con detección de cambios de monto | released | 2026-09-12 | paulomcnally |
 | SPEC-074 | Indicador de tráfico de webhooks en cards de servicios (last_webhook_request) | released | 2026-09-12 | paulomcnally |
 | SPEC-075 | Rediseño UX de la página de Configuración (índice + subpáginas) | released | 2026-09-14 | Claude (a pedido de paulomcnally) |
+| SPEC-076 | Fix error 500 en GET /api/autos/{id}/available-services (scan 21 vs 23) | released | 2026-09-14 | paulomcnally |
 
 ---
 
@@ -165,4 +166,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-14 — SPEC-075 (Rediseño UX de la página de Configuración) released.*
+*Última actualización de este tracker: 2026-09-14 — SPEC-076 (Fix error 500 en GET /api/autos/{id}/available-services) released.*
