@@ -372,6 +372,36 @@
       "base_url_saved": "Base URL saved",
       "disabled_hint": "Webhooks are disabled. Endpoints will respond 403 until you enable this option.",
       "needs_config_hint": "Turn the toggle on to enable the webhook feature."
+    },
+    "nav": {
+      "search": "Search settings...",
+      "no_results": "No results",
+      "section_frequent": "General and alerts",
+      "section_advanced": "Advanced",
+      "billing": "Automatic billing",
+      "email_alerts": "Email alerts",
+      "voice_monkey": "Voice Monkey (Alexa)",
+      "currencies": "Currencies",
+      "alerts_subtitle": "{active} of {total} active",
+      "recipients_count": "{count} recipients",
+      "currencies_count": "{count} currencies",
+      "status_enabled": "Enabled",
+      "status_disabled": "Disabled",
+      "status_activated": "Activated",
+      "status_deactivated": "Deactivated",
+      "status_configured": "Configured",
+      "status_pending": "Pending"
+    },
+    "billing": {
+      "hour_generation": "Generation hour",
+      "hour_generation_desc": "Time of day to generate bills automatically",
+      "alert_check_hour": "Alert check hour",
+      "alert_check_hour_desc": "Time of day to check pending alerts",
+      "hour_format": "Hour format",
+      "hour_format_desc": "Show times in 12h (AM/PM) or 24h format",
+      "hour_generation_saved": "Billing hour updated",
+      "alert_check_saved": "Alert check hour updated",
+      "save_error": "Error updating"
     }
   },
   "notifications": {
