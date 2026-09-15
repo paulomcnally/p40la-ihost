@@ -15,6 +15,13 @@ import BillFormPage from './pages/BillFormPage'
 import SettingsPage from './pages/SettingsPage'
 import LanguagePage from './pages/LanguagePage'
 import CurrencyFormPage from './pages/CurrencyFormPage'
+import SettingsBillingPage from './pages/SettingsBillingPage'
+import SettingsAlertsPage from './pages/SettingsAlertsPage'
+import SettingsEmailAlertsPage from './pages/SettingsEmailAlertsPage'
+import SettingsVoiceMonkeyPage from './pages/SettingsVoiceMonkeyPage'
+import SettingsWebhooksPage from './pages/SettingsWebhooksPage'
+import SettingsCurrenciesPage from './pages/SettingsCurrenciesPage'
+import SettingsCurrencyFormatPage from './pages/SettingsCurrencyFormatPage'
 import InstitutionsPage from './pages/InstitutionsPage'
 import InstitutionFormPage from './pages/InstitutionFormPage'
 import AutosPage from './pages/AutosPage'
@@ -90,6 +97,13 @@ function App() {
                   <Route path="settings/language" element={<LanguagePage />} />
                   <Route path="settings/currency" element={<CurrencyFormPage />} />
                   <Route path="settings/currency/:id" element={<CurrencyFormPage />} />
+                  <Route path="settings/facturacion" element={<SettingsBillingPage />} />
+                  <Route path="settings/alertas" element={<SettingsAlertsPage />} />
+                  <Route path="settings/alertas/email" element={<SettingsEmailAlertsPage />} />
+                  <Route path="settings/alertas/voz" element={<SettingsVoiceMonkeyPage />} />
+                  <Route path="settings/webhooks" element={<SettingsWebhooksPage />} />
+                  <Route path="settings/monedas" element={<SettingsCurrenciesPage />} />
+                  <Route path="settings/formato-moneda" element={<SettingsCurrencyFormatPage />} />
                   <Route path="institutions" element={<InstitutionsPage />} />
                   <Route path="institutions/new" element={<InstitutionFormPage />} />
                   <Route path="institutions/edit/:id" element={<InstitutionFormPage />} />
