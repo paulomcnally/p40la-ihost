@@ -1,7 +1,7 @@
 ---
 title: "Fix error 500 en GET /api/autos/{id}/available-services (scan 21 vs 23)"
 id: "SPEC-076"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-14"
 updated: "2026-09-14"
@@ -11,7 +11,7 @@ github_issue: 79
 # Fix error 500 en GET /api/autos/{id}/available-services (scan 21 vs 23)
 
 **ID**: SPEC-076  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-14  
 **Actualizado**: 2026-09-14
@@ -187,3 +187,4 @@ Sin cambios en SQLite. La tabla `services` ya tiene `webhook_uuid` (SPEC-069) y 
 |-------|-------|-------------|
 | 2026-09-14 | paulomcnally | Creación inicial de la especificación |
 | 2026-09-14 | paulomcnally | Auditoría REQ-003 completada: solo `ListAvailableServices` estaba desalineada; `List`, `GetByID` y `FindByWebhookUUID` usan `serviceColumns` (23 columnas) |
+| 2026-09-14 | paulomcnally | Estado `released`. Issue #79 cerrado. Commit de implementación: `50182f1` |
