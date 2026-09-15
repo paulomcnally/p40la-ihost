@@ -188,3 +188,4 @@ Sin cambios en SQLite. La tabla `services` ya tiene `webhook_uuid` (SPEC-069) y 
 | 2026-09-14 | paulomcnally | Creación inicial de la especificación |
 | 2026-09-14 | paulomcnally | Auditoría REQ-003 completada: solo `ListAvailableServices` estaba desalineada; `List`, `GetByID` y `FindByWebhookUUID` usan `serviceColumns` (23 columnas) |
 | 2026-09-14 | paulomcnally | Estado `released`. Issue #79 cerrado. Commit de implementación: `50182f1` |
+| 2026-09-14 | paulomcnally | Commit de release documentado: merge `991daac` a `main` (Merge branch 'feature/SPEC-076') |
