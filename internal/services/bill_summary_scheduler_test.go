@@ -58,7 +58,7 @@ func TestBillSummaryScheduler_NoPending_NoEmail(t *testing.T) {
 	scheduler := NewBillSummaryScheduler(billStorage, NewEmailService(settingsService), settingsService, alertService, voiceMonkeyService)
 
 	// Forzar la hora actual para que el check se ejecute.
-	now := time.Now()
+	now := time.Now().UTC()
 	if err := settingsService.SetAlertCheckHour(context.Background(), now.Hour()); err != nil {
 		t.Fatalf("set hora: %v", err)
 	}
@@ -79,7 +79,7 @@ func TestBillSummaryScheduler_WithPending_NoRecipients(t *testing.T) {
 	billStorage, settingsService, alertService, voiceMonkeyService := newSummaryTestEnv(t, true)
 	scheduler := NewBillSummaryScheduler(billStorage, NewEmailService(settingsService), settingsService, alertService, voiceMonkeyService)
 
-	now := time.Now()
+	now := time.Now().UTC()
 	if err := settingsService.SetAlertCheckHour(context.Background(), now.Hour()); err != nil {
 		t.Fatalf("set hora: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestBillSummaryScheduler_DedupSameDay(t *testing.T) {
 	billStorage, settingsService, alertService, voiceMonkeyService := newSummaryTestEnv(t, false)
 	scheduler := NewBillSummaryScheduler(billStorage, NewEmailService(settingsService), settingsService, alertService, voiceMonkeyService)
 
-	now := time.Now()
+	now := time.Now().UTC()
 	if err := settingsService.SetAlertCheckHour(context.Background(), now.Hour()); err != nil {
 		t.Fatalf("set hora: %v", err)
 	}

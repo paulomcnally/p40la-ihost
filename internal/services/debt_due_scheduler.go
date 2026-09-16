@@ -83,7 +83,11 @@ func (s *DebtDueScheduler) checkAndSend() {
 		return
 	}
 
-	now := time.Now()
+	now, err := currentUserNow(ctx, s.settingsService)
+	if err != nil {
+		slog.Error("debt due scheduler: error al obtener zona horaria", "error", err)
+		return
+	}
 	if now.Hour() != hour {
 		return
 	}

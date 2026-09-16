@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
@@ -49,6 +50,48 @@ func (s *SystemSettingsService) Set(ctx context.Context, key, value string) erro
 
 func (s *SystemSettingsService) GetSetting(ctx context.Context, key string) (*models.SystemSetting, error) {
 	return s.storage.GetSetting(ctx, key)
+}
+
+// ---- Zona horaria (SPEC-078) ----
+
+// TimezoneKey es la key del setting de zona horaria (nombre IANA).
+const TimezoneKey = "timezone"
+
+// GetTimezone devuelve la zona horaria configurada (nombre IANA) o "" si no
+// está configurada.
+func (s *SystemSettingsService) GetTimezone(ctx context.Context) (string, error) {
+	return s.storage.Get(ctx, TimezoneKey)
+}
+
+// SetTimezone valida y persiste la zona horaria (nombre IANA). Un valor vacío
+// limpia el setting (vuelve al fallback UTC).
+func (s *SystemSettingsService) SetTimezone(ctx context.Context, tz string) error {
+	tz = strings.TrimSpace(tz)
+	if tz == "" {
+		return s.storage.Set(ctx, TimezoneKey, "")
+	}
+	if _, err := time.LoadLocation(tz); err != nil {
+		return fmt.Errorf("zona horaria inválida: %q", tz)
+	}
+	return s.storage.Set(ctx, TimezoneKey, tz)
+}
+
+// GetTimezoneLocation resuelve la zona horaria configurada a *time.Location.
+// Si no está configurada o es inválida, devuelve time.UTC (fallback seguro,
+// REQ-004). El error solo refleja fallos de storage.
+func (s *SystemSettingsService) GetTimezoneLocation(ctx context.Context) (*time.Location, error) {
+	tz, err := s.GetTimezone(ctx)
+	if err != nil {
+		return time.UTC, err
+	}
+	if tz == "" {
+		return time.UTC, nil
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return time.UTC, nil
+	}
+	return loc, nil
 }
 
 // ---- Formato de moneda (SPEC-058) ----
