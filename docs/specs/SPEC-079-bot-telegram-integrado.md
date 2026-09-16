@@ -279,4 +279,4 @@ Si no hay pendientes: `✅ No hay facturas pendientes.`
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-16 | p40la-ihost-team | Creación inicial de la especificación |
-| 2026-09-16 | p40la-ihost-team | Implementación completa y validación local por el usuario. Release: commit `<commit-hash>` en main |
+| 2026-09-16 | p40la-ihost-team | Implementación completa y validación local por el usuario. Release: commit `4dedb6d` en main |
