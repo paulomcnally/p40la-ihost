@@ -374,6 +374,29 @@
       "disabled_hint": "Los webhooks están deshabilitados. Los endpoints responderán 403 hasta que actives esta opción.",
       "needs_config_hint": "Activa el toggle para habilitar la feature de webhooks."
     },
+    "telegram_bot": {
+      "title": "Bot de Telegram",
+      "enable": "Activar bot de Telegram",
+      "enable_hint": "Consulta los servicios con facturas pendientes desde Telegram.",
+      "token": "Token del bot",
+      "chat_ids": "Chat IDs permitidos",
+      "chat_ids_hint": "Comma-separated. Si queda vacío, el bot responde a cualquier chat.",
+      "saved": "Configuración del bot guardada",
+      "save_error": "Error al guardar la configuración del bot",
+      "configured_status": "Bot configurado",
+      "not_configured": "No configurado",
+      "reconfigure": "Reconfigurar",
+      "reconfigure_confirm": "¿Querés quitar la configuración actual del bot de Telegram? Tendrás que volver a ingresar el token.",
+      "reconfigured": "Configuración del bot eliminada",
+      "needs_config_hint": "Falta ingresar el token para completar la configuración.",
+      "help": {
+        "title": "¿Cómo creo el bot?",
+        "step1": "Hablá con @BotFather en Telegram y usá el comando /newbot.",
+        "step2": "Copiá el token que te da BotFather y pegalo en el campo \"Token del bot\".",
+        "step3": "Escribile un mensaje al bot (ej: /pendientes) para probarlo.",
+        "step4": "Opcional: configurá los Chat IDs permitidos para restringir quién puede consultar."
+      }
+    },
     "nav": {
       "search": "Buscar ajuste...",
       "no_results": "Sin resultados",
@@ -382,6 +405,7 @@
       "billing": "Facturación automática",
       "email_alerts": "Alertas por email",
       "voice_monkey": "Voice Monkey (Alexa)",
+      "telegram_bot": "Bot de Telegram",
       "currencies": "Monedas",
       "alerts_subtitle": "{active} de {total} activadas",
       "recipients_count": "{count} destinatarios",
