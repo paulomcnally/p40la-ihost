@@ -43,6 +43,7 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("POST /api/system-settings/test-voice", authMiddleware(http.HandlerFunc(handler.systemSettings.TestVoice)))
 	mux.Handle("DELETE /api/system-settings/voicemonkey", authMiddleware(http.HandlerFunc(handler.systemSettings.DeleteVoiceMonkey)))
 	mux.Handle("DELETE /api/system-settings/smtp", authMiddleware(http.HandlerFunc(handler.systemSettings.DeleteSMTP)))
+	mux.Handle("DELETE /api/system-settings/telegram-bot", authMiddleware(http.HandlerFunc(handler.systemSettings.DeleteTelegramBot)))
 	mux.Handle("POST /api/system-settings/email-palette/reset", authMiddleware(http.HandlerFunc(handler.systemSettings.ResetEmailPalette)))
 	mux.Handle("POST /api/system-settings/preview-email", authMiddleware(http.HandlerFunc(handler.systemSettings.PreviewEmail)))
 
@@ -129,7 +130,7 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/institution-categories/{id}", authMiddleware(http.HandlerFunc(handler.institutionCategory.UpdateCategory)))
 	mux.Handle("DELETE /api/institution-categories/{id}", authMiddleware(http.HandlerFunc(handler.institutionCategory.DeleteCategory)))
 
-// APIs de notificaciones
+	// APIs de notificaciones
 	mux.Handle("GET /api/notifications", authMiddleware(http.HandlerFunc(handler.notification.ListNotifications)))
 	mux.Handle("GET /api/notifications/{id}", authMiddleware(http.HandlerFunc(handler.notification.GetNotification)))
 	mux.Handle("POST /api/notifications", authMiddleware(http.HandlerFunc(handler.notification.CreateNotification)))
@@ -143,7 +144,7 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/children/{id}", authMiddleware(http.HandlerFunc(handler.child.UpdateChild)))
 	mux.Handle("DELETE /api/children/{id}", authMiddleware(http.HandlerFunc(handler.child.DeleteChild)))
 
-// APIs de salarios (pensión alimenticia)
+	// APIs de salarios (pensión alimenticia)
 	mux.Handle("GET /api/salaries", authMiddleware(http.HandlerFunc(handler.salary.ListSalaries)))
 	mux.Handle("GET /api/salaries/{id}", authMiddleware(http.HandlerFunc(handler.salary.GetSalary)))
 	mux.Handle("POST /api/salaries", authMiddleware(http.HandlerFunc(handler.salary.CreateSalary)))

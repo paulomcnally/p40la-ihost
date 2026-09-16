@@ -14,10 +14,18 @@ type SystemSettingsHandlers struct {
 	settings     *services.SystemSettingsService
 	emailService *services.EmailService
 	voiceMonkey  *services.VoiceMonkeyService
+	telegramBot  *services.TelegramBotService
 }
 
 func NewSystemSettingsHandlers(settings *services.SystemSettingsService, emailService *services.EmailService, voiceMonkey *services.VoiceMonkeyService) *SystemSettingsHandlers {
 	return &SystemSettingsHandlers{settings: settings, emailService: emailService, voiceMonkey: voiceMonkey}
+}
+
+// SetTelegramBotService inyecta el bot de Telegram para notificarlo cuando la
+// config cambia (SPEC-079, REQ-006). Se setea después de construir el handler
+// porque el bot se crea en main.go con los mismos storages.
+func (h *SystemSettingsHandlers) SetTelegramBotService(telegramBot *services.TelegramBotService) {
+	h.telegramBot = telegramBot
 }
 
 func (h *SystemSettingsHandlers) GetBillingGenerationHour(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +112,11 @@ type settingsRequest struct {
 	EmailColorText       *string `json:"email_color_text,omitempty"`
 	EmailColorMuted      *string `json:"email_color_muted,omitempty"`
 	EmailColorBorder     *string `json:"email_color_border,omitempty"`
+
+	// Bot de Telegram (SPEC-079). Token solo se envía para guardar.
+	TelegramBotEnabled *bool   `json:"telegram_bot_enabled,omitempty"`
+	TelegramBotToken   *string `json:"telegram_bot_token,omitempty"`
+	TelegramBotChatIDs *string `json:"telegram_bot_chat_ids,omitempty"`
 }
 
 func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
@@ -173,6 +186,12 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
+	telegramBot, err := h.settings.GetTelegramBotConfigPublic(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
 	// SMTPConfigPublic.User es siempre "" (info sensible, no se expone).
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour":      hour,
@@ -200,6 +219,8 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"email_color_text":             palette.Text,
 		"email_color_muted":            palette.Muted,
 		"email_color_border":           palette.Border,
+		"telegram_bot_enabled":         telegramBot.Enabled,
+		"telegram_bot_configured":      telegramBot.Configured,
 	})
 }
 
@@ -368,6 +389,35 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		}
 	}
 
+	// Bot de Telegram (SPEC-079): cada campo se persiste solo si viene en el
+	// request (updates parciales no se pisan). Tras cualquier cambio se
+	// notifica al servicio para reconfigurar el polling en runtime (REQ-006).
+	telegramBotChanged := false
+	if req.TelegramBotEnabled != nil {
+		if err := h.settings.SetTelegramBotEnabled(r.Context(), *req.TelegramBotEnabled); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+		telegramBotChanged = true
+	}
+	if req.TelegramBotToken != nil {
+		if err := h.settings.SetTelegramBotToken(r.Context(), *req.TelegramBotToken); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+		telegramBotChanged = true
+	}
+	if req.TelegramBotChatIDs != nil {
+		if err := h.settings.SetTelegramBotChatIDs(r.Context(), splitEmails(*req.TelegramBotChatIDs)); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+		telegramBotChanged = true
+	}
+	if telegramBotChanged && h.telegramBot != nil {
+		h.telegramBot.NotifyConfigChanged()
+	}
+
 	hour, _ := h.settings.GetBillingGenerationHour(r.Context())
 	timezone, _ := h.settings.GetTimezone(r.Context())
 	smtp, _ := h.settings.GetSMTPConfigPublic(r.Context())
@@ -376,6 +426,7 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 	webhookEnabled, _ := h.settings.GetWebhookEnabled(r.Context())
 	webhookBaseURL, _ := h.settings.GetWebhookBaseURL(r.Context())
 	currencyFormat, _ := h.settings.GetCurrencyFormat(r.Context())
+	telegramBot, _ := h.settings.GetTelegramBotConfigPublic(r.Context())
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour":      hour,
 		"timezone":                     timezone,
@@ -387,6 +438,8 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		"currency_thousands_separator": currencyFormat.ThousandsSeparator,
 		"currency_decimal_separator":   currencyFormat.DecimalSeparator,
 		"currency_decimal_digits":      currencyFormat.DecimalDigits,
+		"telegram_bot_enabled":         telegramBot.Enabled,
+		"telegram_bot_configured":      telegramBot.Configured,
 		"message":                      "Configuración actualizada",
 	})
 }
@@ -509,6 +562,30 @@ func (h *SystemSettingsHandlers) ResetEmailPalette(w http.ResponseWriter, r *htt
 		"email_color_muted":      palette.Muted,
 		"email_color_border":     palette.Border,
 		"message":                "Paleta de emails restablecida a los valores por defecto",
+	})
+}
+
+// DeleteTelegramBot limpia la configuración del bot de Telegram y resetea el
+// toggle a OFF (botón "Reconfigurar", SPEC-079). Detiene el polling.
+func (h *SystemSettingsHandlers) DeleteTelegramBot(w http.ResponseWriter, r *http.Request) {
+	if err := h.settings.ClearTelegramBot(r.Context()); err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	if h.telegramBot != nil {
+		h.telegramBot.NotifyConfigChanged()
+	}
+
+	tgBot, err := h.settings.GetTelegramBotConfigPublic(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"telegram_bot_enabled":    tgBot.Enabled,
+		"telegram_bot_configured": tgBot.Configured,
+		"message":                 "Configuración del bot de Telegram eliminada",
 	})
 }
 

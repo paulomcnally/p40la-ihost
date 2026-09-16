@@ -373,6 +373,29 @@
       "disabled_hint": "Webhooks are disabled. Endpoints will respond 403 until you enable this option.",
       "needs_config_hint": "Turn the toggle on to enable the webhook feature."
     },
+    "telegram_bot": {
+      "title": "Telegram Bot",
+      "enable": "Enable Telegram bot",
+      "enable_hint": "Query services with pending bills from Telegram.",
+      "token": "Bot token",
+      "chat_ids": "Allowed chat IDs",
+      "chat_ids_hint": "Comma-separated. If left empty, the bot responds to any chat.",
+      "saved": "Bot settings saved",
+      "save_error": "Error saving bot settings",
+      "configured_status": "Bot configured",
+      "not_configured": "Not configured",
+      "reconfigure": "Reconfigure",
+      "reconfigure_confirm": "Do you want to remove the current Telegram bot configuration? You'll need to re-enter the token.",
+      "reconfigured": "Bot configuration removed",
+      "needs_config_hint": "A token is required to complete the setup.",
+      "help": {
+        "title": "How do I create the bot?",
+        "step1": "Talk to @BotFather on Telegram and use the /newbot command.",
+        "step2": "Copy the token BotFather gives you and paste it into the \"Bot token\" field.",
+        "step3": "Send a message to the bot (e.g. /pendientes) to test it.",
+        "step4": "Optional: set the allowed Chat IDs to restrict who can query."
+      }
+    },
     "nav": {
       "search": "Search settings...",
       "no_results": "No results",
@@ -381,6 +404,7 @@
       "billing": "Automatic billing",
       "email_alerts": "Email alerts",
       "voice_monkey": "Voice Monkey (Alexa)",
+      "telegram_bot": "Telegram Bot",
       "currencies": "Currencies",
       "alerts_subtitle": "{active} of {total} active",
       "recipients_count": "{count} recipients",

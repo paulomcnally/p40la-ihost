@@ -139,12 +139,15 @@ export const api = {
       email_color_text: string
       email_color_muted: string
       email_color_border: string
+      telegram_bot_enabled: boolean
+      telegram_bot_configured: boolean
     }>('/api/system-settings'),
     update: (body: Record<string, unknown>) => put<{ billing_generation_hour: number; smtp_configured: boolean }>('/api/system-settings', body),
     testEmail: () => post<{ message: string; recipients: string }>('/api/system-settings/test-email', {}),
     testVoice: () => post<{ message: string }>('/api/system-settings/test-voice', {}),
     disconnectVoiceMonkey: () => del<{ voicemonkey_enabled: boolean; voicemonkey_send_alerts: boolean; voicemonkey_configured: boolean }>('/api/system-settings/voicemonkey'),
     disconnectSMTP: () => del<{ smtp_configured: boolean }>('/api/system-settings/smtp'),
+    disconnectTelegramBot: () => del<{ telegram_bot_enabled: boolean; telegram_bot_configured: boolean }>('/api/system-settings/telegram-bot'),
     resetEmailPalette: () => post<{
       email_color_primary: string
       email_color_background: string
