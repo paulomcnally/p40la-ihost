@@ -12,7 +12,7 @@ services:
       - PORT=8088
       - DATA_DIR=/app/data
       - LOG_LEVEL=info
-      - VERSION=0.4.29
+      - VERSION=0.4.30
 
 volumes:
   p40la-ihost-data:
