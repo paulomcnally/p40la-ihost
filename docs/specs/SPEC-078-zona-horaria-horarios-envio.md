@@ -246,4 +246,4 @@ Formato de almacenamiento: nombre IANA (TEXT). No hay migración de datos: los h
 |-------|-------|-------------|
 | 2026-09-16 | Agente opencode | Creación inicial de la especificación |
 | 2026-09-16 | Agente opencode | Implementación completa: setting `timezone` (IANA) en backend + API, helper `currentUserNow` y refactor de los 4 schedulers, `time/tzdata` embebido, selector de zonas en UI (SettingsBilling) con default a zona del navegador, display de zona en SettingsPage, i18n es/en. Verificado en local (tests + API + UI). |
-| 2026-09-16 | Agente opencode | Release: merge a `main`, issue #81 cerrado con label `spec/released`. |
+| 2026-09-16 | Agente opencode | Release: merge a `main` (`8bb92cc`), push a `origin/main`, issue #81 cerrado con label `spec/released`. |
