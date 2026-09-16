@@ -20,3 +20,14 @@ type DebtBill struct {
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
 }
+
+// PendingDebtDetail detalla una cuota pendiente de una deuda con contexto
+// (descripción, institución y moneda) para el bot de Telegram (SPEC-080).
+type PendingDebtDetail struct {
+	DebtID          int64
+	DebtDescription string
+	InstitutionName string
+	DueDate         string
+	Amount          float64
+	CurrencySymbol  string
+}

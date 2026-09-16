@@ -142,7 +142,7 @@ func main() {
 	debtDueScheduler.Start()
 	defer debtDueScheduler.Stop()
 
-	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage)
+	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage, debtBillStorage)
 	telegramBotService.Start()
 	defer telegramBotService.Stop()
 
