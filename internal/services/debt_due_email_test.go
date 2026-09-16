@@ -33,7 +33,7 @@ func TestRenderDebtDueContent(t *testing.T) {
 		},
 	}
 
-	html := renderDebtDueContent(due, DefaultCurrencyFormat())
+	html := renderDebtDueContent(due, DefaultCurrencyFormat(), DefaultEmailPalette())
 
 	for _, want := range []string{
 		"Tarjeta de crédito",

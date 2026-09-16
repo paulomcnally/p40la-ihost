@@ -22,6 +22,7 @@ import SettingsVoiceMonkeyPage from './pages/SettingsVoiceMonkeyPage'
 import SettingsWebhooksPage from './pages/SettingsWebhooksPage'
 import SettingsCurrenciesPage from './pages/SettingsCurrenciesPage'
 import SettingsCurrencyFormatPage from './pages/SettingsCurrencyFormatPage'
+import SettingsEmailAppearancePage from './pages/SettingsEmailAppearancePage'
 import InstitutionsPage from './pages/InstitutionsPage'
 import InstitutionFormPage from './pages/InstitutionFormPage'
 import AutosPage from './pages/AutosPage'
@@ -104,6 +105,7 @@ function App() {
                   <Route path="settings/webhooks" element={<SettingsWebhooksPage />} />
                   <Route path="settings/monedas" element={<SettingsCurrenciesPage />} />
                   <Route path="settings/formato-moneda" element={<SettingsCurrencyFormatPage />} />
+                  <Route path="settings/email-appearance" element={<SettingsEmailAppearancePage />} />
                   <Route path="institutions" element={<InstitutionsPage />} />
                   <Route path="institutions/new" element={<InstitutionFormPage />} />
                   <Route path="institutions/edit/:id" element={<InstitutionFormPage />} />

@@ -132,12 +132,28 @@ export const api = {
       currency_thousands_separator: string
       currency_decimal_separator: string
       currency_decimal_digits: number
+      email_color_primary: string
+      email_color_background: string
+      email_color_card: string
+      email_color_text: string
+      email_color_muted: string
+      email_color_border: string
     }>('/api/system-settings'),
     update: (body: Record<string, unknown>) => put<{ billing_generation_hour: number; smtp_configured: boolean }>('/api/system-settings', body),
     testEmail: () => post<{ message: string; recipients: string }>('/api/system-settings/test-email', {}),
     testVoice: () => post<{ message: string }>('/api/system-settings/test-voice', {}),
     disconnectVoiceMonkey: () => del<{ voicemonkey_enabled: boolean; voicemonkey_send_alerts: boolean; voicemonkey_configured: boolean }>('/api/system-settings/voicemonkey'),
     disconnectSMTP: () => del<{ smtp_configured: boolean }>('/api/system-settings/smtp'),
+    resetEmailPalette: () => post<{
+      email_color_primary: string
+      email_color_background: string
+      email_color_card: string
+      email_color_text: string
+      email_color_muted: string
+      email_color_border: string
+      message: string
+    }>('/api/system-settings/email-palette/reset', {}),
+    previewEmail: (palette: Record<string, string>) => post<{ html: string }>('/api/system-settings/preview-email', palette),
   },
   alerts: {
     list: () => get<Alert[]>('/api/alerts'),

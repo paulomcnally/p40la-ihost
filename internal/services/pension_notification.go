@@ -131,7 +131,7 @@ func (s *PensionNotificationService) send(ctx context.Context, alertKey, subject
 		return
 	}
 
-	html := s.emailService.RenderTemplate(subject, content)
+	html := s.emailService.RenderTemplate(ctx, subject, content)
 	if err := s.emailService.Send(ctx, recipients, subject, html); err != nil {
 		slog.Error("pension notifications: error al enviar email", "key", alertKey, "error", err.Error())
 	}

@@ -235,7 +235,7 @@ func (s *BillingScheduler) sendBillCreatedEmail(ctx context.Context, bill *model
 	}
 
 	title, content := buildBillCreatedEmail(svc, bill, symbol, format)
-	html := s.emailService.RenderTemplate(title, content)
+	html := s.emailService.RenderTemplate(ctx, title, content)
 
 	if err := s.emailService.Send(ctx, recipients, title, html); err != nil {
 		slog.Error("billing scheduler: error al enviar email de factura", "bill_id", bill.ID, "service_id", svc.ID, "error", err.Error())
