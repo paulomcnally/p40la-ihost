@@ -2,6 +2,11 @@ package services
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -200,6 +205,147 @@ func indexOf(s, sub string) int {
 		}
 	}
 	return -1
+}
+
+// fakeTelegramAPI simula la Bot API de Telegram para testear el dispatcher
+// real de go-telegram/bot (SPEC-080): getMe, setMyCommands y sendMessage.
+func fakeTelegramAPI(t *testing.T, sent *[]string, mu *sync.Mutex) *httptest.Server {
+	t.Helper()
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/botTESTTOKEN/getMe", func(w http.ResponseWriter, r *http.Request) {
+		writeTGJSON(t, w, map[string]any{
+			"ok": true,
+			"result": map[string]any{
+				"id": 1, "is_bot": true, "first_name": "Test", "username": "testbot",
+			},
+		})
+	})
+
+	mux.HandleFunc("/botTESTTOKEN/setMyCommands", func(w http.ResponseWriter, r *http.Request) {
+		writeTGJSON(t, w, map[string]any{"ok": true, "result": true})
+	})
+
+	mux.HandleFunc("/botTESTTOKEN/sendMessage", func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			t.Errorf("sendMessage: parse form: %v", err)
+			writeTGJSON(t, w, map[string]any{"ok": false})
+			return
+		}
+		mu.Lock()
+		*sent = append(*sent, r.FormValue("text"))
+		mu.Unlock()
+		writeTGJSON(t, w, map[string]any{
+			"ok": true,
+			"result": map[string]any{
+				"message_id": 1,
+				"chat":       map[string]any{"id": 123},
+				"text":       r.FormValue("text"),
+			},
+		})
+	})
+
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func writeTGJSON(t *testing.T, w http.ResponseWriter, v any) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		t.Errorf("escribir respuesta fake: %v", err)
+	}
+}
+
+// TestCommandDispatchRealMatcher verifica el dispatcher REAL de la librería
+// (SPEC-080): los handlers se registran SIN slash y el matcher de
+// MatchTypeCommand los hace coincidir con /pendientes y /start. Con el
+// patrón viejo ("/pendientes" con slash) el matcher NO coincidía y todo
+// caía al handler default ("Comando no reconocido").
+func TestCommandDispatchRealMatcher(t *testing.T) {
+	settings := testTelegramSettings(t)
+
+	database, err := db.OpenDB(":memory:", "../../migrations")
+	if err != nil {
+		t.Fatalf("abrir db de test: %v", err)
+	}
+	t.Cleanup(func() { database.Close() })
+	svc := NewTelegramBotService(settings, storage.NewBillStorage(database))
+
+	var sent []string
+	var mu sync.Mutex
+	srv := fakeTelegramAPI(t, &sent, &mu)
+
+	b, err := bot.New("TESTTOKEN", bot.WithServerURL(srv.URL), bot.WithNotAsyncHandlers(), bot.WithDefaultHandler(svc.handleDefault))
+	if err != nil {
+		t.Fatalf("bot.New: %v", err)
+	}
+	b.RegisterHandler(bot.HandlerTypeMessageText, "pendientes", bot.MatchTypeCommand, svc.handlePendientes)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "start", bot.MatchTypeCommand, svc.handleStart)
+
+	ctx := context.Background()
+
+	msg := func(text string) *tgmodels.Update {
+		return &tgmodels.Update{
+			ID: 1,
+			Message: &tgmodels.Message{
+				Chat: tgmodels.Chat{ID: 123},
+				Text: text,
+				Entities: []tgmodels.MessageEntity{
+					{Type: tgmodels.MessageEntityTypeBotCommand, Offset: 0, Length: len(text)},
+				},
+			},
+		}
+	}
+
+	t.Run("pendientes matchea y responde datos", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/pendientes"))
+		mu.Lock()
+		replies := sent[before:]
+		mu.Unlock()
+		if len(replies) == 0 {
+			t.Fatal("no se envió respuesta: /pendientes cayó al default handler")
+		}
+		last := replies[len(replies)-1]
+		if strings.Contains(last, "Comando no reconocido") {
+			t.Fatalf("/pendientes respondió con el default handler: %q", last)
+		}
+		if !strings.Contains(last, "pendientes") {
+			t.Errorf("respuesta inesperada: %q", last)
+		}
+	})
+
+	t.Run("start matchea y responde bienvenida", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/start"))
+		mu.Lock()
+		replies := sent[before:]
+		mu.Unlock()
+		if len(replies) == 0 {
+			t.Fatal("no se envió respuesta: /start cayó al default handler")
+		}
+		last := replies[len(replies)-1]
+		if !strings.Contains(last, "Bienvenida") && !strings.Contains(last, "Comandos") {
+			t.Errorf("respuesta de /start inesperada: %q", last)
+		}
+	})
+
+	t.Run("comando desconocido cae al default", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/otro"))
+		mu.Lock()
+		replies := sent[before:]
+		mu.Unlock()
+		if len(replies) == 0 {
+			t.Fatal("no se envió respuesta para comando desconocido")
+		}
+		last := replies[len(replies)-1]
+		if !strings.Contains(last, "Comando no reconocido") {
+			t.Errorf("esperado default handler, got: %q", last)
+		}
+	})
 }
 
 var _ = bot.HandlerFunc(nil) // mantener import de bot en tests

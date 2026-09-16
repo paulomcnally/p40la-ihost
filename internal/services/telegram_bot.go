@@ -115,12 +115,37 @@ func (s *TelegramBotService) runBot(ctx context.Context, cfg *appmodels.Telegram
 		return
 	}
 
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/pendientes", bot.MatchTypeCommand, s.handlePendientes)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeCommand, s.handleStart)
+	// SPEC-080: los patrones van SIN slash — el matcher de MatchTypeCommand de
+	// go-telegram/bot compara data[Offset+1:Offset+Length] (sin la barra).
+	b.RegisterHandler(bot.HandlerTypeMessageText, "pendientes", bot.MatchTypeCommand, s.handlePendientes)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "start", bot.MatchTypeCommand, s.handleStart)
+
+	s.registerCommands(ctx, b)
 
 	slog.Info("telegram_bot: iniciando polling", "chat_ids", len(cfg.ChatIDs))
 	b.Start(ctx)
 	slog.Info("telegram_bot: polling detenido")
+}
+
+// registerCommands sobrescribe la lista de comandos del bot en Telegram
+// (SPEC-080). El bot Python anterior dejó 9 comandos obsoletos via
+// set_my_commands; esta lista persiste server-side y se reemplaza aquí.
+// Best-effort: si falla (red/API), solo se loguea y el polling continúa.
+func (s *TelegramBotService) registerCommands(ctx context.Context, b *bot.Bot) {
+	cmdCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	_, err := b.SetMyCommands(cmdCtx, &bot.SetMyCommandsParams{
+		Commands: []tgmodels.BotCommand{
+			{Command: "start", Description: "Bienvenida y comandos disponibles"},
+			{Command: "pendientes", Description: "Servicios con facturas pendientes"},
+		},
+	})
+	if err != nil {
+		slog.Warn("telegram_bot: setMyCommands falló (el menú puede mostrar comandos viejos)", "error", err)
+		return
+	}
+	slog.Info("telegram_bot: comandos registrados en Telegram")
 }
 
 // wait duerme hasta timeout o cancelación. Devuelve false si el contexto fue
