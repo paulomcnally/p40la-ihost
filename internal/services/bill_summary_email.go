@@ -10,8 +10,10 @@ import (
 )
 
 // renderBillSummaryContent construye el HTML del cuerpo del email de resumen
-// diario de facturas pendientes, agrupado por casa (SPEC-031).
-func renderBillSummaryContent(pending []models.PendingBillDetail, format CurrencyFormat) string {
+// diario de facturas pendientes, agrupado por casa (SPEC-031). Cada factura
+// se renderiza como una card vertical (etiqueta: valor) con estilos inline,
+// legible en cualquier cliente de email (ADR-001, SPEC-077).
+func renderBillSummaryContent(pending []models.PendingBillDetail, format CurrencyFormat, palette EmailPalette) string {
 	if len(pending) == 0 {
 		return "<p>No hay facturas pendientes.</p>"
 	}
@@ -21,33 +23,21 @@ func renderBillSummaryContent(pending []models.PendingBillDetail, format Currenc
 
 	homes := groupByHome(pending)
 	for _, home := range homes {
-		b.WriteString(fmt.Sprintf(`<h3 style="margin:24px 0 8px;color:#1d1d1f;font-size:16px;">%s</h3>`, esc(home.Name)))
-		b.WriteString(`<table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse;margin-top:8px;">`)
-		b.WriteString(`<tr style="background-color:#f5f5f7;">`)
-		b.WriteString(`<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e5ea;font-size:13px;">Institución</th>`)
-		b.WriteString(`<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e5ea;font-size:13px;">Servicio</th>`)
-		b.WriteString(`<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e5ea;font-size:13px;">Período</th>`)
-		b.WriteString(`<th style="text-align:right;padding:12px;border-bottom:2px solid #e5e5ea;font-size:13px;">Monto</th>`)
-		b.WriteString(`<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e5ea;font-size:13px;">Antigüedad</th>`)
-		b.WriteString(`</tr>`)
+		b.WriteString(fmt.Sprintf(`<h3 style="margin:24px 0 8px;color:%s;font-size:16px;">%s</h3>`, palette.Text, esc(home.Name)))
 
 		for _, d := range home.Bills {
 			institution := d.Institution
 			if institution == "" {
 				institution = "—"
 			}
-			badge := ageBadge(daysSince(d.CreatedAt))
-
-			b.WriteString("<tr>")
-			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, esc(institution)))
-			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, esc(d.ServiceName)))
-			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, esc(formatPeriod(d.Month, d.Year))))
-			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;text-align:right;">%s</td>`, esc(formatAmount(d.Amount, d.CurrencySymbol, format))))
-			b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, badge))
-			b.WriteString("</tr>")
+			b.WriteString(RenderEmailCard([]EmailField{
+				{Label: "Institución", Value: institution},
+				{Label: "Servicio", Value: d.ServiceName},
+				{Label: "Período", Value: formatPeriod(d.Month, d.Year)},
+				{Label: "Monto", Value: formatAmount(d.Amount, d.CurrencySymbol, format)},
+				{Label: "Antigüedad", Value: ageBadge(daysSince(d.CreatedAt)), HTML: true},
+			}, palette))
 		}
-
-		b.WriteString("</table>")
 	}
 
 	b.WriteString(`<p style="margin-top:24px;color:#8e8e93;font-size:13px;">`)

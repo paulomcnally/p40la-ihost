@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 
 func TestRenderTemplate_ReplacesPlaceholders(t *testing.T) {
 	svc := NewEmailService(nil)
-	html := svc.RenderTemplate("Mi Título", "<p>Contenido de prueba</p>")
+	html := svc.RenderTemplate(context.Background(), "Mi Título", "<p>Contenido de prueba</p>")
 
 	if !strings.Contains(html, "Mi Título") {
 		t.Errorf("título no reemplazado en template")
@@ -27,8 +28,8 @@ func TestRenderTemplate_ReplacesPlaceholders(t *testing.T) {
 
 func TestRenderTemplate_UniqueAppearance(t *testing.T) {
 	svc := NewEmailService(nil)
-	a := svc.RenderTemplate("Título A", "Contenido A")
-	b := svc.RenderTemplate("Título B", "Contenido B")
+	a := svc.RenderTemplate(context.Background(), "Título A", "Contenido A")
+	b := svc.RenderTemplate(context.Background(), "Título B", "Contenido B")
 
 	// La estructura debe ser la misma (mismo header y footer); solo título/contenido varían.
 	withoutA := strings.ReplaceAll(a, "Título A", "T")
@@ -38,6 +39,55 @@ func TestRenderTemplate_UniqueAppearance(t *testing.T) {
 
 	if withoutA != withoutB {
 		t.Errorf("la apariencia del template no es la misma entre emails:\nA: %s\nB: %s", withoutA, withoutB)
+	}
+}
+
+func TestRenderTemplate_InjectPalette(t *testing.T) {
+	html := renderTemplateWithPalette("T", "C", EmailPalette{
+		Primary:    "#ff0000",
+		Background: "#000000",
+		Card:       "#111111",
+		Text:       "#eeeeee",
+		Muted:      "#999999",
+		Border:     "#333333",
+	})
+
+	for _, want := range []string{"#ff0000", "#000000", "#111111", "#eeeeee", "#999999", "#333333"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("paleta no inyectada: falta %s", want)
+		}
+	}
+	if strings.Contains(html, "{{COLOR_") {
+		t.Errorf("quedan placeholders de color sin reemplazar")
+	}
+}
+
+func TestRenderTemplate_DefaultPaletteWhenUnconfigured(t *testing.T) {
+	svc := NewEmailService(nil)
+	html := svc.RenderTemplate(context.Background(), "T", "C")
+
+	d := DefaultEmailPalette()
+	if !strings.Contains(html, d.Primary) || !strings.Contains(html, d.Background) ||
+		!strings.Contains(html, d.Card) || !strings.Contains(html, d.Text) ||
+		!strings.Contains(html, d.Muted) || !strings.Contains(html, d.Border) {
+		t.Errorf("sin paleta configurada deben usarse los defaults: %s", html)
+	}
+}
+
+func TestRenderTemplate_ResponsiveTemplate(t *testing.T) {
+	svc := NewEmailService(nil)
+	html := svc.RenderTemplate(context.Background(), "T", "C")
+
+	if !strings.Contains(html, `max-width:600px`) {
+		t.Errorf("tabla contenedora no es fluida (falta max-width): %s", html)
+	}
+	if !strings.Contains(html, "@media screen and (max-width: 480px)") {
+		t.Errorf("falta media query mobile: %s", html)
+	}
+	// Las cards de datos NO deben depender de clases del <style> (Gmail
+	// recorta <style>): se estilan inline (ADR-001).
+	if strings.Contains(html, "p40la-table") || strings.Contains(html, "data-label") {
+		t.Errorf("la plantilla no debe contener reglas/clases de tablas de datos (cards inline): %s", html)
 	}
 }
 

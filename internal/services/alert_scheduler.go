@@ -167,7 +167,7 @@ func (s *AlertScheduler) sendAlertEmail(ctx context.Context, alerts []models.Aut
 	subject := "P40LA — Alertas de seguros de autos"
 	content := renderAlertsContent(alerts)
 
-	html := s.emailService.RenderTemplate(subject, content)
+	html := s.emailService.RenderTemplate(ctx, subject, content)
 	return s.emailService.Send(ctx, recipients, subject, html)
 }
 
