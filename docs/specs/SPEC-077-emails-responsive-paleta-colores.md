@@ -1,7 +1,7 @@
 ---
 title: "Refactor Responsive de Emails (Mobile) + Paleta de Colores Configurable"
 id: "SPEC-077"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-15"
 updated: "2026-09-15"
@@ -11,7 +11,7 @@ github_issue: 80
 # SPEC-077: Refactor Responsive de Emails (Mobile) + Paleta de Colores Configurable
 
 **ID**: SPEC-077
-**Estado**: in_progress
+**Estado**: released
 **Autor**: paulomcnally (spec redactada con asistencia de Claude)
 **Creado**: 2026-09-15
 
@@ -495,3 +495,4 @@ email_color_border      TEXT   -- hex, ej "#e5e5ea"
 | 2026-09-15 | Claude (asistido) | Creación inicial de la especificación a partir de una captura de email mal renderizado en mobile. |
 | 2026-09-16 | opencode (asistido) | ADR-001 ampliado: `EmailRow.Summary` para la fila "Total del día" de deudas (colspan en desktop, apilada en mobile) + clase CSS `.p40la-table-summary`. |
 | 2026-09-16 | opencode (asistido) | **ADR-001 reemplazado** tras QA del usuario: el stacked-table vía media query se ve mal en Gmail (recorta `<style>`). Se adopta el patrón **cards con tablas anidadas y estilos inline** (`RenderEmailCard`), independiente de `<style>`/media queries. Se actualizaron REQ-003/004/005, §5.1, §5.2 (CSS sin reglas de tablas), CA-001/002/003/006 y la tabla de riesgos. |
+| 2026-09-16 | opencode (asistido) | Estado `released`. Issue #80 cerrado. Commit de implementación: `3c9ae9f` |
