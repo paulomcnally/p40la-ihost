@@ -19,8 +19,9 @@ import (
 // Consulta la DB local directamente (via storages) y responde comandos por
 // long polling. Solo inicia polling si la config tiene enabled=1 y token.
 type TelegramBotService struct {
-	settings *SystemSettingsService
-	bills    *storage.BillStorage
+	settings  *SystemSettingsService
+	bills     *storage.BillStorage
+	debtBills *storage.DebtBillStorage
 
 	mu         sync.Mutex
 	cancel     context.CancelFunc
@@ -29,11 +30,12 @@ type TelegramBotService struct {
 }
 
 // NewTelegramBotService crea el servicio. Requiere arrancarlo con Start().
-func NewTelegramBotService(settings *SystemSettingsService, bills *storage.BillStorage) *TelegramBotService {
+func NewTelegramBotService(settings *SystemSettingsService, bills *storage.BillStorage, debtBills *storage.DebtBillStorage) *TelegramBotService {
 	return &TelegramBotService{
-		settings: settings,
-		bills:    bills,
-		reloadCh: make(chan struct{}, 1),
+		settings:  settings,
+		bills:     bills,
+		debtBills: debtBills,
+		reloadCh:  make(chan struct{}, 1),
 	}
 }
 
@@ -117,7 +119,8 @@ func (s *TelegramBotService) runBot(ctx context.Context, cfg *appmodels.Telegram
 
 	// SPEC-080: los patrones van SIN slash — el matcher de MatchTypeCommand de
 	// go-telegram/bot compara data[Offset+1:Offset+Length] (sin la barra).
-	b.RegisterHandler(bot.HandlerTypeMessageText, "pendientes", bot.MatchTypeCommand, s.handlePendientes)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "servicios_pendientes", bot.MatchTypeCommand, s.handleServiciosPendientes)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "deudas_pendientes", bot.MatchTypeCommand, s.handleDeudasPendientes)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "start", bot.MatchTypeCommand, s.handleStart)
 
 	s.registerCommands(ctx, b)
@@ -138,7 +141,8 @@ func (s *TelegramBotService) registerCommands(ctx context.Context, b *bot.Bot) {
 	_, err := b.SetMyCommands(cmdCtx, &bot.SetMyCommandsParams{
 		Commands: []tgmodels.BotCommand{
 			{Command: "start", Description: "Bienvenida y comandos disponibles"},
-			{Command: "pendientes", Description: "Servicios con facturas pendientes"},
+			{Command: "servicios_pendientes", Description: "Servicios con facturas pendientes"},
+			{Command: "deudas_pendientes", Description: "Deudas con cuotas pendientes"},
 		},
 	})
 	if err != nil {
@@ -182,37 +186,60 @@ func (s *TelegramBotService) handleStart(ctx context.Context, b *bot.Bot, update
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
-	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura).\n\nComandos:\n  `/pendientes` — servicios con facturas pendientes")
+	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura).\n\nComandos:\n  `/servicios_pendientes` — servicios con facturas pendientes\n  `/deudas_pendientes` — deudas con cuotas pendientes")
 }
 
 func (s *TelegramBotService) handleDefault(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
-	s.reply(ctx, b, update, "Comando no reconocido. Usa `/pendientes` para ver los servicios con facturas pendientes.")
+	s.reply(ctx, b, update, "Comando no reconocido. Usa `/servicios_pendientes` o `/deudas_pendientes`.")
 }
 
-// handlePendientes responde con los servicios que tienen facturas pendientes
-// (REQ-004): nombre del servicio, casa, cantidad de facturas y monto total.
-func (s *TelegramBotService) handlePendientes(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
+// handleServiciosPendientes responde con los servicios que tienen facturas
+// pendientes (REQ-006): nombre del servicio, casa, cantidad y monto total.
+func (s *TelegramBotService) handleServiciosPendientes(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
 
 	pending, err := s.bills.ListPendingWithDetails(ctx)
 	if err != nil {
-		slog.Error("telegram_bot: /pendientes — error de storage", "error", err)
+		slog.Error("telegram_bot: /servicios_pendientes — error de storage", "error", err)
 		s.reply(ctx, b, update, "⚠️ Error al consultar las facturas pendientes. Revisa los logs.")
 		return
 	}
 
 	currencyFormat, err := s.settings.GetCurrencyFormat(ctx)
 	if err != nil {
-		slog.Error("telegram_bot: /pendientes — error de formato de moneda", "error", err)
+		slog.Error("telegram_bot: /servicios_pendientes — error de formato de moneda", "error", err)
 		currencyFormat = DefaultCurrencyFormat()
 	}
 
-	s.reply(ctx, b, update, formatPendientes(pending, currencyFormat))
+	s.reply(ctx, b, update, formatServiciosPendientes(pending, currencyFormat))
+}
+
+// handleDeudasPendientes responde con las deudas que tienen cuotas pendientes
+// (REQ-007): descripción, institución, cantidad de cuotas y monto total.
+func (s *TelegramBotService) handleDeudasPendientes(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
+	if !s.checkAuthorized(ctx, b, update) {
+		return
+	}
+
+	pending, err := s.debtBills.ListPendingWithDetails(ctx)
+	if err != nil {
+		slog.Error("telegram_bot: /deudas_pendientes — error de storage", "error", err)
+		s.reply(ctx, b, update, "⚠️ Error al consultar las deudas pendientes. Revisa los logs.")
+		return
+	}
+
+	currencyFormat, err := s.settings.GetCurrencyFormat(ctx)
+	if err != nil {
+		slog.Error("telegram_bot: /deudas_pendientes — error de formato de moneda", "error", err)
+		currencyFormat = DefaultCurrencyFormat()
+	}
+
+	s.reply(ctx, b, update, formatDeudasPendientes(pending, currencyFormat))
 }
 
 // checkAuthorized valida el chat contra la allowlist y guarda el último chat
@@ -246,7 +273,8 @@ func (s *TelegramBotService) reply(ctx context.Context, b *bot.Bot, update *tgmo
 	}
 }
 
-// pendingGroup agrupa las facturas pendientes de un servicio para /pendientes.
+// pendingGroup agrupa las facturas pendientes de un servicio para
+// /servicios_pendientes.
 type pendingGroup struct {
 	service string
 	home    string
@@ -255,9 +283,9 @@ type pendingGroup struct {
 	symbol  string
 }
 
-// formatPendientes construye el mensaje Markdown de /pendientes agrupando las
-// facturas pendientes por servicio.
-func formatPendientes(pending []appmodels.PendingBillDetail, format CurrencyFormat) string {
+// formatServiciosPendientes construye el mensaje Markdown de
+// /servicios_pendientes agrupando las facturas pendientes por servicio.
+func formatServiciosPendientes(pending []appmodels.PendingBillDetail, format CurrencyFormat) string {
 	if len(pending) == 0 {
 		return "✅ No hay facturas pendientes."
 	}
@@ -287,9 +315,66 @@ func formatPendientes(pending []appmodels.PendingBillDetail, format CurrencyForm
 	return msg
 }
 
+// debtGroup agrupa las cuotas pendientes de una deuda para /deudas_pendientes.
+type debtGroup struct {
+	debt        string
+	institution string
+	count       int
+	amount      float64
+	symbol      string
+}
+
+// formatDeudasPendientes construye el mensaje Markdown de /deudas_pendientes
+// agrupando las cuotas pendientes por deuda.
+func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format CurrencyFormat) string {
+	if len(pending) == 0 {
+		return "✅ No hay deudas pendientes."
+	}
+
+	groups := make(map[int64]*debtGroup)
+	var order []int64
+	for _, p := range pending {
+		g, ok := groups[p.DebtID]
+		if !ok {
+			g = &debtGroup{debt: p.DebtDescription, institution: p.InstitutionName, symbol: p.CurrencySymbol}
+			groups[p.DebtID] = g
+			order = append(order, p.DebtID)
+		}
+		g.count++
+		g.amount += p.Amount
+	}
+
+	sorted := sortDebtGroups(groups, order)
+
+	msg := fmt.Sprintf("⏳ *Deudas con cuotas pendientes* (%d)\n", len(sorted))
+	for _, g := range sorted {
+		msg += fmt.Sprintf(
+			"\n💳 *%s*\n  Institución: %s\n  Cuotas: %d\n  Pendiente: %s",
+			g.debt, g.institution, g.count, formatAmount(g.amount, g.symbol, format),
+		)
+	}
+	return msg
+}
+
 // sortGroups ordena los grupos por monto total descendente.
 func sortGroups(groups map[int64]*pendingGroup, order []int64) []*pendingGroup {
 	result := make([]*pendingGroup, 0, len(order))
+	for _, id := range order {
+		result = append(result, groups[id])
+	}
+	for i := 0; i < len(result); i++ {
+		for j := i + 1; j < len(result); j++ {
+			if result[j].amount > result[i].amount {
+				result[i], result[j] = result[j], result[i]
+			}
+		}
+	}
+	return result
+}
+
+// sortDebtGroups ordena los grupos de deudas por monto total descendente.
+func sortDebtGroups(groups map[int64]*debtGroup, order []int64) []*debtGroup {
+	result := make([]*debtGroup, 0, len(order))
 	for _, id := range order {
 		result = append(result, groups[id])
 	}
