@@ -2,6 +2,11 @@ package services
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,11 +27,11 @@ func testTelegramSettings(t *testing.T) *SystemSettingsService {
 	return NewSystemSettingsService(storage.NewSystemSettingsStorage(database))
 }
 
-func TestFormatPendientes(t *testing.T) {
+func TestFormatServiciosPendientes(t *testing.T) {
 	format := DefaultCurrencyFormat()
 
 	t.Run("sin pendientes", func(t *testing.T) {
-		got := formatPendientes(nil, format)
+		got := formatServiciosPendientes(nil, format)
 		if got != "✅ No hay facturas pendientes." {
 			t.Errorf("esperado mensaje vacío, got %q", got)
 		}
@@ -38,7 +43,7 @@ func TestFormatPendientes(t *testing.T) {
 			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Amount: 50, CurrencySymbol: "C$"},
 			{ServiceID: 2, ServiceName: "ENATREL", HomeName: "Casa B", Amount: 500, CurrencySymbol: "C$"},
 		}
-		got := formatPendientes(pending, format)
+		got := formatServiciosPendientes(pending, format)
 		if len(got) == 0 {
 			t.Fatal("mensaje vacío")
 		}
@@ -61,9 +66,43 @@ func TestFormatPendientes(t *testing.T) {
 		pending := []appmodels.PendingBillDetail{
 			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Amount: 1250.5, CurrencySymbol: "$"},
 		}
-		got := formatPendientes(pending, format)
+		got := formatServiciosPendientes(pending, format)
 		if !contains(got, "$1,250.50") {
 			t.Errorf("formato personalizado incorrecto:\n%s", got)
+		}
+	})
+}
+
+func TestFormatDeudasPendientes(t *testing.T) {
+	format := DefaultCurrencyFormat()
+
+	t.Run("sin pendientes", func(t *testing.T) {
+		got := formatDeudasPendientes(nil, format)
+		if got != "✅ No hay deudas pendientes." {
+			t.Errorf("esperado mensaje vacío, got %q", got)
+		}
+	})
+
+	t.Run("agrupa por deuda y ordena por monto", func(t *testing.T) {
+		pending := []appmodels.PendingDebtDetail{
+			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", Amount: 100, CurrencySymbol: "C$"},
+			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", Amount: 50, CurrencySymbol: "C$"},
+			{DebtID: 2, DebtDescription: "Tarjeta BAC", InstitutionName: "BAC Credomatic", Amount: 500, CurrencySymbol: "C$"},
+		}
+		got := formatDeudasPendientes(pending, format)
+		if len(got) == 0 {
+			t.Fatal("mensaje vacío")
+		}
+		bacPos := indexOf(got, "Tarjeta BAC")
+		lafisePos := indexOf(got, "Préstamo LAFISE")
+		if bacPos == -1 || lafisePos == -1 || bacPos > lafisePos {
+			t.Errorf("orden incorrecto: BAC=%d LAFISE=%d\n%s", bacPos, lafisePos, got)
+		}
+		if !contains(got, "Cuotas: 2") || !contains(got, "C$150.00") {
+			t.Errorf("conteo/monto de LAFISE incorrecto:\n%s", got)
+		}
+		if !contains(got, "Banco LAFISE") || !contains(got, "C$500.00") {
+			t.Errorf("institución/monto de BAC incorrecto:\n%s", got)
 		}
 	})
 }
@@ -71,7 +110,7 @@ func TestFormatPendientes(t *testing.T) {
 func TestTelegramBotServiceLifecycle(t *testing.T) {
 	settings := testTelegramSettings(t)
 	bills := storage.NewBillStorage(nil)
-	svc := NewTelegramBotService(settings, bills)
+	svc := NewTelegramBotService(settings, bills, storage.NewDebtBillStorage(nil))
 
 	// Sin config: Start no debe panicear y el supervisor queda inactivo.
 	svc.Start()
@@ -142,7 +181,7 @@ func TestTelegramBotConfigSettings(t *testing.T) {
 func TestIsAuthorized(t *testing.T) {
 	ctx := context.Background()
 	settings := testTelegramSettings(t)
-	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil))
+	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil), storage.NewDebtBillStorage(nil))
 
 	// Sin allowlist: todos autorizados.
 	if !svc.isAuthorized(ctx, 12345) {
@@ -163,7 +202,7 @@ func TestIsAuthorized(t *testing.T) {
 func TestCheckAuthorizedIgnoresNonMessage(t *testing.T) {
 	ctx := context.Background()
 	settings := testTelegramSettings(t)
-	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil))
+	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil), storage.NewDebtBillStorage(nil))
 	// update.Message == nil → no autorizado (no panic).
 	ok := svc.checkAuthorized(ctx, nil, &tgmodels.Update{})
 	if ok {
@@ -177,7 +216,7 @@ func TestBotNewFailsInvalidToken(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	settings := testTelegramSettings(t)
-	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil))
+	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil), storage.NewDebtBillStorage(nil))
 
 	cfg := &appmodels.TelegramBotConfig{Enabled: true, Token: "token-invalido"}
 	done := make(chan struct{})
@@ -200,6 +239,166 @@ func indexOf(s, sub string) int {
 		}
 	}
 	return -1
+}
+
+// fakeTelegramAPI simula la Bot API de Telegram para testear el dispatcher
+// real de go-telegram/bot (SPEC-080): getMe, setMyCommands y sendMessage.
+func fakeTelegramAPI(t *testing.T, sent *[]string, mu *sync.Mutex) *httptest.Server {
+	t.Helper()
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/botTESTTOKEN/getMe", func(w http.ResponseWriter, r *http.Request) {
+		writeTGJSON(t, w, map[string]any{
+			"ok": true,
+			"result": map[string]any{
+				"id": 1, "is_bot": true, "first_name": "Test", "username": "testbot",
+			},
+		})
+	})
+
+	mux.HandleFunc("/botTESTTOKEN/setMyCommands", func(w http.ResponseWriter, r *http.Request) {
+		writeTGJSON(t, w, map[string]any{"ok": true, "result": true})
+	})
+
+	mux.HandleFunc("/botTESTTOKEN/sendMessage", func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			t.Errorf("sendMessage: parse form: %v", err)
+			writeTGJSON(t, w, map[string]any{"ok": false})
+			return
+		}
+		mu.Lock()
+		*sent = append(*sent, r.FormValue("text"))
+		mu.Unlock()
+		writeTGJSON(t, w, map[string]any{
+			"ok": true,
+			"result": map[string]any{
+				"message_id": 1,
+				"chat":       map[string]any{"id": 123},
+				"text":       r.FormValue("text"),
+			},
+		})
+	})
+
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func writeTGJSON(t *testing.T, w http.ResponseWriter, v any) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		t.Errorf("escribir respuesta fake: %v", err)
+	}
+}
+
+// TestCommandDispatchRealMatcher verifica el dispatcher REAL de la librería
+// (SPEC-080): los handlers se registran SIN slash y el matcher de
+// MatchTypeCommand los hace coincidir con /pendientes y /start. Con el
+// patrón viejo ("/pendientes" con slash) el matcher NO coincidía y todo
+// caía al handler default ("Comando no reconocido").
+func TestCommandDispatchRealMatcher(t *testing.T) {
+	settings := testTelegramSettings(t)
+
+	database, err := db.OpenDB(":memory:", "../../migrations")
+	if err != nil {
+		t.Fatalf("abrir db de test: %v", err)
+	}
+	t.Cleanup(func() { database.Close() })
+	svc := NewTelegramBotService(settings, storage.NewBillStorage(database), storage.NewDebtBillStorage(database))
+
+	var sent []string
+	var mu sync.Mutex
+	srv := fakeTelegramAPI(t, &sent, &mu)
+
+	b, err := bot.New("TESTTOKEN", bot.WithServerURL(srv.URL), bot.WithNotAsyncHandlers(), bot.WithDefaultHandler(svc.handleDefault))
+	if err != nil {
+		t.Fatalf("bot.New: %v", err)
+	}
+	b.RegisterHandler(bot.HandlerTypeMessageText, "servicios_pendientes", bot.MatchTypeCommand, svc.handleServiciosPendientes)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "deudas_pendientes", bot.MatchTypeCommand, svc.handleDeudasPendientes)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "start", bot.MatchTypeCommand, svc.handleStart)
+
+	ctx := context.Background()
+
+	msg := func(text string) *tgmodels.Update {
+		return &tgmodels.Update{
+			ID: 1,
+			Message: &tgmodels.Message{
+				Chat: tgmodels.Chat{ID: 123},
+				Text: text,
+				Entities: []tgmodels.MessageEntity{
+					{Type: tgmodels.MessageEntityTypeBotCommand, Offset: 0, Length: len(text)},
+				},
+			},
+		}
+	}
+
+	t.Run("servicios_pendientes matchea y responde datos", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/servicios_pendientes"))
+		mu.Lock()
+		replies := sent[before:]
+		mu.Unlock()
+		if len(replies) == 0 {
+			t.Fatal("no se envió respuesta: /servicios_pendientes cayó al default handler")
+		}
+		last := replies[len(replies)-1]
+		if strings.Contains(last, "Comando no reconocido") {
+			t.Fatalf("/servicios_pendientes respondió con el default handler: %q", last)
+		}
+		if !strings.Contains(last, "pendientes") {
+			t.Errorf("respuesta inesperada: %q", last)
+		}
+	})
+
+	t.Run("deudas_pendientes matchea y responde datos", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/deudas_pendientes"))
+		mu.Lock()
+		replies := sent[before:]
+		mu.Unlock()
+		if len(replies) == 0 {
+			t.Fatal("no se envió respuesta: /deudas_pendientes cayó al default handler")
+		}
+		last := replies[len(replies)-1]
+		if strings.Contains(last, "Comando no reconocido") {
+			t.Fatalf("/deudas_pendientes respondió con el default handler: %q", last)
+		}
+		if !strings.Contains(last, "pendientes") {
+			t.Errorf("respuesta inesperada: %q", last)
+		}
+	})
+
+	t.Run("start matchea y responde bienvenida", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/start"))
+		mu.Lock()
+		replies := sent[before:]
+		mu.Unlock()
+		if len(replies) == 0 {
+			t.Fatal("no se envió respuesta: /start cayó al default handler")
+		}
+		last := replies[len(replies)-1]
+		if !strings.Contains(last, "Bienvenida") && !strings.Contains(last, "Comandos") {
+			t.Errorf("respuesta de /start inesperada: %q", last)
+		}
+	})
+
+	t.Run("comando desconocido cae al default", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/otro"))
+		mu.Lock()
+		replies := sent[before:]
+		mu.Unlock()
+		if len(replies) == 0 {
+			t.Fatal("no se envió respuesta para comando desconocido")
+		}
+		last := replies[len(replies)-1]
+		if !strings.Contains(last, "Comando no reconocido") {
+			t.Errorf("esperado default handler, got: %q", last)
+		}
+	})
 }
 
 var _ = bot.HandlerFunc(nil) // mantener import de bot en tests
