@@ -395,6 +395,8 @@
       "email_appearance": "Apariencia de Emails"
     },
     "billing": {
+      "timezone": "Zona horaria",
+      "timezone_desc": "Los horarios se interpretan en esta zona. Si configurás 07:00, las alertas se envían a las 07:00 de tu zona.",
       "hour_generation": "Hora de generación",
       "hour_generation_desc": "Hora del día para generar facturas automáticamente",
       "alert_check_hour": "Hora de check de alertas",
@@ -403,6 +405,7 @@
       "hour_format_desc": "Mostrar horas en formato 12h (AM/PM) o 24h",
       "hour_generation_saved": "Hora de facturación actualizada",
       "alert_check_saved": "Hora de check de alertas actualizada",
+      "timezone_saved": "Zona horaria actualizada",
       "save_error": "Error al actualizar"
     },
     "email_appearance": {

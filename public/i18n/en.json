@@ -394,6 +394,8 @@
       "email_appearance": "Email Appearance"
     },
     "billing": {
+      "timezone": "Time zone",
+      "timezone_desc": "Hours are interpreted in this zone. If you set 07:00, alerts are sent at 07:00 in your zone.",
       "hour_generation": "Generation hour",
       "hour_generation_desc": "Time of day to generate bills automatically",
       "alert_check_hour": "Alert check hour",
@@ -402,6 +404,7 @@
       "hour_format_desc": "Show times in 12h (AM/PM) or 24h format",
       "hour_generation_saved": "Billing hour updated",
       "alert_check_saved": "Alert check hour updated",
+      "timezone_saved": "Time zone updated",
       "save_error": "Error updating"
     },
     "email_appearance": {
