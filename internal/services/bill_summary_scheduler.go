@@ -160,8 +160,12 @@ func (s *BillSummaryScheduler) sendSummaryEmail(ctx context.Context, pending []m
 	if err != nil {
 		format = DefaultCurrencyFormat()
 	}
-	content := renderBillSummaryContent(pending, format)
+	palette, err := s.settingsService.GetEmailPalette(ctx)
+	if err != nil {
+		palette = DefaultEmailPalette()
+	}
+	content := renderBillSummaryContent(pending, format, palette)
 
-	html := s.emailService.RenderTemplate(subject, content)
+	html := s.emailService.RenderTemplate(ctx, subject, content)
 	return s.emailService.Send(ctx, recipients, subject, html)
 }

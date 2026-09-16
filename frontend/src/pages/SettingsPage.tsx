@@ -77,6 +77,7 @@ export default function SettingsPage() {
   const [vmSendAlerts, setVmSendAlerts] = useState(false)
   const [vmConfigured, setVmConfigured] = useState(false)
   const [webhookEnabled, setWebhookEnabled] = useState(false)
+  const [emailPaletteCustom, setEmailPaletteCustom] = useState(false)
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [query, setQuery] = useState('')
 
@@ -105,6 +106,14 @@ export default function SettingsPage() {
         setVmSendAlerts(data.voicemonkey_send_alerts ?? false)
         setVmConfigured(data.voicemonkey_configured ?? false)
         setWebhookEnabled(data.webhook_enabled ?? false)
+        const custom =
+          data.email_color_primary !== '#007aff' ||
+          data.email_color_background !== '#f5f5f7' ||
+          data.email_color_card !== '#ffffff' ||
+          data.email_color_text !== '#1d1d1f' ||
+          data.email_color_muted !== '#8e8e93' ||
+          data.email_color_border !== '#e5e5ea'
+        setEmailPaletteCustom(custom)
       }
     } catch {
       // ignore
@@ -238,6 +247,15 @@ export default function SettingsPage() {
         subtitle: formatPreview,
         onClick: () => navigate('/settings/formato-moneda'),
       },
+      {
+        key: 'emailAppearance',
+        icon: 'paint',
+        title: t('settings.email_appearance.title'),
+        subtitle: emailPaletteCustom
+          ? t('settings.email_appearance.nav_custom')
+          : t('settings.email_appearance.nav_default'),
+        onClick: () => navigate('/settings/email-appearance'),
+      },
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -258,6 +276,7 @@ export default function SettingsPage() {
     decimalSeparator,
     decimalDigits,
     darkMode,
+    emailPaletteCustom,
   ])
 
   const filtered = useMemo(() => {
@@ -281,7 +300,7 @@ export default function SettingsPage() {
     </div>
   )
 
-  const advancedKeys = ['email', 'voice', 'webhooks', 'currencies', 'currencyFormat']
+  const advancedKeys = ['email', 'voice', 'webhooks', 'currencies', 'currencyFormat', 'emailAppearance']
   const frequent = filtered.filter((r) => !advancedKeys.includes(r.key))
   const advanced = filtered.filter((r) => advancedKeys.includes(r.key))
 

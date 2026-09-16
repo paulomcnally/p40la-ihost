@@ -132,7 +132,7 @@ func TestRenderBillSummaryContent_GroupedByHome(t *testing.T) {
 		},
 	}
 
-	html := renderBillSummaryContent(pending, DefaultCurrencyFormat())
+	html := renderBillSummaryContent(pending, DefaultCurrencyFormat(), DefaultEmailPalette())
 
 	if !strings.Contains(html, "2 facturas pendientes") {
 		t.Errorf("no aparece el contador de pendientes")
@@ -152,7 +152,7 @@ func TestRenderBillSummaryContent_GroupedByHome(t *testing.T) {
 }
 
 func TestRenderBillSummaryContent_Empty(t *testing.T) {
-	html := renderBillSummaryContent(nil, DefaultCurrencyFormat())
+	html := renderBillSummaryContent(nil, DefaultCurrencyFormat(), DefaultEmailPalette())
 	if !strings.Contains(html, "No hay facturas pendientes") {
 		t.Errorf("contenido vacío incorrecto: %s", html)
 	}
@@ -168,7 +168,7 @@ func TestRenderBillSummaryContent_EscapesHTML(t *testing.T) {
 		},
 	}
 
-	html := renderBillSummaryContent(pending, DefaultCurrencyFormat())
+	html := renderBillSummaryContent(pending, DefaultCurrencyFormat(), DefaultEmailPalette())
 
 	if strings.Contains(html, "<script>alert(1)</script>") {
 		t.Errorf("HTML no escapado en servicio")

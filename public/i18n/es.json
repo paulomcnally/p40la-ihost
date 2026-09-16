@@ -391,7 +391,8 @@
       "status_activated": "Activado",
       "status_deactivated": "Desactivado",
       "status_configured": "Configurado",
-      "status_pending": "Pendiente"
+      "status_pending": "Pendiente",
+      "email_appearance": "Apariencia de Emails"
     },
     "billing": {
       "hour_generation": "Hora de generación",
@@ -403,6 +404,29 @@
       "hour_generation_saved": "Hora de facturación actualizada",
       "alert_check_saved": "Hora de check de alertas actualizada",
       "save_error": "Error al actualizar"
+    },
+    "email_appearance": {
+      "title": "Apariencia de Emails",
+      "subtitle": "Colores que se aplican a todos los emails",
+      "colors": "Colores",
+      "colors_hint": "Se aplican al header, fondo, texto y bordes de todos los emails. Elegí un color oscuro para el color principal para mantener el contraste del texto del header.",
+      "color_primary": "Color principal (header, links)",
+      "color_background": "Fondo de página",
+      "color_card": "Fondo de tarjeta (contenido)",
+      "color_text": "Texto principal",
+      "color_muted": "Texto secundario (footer)",
+      "color_border": "Bordes / separadores",
+      "reset": "Restablecer a valores por defecto",
+      "reset_confirm": "¿Querés restablecer los colores de los emails a los valores por defecto?",
+      "reset_done": "Colores restablecidos a los valores por defecto",
+      "invalid_hex": "Algún color no tiene formato hex válido (#RRGGBB)",
+      "saved": "Apariencia de emails actualizada",
+      "save_error": "Error al guardar la apariencia",
+      "preview": "Vista previa",
+      "preview_hint": "Email de ejemplo renderizado con la paleta actual (no guardada)",
+      "preview_loading": "Cargando vista previa...",
+      "nav_custom": "Colores personalizados",
+      "nav_default": "Colores predeterminados"
     }
   },
   "notifications": {

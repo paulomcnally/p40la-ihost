@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -491,4 +492,105 @@ func sanitizeEmails(parts []string) []string {
 		}
 	}
 	return result
+}
+
+// ---- Paleta de colores de emails (SPEC-077) ----
+
+// EmailPalette agrupa los colores configurables que se aplican a todos los
+// emails. Los badges de antigüedad (ageBadge) NO forman parte de la paleta:
+// codifican urgencia y se mantienen fijos (ADR-002).
+type EmailPalette struct {
+	Primary    string
+	Background string
+	Card       string
+	Text       string
+	Muted      string
+	Border     string
+}
+
+// DefaultEmailPalette devuelve los colores por defecto (idénticos a los
+// hardcodeados en la plantilla antes de SPEC-077).
+func DefaultEmailPalette() EmailPalette {
+	return EmailPalette{
+		Primary:    "#007aff",
+		Background: "#f5f5f7",
+		Card:       "#ffffff",
+		Text:       "#1d1d1f",
+		Muted:      "#8e8e93",
+		Border:     "#e5e5ea",
+	}
+}
+
+// emailPaletteKeys son las claves de system_settings de cada color.
+var emailPaletteKeys = []string{
+	"email_color_primary",
+	"email_color_background",
+	"email_color_card",
+	"email_color_text",
+	"email_color_muted",
+	"email_color_border",
+}
+
+var hexColorRe = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
+
+func ValidHexColor(s string) bool { return hexColorRe.MatchString(s) }
+
+// GetEmailPalette devuelve la paleta configurada, rellenando con defaults
+// cualquier clave ausente o inválida.
+func (s *SystemSettingsService) GetEmailPalette(ctx context.Context) (EmailPalette, error) {
+	p := DefaultEmailPalette()
+	keys := map[string]*string{
+		"email_color_primary":    &p.Primary,
+		"email_color_background": &p.Background,
+		"email_color_card":       &p.Card,
+		"email_color_text":       &p.Text,
+		"email_color_muted":      &p.Muted,
+		"email_color_border":     &p.Border,
+	}
+	for key, field := range keys {
+		val, err := s.storage.Get(ctx, key)
+		if err != nil {
+			return p, err
+		}
+		if ValidHexColor(val) {
+			*field = val
+		}
+	}
+	return p, nil
+}
+
+// SetEmailPalette valida y persiste solo los campos no vacíos (permite
+// updates parciales, igual que SetSMTPConfig). Devuelve error si algún
+// campo enviado es un hex inválido.
+func (s *SystemSettingsService) SetEmailPalette(ctx context.Context, p EmailPalette) error {
+	fields := map[string]string{
+		"email_color_primary":    p.Primary,
+		"email_color_background": p.Background,
+		"email_color_card":       p.Card,
+		"email_color_text":       p.Text,
+		"email_color_muted":      p.Muted,
+		"email_color_border":     p.Border,
+	}
+	for key, val := range fields {
+		if val == "" {
+			continue
+		}
+		if !ValidHexColor(val) {
+			return fmt.Errorf("color inválido para %s: %q (formato esperado #RRGGBB)", key, val)
+		}
+		if err := s.storage.Set(ctx, key, val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ResetEmailPalette borra las claves de paleta (vuelve a los defaults).
+func (s *SystemSettingsService) ResetEmailPalette(ctx context.Context) error {
+	for _, key := range emailPaletteKeys {
+		if err := s.storage.Set(ctx, key, ""); err != nil {
+			return err
+		}
+	}
+	return nil
 }
