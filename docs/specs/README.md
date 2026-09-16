@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 77 |
+| **Total de specs** | 78 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 77 🟢 |
+| **Released** | 78 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-077 |
+| **Último ID usado** | SPEC-078 |
 
 ---
 
@@ -98,6 +98,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-075 | Rediseño UX de la página de Configuración (índice + subpáginas) | released | 2026-09-14 | Claude (a pedido de paulomcnally) |
 | SPEC-076 | Fix error 500 en GET /api/autos/{id}/available-services (scan 21 vs 23) | released | 2026-09-14 | paulomcnally |
 | SPEC-077 | Refactor Responsive de Emails (Mobile) + Paleta de Colores Configurable | released | 2026-09-15 | paulomcnally |
+| SPEC-078 | Zona horaria en horarios de envío de alertas | released | 2026-09-16 | paulomcnally |
 
 ---
 
@@ -167,4 +168,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-16 — SPEC-077 (Refactor Responsive de Emails + Paleta de Colores Configurable) released.*
+*Última actualización de este tracker: 2026-09-16 — SPEC-078 (Zona horaria en horarios de envío de alertas) released.*

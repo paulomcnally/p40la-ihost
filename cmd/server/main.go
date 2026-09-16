@@ -10,6 +10,10 @@ import (
 	"os"
 	"path/filepath"
 
+	// tzdata embebida (SPEC-078): resuelve zonas IANA sin depender de tzdata
+	// en la imagen distroless del iHost.
+	_ "time/tzdata"
+
 	_ "github.com/paulomcnally/p40la-ihost/internal/analyzers/all"
 	"github.com/paulomcnally/p40la-ihost/internal/api"
 	"github.com/paulomcnally/p40la-ihost/internal/config"

@@ -78,7 +78,11 @@ func (s *BillingScheduler) checkAndGenerate() {
 		return
 	}
 
-	now := time.Now()
+	now, err := currentUserNow(ctx, s.settingsService)
+	if err != nil {
+		slog.Error("billing scheduler: error al obtener zona horaria", "error", err)
+		return
+	}
 	if now.Hour() != hour {
 		return
 	}

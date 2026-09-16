@@ -10,6 +10,7 @@ import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { api } from '../api'
 import { formatCurrency } from '../utils/currency'
+import { timeZoneShortLabel } from '../constants/timezones'
 import type { Alert } from '../types'
 
 type HourFormat = '12h' | '24h'
@@ -70,6 +71,7 @@ export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState<boolean>(getInitialDarkMode)
   const [billingHour, setBillingHour] = useState(0)
   const [alertCheckHour, setAlertCheckHour] = useState(0)
+  const [timezone, setTimezone] = useState('')
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(false)
   const [smtpConfigured, setSmtpConfigured] = useState(false)
   const [alertEmails, setAlertEmails] = useState<string[]>([])
@@ -99,6 +101,7 @@ export default function SettingsPage() {
       if (data) {
         setBillingHour(data.billing_generation_hour ?? 0)
         setAlertCheckHour(data.alert_check_hour ?? 0)
+        setTimezone(data.timezone ?? '')
         setEmailAlertsEnabled(data.email_alerts_enabled ?? false)
         setSmtpConfigured(data.smtp_configured ?? false)
         setAlertEmails(parseEmails(data.alert_emails))
@@ -143,7 +146,7 @@ export default function SettingsPage() {
   const formatPreview = `C$${formatCurrency(1234567.5, { thousandsSeparator, decimalSeparator, decimalDigits })}`
 
   const rows = useMemo<IndexRow[]>(() => {
-    const billingSubtitle = `${formatHourLabel(billingHour, hourFormat)} · ${formatHourLabel(alertCheckHour, hourFormat)}`
+    const billingSubtitle = `${formatHourLabel(billingHour, hourFormat)} · ${formatHourLabel(alertCheckHour, hourFormat)} · ${timeZoneShortLabel(timezone)}`
     const alertsSubtitle = interpolate(t('settings.nav.alerts_subtitle'), {
       active: String(activeAlertsCount),
       total: String(alerts.length),
@@ -261,6 +264,7 @@ export default function SettingsPage() {
   }, [
     billingHour,
     alertCheckHour,
+    timezone,
     hourFormat,
     activeAlertsCount,
     alerts.length,

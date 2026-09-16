@@ -68,6 +68,7 @@ func (h *SystemSettingsHandlers) GetSetting(w http.ResponseWriter, r *http.Reque
 type settingsRequest struct {
 	BillingGenerationHour *int    `json:"billing_generation_hour,omitempty"`
 	AlertCheckHour        *int    `json:"alert_check_hour,omitempty"`
+	Timezone              *string `json:"timezone,omitempty"`
 	SMTPHost              *string `json:"smtp_host,omitempty"`
 	SMTPPort              *int    `json:"smtp_port,omitempty"`
 	SMTPUser              *string `json:"smtp_user,omitempty"`
@@ -113,6 +114,12 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 	}
 
 	alertCheckHour, err := h.settings.GetAlertCheckHour(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	timezone, err := h.settings.GetTimezone(r.Context())
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
@@ -170,6 +177,7 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour":      hour,
 		"alert_check_hour":             alertCheckHour,
+		"timezone":                     timezone,
 		"smtp_host":                    smtp.Host,
 		"smtp_port":                    smtp.Port,
 		"smtp_user":                    smtp.User,
@@ -212,6 +220,15 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 	if req.AlertCheckHour != nil {
 		if err := h.settings.SetAlertCheckHour(r.Context(), *req.AlertCheckHour); err != nil {
 			respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+			return
+		}
+	}
+
+	// Zona horaria (SPEC-078). Se valida en el service (nombre IANA); un valor
+	// inválido se rechaza con 400 sin persistir.
+	if req.Timezone != nil {
+		if err := h.settings.SetTimezone(r.Context(), *req.Timezone); err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_timezone", err.Error())
 			return
 		}
 	}
@@ -352,6 +369,7 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 	}
 
 	hour, _ := h.settings.GetBillingGenerationHour(r.Context())
+	timezone, _ := h.settings.GetTimezone(r.Context())
 	smtp, _ := h.settings.GetSMTPConfigPublic(r.Context())
 	vm, _ := h.settings.GetVoiceMonkeyConfigPublic(r.Context())
 	emailAlertsEnabled, _ := h.settings.GetEmailAlertsEnabled(r.Context())
@@ -360,6 +378,7 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 	currencyFormat, _ := h.settings.GetCurrencyFormat(r.Context())
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour":      hour,
+		"timezone":                     timezone,
 		"smtp_configured":              smtp.Configured,
 		"voicemonkey_configured":       vm.Configured,
 		"email_alerts_enabled":         emailAlertsEnabled,
