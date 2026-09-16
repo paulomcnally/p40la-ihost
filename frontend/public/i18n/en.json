@@ -390,7 +390,8 @@
       "status_activated": "Activated",
       "status_deactivated": "Deactivated",
       "status_configured": "Configured",
-      "status_pending": "Pending"
+      "status_pending": "Pending",
+      "email_appearance": "Email Appearance"
     },
     "billing": {
       "hour_generation": "Generation hour",
@@ -402,6 +403,29 @@
       "hour_generation_saved": "Billing hour updated",
       "alert_check_saved": "Alert check hour updated",
       "save_error": "Error updating"
+    },
+    "email_appearance": {
+      "title": "Email Appearance",
+      "subtitle": "Colors applied to all emails",
+      "colors": "Colors",
+      "colors_hint": "Applied to the header, background, text and borders of every email. Choose a dark primary color to keep the header text contrast.",
+      "color_primary": "Primary color (header, links)",
+      "color_background": "Page background",
+      "color_card": "Card background (content)",
+      "color_text": "Main text",
+      "color_muted": "Secondary text (footer)",
+      "color_border": "Borders / separators",
+      "reset": "Reset to defaults",
+      "reset_confirm": "Reset email colors to the default values?",
+      "reset_done": "Colors reset to defaults",
+      "invalid_hex": "One of the colors is not a valid hex value (#RRGGBB)",
+      "saved": "Email appearance updated",
+      "save_error": "Error saving appearance",
+      "preview": "Preview",
+      "preview_hint": "Sample email rendered with the current (unsaved) palette",
+      "preview_loading": "Loading preview...",
+      "nav_custom": "Custom colors",
+      "nav_default": "Default colors"
     }
   },
   "notifications": {

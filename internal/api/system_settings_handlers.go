@@ -95,6 +95,14 @@ type settingsRequest struct {
 	CurrencyThousandsSeparator *string `json:"currency_thousands_separator,omitempty"`
 	CurrencyDecimalSeparator   *string `json:"currency_decimal_separator,omitempty"`
 	CurrencyDecimalDigits      *int    `json:"currency_decimal_digits,omitempty"`
+
+	// Paleta de colores de emails (SPEC-077). Hex estricto (#RRGGBB).
+	EmailColorPrimary    *string `json:"email_color_primary,omitempty"`
+	EmailColorBackground *string `json:"email_color_background,omitempty"`
+	EmailColorCard       *string `json:"email_color_card,omitempty"`
+	EmailColorText       *string `json:"email_color_text,omitempty"`
+	EmailColorMuted      *string `json:"email_color_muted,omitempty"`
+	EmailColorBorder     *string `json:"email_color_border,omitempty"`
 }
 
 func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
@@ -152,6 +160,12 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
+	palette, err := h.settings.GetEmailPalette(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
 	// SMTPConfigPublic.User es siempre "" (info sensible, no se expone).
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour":      hour,
@@ -172,6 +186,12 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"currency_thousands_separator": currencyFormat.ThousandsSeparator,
 		"currency_decimal_separator":   currencyFormat.DecimalSeparator,
 		"currency_decimal_digits":      currencyFormat.DecimalDigits,
+		"email_color_primary":          palette.Primary,
+		"email_color_background":       palette.Background,
+		"email_color_card":             palette.Card,
+		"email_color_text":             palette.Text,
+		"email_color_muted":            palette.Muted,
+		"email_color_border":           palette.Border,
 	})
 }
 
@@ -301,6 +321,36 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		}
 	}
 
+	// Paleta de colores de emails (SPEC-077). Si algún hex enviado es
+	// inválido, se rechaza todo con 400 sin persistir nada.
+	if req.EmailColorPrimary != nil || req.EmailColorBackground != nil ||
+		req.EmailColorCard != nil || req.EmailColorText != nil ||
+		req.EmailColorMuted != nil || req.EmailColorBorder != nil {
+		palette := services.EmailPalette{}
+		if req.EmailColorPrimary != nil {
+			palette.Primary = *req.EmailColorPrimary
+		}
+		if req.EmailColorBackground != nil {
+			palette.Background = *req.EmailColorBackground
+		}
+		if req.EmailColorCard != nil {
+			palette.Card = *req.EmailColorCard
+		}
+		if req.EmailColorText != nil {
+			palette.Text = *req.EmailColorText
+		}
+		if req.EmailColorMuted != nil {
+			palette.Muted = *req.EmailColorMuted
+		}
+		if req.EmailColorBorder != nil {
+			palette.Border = *req.EmailColorBorder
+		}
+		if err := h.settings.SetEmailPalette(r.Context(), palette); err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_color", err.Error())
+			return
+		}
+	}
+
 	hour, _ := h.settings.GetBillingGenerationHour(r.Context())
 	smtp, _ := h.settings.GetSMTPConfigPublic(r.Context())
 	vm, _ := h.settings.GetVoiceMonkeyConfigPublic(r.Context())
@@ -415,6 +465,70 @@ func (h *SystemSettingsHandlers) DeleteSMTP(w http.ResponseWriter, r *http.Reque
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"smtp_configured": smtp.Configured,
 		"message":         "Configuración SMTP eliminada",
+	})
+}
+
+// ResetEmailPalette limpia los 6 colores de emails y vuelve a los defaults
+// (botón "Restablecer a valores por defecto", REQ-013).
+func (h *SystemSettingsHandlers) ResetEmailPalette(w http.ResponseWriter, r *http.Request) {
+	if err := h.settings.ResetEmailPalette(r.Context()); err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	palette, err := h.settings.GetEmailPalette(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"email_color_primary":    palette.Primary,
+		"email_color_background": palette.Background,
+		"email_color_card":       palette.Card,
+		"email_color_text":       palette.Text,
+		"email_color_muted":      palette.Muted,
+		"email_color_border":     palette.Border,
+		"message":                "Paleta de emails restablecida a los valores por defecto",
+	})
+}
+
+// previewEmailRequest es la paleta candidata del preview. Todos los campos
+// son opcionales; los ausentes se completan con los defaults (REQ-014).
+type previewEmailRequest struct {
+	EmailColorPrimary    *string `json:"email_color_primary,omitempty"`
+	EmailColorBackground *string `json:"email_color_background,omitempty"`
+	EmailColorCard       *string `json:"email_color_card,omitempty"`
+	EmailColorText       *string `json:"email_color_text,omitempty"`
+	EmailColorMuted      *string `json:"email_color_muted,omitempty"`
+	EmailColorBorder     *string `json:"email_color_border,omitempty"`
+}
+
+// PreviewEmail renderiza un email de ejemplo con una paleta candidata SIN
+// persistirla (REQ-014). Devuelve el HTML completo listo para un <iframe>.
+func (h *SystemSettingsHandlers) PreviewEmail(w http.ResponseWriter, r *http.Request) {
+	var req previewEmailRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
+		return
+	}
+
+	palette := services.DefaultEmailPalette()
+	apply := func(field **string, target *string) {
+		if *field != nil && services.ValidHexColor(**field) {
+			*target = **field
+		}
+	}
+	apply(&req.EmailColorPrimary, &palette.Primary)
+	apply(&req.EmailColorBackground, &palette.Background)
+	apply(&req.EmailColorCard, &palette.Card)
+	apply(&req.EmailColorText, &palette.Text)
+	apply(&req.EmailColorMuted, &palette.Muted)
+	apply(&req.EmailColorBorder, &palette.Border)
+
+	html := h.emailService.RenderPreviewHTML(r.Context(), palette)
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"html": html,
 	})
 }
 
