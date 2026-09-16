@@ -19,6 +19,7 @@ import SettingsBillingPage from './pages/SettingsBillingPage'
 import SettingsAlertsPage from './pages/SettingsAlertsPage'
 import SettingsEmailAlertsPage from './pages/SettingsEmailAlertsPage'
 import SettingsVoiceMonkeyPage from './pages/SettingsVoiceMonkeyPage'
+import SettingsTelegramBotPage from './pages/SettingsTelegramBotPage'
 import SettingsWebhooksPage from './pages/SettingsWebhooksPage'
 import SettingsCurrenciesPage from './pages/SettingsCurrenciesPage'
 import SettingsCurrencyFormatPage from './pages/SettingsCurrencyFormatPage'
@@ -102,6 +103,7 @@ function App() {
                   <Route path="settings/alertas" element={<SettingsAlertsPage />} />
                   <Route path="settings/alertas/email" element={<SettingsEmailAlertsPage />} />
                   <Route path="settings/alertas/voz" element={<SettingsVoiceMonkeyPage />} />
+                  <Route path="settings/telegram-bot" element={<SettingsTelegramBotPage />} />
                   <Route path="settings/webhooks" element={<SettingsWebhooksPage />} />
                   <Route path="settings/monedas" element={<SettingsCurrenciesPage />} />
                   <Route path="settings/formato-moneda" element={<SettingsCurrencyFormatPage />} />

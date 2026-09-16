@@ -637,3 +637,89 @@ func (s *SystemSettingsService) ResetEmailPalette(ctx context.Context) error {
 	}
 	return nil
 }
+
+// ---- Bot de Telegram (SPEC-079) ----
+
+// Claves de config del bot de Telegram en system_settings.
+const (
+	TelegramBotEnabledKey = "telegram_bot_enabled"
+	TelegramBotTokenKey   = "telegram_bot_token"
+	TelegramBotChatIDsKey = "telegram_bot_chat_ids"
+)
+
+// GetTelegramBotConfig devuelve la config completa (incluye token). Uso
+// interno: TelegramBotService. NUNCA exponer en responses de API.
+func (s *SystemSettingsService) GetTelegramBotConfig(ctx context.Context) (*models.TelegramBotConfig, error) {
+	enabled, err := s.getBoolSetting(ctx, TelegramBotEnabledKey)
+	if err != nil {
+		return nil, err
+	}
+	token, err := s.storage.Get(ctx, TelegramBotTokenKey)
+	if err != nil {
+		return nil, err
+	}
+	chatIDsRaw, err := s.storage.Get(ctx, TelegramBotChatIDsKey)
+	if err != nil {
+		return nil, err
+	}
+	return &models.TelegramBotConfig{
+		Enabled: enabled,
+		Token:   token,
+		ChatIDs: parseCommaList(chatIDsRaw),
+	}, nil
+}
+
+// GetTelegramBotConfigPublic devuelve la config SIN credenciales (token).
+// Se usa en responses de API. Incluye flag Configured.
+func (s *SystemSettingsService) GetTelegramBotConfigPublic(ctx context.Context) (*models.TelegramBotConfigPublic, error) {
+	cfg, err := s.GetTelegramBotConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &models.TelegramBotConfigPublic{
+		Enabled:    cfg.Enabled,
+		Configured: cfg.Token != "",
+	}, nil
+}
+
+// SetTelegramBotEnabled persiste el toggle maestro "Activar Bot de Telegram".
+func (s *SystemSettingsService) SetTelegramBotEnabled(ctx context.Context, enabled bool) error {
+	return s.setBoolSetting(ctx, TelegramBotEnabledKey, enabled)
+}
+
+// SetTelegramBotToken guarda el token del bot. Un valor vacío no sobrescribe
+// un token existente (updates parciales no se pisan — patrón SMTP/VM).
+func (s *SystemSettingsService) SetTelegramBotToken(ctx context.Context, token string) error {
+	return s.setIfNonEmpty(ctx, TelegramBotTokenKey, token)
+}
+
+// SetTelegramBotChatIDs guarda la allowlist de chat_ids (comma-separated).
+func (s *SystemSettingsService) SetTelegramBotChatIDs(ctx context.Context, chatIDs []string) error {
+	return s.storage.Set(ctx, TelegramBotChatIDsKey, strings.Join(chatIDs, ","))
+}
+
+// ClearTelegramBot limpia las credenciales y resetea el toggle a OFF
+// (botón "Reconfigurar", REQ-005).
+func (s *SystemSettingsService) ClearTelegramBot(ctx context.Context) error {
+	for _, key := range []string{TelegramBotTokenKey, TelegramBotChatIDsKey} {
+		if err := s.storage.Set(ctx, key, ""); err != nil {
+			return err
+		}
+	}
+	return s.setBoolSetting(ctx, TelegramBotEnabledKey, false)
+}
+
+// parseCommaList separa una lista comma-separated en elementos limpios.
+func parseCommaList(val string) []string {
+	if val == "" {
+		return nil
+	}
+	var result []string
+	for _, p := range strings.Split(val, ",") {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	return result
+}
