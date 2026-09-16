@@ -78,6 +78,8 @@ export default function SettingsPage() {
   const [vmEnabled, setVmEnabled] = useState(false)
   const [vmSendAlerts, setVmSendAlerts] = useState(false)
   const [vmConfigured, setVmConfigured] = useState(false)
+  const [telegramBotEnabled, setTelegramBotEnabled] = useState(false)
+  const [telegramBotConfigured, setTelegramBotConfigured] = useState(false)
   const [webhookEnabled, setWebhookEnabled] = useState(false)
   const [emailPaletteCustom, setEmailPaletteCustom] = useState(false)
   const [alerts, setAlerts] = useState<Alert[]>([])
@@ -108,6 +110,8 @@ export default function SettingsPage() {
         setVmEnabled(data.voicemonkey_enabled ?? false)
         setVmSendAlerts(data.voicemonkey_send_alerts ?? false)
         setVmConfigured(data.voicemonkey_configured ?? false)
+        setTelegramBotEnabled(data.telegram_bot_enabled ?? false)
+        setTelegramBotConfigured(data.telegram_bot_configured ?? false)
         setWebhookEnabled(data.webhook_enabled ?? false)
         const custom =
           data.email_color_primary !== '#007aff' ||
@@ -141,6 +145,8 @@ export default function SettingsPage() {
   const emailActive = emailAlertsEnabled && smtpConfigured && alertEmails.length > 0
   const emailNeedsConfig = emailAlertsEnabled && !emailActive
   const vmNeedsConfig = vmEnabled && !vmActive
+  const tbActive = telegramBotEnabled && telegramBotConfigured
+  const tbNeedsConfig = telegramBotEnabled && !tbActive
 
   const activeAlertsCount = alerts.filter((a) => a.mail_enabled || a.voice_enabled).length
   const formatPreview = `C$${formatCurrency(1234567.5, { thousandsSeparator, decimalSeparator, decimalDigits })}`
@@ -222,6 +228,24 @@ export default function SettingsPage() {
         onClick: () => navigate('/settings/alertas/voz'),
       },
       {
+        key: 'telegramBot',
+        icon: 'send',
+        title: t('settings.nav.telegram_bot'),
+        subtitle: tbActive
+          ? t('settings.nav.status_configured')
+          : telegramBotEnabled
+            ? t('settings.nav.status_pending')
+            : t('settings.nav.status_deactivated'),
+        statusLabel: tbActive
+          ? t('settings.nav.status_configured')
+          : telegramBotEnabled
+            ? t('settings.nav.status_pending')
+            : t('settings.nav.status_deactivated'),
+        statusTone: tbActive ? 'success' : telegramBotEnabled ? 'warning' : 'muted',
+        warning: tbNeedsConfig,
+        onClick: () => navigate('/settings/telegram-bot'),
+      },
+      {
         key: 'webhooks',
         icon: 'link',
         title: t('settings.webhooks.title'),
@@ -274,6 +298,8 @@ export default function SettingsPage() {
     vmActive,
     vmEnabled,
     vmNeedsConfig,
+    telegramBotEnabled,
+    telegramBotConfigured,
     webhookEnabled,
     currencies.length,
     thousandsSeparator,
@@ -304,7 +330,7 @@ export default function SettingsPage() {
     </div>
   )
 
-  const advancedKeys = ['email', 'voice', 'webhooks', 'currencies', 'currencyFormat', 'emailAppearance']
+  const advancedKeys = ['email', 'voice', 'telegramBot', 'webhooks', 'currencies', 'currencyFormat', 'emailAppearance']
   const frequent = filtered.filter((r) => !advancedKeys.includes(r.key))
   const advanced = filtered.filter((r) => advancedKeys.includes(r.key))
 

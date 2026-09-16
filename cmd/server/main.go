@@ -142,8 +142,13 @@ func main() {
 	debtDueScheduler.Start()
 	defer debtDueScheduler.Stop()
 
+	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage)
+	telegramBotService.Start()
+	defer telegramBotService.Stop()
+
 	settingsHandlers := api.NewSettingsHandlers(appSettingsService)
 	systemSettingsHandlers := api.NewSystemSettingsHandlers(systemSettingsService, emailService, voiceMonkeyService)
+	systemSettingsHandlers.SetTelegramBotService(telegramBotService)
 	alertsHandlers := api.NewAlertsHandlers(alertService, systemSettingsService)
 	currencyHandlers := api.NewCurrencyHandlers(currencyService)
 	homeHandlers := api.NewHomeHandlers(homeService)
