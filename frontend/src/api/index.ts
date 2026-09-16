@@ -116,6 +116,7 @@ export const api = {
     get: () => get<{
       billing_generation_hour: number
       alert_check_hour: number
+      timezone: string
       smtp_host: string
       smtp_port: number
       smtp_user: string
