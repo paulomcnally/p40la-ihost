@@ -29,9 +29,11 @@ func testTelegramSettings(t *testing.T) *SystemSettingsService {
 
 func TestFormatServiciosPendientes(t *testing.T) {
 	format := DefaultCurrencyFormat()
+	// Fecha fija de referencia: 2026-09-19 (zona UTC, ADR-004).
+	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
 
 	t.Run("sin pendientes", func(t *testing.T) {
-		got := formatServiciosPendientes(nil, format)
+		got := formatServiciosPendientes(nil, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
 		if len(got) != 1 || got[0] != "✅ No hay facturas pendientes." {
 			t.Errorf("esperado único mensaje vacío, got %q", got)
 		}
@@ -39,11 +41,11 @@ func TestFormatServiciosPendientes(t *testing.T) {
 
 	t.Run("un mensaje por servicio + totales, ordenado por monto", func(t *testing.T) {
 		pending := []appmodels.PendingBillDetail{
-			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
-			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO"},
-			{ServiceID: 2, ServiceName: "ENATREL", HomeName: "Casa B", Amount: 500, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Year: 2026, Month: 8, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Year: 2026, Month: 9, Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{ServiceID: 2, ServiceName: "ENATREL", HomeName: "Casa B", Year: 2026, Month: 8, Amount: 500, CurrencySymbol: "C$", CurrencyCode: "NIO"},
 		}
-		got := formatServiciosPendientes(pending, format)
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
 		// 2 servicios + 1 totales.
 		if len(got) != 3 {
 			t.Fatalf("esperados 3 mensajes, got %d: %q", len(got), got)
@@ -54,7 +56,7 @@ func TestFormatServiciosPendientes(t *testing.T) {
 		if enatrelPos == -1 || claroPos == -1 {
 			t.Fatalf("mensajes por servicio incorrectos:\n%s\n%s", got[0], got[1])
 		}
-		if !contains(got[1], "Facturas: 2") || !contains(got[1], "C$150.00") {
+		if !contains(got[1], "*Facturas*: 2") || !contains(got[1], "C$150.00") {
 			t.Errorf("conteo/monto de Claro incorrecto:\n%s", got[1])
 		}
 		if !contains(got[0], "C$500.00") {
@@ -66,12 +68,243 @@ func TestFormatServiciosPendientes(t *testing.T) {
 		}
 	})
 
+	t.Run("itemiza cada factura con semáforo y fecha legible", func(t *testing.T) {
+		due1 := "2026-09-07" // vencida hace 12 días → 🔴
+		due2 := "2026-09-23" // vence en 4 días → 🟡
+		due3 := "2026-09-30" // vence en 11 días → 🟢 (último día del mes)
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Year: 2026, Month: 8, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &due1},
+			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Year: 2026, Month: 9, Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &due2},
+			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Year: 2026, Month: 10, Amount: 30, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &due3},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
+		// 1 servicio + 1 totales.
+		if len(got) != 2 {
+			t.Fatalf("esperados 2 mensajes, got %d: %q", len(got), got)
+		}
+		// Encabezado con casa en línea.
+		if !contains(got[0], "⚡ *Claro* — Casa A") {
+			t.Errorf("mensaje sin encabezado del servicio:\n%s", got[0])
+		}
+		// Fechas legibles y semáforos por regla SPEC-081 REQ-008.
+		if !contains(got[0], "🔴 Vencida hace 12 días") || !contains(got[0], "📅 07 sep 2026 — C$100.00") {
+			t.Errorf("mensaje sin vencida resaltada:\n%s", got[0])
+		}
+		if !contains(got[0], "🟡 Vence en 4 días") || !contains(got[0], "📅 23 sep 2026 — C$50.00") {
+			t.Errorf("mensaje sin próxima amarilla:\n%s", got[0])
+		}
+		if !contains(got[0], "🟢 Vence en 11 días") || !contains(got[0], "📅 30 sep 2026 — C$30.00") {
+			t.Errorf("mensaje sin lejana verde:\n%s", got[0])
+		}
+		// Resumen con separador ASCII al final.
+		if !contains(got[0], "--------------------") || !contains(got[0], "*Facturas*: 3") || !contains(got[0], "*Pendiente*: C$180.00") {
+			t.Errorf("mensaje sin resumen final:\n%s", got[0])
+		}
+	})
+
+	t.Run("filtra facturas de meses futuros", func(t *testing.T) {
+		dueVencida := "2026-09-01"  // vencida → se mantiene
+		dueActual := "2026-09-30"   // último día del mes → se mantiene
+		dueFutura := "2026-10-01"   // mes siguiente → se excluye
+		dueFutura2 := "2026-11-15"  // meses siguientes → se excluye
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 9, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueVencida},
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 9, Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueActual},
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 10, Amount: 500, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueFutura},
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 11, Amount: 700, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueFutura2},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
+		if len(got) != 2 {
+			t.Fatalf("esperados 2 mensajes, got %d: %q", len(got), got)
+		}
+		// Las futuras no aparecen ni en detalle ni en resumen/totales.
+		if strings.Contains(got[0], "500.00") || strings.Contains(got[0], "700.00") {
+			t.Errorf("factura futura aparece en el detalle:\n%s", got[0])
+		}
+		if !contains(got[0], "*Facturas*: 2") || !contains(got[0], "*Pendiente*: C$150.00") {
+			t.Errorf("conteo/total debería excluir futuras:\n%s", got[0])
+		}
+		if !contains(got[1], "NIO: C$150.00") {
+			t.Errorf("totales debería excluir futuras:\n%s", got[1])
+		}
+	})
+
+t.Run("sin facturas del periodo actual muestra vacío", func(t *testing.T) {
+		dueFutura := "2026-10-05"
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 10, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueFutura},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
+		if len(got) != 1 || got[0] != "✅ No hay facturas pendientes." {
+			t.Errorf("esperado único mensaje vacío, got %q", got)
+		}
+	})
+
+	t.Run("showMonths=2 incluye el próximo mes pero no el siguiente", func(t *testing.T) {
+		dueVencida := "2026-07-01" // vencida hace mucho → siempre
+		dueProximo := "2026-10-20" // mes siguiente → con N=2 se muestra
+		dueSiguiente := "2026-11-15" // dos meses después → con N=2 se excluye
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 7, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueVencida},
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 10, Amount: 200, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueProximo},
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 11, Amount: 400, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueSiguiente},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, 2)
+		if len(got) != 2 {
+			t.Fatalf("esperados 2 mensajes, got %d: %q", len(got), got)
+		}
+		if !contains(got[0], "C$100.00") || !contains(got[0], "C$200.00") {
+			t.Errorf("vencida o próxima mes ausente:\n%s", got[0])
+		}
+		if strings.Contains(got[0], "C$400.00") {
+			t.Errorf("factura de +2 meses no debería aparecer con N=2:\n%s", got[0])
+		}
+		if !contains(got[0], "*Facturas*: 2") || !contains(got[0], "*Pendiente*: C$300.00") {
+			t.Errorf("conteo/total incorrecto:\n%s", got[0])
+		}
+	})
+
+	t.Run("showMonths=3 incluye dos meses futuros", func(t *testing.T) {
+		dueProximo := "2026-10-20"
+		dueSiguiente := "2026-11-15"
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 10, Amount: 200, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueProximo},
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 11, Amount: 300, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueSiguiente},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, 3)
+		if !contains(got[0], "C$200.00") || !contains(got[0], "C$300.00") {
+			t.Errorf("meses futuros ausentes con N=3:\n%s", got[0])
+		}
+		if !contains(got[0], "*Facturas*: 2") {
+			t.Errorf("conteo incorrecto con N=3:\n%s", got[0])
+		}
+	})
+
+	t.Run("vencidas antiguas siempre se muestran aunque N=1", func(t *testing.T) {
+		dueVencida := "2025-01-15" // vencida hace más de un año
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2025, Month: 1, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueVencida},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
+		if len(got) != 2 || !contains(got[0], "C$100.00") {
+			t.Errorf("vencida antigua debería mostrarse siempre:\n%q", got)
+		}
+	})
+
+	t.Run("separador configurable", func(t *testing.T) {
+		due := "2026-09-25"
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 9, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &due},
+		}
+		// 30 guiones.
+		got30 := formatServiciosPendientes(pending, format, now, 30, DefaultTelegramBotShowMonths)
+		if !contains(got30[0], "  ------------------------------") {
+			t.Errorf("separador de 30 guiones incorrecto:\n%s", got30[0])
+		}
+		// 0 = sin separador.
+		got0 := formatServiciosPendientes(pending, format, now, 0, DefaultTelegramBotShowMonths)
+		if strings.Contains(got0[0], "----") || !contains(got0[0], "*Facturas*: 1") {
+			t.Errorf("separador 0 debería omitirse:\n%s", got0[0])
+		}
+	})
+
+	t.Run("vence hoy es rojo", func(t *testing.T) {
+		due := "2026-09-19"
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 9, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &due},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
+		if !contains(got[0], "🔴 Vence hoy") {
+			t.Errorf("vence hoy debería ser rojo:\n%s", got[0])
+		}
+	})
+
+	t.Run("singular en días", func(t *testing.T) {
+		due := "2026-09-18"
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 9, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &due},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
+		if !contains(got[0], "🔴 Vencida hace 1 día") {
+			t.Errorf("singular incorrecto:\n%s", got[0])
+		}
+	})
+
+	t.Run("factura sin due_date usa periodo con semáforo verde", func(t *testing.T) {
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "Luz", HomeName: "Casa A", Year: 2026, Month: 9, Amount: 620, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
+		if len(got) != 2 {
+			t.Fatalf("esperados 2 mensajes, got %d: %q", len(got), got)
+		}
+		if !contains(got[0], "🟢 Sin fecha") || !contains(got[0], "📅 sep 2026 — C$620.00") {
+			t.Errorf("factura sin due_date debería mostrar periodo con 🟢:\n%s", got[0])
+		}
+	})
+
+	t.Run("ordena por urgencia: vencidas primero, sin fecha al final", func(t *testing.T) {
+		dueLejana := "2026-09-30" // último día del mes → 🟢
+		dueVencida := "2026-09-01" // vencida hace 18 días → 🔴
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 9, Amount: 10, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueLejana},
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 8, Amount: 20, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 7, Amount: 30, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueVencida},
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
+		msg := got[0]
+		vencidaPos := indexOf(msg, "Vencida hace 18 días")
+		lejanaPos := indexOf(msg, "Vence en 11 días")
+		sinFechaPos := indexOf(msg, "Sin fecha")
+		if vencidaPos == -1 || lejanaPos == -1 || sinFechaPos == -1 {
+			t.Fatalf("no se encontraron los estados:\n%s", msg)
+		}
+		if !(vencidaPos < lejanaPos && lejanaPos < sinFechaPos) {
+			t.Errorf("orden incorrecto (esperado vencida < lejana < sin fecha):\n%s", msg)
+		}
+	})
+
+	t.Run("particiona servicios con más de 25 facturas", func(t *testing.T) {
+		var pending []appmodels.PendingBillDetail
+		for i := 1; i <= 30; i++ {
+			due := "2026-09-20"
+			pending = append(pending, appmodels.PendingBillDetail{
+				ServiceID: 1, ServiceName: "Internet", HomeName: "Casa A", Year: 2026, Month: 9,
+				Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &due,
+			})
+		}
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
+		// 30 facturas → 2 bloques (25+5) + 1 totales.
+		if len(got) != 3 {
+			t.Fatalf("esperados 3 mensajes (2 bloques + totales), got %d", len(got))
+		}
+		// Encabezado solo en el primer bloque.
+		if !contains(got[0], "⚡ *Internet*") || contains(got[1], "⚡") {
+			t.Errorf("encabezado repetido en bloques:\n%s\n---\n%s", got[0], got[1])
+		}
+		// Resumen solo al final del último bloque.
+		if contains(got[0], "Pendiente:") || !contains(got[1], "*Facturas*: 30") || !contains(got[1], "*Pendiente*: C$3,000.00") {
+			t.Errorf("resumen mal ubicado:\n%s\n---\n%s", got[0], got[1])
+		}
+		// Primer bloque 25 facturas, segundo 5.
+		if strings.Count(got[0], "📅") != 25 || strings.Count(got[1], "📅") != 5 {
+			t.Errorf("cantidad de facturas por bloque incorrecta: %d/%d",
+				strings.Count(got[0], "📅"), strings.Count(got[1], "📅"))
+		}
+		// Ningún mensaje de servicio supera el límite de Telegram.
+		for i, m := range got[:2] {
+			if len(m) > 4096 {
+				t.Errorf("bloque %d supera 4096 chars: %d", i, len(m))
+			}
+		}
+	})
+
 	t.Run("formato de moneda personalizado", func(t *testing.T) {
 		format := CurrencyFormat{ThousandsSeparator: ",", DecimalSeparator: ".", DecimalDigits: 2}
 		pending := []appmodels.PendingBillDetail{
 			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Amount: 1250.5, CurrencySymbol: "$", CurrencyCode: "USD"},
 		}
-		got := formatServiciosPendientes(pending, format)
+		got := formatServiciosPendientes(pending, format, now, DefaultTelegramBotSeparatorLength, DefaultTelegramBotShowMonths)
 		if len(got) != 2 {
 			t.Fatalf("esperados 2 mensajes, got %d: %q", len(got), got)
 		}
@@ -133,14 +366,14 @@ func TestFormatDeudasPendientes(t *testing.T) {
 		if !contains(got[0], "📅 2026-09-10 — C$500.00") {
 			t.Errorf("mensaje de BAC sin cuota itemizada:\n%s", got[0])
 		}
-		if !contains(got[0], "Cuotas: 1") || !contains(got[0], "Pendiente: C$500.00") {
+		if !contains(got[0], "*Cuotas*: 1") || !contains(got[0], "*Pendiente*: C$500.00") {
 			t.Errorf("mensaje de BAC sin resumen:\n%s", got[0])
 		}
 		// LAFISE: 2 cuotas itemizadas en orden de due_date + resumen.
 		if !contains(got[1], "Préstamo LAFISE") || !contains(got[1], "📅 2026-09-05 — C$100.00") || !contains(got[1], "📅 2026-10-05 — C$50.00") {
 			t.Errorf("mensaje de LAFISE sin cuotas itemizadas:\n%s", got[1])
 		}
-		if !contains(got[1], "Cuotas: 2") || !contains(got[1], "Pendiente: C$150.00") {
+		if !contains(got[1], "*Cuotas*: 2") || !contains(got[1], "*Pendiente*: C$150.00") {
 			t.Errorf("mensaje de LAFISE sin resumen:\n%s", got[1])
 		}
 		if !contains(got[2], "Totales") || !contains(got[2], "NIO: C$650.00") {
@@ -166,7 +399,7 @@ func TestFormatDeudasPendientes(t *testing.T) {
 			t.Errorf("encabezado repetido en bloques:\n%s\n---\n%s", got[0], got[1])
 		}
 		// Resumen solo al final del último bloque.
-		if contains(got[0], "Pendiente:") || !contains(got[2], "Cuotas: 60") || !contains(got[2], "Pendiente: C$37,200.00") {
+		if contains(got[0], "Pendiente:") || !contains(got[2], "*Cuotas*: 60") || !contains(got[2], "*Pendiente*: C$37,200.00") {
 			t.Errorf("resumen mal ubicado:\n%s\n---\n%s", got[0], got[2])
 		}
 		// Primer y segundo bloque tienen 25 cuotas; el tercero 10.
@@ -228,6 +461,10 @@ func TestTelegramBotConfigSettings(t *testing.T) {
 	if cfg.Enabled || cfg.Token != "" || len(cfg.ChatIDs) != 0 {
 		t.Errorf("config inicial no vacía: %+v", cfg)
 	}
+	// Defaults de las settings nuevas (SPEC-084 REQ-014/016).
+	if cfg.SeparatorLength != DefaultTelegramBotSeparatorLength || cfg.ShowMonths != DefaultTelegramBotShowMonths {
+		t.Errorf("defaults incorrectos: %+v", cfg)
+	}
 
 	if err := settings.SetTelegramBotEnabled(ctx, true); err != nil {
 		t.Fatalf("enabled: %v", err)
@@ -238,6 +475,12 @@ func TestTelegramBotConfigSettings(t *testing.T) {
 	if err := settings.SetTelegramBotChatIDs(ctx, []string{"111", "222"}); err != nil {
 		t.Fatalf("chat_ids: %v", err)
 	}
+	if err := settings.SetTelegramBotSeparatorLength(ctx, 30); err != nil {
+		t.Fatalf("separator_length: %v", err)
+	}
+	if err := settings.SetTelegramBotShowMonths(ctx, 3); err != nil {
+		t.Fatalf("show_months: %v", err)
+	}
 
 	cfg, err = settings.GetTelegramBotConfig(ctx)
 	if err != nil {
@@ -245,6 +488,27 @@ func TestTelegramBotConfigSettings(t *testing.T) {
 	}
 	if !cfg.Enabled || cfg.Token != "token-123" || len(cfg.ChatIDs) != 2 {
 		t.Errorf("config guardada incorrecta: %+v", cfg)
+	}
+	if cfg.SeparatorLength != 30 || cfg.ShowMonths != 3 {
+		t.Errorf("settings nuevas guardadas incorrectas: %+v", cfg)
+	}
+
+	// Rangos inválidos: separador fuera de 0-100, meses fuera de 1-12.
+	if err := settings.SetTelegramBotSeparatorLength(ctx, -1); err == nil {
+		t.Error("separator_length negativo debería fallar")
+	}
+	if err := settings.SetTelegramBotSeparatorLength(ctx, 101); err == nil {
+		t.Error("separator_length >100 debería fallar")
+	}
+	if err := settings.SetTelegramBotShowMonths(ctx, 0); err == nil {
+		t.Error("show_months 0 debería fallar")
+	}
+	if err := settings.SetTelegramBotShowMonths(ctx, 13); err == nil {
+		t.Error("show_months 13 debería fallar")
+	}
+	cfg, _ = settings.GetTelegramBotConfig(ctx)
+	if cfg.SeparatorLength != 30 || cfg.ShowMonths != 3 {
+		t.Errorf("valores previos deberían mantenerse tras intentos inválidos: %+v", cfg)
 	}
 
 	// El token no debe sobrescribirse con vacío (setIfNonEmpty).
@@ -263,6 +527,9 @@ func TestTelegramBotConfigSettings(t *testing.T) {
 	}
 	if !pub.Enabled || !pub.Configured {
 		t.Errorf("public incorrecta: %+v", pub)
+	}
+	if pub.SeparatorLength != 30 || pub.ShowMonths != 3 {
+		t.Errorf("public con settings nuevas incorrecta: %+v", pub)
 	}
 
 	// Clear: limpia todo y apaga.

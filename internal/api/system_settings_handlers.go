@@ -114,9 +114,11 @@ type settingsRequest struct {
 	EmailColorBorder     *string `json:"email_color_border,omitempty"`
 
 	// Bot de Telegram (SPEC-079). Token solo se envía para guardar.
-	TelegramBotEnabled *bool   `json:"telegram_bot_enabled,omitempty"`
-	TelegramBotToken   *string `json:"telegram_bot_token,omitempty"`
-	TelegramBotChatIDs *string `json:"telegram_bot_chat_ids,omitempty"`
+	TelegramBotEnabled         *bool   `json:"telegram_bot_enabled,omitempty"`
+	TelegramBotToken           *string `json:"telegram_bot_token,omitempty"`
+	TelegramBotChatIDs         *string `json:"telegram_bot_chat_ids,omitempty"`
+	TelegramBotSeparatorLength *int    `json:"telegram_bot_separator_length,omitempty"`
+	TelegramBotShowMonths      *int    `json:"telegram_bot_show_months,omitempty"`
 }
 
 func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
@@ -219,8 +221,10 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"email_color_text":             palette.Text,
 		"email_color_muted":            palette.Muted,
 		"email_color_border":           palette.Border,
-		"telegram_bot_enabled":         telegramBot.Enabled,
-		"telegram_bot_configured":      telegramBot.Configured,
+		"telegram_bot_enabled":          telegramBot.Enabled,
+		"telegram_bot_configured":       telegramBot.Configured,
+		"telegram_bot_separator_length": telegramBot.SeparatorLength,
+		"telegram_bot_show_months":      telegramBot.ShowMonths,
 	})
 }
 
@@ -414,6 +418,20 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		}
 		telegramBotChanged = true
 	}
+	if req.TelegramBotSeparatorLength != nil {
+		if err := h.settings.SetTelegramBotSeparatorLength(r.Context(), *req.TelegramBotSeparatorLength); err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+			return
+		}
+		telegramBotChanged = true
+	}
+	if req.TelegramBotShowMonths != nil {
+		if err := h.settings.SetTelegramBotShowMonths(r.Context(), *req.TelegramBotShowMonths); err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+			return
+		}
+		telegramBotChanged = true
+	}
 	if telegramBotChanged && h.telegramBot != nil {
 		h.telegramBot.NotifyConfigChanged()
 	}
@@ -438,9 +456,11 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		"currency_thousands_separator": currencyFormat.ThousandsSeparator,
 		"currency_decimal_separator":   currencyFormat.DecimalSeparator,
 		"currency_decimal_digits":      currencyFormat.DecimalDigits,
-		"telegram_bot_enabled":         telegramBot.Enabled,
-		"telegram_bot_configured":      telegramBot.Configured,
-		"message":                      "Configuración actualizada",
+		"telegram_bot_enabled":          telegramBot.Enabled,
+		"telegram_bot_configured":       telegramBot.Configured,
+		"telegram_bot_separator_length": telegramBot.SeparatorLength,
+		"telegram_bot_show_months":      telegramBot.ShowMonths,
+		"message":                       "Configuración actualizada",
 	})
 }
 

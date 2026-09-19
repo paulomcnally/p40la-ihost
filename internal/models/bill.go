@@ -24,6 +24,7 @@ type Bill struct {
 
 // PendingBillDetail detalla una factura pendiente con contexto (casa,
 // institución, servicio, moneda) para el resumen diario (SPEC-031).
+// DueDate proviene de bills.due_date (SPEC-081), formato YYYY-MM-DD o NULL.
 type PendingBillDetail struct {
 	BillID         int64     `json:"bill_id"`
 	ServiceID      int64     `json:"service_id"`
@@ -37,5 +38,6 @@ type PendingBillDetail struct {
 	Month          int       `json:"month"`
 	Amount         float64   `json:"amount"`
 	Status         string    `json:"status"`
+	DueDate        *string   `json:"due_date,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 }

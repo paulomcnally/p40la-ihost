@@ -33,7 +33,8 @@ func newBillSummaryTestDB(t *testing.T) *BillStorage {
 		VALUES (2, 'Luz', '', 1, 'monthly', 80, 1, 'electricity', 'variable', 1)`)
 
 	// Facturas: 2 pendientes + 1 pagada + 1 de servicio eliminado.
-	mustExec("INSERT INTO bills (service_id, year, month, amount, status) VALUES (1, 2026, 8, 1500, 'pending')")
+	// La pendiente del servicio 1 lleva due_date; la del servicio 2 no (NULL).
+	mustExec("INSERT INTO bills (service_id, year, month, amount, status, due_date) VALUES (1, 2026, 8, 1500, 'pending', '2026-09-20')")
 	mustExec("INSERT INTO bills (service_id, year, month, amount, status) VALUES (2, 2026, 1, 100, 'pending')")
 	mustExec("INSERT INTO bills (service_id, year, month, amount, status) VALUES (1, 2026, 7, 1490, 'paid')")
 	mustExec("INSERT INTO services (home_id, name, institution, currency_id, frequency, suggested_amount, active, icon_key, billing_type, is_recurring, deleted_at) VALUES (1, 'Eliminado', '', 1, 'monthly', 50, 1, 'other', 'fixed', 1, CURRENT_TIMESTAMP)")
@@ -83,6 +84,9 @@ func TestListPendingWithDetails(t *testing.T) {
 	if svc1.Status != "pending" {
 		t.Errorf("status esperado pending, got %q", svc1.Status)
 	}
+	if svc1.DueDate == nil || *svc1.DueDate != "2026-09-20" {
+		t.Errorf("due_date esperado '2026-09-20', got %v", svc1.DueDate)
+	}
 
 	svc2, ok := byService[2]
 	if !ok {
@@ -94,5 +98,9 @@ func TestListPendingWithDetails(t *testing.T) {
 	}
 	if svc2.HomeName != "Casa Playa" {
 		t.Errorf("home_name esperado 'Casa Playa', got %q", svc2.HomeName)
+	}
+	// Sin due_date en la tabla → nil.
+	if svc2.DueDate != nil {
+		t.Errorf("due_date esperado nil, got %v", *svc2.DueDate)
 	}
 }
