@@ -1,7 +1,7 @@
 ---
 title: "Bot Telegram: /deudas_pendientes con el mismo formato de /servicios_pendientes"
 id: "SPEC-086"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-19"
 updated: "2026-09-19"
@@ -11,7 +11,7 @@ github_issue: 89
 # Bot Telegram: /deudas_pendientes con el mismo formato de /servicios_pendientes
 
 **ID**: SPEC-086  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-19  
 **Actualizado**: 2026-09-19
@@ -205,3 +205,4 @@ Sin cambios de API REST ni de frontend. Cambios internos:
 | 2026-09-19 | paulomcnally | Implementación: handler resuelve now/sepLen/showMonths; `debtGroup.bills []pendingBill` (reemplaza `pendingInstallment`/`chunkInstallments` por `chunkBills`/`sortBillsByDue`), `formatDebtGroup` con layout de servicios (semáforo + fecha legible + línea en blanco + separador + negritas), helper compartido `dueInRange` (isCurrentPeriod lo delega). Tests actualizados (semáforo, espaciado, negritas, separador, filtro, showMonths, particionado). Estado → in_progress |
 | 2026-09-19 | paulomcnally | Cambio iterativo solicitado por el usuario en evaluación manual: etiqueta `*Institución*` en negrita en el encabezado de cada deuda (REQ-007). Test actualizado. |
 | 2026-09-19 | paulomcnally | Validación manual con el usuario: ✅ todo funciona correctamente. Todos los criterios de aceptación en pass. Estado → pending_release |
+| 2026-09-19 | paulomcnally | Release: merge `feature/SPEC-086` → `main` (commit `6c0d5ce`), push a `main`. Issue #89 cerrado con label `spec/released`. Estado → released |
