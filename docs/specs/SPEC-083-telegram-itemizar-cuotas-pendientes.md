@@ -1,7 +1,7 @@
 ---
 title: "Bot Telegram: itemizar cuotas pendientes en /deudas_pendientes"
 id: "SPEC-083"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-19"
 updated: "2026-09-19"
@@ -11,7 +11,7 @@ github_issue: 86
 # Bot Telegram: itemizar cuotas pendientes en /deudas_pendientes
 
 **ID**: SPEC-083  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-19  
 **Actualizado**: 2026-09-19
@@ -152,16 +152,16 @@ Mensaje de totales (final, SPEC-082):
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado `/deudas_pendientes` con una deuda de 3 cuotas pendientes, cuando el usuario ejecuta el comando, entonces el mensaje de esa deuda lista las 3 cuotas con fecha y monto, y termina con `Cuotas: 3` y el total.
-- [ ] CA-002: Dado una deuda con 60 cuotas pendientes, cuando se formatea el mensaje, entonces se generan 3 mensajes (25+25+10) sin encabezado repetido y con resumen en el último.
-- [ ] CA-003: Dado que no hay cuotas pendientes, cuando el usuario ejecuta `/deudas_pendientes`, entonces se envía un único mensaje `✅ No hay deudas pendientes.` (sin totales).
-- [ ] CA-004: Dado pendientes en USD y NIO, cuando se genera el mensaje de totales, entonces se muestran los totales por moneda correctos (SPEC-082 REQ-004).
-- [ ] CA-005: Dado un fallo de red en un envío intermedio, cuando el bot continúa, entonces los mensajes restantes se envían y el error queda en el log.
+- [x] CA-001: Dado `/deudas_pendientes` con una deuda de 3 cuotas pendientes, cuando el usuario ejecuta el comando, entonces el mensaje de esa deuda lista las 3 cuotas con fecha y monto, y termina con `Cuotas: 3` y el total.
+- [x] CA-002: Dado una deuda con 60 cuotas pendientes, cuando se formatea el mensaje, entonces se generan 3 mensajes (25+25+10) sin encabezado repetido y con resumen en el último.
+- [x] CA-003: Dado que no hay cuotas pendientes, cuando el usuario ejecuta `/deudas_pendientes`, entonces se envía un único mensaje `✅ No hay deudas pendientes.` (sin totales).
+- [x] CA-004: Dado pendientes en USD y NIO, cuando se genera el mensaje de totales, entonces se muestran los totales por moneda correctos (SPEC-082 REQ-004).
+- [x] CA-005: Dado un fallo de red en un envío intermedio, cuando el bot continúa, entonces los mensajes restantes se envían y el error queda en el log.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: Ningún mensaje generado supera los 4096 caracteres (con bloque de 25 cuotas).
-- [ ] CA-NF-002: Sin cambios de esquema SQLite ni dependencias nuevas.
+- [x] CA-NF-001: Ningún mensaje generado supera los 4096 caracteres (con bloque de 25 cuotas).
+- [x] CA-NF-002: Sin cambios de esquema SQLite ni dependencias nuevas.
 
 ### 5.3 Testing
 
@@ -206,3 +206,4 @@ Mensaje de totales (final, SPEC-082):
 |-------|-------|-------------|
 | 2026-09-19 | paulomcnally | Creación inicial de la especificación (requerimiento clarificado con el usuario: itemizar cuotas pendientes) |
 | 2026-09-19 | paulomcnally | Implementación: `debtGroup` con lista de cuotas (`pendingInstallment`), `formatDeudasPendientes` itemiza cada cuota (fecha + monto), particionado en bloques de 25 (`chunkInstallments`, `maxInstallmentsPerMessage`), encabezado en primer bloque y resumen al final del último. Tests actualizados (itemización, particionado 60→3 bloques, vacío, multi-moneda). Estado → in_progress |
+| 2026-09-19 | paulomcnally | Release: merge `feature/SPEC-083` → `main` (commit f4f57c3), issue #86 cerrado con label `spec/released`. Estado → released |
