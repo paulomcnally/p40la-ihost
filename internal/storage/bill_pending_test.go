@@ -77,6 +77,9 @@ func TestListPendingWithDetails(t *testing.T) {
 	if svc1.CurrencySymbol != "C$" {
 		t.Errorf("currency_symbol esperado 'C$', got %q", svc1.CurrencySymbol)
 	}
+	if svc1.CurrencyCode != "NIO" {
+		t.Errorf("currency_code esperado 'NIO', got %q", svc1.CurrencyCode)
+	}
 	if svc1.Status != "pending" {
 		t.Errorf("status esperado pending, got %q", svc1.Status)
 	}
