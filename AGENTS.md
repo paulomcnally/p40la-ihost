@@ -19,6 +19,9 @@ El proyecto corre en un **iHost con recursos muy limitados**, por lo que todas l
 **Antes de escribir código: la spec primero. Siempre.**  
 Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, la spec se actualiza primero. No hay excepciones.
 
+**Cerrar una spec es SIEMPRE un release, jamás una cancelación.**  
+Cuando el usuario dice "cerrá/terminá/dá por terminada la SPEC-XXX", se ejecuta el flujo de release (`released`). El estado `cancelled` solo existe si el usuario lo ordena explícitamente con la palabra "cancelar"/"descartar". Ver sección "Reglas críticas".
+
 ---
 
 ## 📋 Reglas Fundamentales
@@ -38,6 +41,7 @@ Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, 
   - Nunca editar `public/i18n/*.json` directamente: esos archivos son salida del build y se sobrescriben/perden en el próximo `npm run build`.
   - Después de editar i18n, correr `npm run build` (en `frontend/`) y verificar con `curl -s http://localhost:8088/i18n/es.json` que las claves nuevas estén servidas.
   - Precedente: SPEC-032/033 — las claves `settings.alerts.*` y `settings.voicemonkey.*` se editaron en `public/i18n/` y desaparecieron en el build (fallo de i18n reportado por el usuario).
+- **"Cerrar" una spec JAMÁS significa "cancelarla".** Cuando el usuario pide cerrar/finalizar una spec ("cerrá la SPEC-XXX", "dalo por terminado", "terminá eso"), el agente SIEMPRE ejecuta el flujo de **release** (estado `released`: merge a main, label `spec/released`, cierre del issue). La **cancelación** (`cancelled`) es una decisión EXCLUSIVA del usuario y requiere que use explícitamente la palabra "cancelar" o "descartar" referida a la spec. JAMÁS se cancela una spec porque otra spec "absorba" su requerimiento o porque el código ya esté en main: en ese caso la spec se **libera** documentando la implementación (quién la hizo y dónde), nunca se cancela. Ante la mínima duda entre release y cancelación, el agente DEBE preguntar al usuario ANTES de cambiar cualquier estado. Precedente crítico: SPEC-085 fue cancelada sin consentimiento del usuario (revertida; la reapertura y el release formal fueron obligatorios).
 
 ### 1. Cero código sin spec
 
@@ -123,7 +127,7 @@ Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza u
 3. Documentar commit/versión en la spec
 4. Estado: `released`
 5. **Cerrar el spec SIEMPRE implica commitear y pushear los cambios.** No cerrar un spec con cambios sin commitear.
-6. **Actualizar SIEMPRE el label de GitHub al estado final.** Al cambiar el estado de una spec, ejecutar `gh issue edit <number> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"`. Si el estado es `released` o `cancelled`, además cerrar el issue con `gh issue close <number>`. **No cerrar un issue sin antes actualizar su label al estado correcto.**
+6. **Actualizar SIEMPRE el label de GitHub al estado final.** Al cambiar el estado de una spec, ejecutar `gh issue edit <number> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"`. Si el estado es `released`, cerrar el issue con `gh issue close <number>`. **El estado `cancelled` SOLO lo aplica el usuario con la palabra explícita "cancelar"/"descartar"**: cerrar un issue con `spec/cancelled` sin esa orden es un error crítico (precedente: SPEC-085). **No cerrar un issue sin antes actualizar su label al estado correcto.**
 7. **Implementación y release son inseparables.** Si el código de una feature está commiteado en `main`, la spec DEBE estar `released`. Toda spec en `pending_release` (o anterior) con código en `main` es un error y debe liberarse o documentar el bloqueo. Antes de declarar terminada una spec, ejecutar `/spec check-release`.
 8. **El release incluye TODOS estos pasos en el mismo ciclo:** actualizar `status` del frontmatter y del cuerpo (`**Estado**:`), actualizar el README tracker (tabla + contadores), cambiar el label de GitHub, cerrar el issue y documentar el commit/versión en el historial. No declarar una spec terminada hasta completar todos.
 
