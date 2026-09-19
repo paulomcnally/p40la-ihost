@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
@@ -13,11 +13,16 @@ import DonutChart from '../components/DonutChart'
 import DueDateBadge from '../components/DueDateBadge'
 import type { Debt, DebtBill } from '../types'
 
+type BillFilter = 'all' | 'pending' | 'paid'
+
 export default function DebtBillsPage() {
   const { id } = useParams()
   const { t } = useI18nStore()
   const { currencies } = useAppStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const rawFilter = searchParams.get('status')
+  const billFilter: BillFilter = rawFilter === 'all' || rawFilter === 'paid' || rawFilter === 'pending' ? rawFilter : 'pending'
   const [debt, setDebt] = useState<Debt | null>(null)
   const [bills, setBills] = useState<DebtBill[]>([])
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
@@ -40,6 +45,15 @@ export default function DebtBillsPage() {
   }, [load])
 
   usePageTitle(debt?.description ?? null)
+
+  const setBillFilter = (key: BillFilter) => {
+    setSearchParams({ status: key }, { replace: false })
+  }
+
+  const filteredBills = useMemo(() => {
+    if (billFilter === 'all') return bills
+    return bills.filter((b) => b.status === billFilter)
+  }, [bills, billFilter])
 
   const progress = useMemo(() => {
     const paidBills = bills.filter((b) => b.status === 'paid')
@@ -149,7 +163,31 @@ export default function DebtBillsPage() {
         </span>
       </div>
 
-      {bills.length === 0 ? (
+      {bills.length > 0 && (
+        <div className="flex gap-2 mb-4">
+          {(
+            [
+              { key: 'pending', label: t('deudas.filter_pending') },
+              { key: 'all', label: t('deudas.filter_all') },
+              { key: 'paid', label: t('deudas.filter_paid') },
+            ] as { key: BillFilter; label: string }[]
+          ).map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setBillFilter(item.key)}
+              className={`px-4 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] ${
+                billFilter === item.key
+                  ? 'bg-primary text-white'
+                  : 'bg-card text-text-secondary hover:bg-border'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filteredBills.length === 0 ? (
         <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
             <Icon name="bill" className="w-full h-full" />
@@ -158,7 +196,7 @@ export default function DebtBillsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {bills.map((bill) => (
+          {filteredBills.map((bill) => (
             <div
               key={bill.id}
               className="bg-card rounded-ios shadow-ios p-4 relative flex items-center justify-between gap-3"
