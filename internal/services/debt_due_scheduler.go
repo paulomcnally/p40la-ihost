@@ -73,11 +73,19 @@ func (s *DebtDueScheduler) CheckNow() {
 	s.checkAndSend()
 }
 
+// SendNow ejecuta el envío manual de la alerta de cuotas que vencen hoy
+// (SPEC-090): salta la hora configurada y el dedup diario, respeta los canales
+// habilitados y NO escribe last_debt_due_check (el automático queda intacto).
+func (s *DebtDueScheduler) SendNow() AlertSendResult {
+	return s.sendDueNow()
+}
+
 func (s *DebtDueScheduler) checkAndSend() {
 	ctx := context.Background()
 
-	if !alertMailEnabled(ctx, s.alertService, models.AlertKeyDebtDue) {
-		slog.Debug("debt due scheduler: canal mail deshabilitado")
+	if !alertMailEnabled(ctx, s.alertService, models.AlertKeyDebtDue) &&
+		!alertTelegramEnabled(ctx, s.alertService, models.AlertKeyDebtDue) {
+		slog.Debug("debt due scheduler: alerta deshabilitada en todos los canales")
 		return
 	}
 
@@ -107,32 +115,67 @@ func (s *DebtDueScheduler) checkAndSend() {
 		return
 	}
 
+	result := s.sendDueNow()
+	_ = s.settingsService.Set(ctx, s.lastCheckKey, today)
+	slog.Info("debt due scheduler: check completado", "due_today", result.Items)
+}
+
+// sendDueNow recolecta las cuotas que vencen hoy y las despacha por los canales
+// habilitados. No consulta la hora configurada ni el dedup diario.
+func (s *DebtDueScheduler) sendDueNow() AlertSendResult {
+	ctx := context.Background()
+	res := newSendResult(models.AlertKeyDebtDue, "Cuotas de deudas que vencen hoy")
+
+	now, err := currentUserNow(ctx, s.settingsService)
+	if err != nil {
+		slog.Error("debt due scheduler: error al obtener zona horaria", "error", err)
+		res.Detail = "Error al obtener zona horaria"
+		return res
+	}
+	today := now.Format("2006-01-02")
+
 	due, err := s.debtBillStorage.ListDueOnDate(ctx, today)
 	if err != nil {
 		slog.Error("debt due scheduler: error al listar cuotas del día", "error", err)
-		return
+		res.Detail = "Error al listar cuotas del día"
+		return res
 	}
+	res.Items = len(due)
 
 	if len(due) > 0 {
-		if err := s.sendDueEmail(ctx, due); err != nil {
-			slog.Error("debt due scheduler: error al enviar email", "error", err.Error())
+		if alertMailEnabled(ctx, s.alertService, models.AlertKeyDebtDue) {
+			if err := s.sendDueEmail(ctx, due); err != nil {
+				slog.Error("debt due scheduler: error al enviar email", "error", err.Error())
+				res.Detail = "Error al enviar email"
+			} else {
+				res.SentChannels = append(res.SentChannels, string(models.AlertChannelMail))
+			}
+		} else {
+			slog.Debug("debt due scheduler: alerta sin mail habilitado")
 		}
-		s.dispatchTelegramDueToday(ctx, now)
+
+		if s.dispatchTelegramDueToday(ctx) {
+			res.SentChannels = append(res.SentChannels, string(models.AlertChannelTelegram))
+		}
+
+		if res.Detail == "" {
+			res.Detail = fmt.Sprintf("%d cuota%s que vencen hoy", len(due), plural(len(due)))
+		}
 	} else {
 		slog.Info("debt due scheduler: no hay cuotas que vencen hoy")
+		res.Detail = "No hay cuotas que vencen hoy"
 	}
 
-	_ = s.settingsService.Set(ctx, s.lastCheckKey, today)
-	slog.Info("debt due scheduler: check completado", "due_today", len(due))
+	return res
 }
 
 // dispatchTelegramDueToday envía por Telegram las cuotas que vencen hoy con
-// el layout de /deudas_pendientes (SPEC-088 REQ-004).
-func (s *DebtDueScheduler) dispatchTelegramDueToday(ctx context.Context, now time.Time) {
+// el layout de /deudas_pendientes (SPEC-088 REQ-004). Devuelve true si envió.
+func (s *DebtDueScheduler) dispatchTelegramDueToday(ctx context.Context) bool {
 	pending, err := s.debtBillStorage.ListPendingWithDetails(ctx)
 	if err != nil {
 		slog.Error("debt due scheduler: error al listar cuotas pendientes para Telegram", "error", err)
-		return
+		return false
 	}
 	format, err := s.settingsService.GetCurrencyFormat(ctx)
 	if err != nil {
@@ -146,8 +189,13 @@ func (s *DebtDueScheduler) dispatchTelegramDueToday(ctx context.Context, now tim
 	if err != nil {
 		showMonths = DefaultTelegramBotShowMonths
 	}
+	now, err := currentUserNow(ctx, s.settingsService)
+	if err != nil {
+		slog.Error("debt due scheduler: error al obtener zona horaria", "error", err)
+		return false
+	}
 	texts := formatDebtsDueToday(pending, format, now, sepLen, showMonths)
-	dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyDebtDue, texts)
+	return dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyDebtDue, texts)
 }
 
 // sendDueEmail envía el email agrupado con las cuotas que vencen hoy.

@@ -76,11 +76,19 @@ func (s *BillSummaryScheduler) CheckNow() {
 	s.checkAndSend()
 }
 
+// SendNow ejecuta el envío manual del resumen de facturas (SPEC-090):
+// salta la hora configurada y el dedup diario, respeta los canales habilitados
+// y NO escribe last_bill_summary_check (el automático queda intacto).
+func (s *BillSummaryScheduler) SendNow() AlertSendResult {
+	return s.sendSummaryNow()
+}
+
 func (s *BillSummaryScheduler) checkAndSend() {
 	ctx := context.Background()
 
 	if !alertMailEnabled(ctx, s.alertService, models.AlertKeyBillSummary) &&
-		!alertVoiceEnabled(ctx, s.alertService, models.AlertKeyBillSummary) {
+		!alertVoiceEnabled(ctx, s.alertService, models.AlertKeyBillSummary) &&
+		!alertTelegramEnabled(ctx, s.alertService, models.AlertKeyBillSummary) {
 		slog.Debug("bill summary scheduler: resumen deshabilitado en todos los canales")
 		return
 	}
@@ -111,16 +119,32 @@ func (s *BillSummaryScheduler) checkAndSend() {
 		return
 	}
 
+	result := s.sendSummaryNow()
+	_ = s.settingsService.Set(ctx, s.lastCheckKey, today)
+	slog.Info("bill summary scheduler: check completado", "pending", result.Items)
+}
+
+// sendSummaryNow recolecta las facturas pendientes y las despacha por los
+// canales habilitados. No consulta la hora configurada ni el dedup diario.
+func (s *BillSummaryScheduler) sendSummaryNow() AlertSendResult {
+	ctx := context.Background()
+	res := newSendResult(models.AlertKeyBillSummary, "Resumen diario de facturas")
+
 	pending, err := s.billStorage.ListPendingWithDetails(ctx)
 	if err != nil {
 		slog.Error("bill summary scheduler: error al listar facturas pendientes", "error", err)
-		return
+		res.Detail = "Error al listar facturas pendientes"
+		return res
 	}
+	res.Items = len(pending)
 
 	if len(pending) > 0 {
 		if alertMailEnabled(ctx, s.alertService, models.AlertKeyBillSummary) {
 			if err := s.sendSummaryEmail(ctx, pending); err != nil {
 				slog.Error("bill summary scheduler: error al enviar email de resumen", "error", err.Error())
+				res.Detail = "Error al enviar email"
+			} else {
+				res.SentChannels = append(res.SentChannels, string(models.AlertChannelMail))
 			}
 		} else {
 			slog.Debug("bill summary scheduler: resumen sin mail habilitado")
@@ -129,22 +153,28 @@ func (s *BillSummaryScheduler) checkAndSend() {
 		speech, err := s.alertService.Speech(ctx, models.AlertKeyBillSummary)
 		if err != nil {
 			slog.Error("bill summary scheduler: error al obtener speech", "error", err)
-		} else {
-			dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyBillSummary, summarySpeech(speech, len(pending)))
+		} else if dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyBillSummary, summarySpeech(speech, len(pending))) {
+			res.SentChannels = append(res.SentChannels, string(models.AlertChannelVoice))
 		}
 
-		s.dispatchTelegramSummary(ctx, pending, now)
+		if s.dispatchTelegramSummary(ctx, pending) {
+			res.SentChannels = append(res.SentChannels, string(models.AlertChannelTelegram))
+		}
+
+		if res.Detail == "" {
+			res.Detail = fmt.Sprintf("%d factura%s pendiente%s", len(pending), plural(len(pending)), plural(len(pending)))
+		}
 	} else {
 		slog.Info("bill summary scheduler: no hay facturas pendientes")
+		res.Detail = "No hay facturas pendientes"
 	}
 
-	_ = s.settingsService.Set(ctx, s.lastCheckKey, today)
-	slog.Info("bill summary scheduler: check completado", "pending", len(pending))
+	return res
 }
 
 // dispatchTelegramSummary envía el resumen por Telegram con el mismo formato
-// de /servicios_pendientes (SPEC-088 REQ-004).
-func (s *BillSummaryScheduler) dispatchTelegramSummary(ctx context.Context, pending []models.PendingBillDetail, now time.Time) {
+// de /servicios_pendientes (SPEC-088 REQ-004). Devuelve true si se envió.
+func (s *BillSummaryScheduler) dispatchTelegramSummary(ctx context.Context, pending []models.PendingBillDetail) bool {
 	format, err := s.settingsService.GetCurrencyFormat(ctx)
 	if err != nil {
 		format = DefaultCurrencyFormat()
@@ -157,8 +187,13 @@ func (s *BillSummaryScheduler) dispatchTelegramSummary(ctx context.Context, pend
 	if err != nil {
 		showMonths = DefaultTelegramBotShowMonths
 	}
+	now, err := currentUserNow(ctx, s.settingsService)
+	if err != nil {
+		slog.Error("bill summary scheduler: error al obtener zona horaria", "error", err)
+		return false
+	}
 	texts := formatServiciosPendientes(pending, format, now, sepLen, showMonths)
-	dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyBillSummary, texts)
+	return dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyBillSummary, texts)
 }
 
 // summarySpeech reemplaza el placeholder {n} del speech con la cantidad de

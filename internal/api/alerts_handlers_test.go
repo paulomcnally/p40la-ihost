@@ -166,3 +166,89 @@ func TestUpdateAlert_GatingTelegramEnabledWithPrereqs(t *testing.T) {
 		t.Errorf("telegram_enabled no persistió: %s", rr.Body.String())
 	}
 }
+
+// fakeScheduler implementa AlertSenders para el test del envío manual.
+type fakeScheduler struct {
+	key  string
+	sent []string
+}
+
+func (f *fakeScheduler) SendNow() services.AlertSendResult {
+	return services.AlertSendResult{
+		Key:          f.key,
+		Title:        f.key,
+		SentChannels: f.sent,
+		Items:        1,
+		Detail:       "test",
+	}
+}
+
+// fakeBillScheduler implementa BillCreatedSender para el test del envío manual.
+type fakeBillScheduler struct{}
+
+func (f *fakeBillScheduler) SendNowBillCreated() services.AlertSendResult {
+	return services.AlertSendResult{
+		Key:          models.AlertKeyBillCreated,
+		Title:        "Nueva factura generada",
+		SentChannels: []string{"mail"},
+		Items:        1,
+		Detail:       "Aviso de prueba",
+	}
+}
+
+func TestSendNow_DispatchesSchedulers(t *testing.T) {
+	h, _ := newAlertsTestHandler(t)
+	h.SetSchedulers(
+		[]AlertSenders{
+			&fakeScheduler{key: "insurance", sent: []string{"mail"}},
+			&fakeScheduler{key: "bill_summary", sent: []string{"telegram"}},
+		},
+		nil,
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/alerts/send-now", nil)
+	rr := httptest.NewRecorder()
+	h.SendNow(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("esperaba 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var body struct {
+		Message string                     `json:"message"`
+		Results []services.AlertSendResult `json:"results"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("parse response: %v", err)
+	}
+	if len(body.Results) != 2 {
+		t.Fatalf("esperaba 2 resultados (schedulers), got %d: %s", len(body.Results), rr.Body.String())
+	}
+	if body.Results[0].Key != "insurance" || len(body.Results[0].SentChannels) != 1 {
+		t.Errorf("resultado insurance incorrecto: %+v", body.Results[0])
+	}
+}
+
+func TestSendNow_BillSchedulerIncluded(t *testing.T) {
+	h, _ := newAlertsTestHandler(t)
+	h.SetSchedulers(nil, &fakeBillScheduler{})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/alerts/send-now", nil)
+	rr := httptest.NewRecorder()
+	h.SendNow(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("esperaba 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var body struct {
+		Results []services.AlertSendResult `json:"results"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("parse response: %v", err)
+	}
+	if len(body.Results) != 1 {
+		t.Fatalf("esperaba 1 resultado (bill_created), got %d", len(body.Results))
+	}
+	if body.Results[0].Key != models.AlertKeyBillCreated {
+		t.Errorf("key esperada bill_created, got %s", body.Results[0].Key)
+	}
+}

@@ -46,9 +46,10 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("POST /api/system-settings/email-palette/reset", authMiddleware(http.HandlerFunc(handler.systemSettings.ResetEmailPalette)))
 	mux.Handle("POST /api/system-settings/preview-email", authMiddleware(http.HandlerFunc(handler.systemSettings.PreviewEmail)))
 
-	// APIs de alertas (catálogo + toggles de canal)
+	// APIs de alertas (catálogo + toggles de canal + envío manual)
 	mux.Handle("GET /api/alerts", authMiddleware(http.HandlerFunc(handler.alerts.ListAlerts)))
 	mux.Handle("PUT /api/alerts/{key}", authMiddleware(http.HandlerFunc(handler.alerts.UpdateAlert)))
+	mux.Handle("POST /api/alerts/send-now", authMiddleware(http.HandlerFunc(handler.alerts.SendNow)))
 
 	// APIs de monedas
 	mux.Handle("GET /api/currencies", authMiddleware(http.HandlerFunc(handler.currency.ListCurrencies)))
