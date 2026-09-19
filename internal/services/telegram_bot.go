@@ -221,14 +221,19 @@ func (s *TelegramBotService) handleServiciosPendientes(ctx context.Context, b *b
 }
 
 // handleDeudasPendientes responde con un mensaje por cada deuda que tiene
-// cuotas pendientes y un mensaje final con los totales por moneda
-// (REQ-002, REQ-004).
+// cuotas pendientes dentro del mes en curso y un mensaje final con los
+// totales por moneda (REQ-002, REQ-004, SPEC-085).
 func (s *TelegramBotService) handleDeudasPendientes(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
 
-	pending, err := s.debtBills.ListPendingWithDetails(ctx)
+	cutoff, err := currentMonthEnd(ctx, s.settings)
+	if err != nil {
+		slog.Warn("telegram_bot: /deudas_pendientes — zona horaria inválida, usando UTC para el mes en curso", "error", err)
+	}
+
+	pending, err := s.debtBills.ListPendingWithDetails(ctx, cutoff)
 	if err != nil {
 		slog.Error("telegram_bot: /deudas_pendientes — error de storage", "error", err)
 		s.reply(ctx, b, update, "⚠️ Error al consultar las deudas pendientes. Revisa los logs.")
@@ -242,6 +247,15 @@ func (s *TelegramBotService) handleDeudasPendientes(ctx context.Context, b *bot.
 	}
 
 	s.sendMany(ctx, b, update, formatDeudasPendientes(pending, currencyFormat))
+}
+
+// currentMonthEnd devuelve el último día del mes en curso (YYYY-MM-DD)
+// calculado en la zona horaria configurada del usuario (SPEC-078), con
+// fallback UTC si la zona no está configurada o es inválida (SPEC-085).
+func currentMonthEnd(ctx context.Context, settings *SystemSettingsService) (string, error) {
+	now, err := currentUserNow(ctx, settings)
+	lastDay := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, now.Location()).AddDate(0, 0, -1)
+	return lastDay.Format("2006-01-02"), err
 }
 
 // checkAuthorized valida el chat contra la allowlist y guarda el último chat
@@ -397,10 +411,10 @@ const maxInstallmentsPerMessage = 25
 // itemizando cada cuota pendiente por deuda (SPEC-083). Si una deuda tiene
 // más de maxInstallmentsPerMessage cuotas, su mensaje se particiona en varios
 // bloques. Agrega al final el mensaje de totales por moneda (SPEC-082). Si no
-// hay pendientes devuelve un único mensaje.
+// hay pendientes dentro del mes en curso devuelve un único mensaje (SPEC-085).
 func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format CurrencyFormat) []string {
 	if len(pending) == 0 {
-		return []string{"✅ No hay deudas pendientes."}
+		return []string{"✅ No hay deudas pendientes en el mes en curso."}
 	}
 
 	groups := make(map[int64]*debtGroup)
