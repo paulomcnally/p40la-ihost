@@ -1,7 +1,7 @@
 ---
 title: "Fechas de emisión y vencimiento en facturas de servicios y deudas + webhooks"
 id: "SPEC-081"
-status: "in_progress"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-19"
 updated: "2026-09-19"
@@ -11,7 +11,7 @@ github_issue: 84
 # Fechas de emisión y vencimiento en facturas de servicios y deudas + webhooks
 
 **ID**: SPEC-081  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-19  
 **Actualizado**: 2026-09-19
@@ -315,3 +315,4 @@ Reglas:
 | 2026-09-19 | paulomcnally | Creación inicial de la especificación |
 | 2026-09-19 | paulomcnally | Agregado REQ-008 (UI): texto relativo "En N días" + label semáforo (verde >10 días, amarillo 10-1, rojo ≤1 o vencida) calculado con la zona horaria configurada del sistema (ADR-004/005, CA-009..013, fase 6) |
 | 2026-09-19 | paulomcnally | Corregidos umbrales del semáforo (solicitud del usuario): amarillo hasta 1 día inclusive (`1 <= daysRemaining <= 10`), rojo solo cuando vence hoy o ya venció (`daysRemaining <= 0`) |
+| 2026-09-19 | paulomcnally | **Release**: implementación validada en local por el usuario. Commit `c5546da` mergeado a `main` (fast-forward). Pendiente deploy a iHost (release Docker Hub) |

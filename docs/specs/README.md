@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 79 |
+| **Total de specs** | 80 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 79 🟢 |
+| **Released** | 80 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-079 |
+| **Último ID usado** | SPEC-081 |
 
 ---
 
@@ -100,6 +100,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-077 | Refactor Responsive de Emails (Mobile) + Paleta de Colores Configurable | released | 2026-09-15 | paulomcnally |
 | SPEC-078 | Zona horaria en horarios de envío de alertas | released | 2026-09-16 | paulomcnally |
 | SPEC-079 | Bot de Telegram integrado al server (migración Python → Go) | released | 2026-09-16 | p40la-ihost-team |
+| SPEC-081 | Fechas de emisión y vencimiento en facturas de servicios y deudas + webhooks | released | 2026-09-19 | paulomcnally |
 
 ---
 
@@ -169,4 +170,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-16 — SPEC-079 (Bot de Telegram integrado al server) released.*
+*Última actualización de este tracker: 2026-09-19 — SPEC-081 (Fechas de emisión y vencimiento en facturas de servicios y deudas + webhooks) released.*
