@@ -600,7 +600,8 @@ func TestTelegramBotConfigSettings(t *testing.T) {
 		t.Errorf("token fue sobrescrito con vacío: %q", cfg.Token)
 	}
 
-	// Config pública: sin token, con flag configured.
+	// Config pública: sin token, con flag configured y lista de chat_ids
+	// (SPEC-089: la UI precarga la allowlist desde el API).
 	pub, err := settings.GetTelegramBotConfigPublic(ctx)
 	if err != nil {
 		t.Fatalf("public: %v", err)
@@ -611,14 +612,25 @@ func TestTelegramBotConfigSettings(t *testing.T) {
 	if pub.SeparatorLength != 30 || pub.ShowMonths != 3 {
 		t.Errorf("public con settings nuevas incorrecta: %+v", pub)
 	}
+	if len(pub.ChatIDs) != 2 || pub.ChatIDs[0] != "111" || pub.ChatIDs[1] != "222" || pub.ChatIDsCount != 2 {
+		t.Errorf("public con chat_ids incorrecta: %+v", pub)
+	}
 
-	// Clear: limpia todo y apaga.
-	if err := settings.ClearTelegramBot(ctx); err != nil {
-		t.Fatalf("clear: %v", err)
+	// Apagar el bot conserva token y chat_ids para re-encenderlo (SPEC-089:
+	// ya no existe el flujo de borrado total "Reconfigurar").
+	if err := settings.SetTelegramBotEnabled(ctx, false); err != nil {
+		t.Fatalf("disable: %v", err)
 	}
 	cfg, _ = settings.GetTelegramBotConfig(ctx)
-	if cfg.Enabled || cfg.Token != "" || len(cfg.ChatIDs) != 0 {
-		t.Errorf("config tras clear incorrecta: %+v", cfg)
+	if cfg.Enabled || cfg.Token != "token-123" || len(cfg.ChatIDs) != 2 {
+		t.Errorf("config tras deshabilitar incorrecta (debe conservar credenciales): %+v", cfg)
+	}
+	if err := settings.SetTelegramBotEnabled(ctx, true); err != nil {
+		t.Fatalf("re-enable: %v", err)
+	}
+	cfg, _ = settings.GetTelegramBotConfig(ctx)
+	if !cfg.Enabled || cfg.Token != "token-123" || len(cfg.ChatIDs) != 2 {
+		t.Errorf("config tras re-encender incorrecta: %+v", cfg)
 	}
 }
 

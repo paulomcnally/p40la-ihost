@@ -387,24 +387,22 @@
     "telegram_bot": {
       "title": "Telegram Bot",
       "enable": "Enable Telegram bot",
-      "enable_hint": "Query services with pending bills from Telegram.",
+      "enable_hint": "Query services with pending bills from Telegram and receive Telegram alerts.",
       "token": "Bot token",
+      "token_keep_hint": "Leave blank to keep the current token.",
       "chat_ids": "Allowed chat IDs",
-      "chat_ids_hint": "Comma-separated. If left empty, the bot responds to any chat.",
+      "chat_ids_hint": "Comma-separated. Telegram alerts are sent to these chats: you need at least one to enable them. Without restrictions, the bot responds to any chat that messages it.",
       "saved": "Bot settings saved",
       "save_error": "Error saving bot settings",
       "configured_status": "Bot configured",
       "not_configured": "Not configured",
-      "reconfigure": "Reconfigure",
-      "reconfigure_confirm": "Do you want to remove the current Telegram bot configuration? You'll need to re-enter the token.",
-      "reconfigured": "Bot configuration removed",
       "needs_config_hint": "A token is required to complete the setup.",
       "help": {
         "title": "How do I create the bot?",
         "step1": "Talk to @BotFather on Telegram and use the /newbot command.",
         "step2": "Copy the token BotFather gives you and paste it into the \"Bot token\" field.",
         "step3": "Send a message to the bot (e.g. /pendientes) to test it.",
-        "step4": "Optional: set the allowed Chat IDs to restrict who can query."
+        "step4": "Get your chat ID (e.g. with @userinfobot) and paste it into \"Allowed chat IDs\" to receive Telegram alerts."
       },
       "separator_length": "Separator dashes",
       "separator_length_hint": "Number of dashes in the summary divider line (0-100). 0 = no separator.",
