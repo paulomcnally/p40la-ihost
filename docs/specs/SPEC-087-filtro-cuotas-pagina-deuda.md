@@ -207,4 +207,4 @@ Sin cambios de API. Se reutilizan:
 |-------|-------|-------------|
 | 2026-09-19 | opencode | Creación inicial de la especificación |
 | 2026-09-19 | opencode | Implementación (tabs + filtros en DebtBillsPage y DeudasPage, i18n es/en) y validación manual del usuario |
-| 2026-09-19 | opencode | Release: merge a main, issue #90 cerrado con label spec/released |
+| 2026-09-19 | opencode | Release: merge a main (fe89ec4), push, issue #90 cerrado con label spec/released |
