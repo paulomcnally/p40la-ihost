@@ -1,0 +1,1 @@
+ALTER TABLE alerts ADD COLUMN telegram_enabled INTEGER NOT NULL DEFAULT 0;

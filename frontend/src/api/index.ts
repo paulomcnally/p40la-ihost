@@ -141,6 +141,7 @@ export const api = {
       email_color_border: string
       telegram_bot_enabled: boolean
       telegram_bot_configured: boolean
+      telegram_bot_chat_ids_count: number
       telegram_bot_separator_length: number
       telegram_bot_show_months: number
     }>('/api/system-settings'),
@@ -163,7 +164,7 @@ export const api = {
   },
   alerts: {
     list: () => get<Alert[]>('/api/alerts'),
-    update: (key: string, body: { mail_enabled?: boolean; voice_enabled?: boolean }) => put(`/api/alerts/${key}`, body),
+    update: (key: string, body: { mail_enabled?: boolean; voice_enabled?: boolean; telegram_enabled?: boolean }) => put(`/api/alerts/${key}`, body),
   },
   institutions: {
     list: () => get<Institution[]>('/api/institutions'),

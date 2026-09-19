@@ -6,6 +6,8 @@ import { api } from '../api'
 import { useToast } from '../components/Toast'
 import type { Alert } from '../types'
 
+type AlertChannelField = 'mail_enabled' | 'voice_enabled' | 'telegram_enabled'
+
 export default function SettingsAlertsPage() {
   const { t } = useI18nStore()
   usePageTitle(t('settings.alerts.title'))
@@ -13,6 +15,7 @@ export default function SettingsAlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [emailActive, setEmailActive] = useState(false)
   const [vmActive, setVmActive] = useState(false)
+  const [tbActive, setTbActive] = useState(false)
 
   useEffect(() => {
     loadAlerts()
@@ -39,15 +42,19 @@ export default function SettingsAlertsPage() {
         const vmActive = (data.voicemonkey_enabled ?? false)
           && (data.voicemonkey_configured ?? false)
           && (data.voicemonkey_send_alerts ?? false)
+        const tbActive = (data.telegram_bot_enabled ?? false)
+          && (data.telegram_bot_configured ?? false)
+          && (data.telegram_bot_chat_ids_count ?? 0) > 0
         setEmailActive(emailActive)
         setVmActive(vmActive)
+        setTbActive(tbActive)
       }
     } catch {
       // ignore
     }
   }
 
-  const handleToggleAlert = async (key: string, field: 'mail_enabled' | 'voice_enabled', value: boolean) => {
+  const handleToggleAlert = async (key: string, field: AlertChannelField, value: boolean) => {
     setAlerts((prev) => prev.map((a) => (a.key === key ? { ...a, [field]: value } : a)))
     try {
       await api.alerts.update(key, { [field]: value })
@@ -77,12 +84,19 @@ export default function SettingsAlertsPage() {
                 <Toggle checked={a.voice_enabled} onChange={(v) => handleToggleAlert(a.key, 'voice_enabled', v)} disabled={!vmActive} />
                 <span className="text-sm font-medium">{t('settings.alerts.alexa')}</span>
               </div>
+              <div className={`flex items-center gap-2 ${tbActive ? '' : 'opacity-50'}`}>
+                <Toggle checked={a.telegram_enabled} onChange={(v) => handleToggleAlert(a.key, 'telegram_enabled', v)} disabled={!tbActive} />
+                <span className="text-sm font-medium">{t('settings.alerts.telegram')}</span>
+              </div>
             </div>
             {!vmActive && (
               <p className="text-xs text-text-secondary mt-2">{t('settings.alerts.alexa_disabled_hint')}</p>
             )}
             {!emailActive && (
               <p className="text-xs text-text-secondary mt-2">{t('settings.alerts.mail_disabled_hint')}</p>
+            )}
+            {!tbActive && (
+              <p className="text-xs text-text-secondary mt-2">{t('settings.alerts.telegram_disabled_hint')}</p>
             )}
           </div>
         ))}

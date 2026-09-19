@@ -94,9 +94,9 @@ func (s *AlertService) GetByKey(ctx context.Context, key string) (*models.Alert,
 	return s.storage.GetByKey(ctx, key)
 }
 
-// SetFlags actualiza mail_enabled / voice_enabled de una alerta.
-func (s *AlertService) SetFlags(ctx context.Context, key string, mailEnabled, voiceEnabled *bool) error {
-	return s.storage.SetFlags(ctx, key, mailEnabled, voiceEnabled)
+// SetFlags actualiza mail_enabled / voice_enabled / telegram_enabled de una alerta.
+func (s *AlertService) SetFlags(ctx context.Context, key string, mailEnabled, voiceEnabled, telegramEnabled *bool) error {
+	return s.storage.SetFlags(ctx, key, mailEnabled, voiceEnabled, telegramEnabled)
 }
 
 // IsEnabled devuelve true si la alerta está habilitada para el canal dado.
@@ -114,6 +114,8 @@ func (s *AlertService) IsEnabled(ctx context.Context, key string, channel models
 		return a.MailEnabled, nil
 	case models.AlertChannelVoice:
 		return a.VoiceEnabled, nil
+	case models.AlertChannelTelegram:
+		return a.TelegramEnabled, nil
 	default:
 		return false, nil
 	}

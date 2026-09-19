@@ -8,10 +8,11 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
 )
 
-// PensionNotificationService envía las notificaciones por email del módulo
-// Pensión Alimenticia de forma best-effort: nunca rompe el flujo HTTP.
-// Usa el EmailService existente, los destinatarios de la tabla notifications
-// (solo activos) y los toggles de alerta del catálogo (SPEC-051).
+// PensionNotificationService envía las notificaciones del módulo Pensión
+// Alimenticia de forma best-effort: nunca rompe el flujo HTTP. Usa el
+// EmailService existente, los destinatarios de la tabla notifications (solo
+// activos), los toggles de alerta del catálogo (SPEC-051) y el canal push de
+// Telegram (SPEC-088).
 type PensionNotificationService struct {
 	notificationStorage  *storage.NotificationStorage
 	emailService         *EmailService
@@ -19,6 +20,7 @@ type PensionNotificationService struct {
 	settingsService      *SystemSettingsService
 	recordStorage        *storage.SupportRecordStorage
 	salaryPaymentStorage *storage.SalaryPaymentStorage
+	telegramBot          *TelegramBotService
 }
 
 // NewPensionNotificationService crea un nuevo PensionNotificationService.
@@ -29,6 +31,7 @@ func NewPensionNotificationService(
 	settingsService *SystemSettingsService,
 	recordStorage *storage.SupportRecordStorage,
 	salaryPaymentStorage *storage.SalaryPaymentStorage,
+	telegramBot *TelegramBotService,
 ) *PensionNotificationService {
 	return &PensionNotificationService{
 		notificationStorage:  notificationStorage,
@@ -37,6 +40,7 @@ func NewPensionNotificationService(
 		settingsService:      settingsService,
 		recordStorage:        recordStorage,
 		salaryPaymentStorage: salaryPaymentStorage,
+		telegramBot:          telegramBot,
 	}
 }
 
@@ -47,6 +51,8 @@ func (s *PensionNotificationService) SendRecordsCreated(ctx context.Context, sal
 	}
 	title, content := buildPensionRecordsCreatedEmail(salaryPayments, records, year, month, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionRecordsCreated, title, content)
+	dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyPensionRecordsCreated,
+		formatPensionRecordsCreated(salaryPayments, records, year, month, s.currencyFormat(ctx)))
 }
 
 // SendRecordPaid notifica el pago de un registro de manutención.
@@ -56,6 +62,8 @@ func (s *PensionNotificationService) SendRecordPaid(ctx context.Context, record 
 	}
 	title, content := buildPensionRecordPaidEmail(record, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionRecordPaid, title, content)
+	dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyPensionRecordPaid,
+		formatPensionRecordPaid(record, s.currencyFormat(ctx)))
 }
 
 // SendSalaryReceived notifica la recepción de un pago de salario.
@@ -65,6 +73,8 @@ func (s *PensionNotificationService) SendSalaryReceived(ctx context.Context, pay
 	}
 	title, content := buildPensionSalaryReceivedEmail(payment, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionSalaryReceived, title, content)
+	dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyPensionSalaryReceived,
+		formatPensionSalaryReceived(payment, s.currencyFormat(ctx)))
 }
 
 // SendRecordRejected notifica el rechazo de un registro de manutención.
@@ -74,6 +84,8 @@ func (s *PensionNotificationService) SendRecordRejected(ctx context.Context, rec
 	}
 	title, content := buildPensionRecordRejectedEmail(record, reason, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionRecordRejected, title, content)
+	dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyPensionRecordRejected,
+		formatPensionRecordRejected(record, reason, s.currencyFormat(ctx)))
 }
 
 // SendMonthClosing notifica el cierre de un mes con su resumen.
@@ -90,6 +102,8 @@ func (s *PensionNotificationService) SendMonthClosing(ctx context.Context, year,
 	}
 	title, content := buildPensionMonthClosingEmail(records, salaryPayments, year, month, s.currencyFormat(ctx))
 	s.send(ctx, models.AlertKeyPensionMonthClosing, title, content)
+	dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyPensionMonthClosing,
+		formatPensionMonthClosing(records, salaryPayments, year, month, s.currencyFormat(ctx)))
 }
 
 // currencyFormat devuelve el formato de moneda configurado (default si error).
