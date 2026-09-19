@@ -696,9 +696,14 @@ func (s *SystemSettingsService) GetTelegramBotConfigPublic(ctx context.Context) 
 	if err != nil {
 		return nil, err
 	}
+	chatIDs := cfg.ChatIDs
+	if chatIDs == nil {
+		chatIDs = []string{}
+	}
 	return &models.TelegramBotConfigPublic{
 		Enabled:         cfg.Enabled,
 		Configured:      cfg.Token != "",
+		ChatIDs:         chatIDs,
 		ChatIDsCount:    len(cfg.ChatIDs),
 		SeparatorLength: cfg.SeparatorLength,
 		ShowMonths:      cfg.ShowMonths,
@@ -773,17 +778,6 @@ func (s *SystemSettingsService) SetTelegramBotToken(ctx context.Context, token s
 // SetTelegramBotChatIDs guarda la allowlist de chat_ids (comma-separated).
 func (s *SystemSettingsService) SetTelegramBotChatIDs(ctx context.Context, chatIDs []string) error {
 	return s.storage.Set(ctx, TelegramBotChatIDsKey, strings.Join(chatIDs, ","))
-}
-
-// ClearTelegramBot limpia las credenciales y resetea el toggle a OFF
-// (botón "Reconfigurar", REQ-005).
-func (s *SystemSettingsService) ClearTelegramBot(ctx context.Context) error {
-	for _, key := range []string{TelegramBotTokenKey, TelegramBotChatIDsKey} {
-		if err := s.storage.Set(ctx, key, ""); err != nil {
-			return err
-		}
-	}
-	return s.setBoolSetting(ctx, TelegramBotEnabledKey, false)
 }
 
 // parseCommaList separa una lista comma-separated en elementos limpios.

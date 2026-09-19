@@ -43,7 +43,6 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("POST /api/system-settings/test-voice", authMiddleware(http.HandlerFunc(handler.systemSettings.TestVoice)))
 	mux.Handle("DELETE /api/system-settings/voicemonkey", authMiddleware(http.HandlerFunc(handler.systemSettings.DeleteVoiceMonkey)))
 	mux.Handle("DELETE /api/system-settings/smtp", authMiddleware(http.HandlerFunc(handler.systemSettings.DeleteSMTP)))
-	mux.Handle("DELETE /api/system-settings/telegram-bot", authMiddleware(http.HandlerFunc(handler.systemSettings.DeleteTelegramBot)))
 	mux.Handle("POST /api/system-settings/email-palette/reset", authMiddleware(http.HandlerFunc(handler.systemSettings.ResetEmailPalette)))
 	mux.Handle("POST /api/system-settings/preview-email", authMiddleware(http.HandlerFunc(handler.systemSettings.PreviewEmail)))
 

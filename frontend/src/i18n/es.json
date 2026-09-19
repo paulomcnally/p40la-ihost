@@ -388,24 +388,22 @@
     "telegram_bot": {
       "title": "Bot de Telegram",
       "enable": "Activar bot de Telegram",
-      "enable_hint": "Consulta los servicios con facturas pendientes desde Telegram.",
+      "enable_hint": "Consulta los servicios con facturas pendientes desde Telegram y recibí las alertas de Telegram.",
       "token": "Token del bot",
+      "token_keep_hint": "Dejalo vacío para mantener el token actual.",
       "chat_ids": "Chat IDs permitidos",
-      "chat_ids_hint": "Comma-separated. Si queda vacío, el bot responde a cualquier chat.",
+      "chat_ids_hint": "Separados por coma. Las alertas de Telegram se envían a estos chats: necesitás al menos uno para activarlas. Sin restricción, el bot responde a cualquier chat que le escriba.",
       "saved": "Configuración del bot guardada",
       "save_error": "Error al guardar la configuración del bot",
       "configured_status": "Bot configurado",
       "not_configured": "No configurado",
-      "reconfigure": "Reconfigurar",
-      "reconfigure_confirm": "¿Querés quitar la configuración actual del bot de Telegram? Tendrás que volver a ingresar el token.",
-      "reconfigured": "Configuración del bot eliminada",
       "needs_config_hint": "Falta ingresar el token para completar la configuración.",
       "help": {
         "title": "¿Cómo creo el bot?",
         "step1": "Hablá con @BotFather en Telegram y usá el comando /newbot.",
         "step2": "Copiá el token que te da BotFather y pegalo en el campo \"Token del bot\".",
         "step3": "Escribile un mensaje al bot (ej: /pendientes) para probarlo.",
-        "step4": "Opcional: configurá los Chat IDs permitidos para restringir quién puede consultar."
+        "step4": "Obtené tu chat ID (por ej. con @userinfobot) y pegalo en \"Chat IDs permitidos\" para que te lleguen las alertas de Telegram."
       },
       "separator_length": "Guiones del separador",
       "separator_length_hint": "Cantidad de guiones de la línea divisoria del resumen (0-100). 0 = sin separador.",
