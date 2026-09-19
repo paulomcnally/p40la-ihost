@@ -279,4 +279,4 @@ Notas:
 |-------|-------|-------------|
 | 2026-09-19 | opencode | Creación inicial de la especificación |
 | 2026-09-19 | opencode | Implementación: refactor de los 4 schedulers (SendNow/SendNowBillCreated sin hora/dedup/last_*, dispatch devuelve bool), endpoint POST /api/alerts/send-now (interfaces AlertSenders/BillCreatedSender + wiring en main.go/routes.go), botón "Enviar alertas ahora" en SettingsAlertsPage con resumen, api.alerts.sendNow(), i18n es/en, tests unitarios (schedulers + handler). Build y tests verdes; validación manual local del endpoint (canales, dedup intacto, SMTP caído no bloquea, 401 sin sesión). |
-| 2026-09-19 | opencode | Release: merge de feature/SPEC-090 a main, push, issue #93 cerrado con label spec/released |
+| 2026-09-19 | opencode | Release: merge de feature/SPEC-090 a main (commits bcfc3ee + 046bfc2), push, issue #93 cerrado con label spec/released |
