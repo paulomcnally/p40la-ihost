@@ -1,7 +1,7 @@
 ---
 title: "Bot Telegram: un mensaje por servicio y por deuda + totales por moneda al final"
 id: "SPEC-082"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-19"
 updated: "2026-09-19"
@@ -11,7 +11,7 @@ github_issue: 85
 # Bot Telegram: un mensaje por servicio y por deuda + totales por moneda al final
 
 **ID**: SPEC-082  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-19  
 **Actualizado**: 2026-09-19
@@ -212,3 +212,4 @@ No hay cambios de API REST ni de frontend. Contrato interno:
 | 2026-09-19 | paulomcnally | Creación inicial de la especificación |
 | 2026-09-19 | paulomcnally | Implementación: `CurrencyCode` en `PendingBillDetail`/`PendingDebtDetail` + SELECTs; `formatServiciosPendientes`/`formatDeudasPendientes` → `[]string` (un mensaje por ítem); nuevos `formatServiciosTotales`/`formatDeudasTotales` (totales por moneda); `sendMany` para envío secuencial N+1. Tests actualizados (storage + formateadores). Estado → in_progress |
 | 2026-09-19 | paulomcnally | Validación manual del usuario satisfactoria. Criterios de aceptación en pass. Estado → pending_release |
+| 2026-09-19 | paulomcnally | Release: merge `feature/SPEC-082` → `main` (commit 4c963e3), issue #85 cerrado con label `spec/released`. Estado → released |
