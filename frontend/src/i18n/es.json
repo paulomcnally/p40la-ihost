@@ -331,10 +331,12 @@
       "title": "Alertas",
       "mail": "Mail",
       "alexa": "Alexa",
+      "telegram": "Telegram",
       "saved": "Alerta actualizada",
       "save_error": "Error al actualizar alerta",
       "alexa_disabled_hint": "Activá Voice Monkey (token y device) y el toggle \"Enviar alertas\" para habilitar los avisos por Alexa.",
-      "mail_disabled_hint": "Activá \"Alertas por Email\", configurá SMTP y agregá al menos un destinatario para habilitar el aviso por mail."
+      "mail_disabled_hint": "Activá \"Alertas por Email\", configurá SMTP y agregá al menos un destinatario para habilitar el aviso por mail.",
+      "telegram_disabled_hint": "Activá el Bot de Telegram (token y al menos un chat_id autorizado) para habilitar los avisos por Telegram."
     },
     "voicemonkey": {
       "title": "Voice Monkey (Alexa)",

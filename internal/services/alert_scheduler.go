@@ -12,8 +12,8 @@ import (
 )
 
 // AlertScheduler verifica diariamente el estado de los seguros de los autos
-// y despacha alertas por los canales habilitados (mail y/o voz) cuando detecta
-// autos sin seguro o con seguro vencido.
+// y despacha alertas por los canales habilitados (mail, voz y/o telegram)
+// cuando detecta autos sin seguro o con seguro vencido.
 type AlertScheduler struct {
 	autoStorage        *storage.AutoStorage
 	autoServiceStorage *storage.AutoServiceStorage
@@ -21,6 +21,7 @@ type AlertScheduler struct {
 	settingsService    *SystemSettingsService
 	alertService       *AlertService
 	voiceMonkey        *VoiceMonkeyService
+	telegramBot        *TelegramBotService
 	stopCh             chan struct{}
 	lastCheckKey       string
 }
@@ -32,6 +33,7 @@ func NewAlertScheduler(
 	settingsService *SystemSettingsService,
 	alertService *AlertService,
 	voiceMonkey *VoiceMonkeyService,
+	telegramBot *TelegramBotService,
 ) *AlertScheduler {
 	return &AlertScheduler{
 		autoStorage:        autoStorage,
@@ -40,6 +42,7 @@ func NewAlertScheduler(
 		settingsService:    settingsService,
 		alertService:       alertService,
 		voiceMonkey:        voiceMonkey,
+		telegramBot:        telegramBot,
 		stopCh:             make(chan struct{}),
 		lastCheckKey:       "last_alert_check",
 	}
@@ -131,6 +134,8 @@ func (s *AlertScheduler) checkAndAlert() {
 		} else {
 			dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyInsurance, speech)
 		}
+
+		dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyInsurance, formatInsuranceAlerts(alerts))
 	} else {
 		slog.Info("alert scheduler: no hay autos en condición de alerta")
 	}
