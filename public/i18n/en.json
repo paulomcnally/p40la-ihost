@@ -397,7 +397,11 @@
         "step2": "Copy the token BotFather gives you and paste it into the \"Bot token\" field.",
         "step3": "Send a message to the bot (e.g. /pendientes) to test it.",
         "step4": "Optional: set the allowed Chat IDs to restrict who can query."
-      }
+      },
+      "separator_length": "Separator dashes",
+      "separator_length_hint": "Number of dashes in the summary divider line (0-100). 0 = no separator.",
+      "show_months": "Future months to show",
+      "show_months_hint": "How many months ahead to show bills (1-12). Overdue bills are always shown. 1 = current month only."
     },
     "nav": {
       "search": "Search settings...",
