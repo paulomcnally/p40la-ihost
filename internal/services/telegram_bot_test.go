@@ -115,25 +115,70 @@ func TestFormatDeudasPendientes(t *testing.T) {
 		}
 	})
 
-	t.Run("un mensaje por deuda + totales, ordenado por monto", func(t *testing.T) {
+	t.Run("itemiza cuotas por deuda + totales, ordenado por monto", func(t *testing.T) {
 		pending := []appmodels.PendingDebtDetail{
-			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
-			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO"},
-			{DebtID: 2, DebtDescription: "Tarjeta BAC", InstitutionName: "BAC Credomatic", Amount: 500, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", DueDate: "2026-09-05", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", DueDate: "2026-10-05", Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 2, DebtDescription: "Tarjeta BAC", InstitutionName: "BAC Credomatic", DueDate: "2026-09-10", Amount: 500, CurrencySymbol: "C$", CurrencyCode: "NIO"},
 		}
 		got := formatDeudasPendientes(pending, format)
 		// 2 deudas + 1 totales.
 		if len(got) != 3 {
 			t.Fatalf("esperados 3 mensajes, got %d: %q", len(got), got)
 		}
-		if !contains(got[0], "Tarjeta BAC") || !contains(got[0], "C$500.00") {
-			t.Errorf("mensaje de BAC incorrecto:\n%s", got[0])
+		// BAC (500) primero: encabezado + cuota itemizada + resumen.
+		if !contains(got[0], "Tarjeta BAC") || !contains(got[0], "BAC Credomatic") {
+			t.Errorf("mensaje de BAC sin encabezado:\n%s", got[0])
 		}
-		if !contains(got[1], "Préstamo LAFISE") || !contains(got[1], "Cuotas: 2") || !contains(got[1], "C$150.00") {
-			t.Errorf("mensaje de LAFISE incorrecto:\n%s", got[1])
+		if !contains(got[0], "📅 2026-09-10 — C$500.00") {
+			t.Errorf("mensaje de BAC sin cuota itemizada:\n%s", got[0])
+		}
+		if !contains(got[0], "Cuotas: 1") || !contains(got[0], "Pendiente: C$500.00") {
+			t.Errorf("mensaje de BAC sin resumen:\n%s", got[0])
+		}
+		// LAFISE: 2 cuotas itemizadas en orden de due_date + resumen.
+		if !contains(got[1], "Préstamo LAFISE") || !contains(got[1], "📅 2026-09-05 — C$100.00") || !contains(got[1], "📅 2026-10-05 — C$50.00") {
+			t.Errorf("mensaje de LAFISE sin cuotas itemizadas:\n%s", got[1])
+		}
+		if !contains(got[1], "Cuotas: 2") || !contains(got[1], "Pendiente: C$150.00") {
+			t.Errorf("mensaje de LAFISE sin resumen:\n%s", got[1])
 		}
 		if !contains(got[2], "Totales") || !contains(got[2], "NIO: C$650.00") {
 			t.Errorf("mensaje de totales incorrecto:\n%s", got[2])
+		}
+	})
+
+	t.Run("particiona deudas con más de 25 cuotas", func(t *testing.T) {
+		var pending []appmodels.PendingDebtDetail
+		for i := 1; i <= 60; i++ {
+			pending = append(pending, appmodels.PendingDebtDetail{
+				DebtID: 1, DebtDescription: "Hipoteca", InstitutionName: "Banco",
+				DueDate: "2026-09-12", Amount: 620, CurrencySymbol: "C$", CurrencyCode: "NIO",
+			})
+		}
+		got := formatDeudasPendientes(pending, format)
+		// 60 cuotas → 3 bloques (25+25+10) + 1 totales.
+		if len(got) != 4 {
+			t.Fatalf("esperados 4 mensajes (3 bloques + totales), got %d", len(got))
+		}
+		// Encabezado solo en el primer bloque.
+		if !contains(got[0], "💳 *Hipoteca*") || contains(got[1], "💳") {
+			t.Errorf("encabezado repetido en bloques:\n%s\n---\n%s", got[0], got[1])
+		}
+		// Resumen solo al final del último bloque.
+		if contains(got[0], "Pendiente:") || !contains(got[2], "Cuotas: 60") || !contains(got[2], "Pendiente: C$37,200.00") {
+			t.Errorf("resumen mal ubicado:\n%s\n---\n%s", got[0], got[2])
+		}
+		// Primer y segundo bloque tienen 25 cuotas; el tercero 10.
+		if strings.Count(got[0], "📅") != 25 || strings.Count(got[1], "📅") != 25 || strings.Count(got[2], "📅") != 10 {
+			t.Errorf("cantidad de cuotas por bloque incorrecta: %d/%d/%d",
+				strings.Count(got[0], "📅"), strings.Count(got[1], "📅"), strings.Count(got[2], "📅"))
+		}
+		// Ningún mensaje de deuda supera el límite de Telegram.
+		for i, m := range got[:3] {
+			if len(m) > 4096 {
+				t.Errorf("bloque %d supera 4096 chars: %d", i, len(m))
+			}
 		}
 	})
 
