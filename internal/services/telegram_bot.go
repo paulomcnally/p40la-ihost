@@ -196,8 +196,9 @@ func (s *TelegramBotService) handleDefault(ctx context.Context, b *bot.Bot, upda
 	s.reply(ctx, b, update, "Comando no reconocido. Usa `/servicios_pendientes` o `/deudas_pendientes`.")
 }
 
-// handleServiciosPendientes responde con los servicios que tienen facturas
-// pendientes (REQ-006): nombre del servicio, casa, cantidad y monto total.
+// handleServiciosPendientes responde con un mensaje por cada servicio que
+// tiene facturas pendientes y un mensaje final con los totales por moneda
+// (REQ-001, REQ-003).
 func (s *TelegramBotService) handleServiciosPendientes(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
 	if !s.checkAuthorized(ctx, b, update) {
 		return
@@ -216,11 +217,12 @@ func (s *TelegramBotService) handleServiciosPendientes(ctx context.Context, b *b
 		currencyFormat = DefaultCurrencyFormat()
 	}
 
-	s.reply(ctx, b, update, formatServiciosPendientes(pending, currencyFormat))
+	s.sendMany(ctx, b, update, formatServiciosPendientes(pending, currencyFormat))
 }
 
-// handleDeudasPendientes responde con las deudas que tienen cuotas pendientes
-// (REQ-007): descripción, institución, cantidad de cuotas y monto total.
+// handleDeudasPendientes responde con un mensaje por cada deuda que tiene
+// cuotas pendientes y un mensaje final con los totales por moneda
+// (REQ-002, REQ-004).
 func (s *TelegramBotService) handleDeudasPendientes(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
 	if !s.checkAuthorized(ctx, b, update) {
 		return
@@ -239,7 +241,7 @@ func (s *TelegramBotService) handleDeudasPendientes(ctx context.Context, b *bot.
 		currencyFormat = DefaultCurrencyFormat()
 	}
 
-	s.reply(ctx, b, update, formatDeudasPendientes(pending, currencyFormat))
+	s.sendMany(ctx, b, update, formatDeudasPendientes(pending, currencyFormat))
 }
 
 // checkAuthorized valida el chat contra la allowlist y guarda el último chat
@@ -273,6 +275,23 @@ func (s *TelegramBotService) reply(ctx context.Context, b *bot.Bot, update *tgmo
 	}
 }
 
+// sendMany envía varios mensajes de forma secuencial (SPEC-082). Si un envío
+// falla se loguea y se continúa con el siguiente.
+func (s *TelegramBotService) sendMany(ctx context.Context, b *bot.Bot, update *tgmodels.Update, texts []string) {
+	if update.Message == nil {
+		return
+	}
+	for _, text := range texts {
+		if _, err := b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    update.Message.Chat.ID,
+			Text:      text,
+			ParseMode: tgmodels.ParseModeMarkdownV1,
+		}); err != nil {
+			slog.Warn("telegram_bot: enviar mensaje", "error", err)
+		}
+	}
+}
+
 // pendingGroup agrupa las facturas pendientes de un servicio para
 // /servicios_pendientes.
 type pendingGroup struct {
@@ -283,11 +302,12 @@ type pendingGroup struct {
 	symbol  string
 }
 
-// formatServiciosPendientes construye el mensaje Markdown de
-// /servicios_pendientes agrupando las facturas pendientes por servicio.
-func formatServiciosPendientes(pending []appmodels.PendingBillDetail, format CurrencyFormat) string {
+// formatServiciosPendientes construye un mensaje por cada servicio con
+// facturas pendientes y agrega al final el mensaje de totales por moneda
+// (SPEC-082). Si no hay pendientes devuelve un único mensaje.
+func formatServiciosPendientes(pending []appmodels.PendingBillDetail, format CurrencyFormat) []string {
 	if len(pending) == 0 {
-		return "✅ No hay facturas pendientes."
+		return []string{"✅ No hay facturas pendientes."}
 	}
 
 	groups := make(map[int64]*pendingGroup)
@@ -305,14 +325,50 @@ func formatServiciosPendientes(pending []appmodels.PendingBillDetail, format Cur
 
 	sorted := sortGroups(groups, order)
 
-	msg := fmt.Sprintf("⏳ *Servicios con facturas pendientes* (%d)\n", len(sorted))
+	msgs := make([]string, 0, len(sorted)+1)
 	for _, g := range sorted {
-		msg += fmt.Sprintf(
-			"\n⚡ *%s*\n  Casa: %s\n  Facturas: %d\n  Pendiente: %s",
+		msgs = append(msgs, fmt.Sprintf(
+			"⚡ *%s*\n  Casa: %s\n  Facturas: %d\n  Pendiente: %s",
 			g.service, g.home, g.count, formatAmount(g.amount, g.symbol, format),
-		)
+		))
 	}
-	return msg
+	return append(msgs, formatServiciosTotales(pending, format))
+}
+
+// currencyTotal acumula el monto pendiente de una moneda para el mensaje de
+// totales (SPEC-082).
+type currencyTotal struct {
+	code   string
+	symbol string
+	amount float64
+}
+
+// formatServiciosTotales construye el mensaje final de /servicios_pendientes
+// con el total de facturas pendientes agrupado por moneda (REQ-003). Solo se
+// muestran las monedas presentes en los datos.
+func formatServiciosTotales(pending []appmodels.PendingBillDetail, format CurrencyFormat) string {
+	totals := make(map[string]*currencyTotal)
+	var order []string
+	for _, p := range pending {
+		code := p.CurrencyCode
+		if code == "" {
+			code = p.CurrencySymbol
+		}
+		t, ok := totals[code]
+		if !ok {
+			t = &currencyTotal{code: code, symbol: p.CurrencySymbol}
+			totals[code] = t
+			order = append(order, code)
+		}
+		t.amount += p.Amount
+	}
+
+	msg := "💰 *Totales — Facturas pendientes*\n"
+	for _, code := range order {
+		t := totals[code]
+		msg += fmt.Sprintf("  %s: %s\n", t.code, formatAmount(t.amount, t.symbol, format))
+	}
+	return strings.TrimRight(msg, "\n")
 }
 
 // debtGroup agrupa las cuotas pendientes de una deuda para /deudas_pendientes.
@@ -324,11 +380,12 @@ type debtGroup struct {
 	symbol      string
 }
 
-// formatDeudasPendientes construye el mensaje Markdown de /deudas_pendientes
-// agrupando las cuotas pendientes por deuda.
-func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format CurrencyFormat) string {
+// formatDeudasPendientes construye un mensaje por cada deuda con cuotas
+// pendientes y agrega al final el mensaje de totales por moneda (SPEC-082).
+// Si no hay pendientes devuelve un único mensaje.
+func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format CurrencyFormat) []string {
 	if len(pending) == 0 {
-		return "✅ No hay deudas pendientes."
+		return []string{"✅ No hay deudas pendientes."}
 	}
 
 	groups := make(map[int64]*debtGroup)
@@ -346,14 +403,42 @@ func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format Curren
 
 	sorted := sortDebtGroups(groups, order)
 
-	msg := fmt.Sprintf("⏳ *Deudas con cuotas pendientes* (%d)\n", len(sorted))
+	msgs := make([]string, 0, len(sorted)+1)
 	for _, g := range sorted {
-		msg += fmt.Sprintf(
-			"\n💳 *%s*\n  Institución: %s\n  Cuotas: %d\n  Pendiente: %s",
+		msgs = append(msgs, fmt.Sprintf(
+			"💳 *%s*\n  Institución: %s\n  Cuotas: %d\n  Pendiente: %s",
 			g.debt, g.institution, g.count, formatAmount(g.amount, g.symbol, format),
-		)
+		))
 	}
-	return msg
+	return append(msgs, formatDeudasTotales(pending, format))
+}
+
+// formatDeudasTotales construye el mensaje final de /deudas_pendientes con el
+// total de cuotas pendientes agrupado por moneda (REQ-004). Solo se muestran
+// las monedas presentes en los datos.
+func formatDeudasTotales(pending []appmodels.PendingDebtDetail, format CurrencyFormat) string {
+	totals := make(map[string]*currencyTotal)
+	var order []string
+	for _, p := range pending {
+		code := p.CurrencyCode
+		if code == "" {
+			code = p.CurrencySymbol
+		}
+		t, ok := totals[code]
+		if !ok {
+			t = &currencyTotal{code: code, symbol: p.CurrencySymbol}
+			totals[code] = t
+			order = append(order, code)
+		}
+		t.amount += p.Amount
+	}
+
+	msg := "💰 *Totales — Cuotas pendientes*\n"
+	for _, code := range order {
+		t := totals[code]
+		msg += fmt.Sprintf("  %s: %s\n", t.code, formatAmount(t.amount, t.symbol, format))
+	}
+	return strings.TrimRight(msg, "\n")
 }
 
 // sortGroups ordena los grupos por monto total descendente.

@@ -32,6 +32,7 @@ type PendingBillDetail struct {
 	Institution    string    `json:"institution"`
 	ServiceName    string    `json:"service_name"`
 	CurrencySymbol string    `json:"currency_symbol"`
+	CurrencyCode   string    `json:"currency_code"`
 	Year           int       `json:"year"`
 	Month          int       `json:"month"`
 	Amount         float64   `json:"amount"`

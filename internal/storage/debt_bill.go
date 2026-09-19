@@ -109,7 +109,7 @@ func (s *DebtBillStorage) ListByMonth(ctx context.Context, year, month int) ([]m
 func (s *DebtBillStorage) ListPendingWithDetails(ctx context.Context) ([]models.PendingDebtDetail, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT db.debt_id, COALESCE(d.description, ''), COALESCE(i.name, ''),
-		       db.due_date, db.amount, COALESCE(c.symbol, '')
+		       db.due_date, db.amount, COALESCE(c.symbol, ''), COALESCE(c.code, '')
 		FROM debt_bills db
 		JOIN debts d ON d.id = db.debt_id AND d.deleted_at IS NULL
 		LEFT JOIN institutions i ON i.id = d.institution_id
@@ -126,7 +126,7 @@ func (s *DebtBillStorage) ListPendingWithDetails(ctx context.Context) ([]models.
 	for rows.Next() {
 		var d models.PendingDebtDetail
 		if err := rows.Scan(&d.DebtID, &d.DebtDescription, &d.InstitutionName,
-			&d.DueDate, &d.Amount, &d.CurrencySymbol); err != nil {
+			&d.DueDate, &d.Amount, &d.CurrencySymbol, &d.CurrencyCode); err != nil {
 			return nil, fmt.Errorf("escanear cuota pendiente: %w", err)
 		}
 		pending = append(pending, d)
