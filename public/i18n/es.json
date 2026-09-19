@@ -398,7 +398,11 @@
         "step2": "Copiá el token que te da BotFather y pegalo en el campo \"Token del bot\".",
         "step3": "Escribile un mensaje al bot (ej: /pendientes) para probarlo.",
         "step4": "Opcional: configurá los Chat IDs permitidos para restringir quién puede consultar."
-      }
+      },
+      "separator_length": "Guiones del separador",
+      "separator_length_hint": "Cantidad de guiones de la línea divisoria del resumen (0-100). 0 = sin separador.",
+      "show_months": "Meses futuros a mostrar",
+      "show_months_hint": "Hasta cuántos meses hacia adelante mostrar facturas (1-12). Las vencidas siempre se muestran. 1 = solo mes actual."
     },
     "nav": {
       "search": "Buscar ajuste...",
