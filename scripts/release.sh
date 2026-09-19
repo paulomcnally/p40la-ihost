@@ -219,21 +219,12 @@ git push origin "v${NEW_VERSION}"
 # -----------------------------------------------------------------------------
 
 log "Esperando que GitHub Actions registre el workflow disparado por el tag..."
-sleep 5
-
 RUN_URL=""
-if command -v jq >/dev/null 2>&1; then
-  RUN_URL=$(gh run list \
-    --workflow="${WORKFLOW_NAME}" \
-    --event tag \
-    --json url,headBranch \
-    --limit 20 2>/dev/null \
-    | jq -r --arg tag "v${NEW_VERSION}" '[.[] | select(.headBranch == $tag)][0].url // empty' || true)
-fi
+MAX_ATTEMPTS=20
+ATTEMPT=0
 
-if [[ -z "${RUN_URL}" ]]; then
-  log "Primer intento fallido, reintentando en 5 segundos..."
-  sleep 5
+while [[ -z "${RUN_URL}" && "${ATTEMPT}" -lt "${MAX_ATTEMPTS}" ]]; do
+  ATTEMPT=$((ATTEMPT + 1))
   if command -v jq >/dev/null 2>&1; then
     RUN_URL=$(gh run list \
       --workflow="${WORKFLOW_NAME}" \
@@ -241,8 +232,23 @@ if [[ -z "${RUN_URL}" ]]; then
       --json url,headBranch \
       --limit 20 2>/dev/null \
       | jq -r --arg tag "v${NEW_VERSION}" '[.[] | select(.headBranch == $tag)][0].url // empty' || true)
+  else
+    RUN_URL=$(gh run list \
+      --workflow="${WORKFLOW_NAME}" \
+      --event tag \
+      --limit 20 2>/dev/null \
+      | grep -o "https://github.com/${GITHUB_REPO}/actions/runs/[0-9]*" | head -1 || true)
   fi
-fi
+
+  if [[ -z "${RUN_URL}" ]]; then
+    if [[ "${ATTEMPT}" -lt "${MAX_ATTEMPTS}" ]]; then
+      log "Intento ${ATTEMPT}/${MAX_ATTEMPTS}: el workflow todavía no aparece, reintentando en 10 segundos..."
+      sleep 10
+    fi
+  else
+    log "Workflow encontrado en el intento ${ATTEMPT}/${MAX_ATTEMPTS}"
+  fi
+done
 
 # -----------------------------------------------------------------------------
 # Resumen
@@ -257,7 +263,7 @@ if [[ -n "${RUN_URL}" && "${RUN_URL}" != "null" ]]; then
   log "GitHub Action: ${RUN_URL}"
 else
   log "GitHub Actions: https://github.com/${GITHUB_REPO}/actions"
-  log "(No se pudo obtener la URL exacta todavía; revisá manualmente en unos segundos)"
+  log "(No se pudo obtener la URL exacta tras ${MAX_ATTEMPTS} intentos; revisá manualmente: gh run list --workflow=\"${WORKFLOW_NAME}\")"
 fi
 
 log "=============================================="
