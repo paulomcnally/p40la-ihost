@@ -21,7 +21,7 @@ func NewDebtBillStorage(db *sql.DB) *DebtBillStorage {
 
 const debtBillColumns = `
 	db.id, db.debt_id, COALESCE(d.description, ''), COALESCE(i.name, ''),
-	COALESCE(c.code, ''), db.installment_number, db.due_date, db.amount,
+	COALESCE(c.code, ''), db.installment_number, db.due_date, db.issue_date, db.amount,
 	db.status, db.paid_at, db.payment_reference, db.deleted_at,
 	db.created_at, db.updated_at
 `
@@ -140,9 +140,9 @@ func (s *DebtBillStorage) ListPendingWithDetails(ctx context.Context) ([]models.
 // Create inserta una nueva cuota.
 func (s *DebtBillStorage) Create(ctx context.Context, bill *models.DebtBill) (*models.DebtBill, error) {
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO debt_bills (debt_id, installment_number, due_date, amount, status)
-		VALUES (?, ?, ?, ?, ?)
-	`, bill.DebtID, bill.InstallmentNumber, bill.DueDate, bill.Amount, bill.Status)
+		INSERT INTO debt_bills (debt_id, installment_number, due_date, issue_date, amount, status)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, bill.DebtID, bill.InstallmentNumber, bill.DueDate, bill.IssueDate, bill.Amount, bill.Status)
 	if err != nil {
 		return nil, fmt.Errorf("insertar cuota: %w", err)
 	}
@@ -182,9 +182,9 @@ func (s *DebtBillStorage) SoftDeleteByDebt(ctx context.Context, debtID int64) er
 func scanDebtBill(row *sql.Row) (*models.DebtBill, error) {
 	var b models.DebtBill
 	var deletedAt, paidAt sql.NullTime
-	var debtDescription, institutionName, currencyCode, paymentReference sql.NullString
+	var debtDescription, institutionName, currencyCode, paymentReference, issueDate sql.NullString
 	if err := row.Scan(&b.ID, &b.DebtID, &debtDescription, &institutionName,
-		&currencyCode, &b.InstallmentNumber, &b.DueDate, &b.Amount,
+		&currencyCode, &b.InstallmentNumber, &b.DueDate, &issueDate, &b.Amount,
 		&b.Status, &paidAt, &paymentReference, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -195,6 +195,9 @@ func scanDebtBill(row *sql.Row) (*models.DebtBill, error) {
 	b.InstitutionName = institutionName.String
 	b.CurrencyCode = currencyCode.String
 	b.PaymentReference = paymentReference.String
+	if issueDate.Valid {
+		b.IssueDate = &issueDate.String
+	}
 	if deletedAt.Valid {
 		b.DeletedAt = &deletedAt.Time
 	}
@@ -209,9 +212,9 @@ func scanDebtBills(rows *sql.Rows) ([]models.DebtBill, error) {
 	for rows.Next() {
 		var b models.DebtBill
 		var deletedAt, paidAt sql.NullTime
-		var debtDescription, institutionName, currencyCode, paymentReference sql.NullString
+		var debtDescription, institutionName, currencyCode, paymentReference, issueDate sql.NullString
 		if err := rows.Scan(&b.ID, &b.DebtID, &debtDescription, &institutionName,
-			&currencyCode, &b.InstallmentNumber, &b.DueDate, &b.Amount,
+			&currencyCode, &b.InstallmentNumber, &b.DueDate, &issueDate, &b.Amount,
 			&b.Status, &paidAt, &paymentReference, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear cuota: %w", err)
 		}
@@ -219,6 +222,9 @@ func scanDebtBills(rows *sql.Rows) ([]models.DebtBill, error) {
 		b.InstitutionName = institutionName.String
 		b.CurrencyCode = currencyCode.String
 		b.PaymentReference = paymentReference.String
+		if issueDate.Valid {
+			b.IssueDate = &issueDate.String
+		}
 		if deletedAt.Valid {
 			b.DeletedAt = &deletedAt.Time
 		}

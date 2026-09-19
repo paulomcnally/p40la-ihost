@@ -156,6 +156,12 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 			DriveURL:      strings.TrimSpace(p.DriveURL),
 			Status:        status,
 		}
+		issueDate, dueDate, err := parseWebhookBillDates(p)
+		if err != nil {
+			return nil, err
+		}
+		bill.IssueDate = issueDate
+		bill.DueDate = dueDate
 		if status == "paid" {
 			// La columna paid_at se persiste vía Pay; crear primero pendiente.
 			bill.Status = "pending"
@@ -212,11 +218,15 @@ func (s *WebhookService) UpsertBill(ctx context.Context, service *models.Service
 func (s *WebhookService) applyWebhookUpdate(ctx context.Context, existing *models.Bill, status string, p *models.WebhookBillPayload) (*models.Bill, error) {
 	before := *existing
 	var err error
+	issueDate, dueDate, derr := parseWebhookBillDates(p)
+	if derr != nil {
+		return nil, derr
+	}
 	switch status {
 	case "paid":
 		if existing.Status != "paid" {
 			// Actualizar datos descriptivos y luego marcar el pago.
-			if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL)); err != nil {
+			if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL), issueDate, dueDate); err != nil {
 				return nil, err
 			}
 			paidAt, err := parseWebhookPaidAt(p.PaidAt)
@@ -232,7 +242,7 @@ func (s *WebhookService) applyWebhookUpdate(ctx context.Context, existing *model
 			}
 		} else {
 			// Ya estaba pagada: actualizar datos descriptivos sin tocar el pago.
-			if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL)); err != nil {
+			if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL), issueDate, dueDate); err != nil {
 				return nil, err
 			}
 			existing, err = s.bills.GetByID(ctx, existing.ID)
@@ -244,7 +254,7 @@ func (s *WebhookService) applyWebhookUpdate(ctx context.Context, existing *model
 			}
 		}
 	case "pending":
-		if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL)); err != nil {
+		if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL), issueDate, dueDate); err != nil {
 			return nil, err
 		}
 		if existing.Status == "paid" {
@@ -261,7 +271,7 @@ func (s *WebhookService) applyWebhookUpdate(ctx context.Context, existing *model
 		}
 	default:
 		// Status omitido: actualizar solo datos descriptivos, no tocar el estado.
-		if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL)); err != nil {
+		if err := s.bills.UpdateWebhookFields(ctx, existing.ID, p.Amount, strings.TrimSpace(p.InvoiceNumber), strings.TrimSpace(p.DriveURL), issueDate, dueDate); err != nil {
 			return nil, err
 		}
 		existing, err = s.bills.GetByID(ctx, existing.ID)
@@ -337,6 +347,40 @@ func parseWebhookPaidAt(raw string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, fmt.Errorf("paid_at debe ser una fecha válida (RFC3339 o YYYY-MM-DD)")
+}
+
+// parseWebhookBillDates normaliza issue_date y due_date del payload del webhook
+// (SPEC-081). Ambas son opcionales: si vienen vacías devuelve nil (la factura
+// queda con NULL o conserva el valor previo en actualizaciones, semántica
+// aditiva del COALESCE en UpdateWebhookFields). Acepta RFC3339 o YYYY-MM-DD y
+// normaliza a YYYY-MM-DD.
+func parseWebhookBillDates(p *models.WebhookBillPayload) (*string, *string, error) {
+	issueDate, err := parseWebhookDate(strings.TrimSpace(p.IssueDate), "issue_date")
+	if err != nil {
+		return nil, nil, err
+	}
+	dueDate, err := parseWebhookDate(strings.TrimSpace(p.DueDate), "due_date")
+	if err != nil {
+		return nil, nil, err
+	}
+	return issueDate, dueDate, nil
+}
+
+// parseWebhookDate valida y normaliza una fecha opcional del webhook a
+// YYYY-MM-DD. Acepta RFC3339 y formatos sin zona horaria. A diferencia de
+// paid_at, se permiten fechas futuras (un vencimiento normalmente es futuro).
+// Devuelve nil si raw está vacío.
+func parseWebhookDate(raw, field string) (*string, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02"} {
+		if t, err := time.Parse(layout, raw); err == nil {
+			normalized := t.Format("2006-01-02")
+			return &normalized, nil
+		}
+	}
+	return nil, fmt.Errorf("%s debe ser una fecha válida (YYYY-MM-DD o RFC3339)", field)
 }
 
 func randomHex(n int) (string, error) {

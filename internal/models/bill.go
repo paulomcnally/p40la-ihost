@@ -13,6 +13,8 @@ type Bill struct {
 	Status           string     `json:"status"`
 	DriveURL         string     `json:"drive_url,omitempty"`
 	FileHash         string     `json:"file_hash,omitempty"`
+	IssueDate        *string    `json:"issue_date,omitempty"`
+	DueDate          *string    `json:"due_date,omitempty"`
 	PaidAt           *time.Time `json:"paid_at,omitempty"`
 	PaymentReference string     `json:"payment_reference,omitempty"`
 	DeletedAt        *time.Time `json:"deleted_at,omitempty"`

@@ -12,6 +12,7 @@ type DebtBill struct {
 	CurrencyCode      string     `json:"currency_code,omitempty"`
 	InstallmentNumber int        `json:"installment_number"`
 	DueDate           string     `json:"due_date"`
+	IssueDate         *string    `json:"issue_date,omitempty"`
 	Amount            float64    `json:"amount"`
 	Status            string     `json:"status"`
 	PaidAt            *time.Time `json:"paid_at,omitempty"`

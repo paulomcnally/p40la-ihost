@@ -15,6 +15,7 @@ import BillHistoryModal from '../components/BillHistoryModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import WebhookModal from '../components/WebhookModal'
 import BillAnalysis from '../components/BillAnalysis'
+import DueDateBadge from '../components/DueDateBadge'
 import type { Bill, Service } from '../types'
 
 type TabKey = 'analisis' | 'facturas'
@@ -162,11 +163,14 @@ export default function BillsPage() {
                       </a>
                     )}
                   </div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
-                  }`}>
-                    {t(`bills.status_${bill.status}`)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {bill.status === 'pending' && <DueDateBadge dueDate={bill.due_date} />}
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                      bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
+                    }`}>
+                      {t(`bills.status_${bill.status}`)}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -194,11 +198,14 @@ export default function BillsPage() {
                     <td className="px-4 py-3 text-sm font-medium">{formatMoney(bill.amount, currency?.symbol)}</td>
                     <td className="px-4 py-3 text-sm">{bill.invoice_number || '-'}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                        bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
-                      }`}>
-                        {t(`bills.status_${bill.status}`)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {bill.status === 'pending' && <DueDateBadge dueDate={bill.due_date} />}
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                          bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
+                        }`}>
+                          {t(`bills.status_${bill.status}`)}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {bill.drive_url ? (

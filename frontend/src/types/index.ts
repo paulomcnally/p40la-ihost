@@ -96,6 +96,8 @@ export interface Bill {
   invoice_number: string
   status: 'pending' | 'paid'
   drive_url: string
+  issue_date?: string
+  due_date?: string
   paid_at?: string
   payment_reference?: string
 }
@@ -278,6 +280,7 @@ export interface DebtBill {
   currency_code?: string
   installment_number: number
   due_date: string
+  issue_date?: string
   amount: number
   status: 'pending' | 'paid'
   paid_at?: string
