@@ -1,7 +1,7 @@
 ---
 title: "Bot Telegram: limitar /deudas_pendientes al mes en curso"
 id: "SPEC-085"
-status: "pending_release"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-19"
 updated: "2026-09-19"
@@ -11,7 +11,7 @@ github_issue: 88
 # Bot Telegram: limitar /deudas_pendientes al mes en curso
 
 **ID**: SPEC-085  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-19  
 **Actualizado**: 2026-09-19
@@ -154,3 +154,4 @@ Sin cambios de esquema, modelos ni API REST. Sin dependencias nuevas.
 | 2026-09-19 | paulomcnally | Implementación original (descartada luego): `ListPendingWithDetails(ctx, until)` con filtro `due_date <= ?` (storage), helper `currentMonthEnd` (zona del usuario vía `currentUserNow`, fallback UTC) en `handleDeudasPendientes`. Estado → in_progress |
 | 2026-09-19 | paulomcnally | **Cancelada (error de proceso, revertida)**: el requerimiento fue absorbido por SPEC-086. La cancelación fue un error: "cerrar" una spec jamás implica cancelarla (ver AGENTS.md). La implementación quedó descartada |
 | 2026-09-19 | paulomcnally | **Reabierta** por decisión del usuario: el requerimiento está implementado y liberado en main por SPEC-086 (`dueInRange` + `showMonths` default 1 aplicado en `formatDeudasPendientes`). Criterios de aceptación verificados contra main. Estado → pending_release |
+| 2026-09-19 | paulomcnally | Release formal (no cancelación): merge de la doc a main con la implementación documentada (SPEC-086). Estado → released |
