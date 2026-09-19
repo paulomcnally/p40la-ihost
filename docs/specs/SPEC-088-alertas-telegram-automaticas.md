@@ -272,4 +272,4 @@ ALTER TABLE alerts DROP COLUMN telegram_enabled;
 |-------|-------|-------------|
 | 2026-09-19 | opencode | Creación inicial de la especificación |
 | 2026-09-19 | opencode | Implementación (canal telegram en alertas, SendAlerts, dispatch, wiring de 5 schedulers, UI, i18n, tests) y validación manual del usuario |
-| 2026-09-19 | opencode | Release: merge a main, issue #91 cerrado con label spec/released |
+| 2026-09-19 | opencode | Release: merge a main (cb288e8), push, issue #91 cerrado con label spec/released |
