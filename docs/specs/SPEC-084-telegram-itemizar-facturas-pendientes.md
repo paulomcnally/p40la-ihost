@@ -1,7 +1,7 @@
 ---
 title: "Bot Telegram: itemizar facturas pendientes con fecha de vencimiento"
 id: "SPEC-084"
-status: "draft"
+status: "released"
 author: "paulomcnally"
 created: "2026-09-19"
 updated: "2026-09-19"
@@ -11,7 +11,7 @@ github_issue: 87
 # Bot Telegram: itemizar facturas pendientes con fecha de vencimiento
 
 **ID**: SPEC-084  
-**Estado**: draft  
+**Estado**: released  
 **Autor**: paulomcnally  
 **Creado**: 2026-09-19  
 **Actualizado**: 2026-09-19
@@ -263,3 +263,4 @@ Mensaje de totales (final, SPEC-082):
 | 2026-09-19 | paulomcnally | Iteración 2: filtro "vencidas + mes actual" (REQ-012) excluyendo facturas de meses futuros del mensaje/conteo/total; separador cambiado de box-drawing a guiones ASCII (REQ-013). CAs CA-009/CA-010. |
 | 2026-09-19 | paulomcnally | Iteración 3-4: separador configurable `telegram_bot_separator_length` (default 20, 0-100) + negritas en Facturas/Pendiente/Cuotas (REQ-014/015). Backend (setting + API + bot) y frontend (SettingsTelegramBotPage + i18n es/en). |
 | 2026-09-19 | paulomcnally | Iteración 5: setting `telegram_bot_show_months` (1-12, default 1) — las vencidas se muestran siempre; las no vencidas solo dentro de los próximos N meses (REQ-016). API valida rango con 400. Tests de formateador y settings. Validación manual con el usuario: ✅ funciona. Todos los criterios de aceptación en pass. |
+| 2026-09-19 | paulomcnally | Release: merge `feature/SPEC-084` → `main` (commit `c4dadea`, merge no-ff de `88b0ad8`), push a `main`. Issue #87 cerrado con label `spec/released`. Estado → released |

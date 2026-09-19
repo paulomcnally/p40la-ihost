@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 83 |
+| **Total de specs** | 84 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 83 🟢 |
+| **Released** | 84 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-083 |
+| **Último ID usado** | SPEC-084 |
 
 ---
 
@@ -104,6 +104,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-081 | Fechas de emisión y vencimiento en facturas de servicios y deudas + webhooks | released | 2026-09-19 | paulomcnally |
 | SPEC-082 | Bot Telegram: un mensaje por servicio y por deuda + totales por moneda al final | released | 2026-09-19 | paulomcnally |
 | SPEC-083 | Bot Telegram: itemizar cuotas pendientes en /deudas_pendientes | released | 2026-09-19 | paulomcnally |
+| SPEC-084 | Bot Telegram: itemizar facturas pendientes con fecha de vencimiento | released | 2026-09-19 | paulomcnally |
 
 ---
 
@@ -173,4 +174,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-19 — SPEC-080 (Bot Telegram: fix matcheo de comandos + SetMyCommands) released (cierre formal de spec previamente mergeada).*
+*Última actualización de este tracker: 2026-09-19 — SPEC-084 (Bot Telegram: itemizar facturas pendientes con fecha de vencimiento) released.*
