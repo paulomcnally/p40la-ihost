@@ -699,6 +699,7 @@ func (s *SystemSettingsService) GetTelegramBotConfigPublic(ctx context.Context) 
 	return &models.TelegramBotConfigPublic{
 		Enabled:         cfg.Enabled,
 		Configured:      cfg.Token != "",
+		ChatIDsCount:    len(cfg.ChatIDs),
 		SeparatorLength: cfg.SeparatorLength,
 		ShowMonths:      cfg.ShowMonths,
 	}, nil

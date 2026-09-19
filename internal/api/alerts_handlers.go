@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 )
@@ -30,11 +31,12 @@ func (h *AlertsHandlers) ListAlerts(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateAlertRequest struct {
-	MailEnabled  *bool `json:"mail_enabled,omitempty"`
-	VoiceEnabled *bool `json:"voice_enabled,omitempty"`
+	MailEnabled     *bool `json:"mail_enabled,omitempty"`
+	VoiceEnabled    *bool `json:"voice_enabled,omitempty"`
+	TelegramEnabled *bool `json:"telegram_enabled,omitempty"`
 }
 
-// UpdateAlert actualiza mail_enabled / voice_enabled de una alerta.
+// UpdateAlert actualiza mail_enabled / voice_enabled / telegram_enabled de una alerta.
 func (h *AlertsHandlers) UpdateAlert(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
 
@@ -68,17 +70,24 @@ func (h *AlertsHandlers) UpdateAlert(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if req.TelegramEnabled != nil && *req.TelegramEnabled {
+		if err := h.validateTelegramGating(r.Context()); err != nil {
+			respondError(w, http.StatusUnprocessableEntity, "validation_error", err.Error())
+			return
+		}
+	}
 
-	if err := h.alerts.SetFlags(r.Context(), key, req.MailEnabled, req.VoiceEnabled); err != nil {
+	if err := h.alerts.SetFlags(r.Context(), key, req.MailEnabled, req.VoiceEnabled, req.TelegramEnabled); err != nil {
 		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
 
 	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"key":           key,
-		"mail_enabled":  derefBool(req.MailEnabled, alert.MailEnabled),
-		"voice_enabled": derefBool(req.VoiceEnabled, alert.VoiceEnabled),
-		"message":       "Alerta actualizada",
+		"key":               key,
+		"mail_enabled":      derefBool(req.MailEnabled, alert.MailEnabled),
+		"voice_enabled":     derefBool(req.VoiceEnabled, alert.VoiceEnabled),
+		"telegram_enabled":  derefBool(req.TelegramEnabled, alert.TelegramEnabled),
+		"message":           "Alerta actualizada",
 	})
 }
 
@@ -127,6 +136,27 @@ func (h *AlertsHandlers) validateVoiceGating(ctx context.Context) error {
 	}
 	if !vm.Enabled || !vm.Configured || !vm.SendAlerts {
 		return errors.New("Para activar alertas por voz se necesita Voice Monkey activo, configurado y enviando alertas")
+	}
+	return nil
+}
+
+// validateTelegramGating verifica que el bot de Telegram esté habilitado en
+// settings, con token y al menos un chat_id autorizado (SPEC-088). Si el bot
+// no está habilitado, el canal telegram no se puede activar ni se intenta
+// enviar nada.
+func (h *AlertsHandlers) validateTelegramGating(ctx context.Context) error {
+	cfg, err := h.settings.GetTelegramBotConfig(ctx)
+	if err != nil {
+		return err
+	}
+	if !cfg.Enabled {
+		return errors.New("Para activar alertas por Telegram, activá primero el interruptor del Bot de Telegram")
+	}
+	if strings.TrimSpace(cfg.Token) == "" {
+		return errors.New("Para activar alertas por Telegram se necesita el token del bot configurado")
+	}
+	if len(cfg.ChatIDs) == 0 {
+		return errors.New("Para activar alertas por Telegram se necesita al menos un chat_id autorizado")
 	}
 	return nil
 }

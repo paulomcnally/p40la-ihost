@@ -12,10 +12,12 @@ type TelegramBotConfig struct {
 }
 
 // TelegramBotConfigPublic — versión segura para API responses. Sin
-// credenciales. telegram_bot_token nunca se devuelve.
+// credenciales. telegram_bot_token nunca se devuelve. ChatIDsCount permite a
+// la UI gatear el canal de alertas por Telegram (SPEC-088).
 type TelegramBotConfigPublic struct {
 	Enabled         bool `json:"telegram_bot_enabled"`
 	Configured      bool `json:"telegram_bot_configured"`
+	ChatIDsCount    int  `json:"telegram_bot_chat_ids_count"`
 	SeparatorLength int  `json:"telegram_bot_separator_length"`
 	ShowMonths      int  `json:"telegram_bot_show_months"`
 }

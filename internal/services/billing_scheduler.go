@@ -18,6 +18,7 @@ type BillingScheduler struct {
 	currencyStorage   *storage.CurrencyStorage
 	alertService      *AlertService
 	voiceMonkey       *VoiceMonkeyService
+	telegramBot       *TelegramBotService
 	stopCh            chan struct{}
 	lastGenerationKey string
 }
@@ -30,6 +31,7 @@ func NewBillingScheduler(
 	currencyStorage *storage.CurrencyStorage,
 	alertService *AlertService,
 	voiceMonkey *VoiceMonkeyService,
+	telegramBot *TelegramBotService,
 ) *BillingScheduler {
 	return &BillingScheduler{
 		serviceStorage:    serviceStorage,
@@ -39,6 +41,7 @@ func NewBillingScheduler(
 		currencyStorage:   currencyStorage,
 		alertService:      alertService,
 		voiceMonkey:       voiceMonkey,
+		telegramBot:       telegramBot,
 		stopCh:            make(chan struct{}),
 		lastGenerationKey: "last_billing_generation",
 	}
@@ -132,6 +135,9 @@ func (s *BillingScheduler) checkAndGenerate() {
 		} else {
 			dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyBillCreated, createdSpeech(speech, generated))
 		}
+
+		// Telegram: un aviso por corrida (mismo criterio que la voz, SPEC-088).
+		dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyBillCreated, formatBillCreatedAlert(generated))
 	}
 
 	slog.Info("billing scheduler: generación completada", "generated", generated)

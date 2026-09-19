@@ -104,3 +104,65 @@ func TestUpdateAlert_DisablingMailNotGated(t *testing.T) {
 		t.Fatalf("desactivar mail no debe estar gateado, got %d: %s", rr.Code, rr.Body.String())
 	}
 }
+
+func TestUpdateAlert_GatingTelegramDisabledWithoutBot(t *testing.T) {
+	h, _ := newAlertsTestHandler(t)
+
+	// Bot de Telegram apagado en settings → no se puede activar el canal.
+	rr := doUpdateAlert(h, models.AlertKeyInsurance, map[string]bool{"telegram_enabled": true})
+	if rr.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("esperaba 422 sin bot habilitado, got %d: %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestUpdateAlert_GatingTelegramDisabledWithoutTokenOrChatIDs(t *testing.T) {
+	h, settings := newAlertsTestHandler(t)
+	ctx := context.Background()
+
+	if err := settings.SetTelegramBotEnabled(ctx, true); err != nil {
+		t.Fatalf("set bot enabled: %v", err)
+	}
+
+	// Bot habilitado pero sin token → 422.
+	rr := doUpdateAlert(h, models.AlertKeyInsurance, map[string]bool{"telegram_enabled": true})
+	if rr.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("esperaba 422 sin token, got %d: %s", rr.Code, rr.Body.String())
+	}
+
+	if err := settings.SetTelegramBotToken(ctx, "token-123"); err != nil {
+		t.Fatalf("set bot token: %v", err)
+	}
+
+	// Bot con token pero sin chat_ids → 422.
+	rr = doUpdateAlert(h, models.AlertKeyInsurance, map[string]bool{"telegram_enabled": true})
+	if rr.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("esperaba 422 sin chat_ids, got %d: %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestUpdateAlert_GatingTelegramEnabledWithPrereqs(t *testing.T) {
+	h, settings := newAlertsTestHandler(t)
+	ctx := context.Background()
+
+	if err := settings.SetTelegramBotEnabled(ctx, true); err != nil {
+		t.Fatalf("set bot enabled: %v", err)
+	}
+	if err := settings.SetTelegramBotToken(ctx, "token-123"); err != nil {
+		t.Fatalf("set bot token: %v", err)
+	}
+	if err := settings.SetTelegramBotChatIDs(ctx, []string{"111"}); err != nil {
+		t.Fatalf("set chat ids: %v", err)
+	}
+
+	rr := doUpdateAlert(h, models.AlertKeyInsurance, map[string]bool{"telegram_enabled": true})
+	if rr.Code != http.StatusOK {
+		t.Fatalf("esperaba 200 con bot configurado, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var body map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("parse response: %v", err)
+	}
+	if body["telegram_enabled"] != true {
+		t.Errorf("telegram_enabled no persistió: %s", rr.Body.String())
+	}
+}

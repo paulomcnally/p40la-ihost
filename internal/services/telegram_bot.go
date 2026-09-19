@@ -28,6 +28,9 @@ type TelegramBotService struct {
 	cancel     context.CancelFunc
 	reloadCh   chan struct{}
 	lastChatID int64 // último chat autorizado que interactuó (REQ-010, P2)
+
+	botMu     sync.Mutex
+	activeBot *bot.Bot // instancia del bot en polling (para alertas push, SPEC-088)
 }
 
 // NewTelegramBotService crea el servicio. Requiere arrancarlo con Start().
@@ -118,6 +121,17 @@ func (s *TelegramBotService) runBot(ctx context.Context, cfg *appmodels.Telegram
 		return
 	}
 
+	// La instancia del polling queda disponible para las alertas push
+	// (SPEC-088): reutiliza la misma conexión y evita crear bots efímeros.
+	s.botMu.Lock()
+	s.activeBot = b
+	s.botMu.Unlock()
+	defer func() {
+		s.botMu.Lock()
+		s.activeBot = nil
+		s.botMu.Unlock()
+	}()
+
 	// SPEC-080: los patrones van SIN slash — el matcher de MatchTypeCommand de
 	// go-telegram/bot compara data[Offset+1:Offset+Length] (sin la barra).
 	b.RegisterHandler(bot.HandlerTypeMessageText, "servicios_pendientes", bot.MatchTypeCommand, s.handleServiciosPendientes)
@@ -151,6 +165,64 @@ func (s *TelegramBotService) registerCommands(ctx context.Context, b *bot.Bot) {
 		return
 	}
 	slog.Info("telegram_bot: comandos registrados en Telegram")
+}
+
+// SendAlerts envía mensajes proactivos a TODOS los chat_ids autorizados
+// (SPEC-088). No depende de un update de Telegram: es el canal push de los
+// schedulers. Gate defensivo: si el bot no está habilitado, sin token o sin
+// chat_ids, NO envía nada y jamás contacta la API de Telegram (el dispatch
+// ya corta antes, ver dispatchTelegram).
+func (s *TelegramBotService) SendAlerts(ctx context.Context, texts []string) error {
+	if len(texts) == 0 {
+		return nil
+	}
+	cfg, err := s.settings.GetTelegramBotConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("leer config del bot: %w", err)
+	}
+	if !cfg.Enabled || strings.TrimSpace(cfg.Token) == "" {
+		slog.Debug("telegram_bot: bot deshabilitado o sin token, no se envían alertas")
+		return nil
+	}
+	if len(cfg.ChatIDs) == 0 {
+		slog.Warn("telegram_bot: sin chat_ids autorizados, no se envían alertas")
+		return nil
+	}
+
+	b := s.currentBot()
+	if b == nil {
+		// Polling inactivo (p.ej. durante el arranque): instancia efímera
+		// solo para el envío.
+		b, err = bot.New(cfg.Token, bot.WithDefaultHandler(s.handleDefault))
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, chatID := range cfg.ChatIDs {
+		id, err := strconv.ParseInt(chatID, 10, 64)
+		if err != nil {
+			slog.Warn("telegram_bot: chat_id inválido", "chat_id", chatID)
+			continue
+		}
+		for _, text := range texts {
+			if _, err := b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID:    id,
+				Text:      text,
+				ParseMode: tgmodels.ParseModeMarkdownV1,
+			}); err != nil {
+				slog.Warn("telegram_bot: enviar alerta", "chat_id", id, "error", err)
+			}
+		}
+	}
+	return nil
+}
+
+// currentBot devuelve la instancia del bot en polling, o nil si no hay.
+func (s *TelegramBotService) currentBot() *bot.Bot {
+	s.botMu.Lock()
+	defer s.botMu.Unlock()
+	return s.activeBot
 }
 
 // wait duerme hasta timeout o cancelación. Devuelve false si el contexto fue
@@ -187,7 +259,7 @@ func (s *TelegramBotService) handleStart(ctx context.Context, b *bot.Bot, update
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
-	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura).\n\nComandos:\n  `/servicios_pendientes` — servicios con facturas pendientes\n  `/deudas_pendientes` — deudas con cuotas pendientes")
+	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura).\n\nComandos:\n  `/servicios_pendientes` — servicios con facturas pendientes\n  `/deudas_pendientes` — deudas con cuotas pendientes\n\nAdemás, si activás las alertas por Telegram en P40LA (Configuración → Alertas), este bot te envía los avisos automáticos directamente.")
 }
 
 func (s *TelegramBotService) handleDefault(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {

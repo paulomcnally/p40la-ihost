@@ -13,14 +13,15 @@ import (
 )
 
 // BillSummaryScheduler envía diariamente un resumen de las facturas pendientes,
-// agrupadas por casa (SPEC-031), por los canales habilitados (mail y/o voz).
-// Sigue el patrón de AlertScheduler.
+// agrupadas por casa (SPEC-031), por los canales habilitados (mail, voz y/o
+// telegram). Sigue el patrón de AlertScheduler.
 type BillSummaryScheduler struct {
 	billStorage     *storage.BillStorage
 	emailService    *EmailService
 	settingsService *SystemSettingsService
 	alertService    *AlertService
 	voiceMonkey     *VoiceMonkeyService
+	telegramBot     *TelegramBotService
 	stopCh          chan struct{}
 	lastCheckKey    string
 }
@@ -31,6 +32,7 @@ func NewBillSummaryScheduler(
 	settingsService *SystemSettingsService,
 	alertService *AlertService,
 	voiceMonkey *VoiceMonkeyService,
+	telegramBot *TelegramBotService,
 ) *BillSummaryScheduler {
 	return &BillSummaryScheduler{
 		billStorage:     billStorage,
@@ -38,6 +40,7 @@ func NewBillSummaryScheduler(
 		settingsService: settingsService,
 		alertService:    alertService,
 		voiceMonkey:     voiceMonkey,
+		telegramBot:     telegramBot,
 		stopCh:          make(chan struct{}),
 		lastCheckKey:    "last_bill_summary_check",
 	}
@@ -129,12 +132,33 @@ func (s *BillSummaryScheduler) checkAndSend() {
 		} else {
 			dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyBillSummary, summarySpeech(speech, len(pending)))
 		}
+
+		s.dispatchTelegramSummary(ctx, pending, now)
 	} else {
 		slog.Info("bill summary scheduler: no hay facturas pendientes")
 	}
 
 	_ = s.settingsService.Set(ctx, s.lastCheckKey, today)
 	slog.Info("bill summary scheduler: check completado", "pending", len(pending))
+}
+
+// dispatchTelegramSummary envía el resumen por Telegram con el mismo formato
+// de /servicios_pendientes (SPEC-088 REQ-004).
+func (s *BillSummaryScheduler) dispatchTelegramSummary(ctx context.Context, pending []models.PendingBillDetail, now time.Time) {
+	format, err := s.settingsService.GetCurrencyFormat(ctx)
+	if err != nil {
+		format = DefaultCurrencyFormat()
+	}
+	sepLen, err := s.settingsService.GetTelegramBotSeparatorLength(ctx)
+	if err != nil {
+		sepLen = DefaultTelegramBotSeparatorLength
+	}
+	showMonths, err := s.settingsService.GetTelegramBotShowMonths(ctx)
+	if err != nil {
+		showMonths = DefaultTelegramBotShowMonths
+	}
+	texts := formatServiciosPendientes(pending, format, now, sepLen, showMonths)
+	dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyBillSummary, texts)
 }
 
 // summarySpeech reemplaza el placeholder {n} del speech con la cantidad de
