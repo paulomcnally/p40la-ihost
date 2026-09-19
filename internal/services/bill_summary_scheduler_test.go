@@ -46,7 +46,7 @@ func newSummaryTestEnv(t *testing.T, withPendingBill bool) (*storage.BillStorage
 		t.Fatalf("seed alertas: %v", err)
 	}
 	mail := true
-	if err := alertService.SetFlags(ctx, "bill_summary", &mail, nil); err != nil {
+	if err := alertService.SetFlags(ctx, "bill_summary", &mail, nil, nil); err != nil {
 		t.Fatalf("habilitar mail del resumen: %v", err)
 	}
 
@@ -55,7 +55,7 @@ func newSummaryTestEnv(t *testing.T, withPendingBill bool) (*storage.BillStorage
 
 func TestBillSummaryScheduler_NoPending_NoEmail(t *testing.T) {
 	billStorage, settingsService, alertService, voiceMonkeyService := newSummaryTestEnv(t, false)
-	scheduler := NewBillSummaryScheduler(billStorage, NewEmailService(settingsService), settingsService, alertService, voiceMonkeyService)
+	scheduler := NewBillSummaryScheduler(billStorage, NewEmailService(settingsService), settingsService, alertService, voiceMonkeyService, nil)
 
 	// Forzar la hora actual para que el check se ejecute.
 	now := time.Now().UTC()
@@ -77,7 +77,7 @@ func TestBillSummaryScheduler_NoPending_NoEmail(t *testing.T) {
 
 func TestBillSummaryScheduler_WithPending_NoRecipients(t *testing.T) {
 	billStorage, settingsService, alertService, voiceMonkeyService := newSummaryTestEnv(t, true)
-	scheduler := NewBillSummaryScheduler(billStorage, NewEmailService(settingsService), settingsService, alertService, voiceMonkeyService)
+	scheduler := NewBillSummaryScheduler(billStorage, NewEmailService(settingsService), settingsService, alertService, voiceMonkeyService, nil)
 
 	now := time.Now().UTC()
 	if err := settingsService.SetAlertCheckHour(context.Background(), now.Hour()); err != nil {
@@ -99,7 +99,7 @@ func TestBillSummaryScheduler_WithPending_NoRecipients(t *testing.T) {
 
 func TestBillSummaryScheduler_DedupSameDay(t *testing.T) {
 	billStorage, settingsService, alertService, voiceMonkeyService := newSummaryTestEnv(t, false)
-	scheduler := NewBillSummaryScheduler(billStorage, NewEmailService(settingsService), settingsService, alertService, voiceMonkeyService)
+	scheduler := NewBillSummaryScheduler(billStorage, NewEmailService(settingsService), settingsService, alertService, voiceMonkeyService, nil)
 
 	now := time.Now().UTC()
 	if err := settingsService.SetAlertCheckHour(context.Background(), now.Hour()); err != nil {

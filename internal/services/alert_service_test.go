@@ -90,7 +90,7 @@ func TestAlertService_SetFlags_Persists(t *testing.T) {
 
 	mail := true
 	voice := true
-	if err := alertService.SetFlags(ctx, models.AlertKeyInsurance, &mail, &voice); err != nil {
+	if err := alertService.SetFlags(ctx, models.AlertKeyInsurance, &mail, &voice, nil); err != nil {
 		t.Fatalf("set flags: %v", err)
 	}
 
@@ -117,7 +117,7 @@ func TestAlertService_IsEnabled(t *testing.T) {
 	}
 
 	mail := true
-	if err := alertService.SetFlags(ctx, models.AlertKeyBillSummary, &mail, nil); err != nil {
+	if err := alertService.SetFlags(ctx, models.AlertKeyBillSummary, &mail, nil, nil); err != nil {
 		t.Fatalf("set flags: %v", err)
 	}
 
@@ -128,6 +128,15 @@ func TestAlertService_IsEnabled(t *testing.T) {
 	voiceEnabled, _ := alertService.IsEnabled(ctx, models.AlertKeyBillSummary, models.AlertChannelVoice)
 	if voiceEnabled {
 		t.Error("voz debía seguir apagada")
+	}
+
+	telegram := true
+	if err := alertService.SetFlags(ctx, models.AlertKeyBillSummary, nil, nil, &telegram); err != nil {
+		t.Fatalf("set flags telegram: %v", err)
+	}
+	telegramEnabled, _ := alertService.IsEnabled(ctx, models.AlertKeyBillSummary, models.AlertChannelTelegram)
+	if !telegramEnabled {
+		t.Error("telegram debía estar habilitado")
 	}
 }
 

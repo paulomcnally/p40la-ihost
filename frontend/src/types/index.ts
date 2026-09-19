@@ -174,6 +174,7 @@ export interface Alert {
   description: string
   mail_enabled: boolean
   voice_enabled: boolean
+  telegram_enabled: boolean
   speech: string
   created_at: string
   updated_at: string

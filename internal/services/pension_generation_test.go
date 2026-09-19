@@ -41,6 +41,7 @@ func newGenerationFixture(t *testing.T) *generationFixture {
 		NewSystemSettingsService(storage.NewSystemSettingsStorage(database)),
 		recordStorage,
 		salaryPaymentStorage,
+		nil,
 	)
 
 	gen := NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, recordStorage, configStorage, notif)

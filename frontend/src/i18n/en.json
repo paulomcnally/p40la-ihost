@@ -330,10 +330,12 @@
       "title": "Alerts",
       "mail": "Mail",
       "alexa": "Alexa",
+      "telegram": "Telegram",
       "saved": "Alert updated",
       "save_error": "Error updating alert",
       "alexa_disabled_hint": "Enable Voice Monkey (token and device) and the \"Send alerts\" toggle to enable Alexa announcements.",
-      "mail_disabled_hint": "Enable \"Email Alerts\", configure SMTP and add at least one recipient to enable the mail alert."
+      "mail_disabled_hint": "Enable \"Email Alerts\", configure SMTP and add at least one recipient to enable the mail alert.",
+      "telegram_disabled_hint": "Enable the Telegram Bot (token and at least one authorized chat ID) to enable Telegram alerts."
     },
     "voicemonkey": {
       "title": "Voice Monkey (Alexa)",

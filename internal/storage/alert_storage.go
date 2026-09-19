@@ -22,7 +22,7 @@ func NewAlertStorage(db *sql.DB) *AlertStorage {
 // List devuelve todas las alertas sembradas.
 func (s *AlertStorage) List(ctx context.Context) ([]models.Alert, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, key, title, description, mail_enabled, voice_enabled, speech, created_at, updated_at
+		`SELECT id, key, title, description, mail_enabled, voice_enabled, telegram_enabled, speech, created_at, updated_at
 		 FROM alerts ORDER BY id ASC`)
 	if err != nil {
 		return nil, fmt.Errorf("listar alerts: %w", err)
@@ -32,7 +32,7 @@ func (s *AlertStorage) List(ctx context.Context) ([]models.Alert, error) {
 	var alerts []models.Alert
 	for rows.Next() {
 		var a models.Alert
-		if err := rows.Scan(&a.ID, &a.Key, &a.Title, &a.Description, &a.MailEnabled, &a.VoiceEnabled, &a.Speech, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.Key, &a.Title, &a.Description, &a.MailEnabled, &a.VoiceEnabled, &a.TelegramEnabled, &a.Speech, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear alert: %w", err)
 		}
 		alerts = append(alerts, a)
@@ -47,9 +47,9 @@ func (s *AlertStorage) List(ctx context.Context) ([]models.Alert, error) {
 func (s *AlertStorage) GetByKey(ctx context.Context, key string) (*models.Alert, error) {
 	var a models.Alert
 	err := s.db.QueryRowContext(ctx,
-		`SELECT id, key, title, description, mail_enabled, voice_enabled, speech, created_at, updated_at
+		`SELECT id, key, title, description, mail_enabled, voice_enabled, telegram_enabled, speech, created_at, updated_at
 		 FROM alerts WHERE key = ?`, key,
-	).Scan(&a.ID, &a.Key, &a.Title, &a.Description, &a.MailEnabled, &a.VoiceEnabled, &a.Speech, &a.CreatedAt, &a.UpdatedAt)
+	).Scan(&a.ID, &a.Key, &a.Title, &a.Description, &a.MailEnabled, &a.VoiceEnabled, &a.TelegramEnabled, &a.Speech, &a.CreatedAt, &a.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -60,13 +60,13 @@ func (s *AlertStorage) GetByKey(ctx context.Context, key string) (*models.Alert,
 }
 
 // SetFlags actualiza solo los flags indicados (punteros nulos = no se tocan).
-func (s *AlertStorage) SetFlags(ctx context.Context, key string, mailEnabled, voiceEnabled *bool) error {
-	if mailEnabled == nil && voiceEnabled == nil {
+func (s *AlertStorage) SetFlags(ctx context.Context, key string, mailEnabled, voiceEnabled, telegramEnabled *bool) error {
+	if mailEnabled == nil && voiceEnabled == nil && telegramEnabled == nil {
 		return nil
 	}
 
-	parts := make([]string, 0, 2)
-	args := make([]any, 0, 4)
+	parts := make([]string, 0, 3)
+	args := make([]any, 0, 5)
 	if mailEnabled != nil {
 		parts = append(parts, "mail_enabled = ?")
 		args = append(args, boolToInt(*mailEnabled))
@@ -74,6 +74,10 @@ func (s *AlertStorage) SetFlags(ctx context.Context, key string, mailEnabled, vo
 	if voiceEnabled != nil {
 		parts = append(parts, "voice_enabled = ?")
 		args = append(args, boolToInt(*voiceEnabled))
+	}
+	if telegramEnabled != nil {
+		parts = append(parts, "telegram_enabled = ?")
+		args = append(args, boolToInt(*telegramEnabled))
 	}
 	args = append(args, time.Now().UTC().Format("2006-01-02 15:04:05"), key)
 
@@ -96,8 +100,8 @@ func (s *AlertStorage) Seed(ctx context.Context, alerts []models.Alert) error {
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx,
-		`INSERT OR IGNORE INTO alerts (key, title, description, mail_enabled, voice_enabled, speech, created_at, updated_at)
-		 VALUES (?, ?, ?, 0, 0, ?, ?, ?)`)
+		`INSERT OR IGNORE INTO alerts (key, title, description, mail_enabled, voice_enabled, telegram_enabled, speech, created_at, updated_at)
+		 VALUES (?, ?, ?, 0, 0, 0, ?, ?, ?)`)
 	if err != nil {
 		return fmt.Errorf("preparar seed: %w", err)
 	}

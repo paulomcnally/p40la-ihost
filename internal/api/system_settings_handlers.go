@@ -223,6 +223,7 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"email_color_border":           palette.Border,
 		"telegram_bot_enabled":          telegramBot.Enabled,
 		"telegram_bot_configured":       telegramBot.Configured,
+		"telegram_bot_chat_ids_count":   telegramBot.ChatIDsCount,
 		"telegram_bot_separator_length": telegramBot.SeparatorLength,
 		"telegram_bot_show_months":      telegramBot.ShowMonths,
 	})
@@ -458,6 +459,7 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		"currency_decimal_digits":      currencyFormat.DecimalDigits,
 		"telegram_bot_enabled":          telegramBot.Enabled,
 		"telegram_bot_configured":       telegramBot.Configured,
+		"telegram_bot_chat_ids_count":   telegramBot.ChatIDsCount,
 		"telegram_bot_separator_length": telegramBot.SeparatorLength,
 		"telegram_bot_show_months":      telegramBot.ShowMonths,
 		"message":                       "Configuración actualizada",

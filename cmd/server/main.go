@@ -115,7 +115,8 @@ func main() {
 	salaryPaymentService := services.NewSalaryPaymentService(salaryPaymentStorage, monthClosingStorage)
 	monthClosingService := services.NewMonthClosingService(monthClosingStorage)
 	childSupportConfigService := services.NewChildSupportConfigService(childSupportConfigStorage, childStorage, pensionCategoryStorage)
-	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage)
+	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage, debtBillStorage)
+	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage, telegramBotService)
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
 	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
 	webhookService := services.NewWebhookService(systemSettingsStorage, systemSettingsService, serviceStorage, billStorage)
@@ -126,23 +127,22 @@ func main() {
 		slog.Error("seed de alertas", "error", err)
 	}
 
-	billingScheduler := services.NewBillingScheduler(serviceStorage, billStorage, systemSettingsService, emailService, currencyStorage, alertService, voiceMonkeyService)
+	billingScheduler := services.NewBillingScheduler(serviceStorage, billStorage, systemSettingsService, emailService, currencyStorage, alertService, voiceMonkeyService, telegramBotService)
 	billingScheduler.Start()
 	defer billingScheduler.Stop()
 
-	alertScheduler := services.NewAlertScheduler(autoStorage, autoServiceStorage, emailService, systemSettingsService, alertService, voiceMonkeyService)
+	alertScheduler := services.NewAlertScheduler(autoStorage, autoServiceStorage, emailService, systemSettingsService, alertService, voiceMonkeyService, telegramBotService)
 	alertScheduler.Start()
 	defer alertScheduler.Stop()
 
-	billSummaryScheduler := services.NewBillSummaryScheduler(billStorage, emailService, systemSettingsService, alertService, voiceMonkeyService)
+	billSummaryScheduler := services.NewBillSummaryScheduler(billStorage, emailService, systemSettingsService, alertService, voiceMonkeyService, telegramBotService)
 	billSummaryScheduler.Start()
 	defer billSummaryScheduler.Stop()
 
-	debtDueScheduler := services.NewDebtDueScheduler(debtBillStorage, emailService, systemSettingsService, alertService)
+	debtDueScheduler := services.NewDebtDueScheduler(debtBillStorage, emailService, systemSettingsService, alertService, telegramBotService)
 	debtDueScheduler.Start()
 	defer debtDueScheduler.Stop()
 
-	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage, debtBillStorage)
 	telegramBotService.Start()
 	defer telegramBotService.Stop()
 
