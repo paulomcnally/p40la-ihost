@@ -6,12 +6,12 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 85 |
+| **Total de specs** | 86 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 85 🟢 |
+| **Released** | 86 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-086 |
 
@@ -105,6 +105,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-082 | Bot Telegram: un mensaje por servicio y por deuda + totales por moneda al final | released | 2026-09-19 | paulomcnally |
 | SPEC-083 | Bot Telegram: itemizar cuotas pendientes en /deudas_pendientes | released | 2026-09-19 | paulomcnally |
 | SPEC-084 | Bot Telegram: itemizar facturas pendientes con fecha de vencimiento | released | 2026-09-19 | paulomcnally |
+| SPEC-085 | Bot Telegram: limitar /deudas_pendientes al mes en curso | released | 2026-09-19 | paulomcnally |
 | SPEC-086 | Bot Telegram: /deudas_pendientes con el mismo formato de /servicios_pendientes | released | 2026-09-19 | paulomcnally |
 
 ---
@@ -175,4 +176,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-19 — SPEC-086 (Bot Telegram: /deudas_pendientes con el mismo formato de /servicios_pendientes) released.*
+*Última actualización de este tracker: 2026-09-19 — SPEC-085 (Bot Telegram: limitar /deudas_pendientes al mes en curso) released.*
