@@ -33,6 +33,7 @@ draft → pending_execution → in_progress → pending_release → released
 
 **El agente DEBE seguir estas reglas sin excepción:**
 
+0. **"Cerrar" NUNCA es "cancelar".** Cuando el usuario pide cerrar/finalizar una spec, se ejecuta el flujo de **release** (`released`: merge a main, label `spec/released`, issue cerrado). La **cancelación** (`cancelled`) es una decisión EXCLUSIVA del usuario: requiere que use explícitamente la palabra "cancelar" o "descartar". JAMÁS cancelar una spec porque otra spec "absorba" su requerimiento o porque el código ya esté en main: en ese caso la spec se **libera** documentando la implementación (quién la hizo y dónde). Ante la mínima duda entre release y cancelación, preguntar al usuario ANTES de cambiar cualquier estado. Precedente crítico: SPEC-085 cancelada sin consentimiento del usuario (revertida; reapertura + release formal obligatorios).
 1. **NUNCA escribir código significativo sin una spec existente.** Si el usuario pide una funcionalidad, primero crear la spec.
 2. **Si el usuario pide cambios iterativos durante desarrollo que no están en la spec**, el agente debe:
    - Actualizar la spec con los nuevos requerimientos/cambios
@@ -126,7 +127,8 @@ Cuando el usuario menciona que una spec cambió de estado:
 3. **Actualizar GitHub** (si `github_issue` existe y `gh` está disponible):
    - Determinar label nuevo según mapeo
    - `gh issue edit <número> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"`
-   - Si nuevo estado es `released` o `cancelled`: `gh issue close <número>`
+   - Si nuevo estado es `released`: `gh issue close <número>` (flujo normal de cierre).
+   - **`cancelled` SOLO procede por orden explícita del usuario (palabra "cancelar"/"descartar").** Jamás cerrar un issue con `spec/cancelled` como consecuencia de que otra spec "absorba" el requerimiento: en ese caso se libera la spec documentando la implementación.
    - Si falla GitHub: continuar con warning `"⚠️ No se pudo actualizar el issue de GitHub"`
 4. **Actualizar archivo local**: Cambiar `status:` en el frontmatter
 5. **Actualizar historial**: Agregar entrada con fecha y descripción del cambio
