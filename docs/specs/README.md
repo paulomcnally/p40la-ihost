@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 89 |
+| **Total de specs** | 90 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 89 🟢 |
+| **Released** | 90 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-089 |
+| **Último ID usado** | SPEC-090 |
 
 ---
 
@@ -110,6 +110,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-087 | Filtro de cuotas en página de deuda | released | 2026-09-19 | opencode |
 | SPEC-088 | Alertas automáticas por Telegram (canal push, espejo de los mails) | released | 2026-09-19 | opencode |
 | SPEC-089 | Edición de token y chat_ids del bot de Telegram sin borrar la configuración | released | 2026-09-19 | opencode |
+| SPEC-090 | Botón de envío manual de alertas desde Configuración → Alertas | released | 2026-09-19 | opencode |
 
 ---
 
@@ -179,4 +180,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-19 — SPEC-089 (Edición de token y chat_ids del bot de Telegram sin borrar la configuración) released.*
+*Última actualización de este tracker: 2026-09-19 — SPEC-090 (Botón de envío manual de alertas desde Configuración → Alertas) released.*

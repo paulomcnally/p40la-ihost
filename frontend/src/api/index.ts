@@ -165,6 +165,16 @@ export const api = {
   alerts: {
     list: () => get<Alert[]>('/api/alerts'),
     update: (key: string, body: { mail_enabled?: boolean; voice_enabled?: boolean; telegram_enabled?: boolean }) => put(`/api/alerts/${key}`, body),
+    sendNow: () => post<{
+      message: string
+      results: Array<{
+        key: string
+        title: string
+        sent_channels: string[]
+        items: number
+        detail: string
+      }>
+    }>('/api/alerts/send-now', {}),
   },
   institutions: {
     list: () => get<Institution[]>('/api/institutions'),
