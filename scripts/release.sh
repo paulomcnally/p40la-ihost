@@ -228,14 +228,14 @@ while [[ -z "${RUN_URL}" && "${ATTEMPT}" -lt "${MAX_ATTEMPTS}" ]]; do
   if command -v jq >/dev/null 2>&1; then
     RUN_URL=$(gh run list \
       --workflow="${WORKFLOW_NAME}" \
-      --event tag \
+      --event push \
       --json url,headBranch \
       --limit 20 2>/dev/null \
       | jq -r --arg tag "v${NEW_VERSION}" '[.[] | select(.headBranch == $tag)][0].url // empty' || true)
   else
     RUN_URL=$(gh run list \
       --workflow="${WORKFLOW_NAME}" \
-      --event tag \
+      --event push \
       --limit 20 2>/dev/null \
       | grep -o "https://github.com/${GITHUB_REPO}/actions/runs/[0-9]*" | head -1 || true)
   fi
