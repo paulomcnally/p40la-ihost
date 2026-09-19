@@ -12,6 +12,8 @@ type WebhookBillPayload struct {
 	PaidAt           string  `json:"paid_at,omitempty"`
 	PaymentReference string  `json:"payment_reference,omitempty"`
 	DriveURL         string  `json:"drive_url,omitempty"`
+	IssueDate        string  `json:"issue_date,omitempty"`
+	DueDate          string  `json:"due_date,omitempty"`
 }
 
 // WebhookResult describe el resultado de un upsert vía webhook (SPEC-069).

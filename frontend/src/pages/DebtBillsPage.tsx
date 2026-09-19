@@ -10,6 +10,7 @@ import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtPayModal from '../components/DebtPayModal'
 import DonutChart from '../components/DonutChart'
+import DueDateBadge from '../components/DueDateBadge'
 import type { Debt, DebtBill } from '../types'
 
 export default function DebtBillsPage() {
@@ -173,11 +174,14 @@ export default function DebtBillsPage() {
                 <p className="text-base font-semibold">
                   {formatMoney(bill.amount, currency?.symbol || bill.currency_code)}
                 </p>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
-                }`}>
-                  {t(`bills.status_${bill.status}`)}
-                </span>
+                <div className="flex items-center gap-2">
+                  {bill.status === 'pending' && <DueDateBadge dueDate={bill.due_date} />}
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
+                  }`}>
+                    {t(`bills.status_${bill.status}`)}
+                  </span>
+                </div>
               </div>
             </div>
           ))}

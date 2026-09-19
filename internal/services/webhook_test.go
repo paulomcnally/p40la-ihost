@@ -620,3 +620,151 @@ func TestWebhookUpsertSoftDeletedNotFoundPropagates(t *testing.T) {
 		t.Errorf("monto esperado 125, got %f", res2.Bill.Amount)
 	}
 }
+
+func TestParseWebhookDates(t *testing.T) {
+	// Válidos: YYYY-MM-DD, RFC3339, con/sin zona; se normalizan a YYYY-MM-DD.
+	valid := []struct {
+		raw  string
+		want string
+	}{
+		{"2026-09-10", "2026-09-10"},
+		{"2026-10-05", "2026-10-05"},
+		{"2026-09-10T00:00:00Z", "2026-09-10"},
+		{"2026-09-10T15:04:05-06:00", "2026-09-10"},
+		{"2026-09-10 15:04:05", "2026-09-10"},
+	}
+	for _, tc := range valid {
+		got, err := parseWebhookDate(tc.raw, "issue_date")
+		if err != nil {
+			t.Errorf("parseWebhookDate(%q): error inesperado: %v", tc.raw, err)
+			continue
+		}
+		if got == nil || *got != tc.want {
+			t.Errorf("parseWebhookDate(%q) = %v, esperado %q", tc.raw, got, tc.want)
+		}
+	}
+
+	// Vacío → nil (campo opcional, NULL por defecto).
+	if got, err := parseWebhookDate("", "issue_date"); err != nil || got != nil {
+		t.Errorf("vacío: se esperaba (nil, nil), got (%v, %v)", got, err)
+	}
+
+	// Inválidos → error.
+	invalid := []string{"2026-13-40", "not-a-date", "2026/09/10", "10-09-2026"}
+	for _, raw := range invalid {
+		if _, err := parseWebhookDate(raw, "issue_date"); err == nil {
+			t.Errorf("parseWebhookDate(%q): se esperaba error", raw)
+		}
+	}
+
+	// Fechas futuras permitidas (un vencimiento normalmente es futuro).
+	future, err := parseWebhookDate("2099-12-31", "due_date")
+	if err != nil || future == nil {
+		t.Fatalf("fecha futura debería aceptarse, got (%v, %v)", future, err)
+	}
+
+	// parseWebhookBillDates: ambas vacías → nil, nil.
+	p := &models.WebhookBillPayload{}
+	i, d, err := parseWebhookBillDates(p)
+	if err != nil || i != nil || d != nil {
+		t.Errorf("payload sin fechas: se esperaba (nil, nil, nil), got (%v, %v, %v)", i, d, err)
+	}
+
+	// Una inválida → error.
+	bad := &models.WebhookBillPayload{IssueDate: "2026-09-10", DueDate: "invalida"}
+	if _, _, err := parseWebhookBillDates(bad); err == nil {
+		t.Error("due_date inválida debería devolver error")
+	}
+}
+
+func TestWebhookUpsertPersistsDates(t *testing.T) {
+	webhookSvc, serviceSvc, _ := newTestWebhook(t)
+	ctx := context.Background()
+	svc := createTestService(t, webhookSvc, serviceSvc)
+
+	// Crear con fechas: se normalizan y persisten.
+	res, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year:      2025,
+		Month:     11,
+		Amount:    1250,
+		IssueDate: "2025-11-10T15:00:00Z",
+		DueDate:   "2025-12-05",
+	})
+	if err != nil {
+		t.Fatalf("UpsertBill con fechas: %v", err)
+	}
+	if !res.Created {
+		t.Error("se esperaba created=true")
+	}
+	if res.Bill.IssueDate == nil || *res.Bill.IssueDate != "2025-11-10" {
+		t.Errorf("issue_date esperado 2025-11-10, got %v", res.Bill.IssueDate)
+	}
+	if res.Bill.DueDate == nil || *res.Bill.DueDate != "2025-12-05" {
+		t.Errorf("due_date esperado 2025-12-05, got %v", res.Bill.DueDate)
+	}
+
+	// Actualizar sin fechas: los valores previos se conservan (semántica aditiva).
+	res2, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year:   2025,
+		Month:  11,
+		Amount: 1300,
+	})
+	if err != nil {
+		t.Fatalf("UpsertBill sin fechas: %v", err)
+	}
+	if res2.Created {
+		t.Error("se esperaba created=false")
+	}
+	if res2.Bill.IssueDate == nil || *res2.Bill.IssueDate != "2025-11-10" {
+		t.Errorf("issue_date previo debe conservarse, got %v", res2.Bill.IssueDate)
+	}
+	if res2.Bill.DueDate == nil || *res2.Bill.DueDate != "2025-12-05" {
+		t.Errorf("due_date previo debe conservarse, got %v", res2.Bill.DueDate)
+	}
+
+	// Actualizar con fechas nuevas: sobrescriben.
+	res3, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year:      2025,
+		Month:     11,
+		Amount:    1300,
+		IssueDate: "2025-11-11",
+		DueDate:   "2025-12-06",
+	})
+	if err != nil {
+		t.Fatalf("UpsertBill fechas nuevas: %v", err)
+	}
+	if res3.Bill.IssueDate == nil || *res3.Bill.IssueDate != "2025-11-11" {
+		t.Errorf("issue_date nuevo esperado 2025-11-11, got %v", res3.Bill.IssueDate)
+	}
+	if res3.Bill.DueDate == nil || *res3.Bill.DueDate != "2025-12-06" {
+		t.Errorf("due_date nuevo esperado 2025-12-06, got %v", res3.Bill.DueDate)
+	}
+}
+
+func TestWebhookUpsertRejectsInvalidDate(t *testing.T) {
+	webhookSvc, serviceSvc, _ := newTestWebhook(t)
+	ctx := context.Background()
+	svc := createTestService(t, webhookSvc, serviceSvc)
+
+	cases := []models.WebhookBillPayload{
+		{Year: 2026, Month: 1, Amount: 10, IssueDate: "2026-13-40"},
+		{Year: 2026, Month: 1, Amount: 10, DueDate: "invalida"},
+		{Year: 2026, Month: 1, Amount: 10, IssueDate: "10-09-2026"},
+	}
+	for i, tc := range cases {
+		if _, err := webhookSvc.UpsertBill(ctx, svc, &tc); err == nil {
+			t.Errorf("caso %d: se esperaba error por fecha inválida", i)
+		}
+	}
+
+	// La factura del período no debe crearse si la fecha es inválida.
+	res, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
+		Year: 2026, Month: 1, Amount: 10,
+	})
+	if err != nil {
+		t.Fatalf("verificar período intacto: %v", err)
+	}
+	if !res.Created {
+		t.Error("el período 2026/01 debe estar libre (crear sin fecha inválida previa)")
+	}
+}
