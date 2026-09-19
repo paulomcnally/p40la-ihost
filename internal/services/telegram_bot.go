@@ -371,18 +371,33 @@ func formatServiciosTotales(pending []appmodels.PendingBillDetail, format Curren
 	return strings.TrimRight(msg, "\n")
 }
 
-// debtGroup agrupa las cuotas pendientes de una deuda para /deudas_pendientes.
-type debtGroup struct {
-	debt        string
-	institution string
-	count       int
-	amount      float64
-	symbol      string
+// pendingInstallment es una cuota pendiente individual de una deuda para
+// itemizar en /deudas_pendientes (SPEC-083).
+type pendingInstallment struct {
+	dueDate string
+	amount  float64
 }
 
-// formatDeudasPendientes construye un mensaje por cada deuda con cuotas
-// pendientes y agrega al final el mensaje de totales por moneda (SPEC-082).
-// Si no hay pendientes devuelve un único mensaje.
+// debtGroup agrupa las cuotas pendientes de una deuda para /deudas_pendientes.
+type debtGroup struct {
+	debt         string
+	institution  string
+	count        int
+	amount       float64
+	symbol       string
+	installments []pendingInstallment
+}
+
+// maxInstallmentsPerMessage limita la cantidad de cuotas itemizadas por
+// mensaje para respetar el límite de 4096 caracteres de Telegram y mantener
+// mensajes legibles en móvil (SPEC-083, ADR-001).
+const maxInstallmentsPerMessage = 25
+
+// formatDeudasPendientes construye los mensajes de /deudas_pendientes
+// itemizando cada cuota pendiente por deuda (SPEC-083). Si una deuda tiene
+// más de maxInstallmentsPerMessage cuotas, su mensaje se particiona en varios
+// bloques. Agrega al final el mensaje de totales por moneda (SPEC-082). Si no
+// hay pendientes devuelve un único mensaje.
 func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format CurrencyFormat) []string {
 	if len(pending) == 0 {
 		return []string{"✅ No hay deudas pendientes."}
@@ -399,18 +414,56 @@ func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format Curren
 		}
 		g.count++
 		g.amount += p.Amount
+		g.installments = append(g.installments, pendingInstallment{dueDate: p.DueDate, amount: p.Amount})
 	}
 
 	sorted := sortDebtGroups(groups, order)
 
 	msgs := make([]string, 0, len(sorted)+1)
 	for _, g := range sorted {
-		msgs = append(msgs, fmt.Sprintf(
-			"💳 *%s*\n  Institución: %s\n  Cuotas: %d\n  Pendiente: %s",
-			g.debt, g.institution, g.count, formatAmount(g.amount, g.symbol, format),
-		))
+		msgs = append(msgs, formatDebtGroup(g, format)...)
 	}
 	return append(msgs, formatDeudasTotales(pending, format))
+}
+
+// formatDebtGroup construye los mensajes de una deuda itemizando sus cuotas
+// pendientes (REQ-001). Si superan el límite por mensaje, particiona en varios
+// bloques (REQ-002): el encabezado va en el primer bloque y el resumen
+// (Cuotas/Pendiente) al final del último (REQ-003).
+func formatDebtGroup(g *debtGroup, format CurrencyFormat) []string {
+	chunks := chunkInstallments(g.installments, maxInstallmentsPerMessage)
+	msgs := make([]string, 0, len(chunks))
+	for i, chunk := range chunks {
+		var b strings.Builder
+		if i == 0 {
+			fmt.Fprintf(&b, "💳 *%s*\n  Institución: %s\n", g.debt, g.institution)
+		}
+		for _, inst := range chunk {
+			fmt.Fprintf(&b, "  📅 %s — %s\n", inst.dueDate, formatAmount(inst.amount, g.symbol, format))
+		}
+		if i == len(chunks)-1 {
+			fmt.Fprintf(&b, "  Cuotas: %d\n  Pendiente: %s", g.count, formatAmount(g.amount, g.symbol, format))
+		}
+		msgs = append(msgs, strings.TrimRight(b.String(), "\n"))
+	}
+	return msgs
+}
+
+// chunkInstallments particiona la lista de cuotas en bloques de tamaño max.
+// Devuelve un único bloque si la lista no excede el máximo.
+func chunkInstallments(inst []pendingInstallment, max int) [][]pendingInstallment {
+	if len(inst) <= max {
+		return [][]pendingInstallment{inst}
+	}
+	var chunks [][]pendingInstallment
+	for start := 0; start < len(inst); start += max {
+		end := start + max
+		if end > len(inst) {
+			end = len(inst)
+		}
+		chunks = append(chunks, inst[start:end])
+	}
+	return chunks
 }
 
 // formatDeudasTotales construye el mensaje final de /deudas_pendientes con el
