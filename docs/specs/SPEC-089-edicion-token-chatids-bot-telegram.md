@@ -253,4 +253,4 @@ Se retira (dejaba de existir el flujo de borrado). Cualquier cliente que lo invo
 |-------|-------|-------------|
 | 2026-09-19 | Agente opencode | Creación inicial de la especificación |
 | 2026-09-19 | Agente opencode | Implementación (ChatIDs en config pública, form editable con precarga, eliminación del flujo de borrado, i18n, tests) y validación manual del usuario |
-| 2026-09-19 | Agente opencode | Release: merge a main (<MERGE_HASH>), push, issue #92 cerrado con label spec/released |
+| 2026-09-19 | Agente opencode | Release: merge a main (d7f4716), push, issue #92 cerrado con label spec/released |
