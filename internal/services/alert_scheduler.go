@@ -78,11 +78,19 @@ func (s *AlertScheduler) CheckNow() {
 	s.checkAndAlert()
 }
 
+// SendNow ejecuta el envío manual de la alerta de seguros (SPEC-090):
+// salta la hora configurada y el dedup diario, respeta los canales habilitados
+// por la alerta y NO escribe last_alert_check (el automático queda intacto).
+func (s *AlertScheduler) SendNow() AlertSendResult {
+	return s.sendAlertsNow()
+}
+
 func (s *AlertScheduler) checkAndAlert() {
 	ctx := context.Background()
 
 	if !alertMailEnabled(ctx, s.alertService, models.AlertKeyInsurance) &&
-		!alertVoiceEnabled(ctx, s.alertService, models.AlertKeyInsurance) {
+		!alertVoiceEnabled(ctx, s.alertService, models.AlertKeyInsurance) &&
+		!alertTelegramEnabled(ctx, s.alertService, models.AlertKeyInsurance) {
 		slog.Debug("alert scheduler: alerta de seguros deshabilitada en todos los canales")
 		return
 	}
@@ -113,16 +121,32 @@ func (s *AlertScheduler) checkAndAlert() {
 		return
 	}
 
+	result := s.sendAlertsNow()
+	_ = s.settingsService.Set(ctx, s.lastCheckKey, today)
+	slog.Info("alert scheduler: check completado", "alerts", result.Items)
+}
+
+// sendAlertsNow recolecta los autos en alerta y los despacha por los canales
+// habilitados. No consulta la hora configurada ni el dedup diario.
+func (s *AlertScheduler) sendAlertsNow() AlertSendResult {
+	ctx := context.Background()
+	res := newSendResult(models.AlertKeyInsurance, "Seguros de autos vencidos")
+
 	alerts, err := s.collectAlerts(ctx)
 	if err != nil {
 		slog.Error("alert scheduler: error al recolectar alertas", "error", err)
-		return
+		res.Detail = "Error al recolectar alertas"
+		return res
 	}
+	res.Items = len(alerts)
 
 	if len(alerts) > 0 {
 		if alertMailEnabled(ctx, s.alertService, models.AlertKeyInsurance) {
 			if err := s.sendAlertEmail(ctx, alerts); err != nil {
 				slog.Error("alert scheduler: error al enviar email de alerta", "error", err.Error())
+				res.Detail = "Error al enviar email"
+			} else {
+				res.SentChannels = append(res.SentChannels, string(models.AlertChannelMail))
 			}
 		} else {
 			slog.Debug("alert scheduler: alerta de seguros sin mail habilitado")
@@ -131,17 +155,23 @@ func (s *AlertScheduler) checkAndAlert() {
 		speech, err := s.alertService.Speech(ctx, models.AlertKeyInsurance)
 		if err != nil {
 			slog.Error("alert scheduler: error al obtener speech", "error", err)
-		} else {
-			dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyInsurance, speech)
+		} else if dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyInsurance, speech) {
+			res.SentChannels = append(res.SentChannels, string(models.AlertChannelVoice))
 		}
 
-		dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyInsurance, formatInsuranceAlerts(alerts))
+		if dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyInsurance, formatInsuranceAlerts(alerts)) {
+			res.SentChannels = append(res.SentChannels, string(models.AlertChannelTelegram))
+		}
+
+		if res.Detail == "" {
+			res.Detail = fmt.Sprintf("%d vehículo%s en alerta", len(alerts), plural(len(alerts)))
+		}
 	} else {
 		slog.Info("alert scheduler: no hay autos en condición de alerta")
+		res.Detail = "No hay autos en condición de alerta"
 	}
 
-	_ = s.settingsService.Set(ctx, s.lastCheckKey, today)
-	slog.Info("alert scheduler: check completado", "alerts", len(alerts))
+	return res
 }
 
 // collectAlerts reúne los autos sin seguro y con seguro vencido.

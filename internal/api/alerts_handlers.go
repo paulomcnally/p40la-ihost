@@ -10,14 +10,35 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 )
 
+// AlertSenders agrupa los schedulers capaces de enviar una alerta de forma
+// manual (SPEC-090).
+type AlertSenders interface {
+	SendNow() services.AlertSendResult
+}
+
+// BillCreatedSender envía el aviso de prueba de "nueva factura generada"
+// (SPEC-090) sin generar facturas.
+type BillCreatedSender interface {
+	SendNowBillCreated() services.AlertSendResult
+}
+
 // AlertsHandlers expone el catálogo de alertas y sus toggles de canal.
 type AlertsHandlers struct {
 	alerts   *services.AlertService
 	settings *services.SystemSettingsService
+	senders  []AlertSenders
+	billCtr  BillCreatedSender
 }
 
 func NewAlertsHandlers(alerts *services.AlertService, settings *services.SystemSettingsService) *AlertsHandlers {
 	return &AlertsHandlers{alerts: alerts, settings: settings}
+}
+
+// SetSchedulers inyecta los schedulers que el envío manual puede disparar
+// (SPEC-090). Se llama desde main.go; en tests se puede omitir.
+func (h *AlertsHandlers) SetSchedulers(senders []AlertSenders, billScheduler BillCreatedSender) {
+	h.senders = senders
+	h.billCtr = billScheduler
 }
 
 // ListAlerts devuelve todas las alertas con sus flags de canal.
@@ -28,6 +49,24 @@ func (h *AlertsHandlers) ListAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondJSON(w, http.StatusOK, alerts)
+}
+
+// SendNow dispara el envío manual de las alertas (SPEC-090). Cada scheduler
+// respeta los canales habilitados por su alerta y los gates maestros; no se
+// escribe last_* (el automático queda intacto). No falla si un canal está roto.
+func (h *AlertsHandlers) SendNow(w http.ResponseWriter, r *http.Request) {
+	results := make([]services.AlertSendResult, 0, 4)
+	for _, s := range h.senders {
+		results = append(results, s.SendNow())
+	}
+	if h.billCtr != nil {
+		results = append(results, h.billCtr.SendNowBillCreated())
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Alertas enviadas",
+		"results": results,
+	})
 }
 
 type updateAlertRequest struct {
@@ -83,11 +122,11 @@ func (h *AlertsHandlers) UpdateAlert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"key":               key,
-		"mail_enabled":      derefBool(req.MailEnabled, alert.MailEnabled),
-		"voice_enabled":     derefBool(req.VoiceEnabled, alert.VoiceEnabled),
-		"telegram_enabled":  derefBool(req.TelegramEnabled, alert.TelegramEnabled),
-		"message":           "Alerta actualizada",
+		"key":              key,
+		"mail_enabled":     derefBool(req.MailEnabled, alert.MailEnabled),
+		"voice_enabled":    derefBool(req.VoiceEnabled, alert.VoiceEnabled),
+		"telegram_enabled": derefBool(req.TelegramEnabled, alert.TelegramEnabled),
+		"message":          "Alerta actualizada",
 	})
 }
 

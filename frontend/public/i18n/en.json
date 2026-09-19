@@ -335,7 +335,16 @@
       "save_error": "Error updating alert",
       "alexa_disabled_hint": "Enable Voice Monkey (token and device) and the \"Send alerts\" toggle to enable Alexa announcements.",
       "mail_disabled_hint": "Enable \"Email Alerts\", configure SMTP and add at least one recipient to enable the mail alert.",
-      "telegram_disabled_hint": "Enable the Telegram Bot (token and at least one authorized chat ID) to enable Telegram alerts."
+      "telegram_disabled_hint": "Enable the Telegram Bot (token and at least one authorized chat ID) to enable Telegram alerts.",
+      "send_now": "Send alerts now",
+      "send_now_hint": "Send alerts immediately through the enabled channels, without waiting for the scheduled time or affecting the automatic sending.",
+      "send_now_sending": "Sending alerts...",
+      "send_now_sent": "Alerts sent",
+      "send_now_error": "Error sending alerts",
+      "send_now_no_channels": "No channels sent",
+      "channel_mail": "Mail",
+      "channel_voice": "Alexa",
+      "channel_telegram": "Telegram"
     },
     "voicemonkey": {
       "title": "Voice Monkey (Alexa)",

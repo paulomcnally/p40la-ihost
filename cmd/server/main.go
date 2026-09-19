@@ -150,6 +150,14 @@ func main() {
 	systemSettingsHandlers := api.NewSystemSettingsHandlers(systemSettingsService, emailService, voiceMonkeyService)
 	systemSettingsHandlers.SetTelegramBotService(telegramBotService)
 	alertsHandlers := api.NewAlertsHandlers(alertService, systemSettingsService)
+	alertsHandlers.SetSchedulers(
+		[]api.AlertSenders{
+			alertScheduler,
+			billSummaryScheduler,
+			debtDueScheduler,
+		},
+		billingScheduler,
+	)
 	currencyHandlers := api.NewCurrencyHandlers(currencyService)
 	homeHandlers := api.NewHomeHandlers(homeService)
 	serviceHandlers := api.NewServiceHandlers(serviceService, homeService, institutionStorage)
