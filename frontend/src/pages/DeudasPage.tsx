@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
@@ -15,6 +15,7 @@ import DebtAnalysis from '../components/DebtAnalysis'
 import type { Debt, Institution } from '../types'
 
 type TabKey = 'calendario' | 'deudas' | 'analisis'
+type DebtFilter = 'all' | 'activa' | 'inactiva' | 'finalizada'
 
 export default function DeudasPage() {
   const navigate = useNavigate()
@@ -23,6 +24,8 @@ export default function DeudasPage() {
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
+  const rawFilter = searchParams.get('status')
+  const debtFilter: DebtFilter = rawFilter === 'all' || rawFilter === 'activa' || rawFilter === 'inactiva' || rawFilter === 'finalizada' ? rawFilter : 'activa'
   const tabTitle = tab === 'calendario' ? t('deudas.tab_calendar') : tab === 'deudas' ? t('deudas.tab_debts') : t('deudas.tab_analysis')
   usePageTitle(tabTitle)
 
@@ -56,8 +59,25 @@ export default function DeudasPage() {
   }, [deleteTarget, loadDebts])
 
   const setTab = (key: TabKey) => {
-    setSearchParams({ tab: key }, { replace: false })
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('tab', key)
+      return next
+    }, { replace: false })
   }
+
+  const setDebtFilter = (key: DebtFilter) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('status', key)
+      return next
+    }, { replace: false })
+  }
+
+  const filteredDebts = useMemo(() => {
+    if (debtFilter === 'all') return debts
+    return debts.filter((d) => d.status === debtFilter)
+  }, [debts, debtFilter])
 
   if (loading) return <LoadingSpinner />
 
@@ -151,8 +171,48 @@ export default function DeudasPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {debts.map((debt) => {
+        <>
+          <div className="flex gap-2 mb-4">
+            {(
+              [
+                { key: 'activa', label: t('deudas.filter_active') },
+                { key: 'all', label: t('deudas.filter_all') },
+                { key: 'inactiva', label: t('deudas.filter_inactive') },
+                { key: 'finalizada', label: t('deudas.filter_finished') },
+              ] as { key: DebtFilter; label: string }[]
+            ).map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setDebtFilter(item.key)}
+                className={`px-4 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] ${
+                  debtFilter === item.key
+                    ? 'bg-primary text-white'
+                    : 'bg-card text-text-secondary hover:bg-border'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          {filteredDebts.length === 0 ? (
+            <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
+              <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
+                <Icon name="credit" className="w-full h-full" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('deudas.empty')}</h3>
+              <p className="text-text-secondary mb-6">{t('deudas.subtitle')}</p>
+              <button
+                onClick={() => navigate('/deudas/new')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-card border-2 border-dashed border-border rounded-ios text-primary font-semibold hover:border-primary hover:bg-primary/5 transition-colors"
+              >
+                <Icon name="plus" className="w-5 h-5" />
+                {t('deudas.create')}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {filteredDebts.map((debt) => {
             const currency = currencies.find((c) => c.id === debt.currency_id)
             return (
               <div
@@ -201,7 +261,9 @@ export default function DeudasPage() {
               </div>
             )
           })}
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       {deleteTarget && (
