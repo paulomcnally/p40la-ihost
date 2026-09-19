@@ -1,20 +1,20 @@
 ---
 title: "Bot Telegram: fix matcheo de comandos + registro de comandos (SetMyCommands)"
 id: "SPEC-080"
-status: "in_progress"
+status: "released"
 author: "p40la-ihost-team"
 created: "2026-09-16"
-updated: "2026-09-16"
+updated: "2026-09-19"
 github_issue: 83
 ---
 
 # Bot Telegram: fix matcheo de comandos + registro de comandos (SetMyCommands)
 
 **ID**: SPEC-080  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: p40la-ihost-team  
 **Creado**: 2026-09-16  
-**Actualizado**: 2026-09-16
+**Actualizado**: 2026-09-19
 
 ---
 
@@ -186,20 +186,20 @@ Si no hay pendientes: `✅ No hay deudas pendientes.`
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Enviando `/servicios_pendientes` al bot (producción o local con token real), responde la lista de servicios con facturas pendientes (NO "Comando no reconocido").
-- [ ] CA-002: El menú de comandos de Telegram (al escribir `/`) muestra solo `start`, `servicios_pendientes` y `deudas_pendientes`; los 9 comandos del bot Python desaparecen.
-- [ ] CA-003: `/start` responde la bienvenida con los comandos disponibles.
-- [ ] CA-004: Un mensaje no reconocido sigue respondiendo "Comando no reconocido".
-- [ ] CA-005: Si `SetMyCommands` falla (simulado), el polling arranca igual y el server responde `/health` normalmente.
-- [ ] CA-006: `/deudas_pendientes` responde las deudas con cuotas pendientes (descripción, institución, cant, monto) ordenadas por monto descendente.
-- [ ] CA-007: `/pendientes` ya no responde (comando eliminado) — cae al default handler.
-- [ ] CA-DARK: No aplica (no toca UI).
-- [ ] CA-BACK: No aplica (no toca UI).
+- [x] CA-001: Enviando `/servicios_pendientes` al bot (producción o local con token real), responde la lista de servicios con facturas pendientes (NO "Comando no reconocido").
+- [x] CA-002: El menú de comandos de Telegram (al escribir `/`) muestra solo `start`, `servicios_pendientes` y `deudas_pendientes`; los 9 comandos del bot Python desaparecen.
+- [x] CA-003: `/start` responde la bienvenida con los comandos disponibles.
+- [x] CA-004: Un mensaje no reconocido sigue respondiendo "Comando no reconocido".
+- [x] CA-005: Si `SetMyCommands` falla (simulado), el polling arranca igual y el server responde `/health` normalmente.
+- [x] CA-006: `/deudas_pendientes` responde las deudas con cuotas pendientes (descripción, institución, cant, monto) ordenadas por monto descendente.
+- [x] CA-007: `/pendientes` ya no responde (comando eliminado) — cae al default handler.
+- [x] CA-DARK: No aplica (no toca UI).
+- [x] CA-BACK: No aplica (no toca UI).
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: `go build ./...`, `go vet ./...` y `go test ./...` sin errores.
-- [ ] CA-NF-002: Sin dependencias nuevas en `go.mod`.
+- [x] CA-NF-001: `go build ./...`, `go vet ./...` y `go test ./...` sin errores.
+- [x] CA-NF-002: Sin dependencias nuevas en `go.mod`.
 
 ### 5.3 Testing
 
@@ -246,3 +246,4 @@ Si no hay pendientes: `✅ No hay deudas pendientes.`
 |-------|-------|-------------|
 | 2026-09-16 | p40la-ihost-team | Creación inicial de la especificación |
 | 2026-09-16 | p40la-ihost-team | Iteración solicitada por el usuario: `/pendientes` se reemplaza por `/servicios_pendientes` y se agrega `/deudas_pendientes` (cuotas pendientes de deudas) |
+| 2026-09-19 | p40la-ihost-team | Release: la rama `feature/SPEC-080` ya estaba mergeada a `main` (commit 4f79281, 2026-09-16, commits 963d91f + 362877f); se completó el cierre formal: estado → released, issue #83 cerrado con label `spec/released`, README tracker actualizado, worktree/rama limpiados |
