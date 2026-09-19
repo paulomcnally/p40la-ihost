@@ -106,7 +106,9 @@ func (s *DebtBillStorage) ListByMonth(ctx context.Context, year, month int) ([]m
 
 // ListPendingWithDetails devuelve las cuotas pendientes con contexto de
 // deuda, institución y moneda, excluyendo deudas eliminadas (SPEC-080).
-func (s *DebtBillStorage) ListPendingWithDetails(ctx context.Context) ([]models.PendingDebtDetail, error) {
+// until es la fecha límite inclusiva (YYYY-MM-DD): solo se devuelven cuotas
+// con due_date <= until (del pasado al mes en curso, SPEC-085).
+func (s *DebtBillStorage) ListPendingWithDetails(ctx context.Context, until string) ([]models.PendingDebtDetail, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT db.debt_id, COALESCE(d.description, ''), COALESCE(i.name, ''),
 		       db.due_date, db.amount, COALESCE(c.symbol, ''), COALESCE(c.code, '')
@@ -114,9 +116,9 @@ func (s *DebtBillStorage) ListPendingWithDetails(ctx context.Context) ([]models.
 		JOIN debts d ON d.id = db.debt_id AND d.deleted_at IS NULL
 		LEFT JOIN institutions i ON i.id = d.institution_id
 		LEFT JOIN currencies c ON c.id = d.currency_id
-		WHERE db.status = 'pending' AND db.deleted_at IS NULL
+		WHERE db.status = 'pending' AND db.deleted_at IS NULL AND db.due_date <= ?
 		ORDER BY db.due_date ASC
-	`)
+	`, until)
 	if err != nil {
 		return nil, fmt.Errorf("listar cuotas pendientes: %w", err)
 	}

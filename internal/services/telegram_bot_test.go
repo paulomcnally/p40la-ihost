@@ -27,6 +27,45 @@ func testTelegramSettings(t *testing.T) *SystemSettingsService {
 	return NewSystemSettingsService(storage.NewSystemSettingsStorage(database))
 }
 
+func TestCurrentMonthEnd(t *testing.T) {
+	ctx := context.Background()
+
+	// Sin timezone → cutoff = último día del mes en curso UTC, formato YYYY-MM-DD.
+	s := testTelegramSettings(t)
+	cutoff, err := currentMonthEnd(ctx, s)
+	if err != nil {
+		t.Fatalf("currentMonthEnd sin timezone: %v", err)
+	}
+	assertLastDayOfCurrentMonth(t, cutoff, time.Now().UTC())
+
+	// Con timezone válida → cutoff en la zona del usuario (mes local).
+	s2 := testTelegramSettings(t)
+	if err := s2.SetTimezone(ctx, "America/Managua"); err != nil {
+		t.Fatalf("SetTimezone: %v", err)
+	}
+	cutoff2, err := currentMonthEnd(ctx, s2)
+	if err != nil {
+		t.Fatalf("currentMonthEnd con timezone: %v", err)
+	}
+	loc, _ := time.LoadLocation("America/Managua")
+	assertLastDayOfCurrentMonth(t, cutoff2, time.Now().In(loc))
+}
+
+// assertLastDayOfCurrentMonth verifica que la fecha dada (YYYY-MM-DD) sea el
+// último día del mes que contiene a now, en la zona de now.
+func assertLastDayOfCurrentMonth(t *testing.T, dateStr string, now time.Time) {
+	t.Helper()
+	parsed, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		t.Fatalf("cutoff no es YYYY-MM-DD válido: %q (%v)", dateStr, err)
+	}
+	expected := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, now.Location()).AddDate(0, 0, -1)
+	if parsed.Format("2006-01-02") != expected.Format("2006-01-02") {
+		t.Errorf("cutoff %q no es el último día del mes en curso de %v (esperado %q)",
+			dateStr, now, expected.Format("2006-01-02"))
+	}
+}
+
 func TestFormatServiciosPendientes(t *testing.T) {
 	format := DefaultCurrencyFormat()
 
@@ -110,7 +149,7 @@ func TestFormatDeudasPendientes(t *testing.T) {
 
 	t.Run("sin pendientes", func(t *testing.T) {
 		got := formatDeudasPendientes(nil, format)
-		if len(got) != 1 || got[0] != "✅ No hay deudas pendientes." {
+		if len(got) != 1 || got[0] != "✅ No hay deudas pendientes en el mes en curso." {
 			t.Errorf("esperado único mensaje vacío, got %q", got)
 		}
 	})
@@ -464,6 +503,45 @@ func TestCommandDispatchRealMatcher(t *testing.T) {
 		}
 		if !strings.Contains(last, "pendientes") {
 			t.Errorf("respuesta inesperada: %q", last)
+		}
+	})
+
+	t.Run("deudas_pendientes limita al mes en curso (SPEC-085)", func(t *testing.T) {
+		now := time.Now()
+		pastDate := time.Date(now.Year(), now.Month()-1, 15, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+		currDate := time.Date(now.Year(), now.Month(), 15, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+		nextMonth := time.Date(now.Year(), now.Month()+1, 15, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+
+		mustExec := func(q string, args ...any) {
+			t.Helper()
+			if _, err := database.ExecContext(ctx, q, args...); err != nil {
+				t.Fatalf("seed SPEC-085: %v", err)
+			}
+		}
+		mustExec("INSERT INTO institutions (name) VALUES ('Test Banco')")
+		mustExec(`INSERT INTO debts (institution_id, identifier, description, total, principal, currency_id, installments_total, installment_amount, interest_rate, payment_day, start_date, status)
+			VALUES (1, 'SPEC085', 'Deuda SPEC-085', 300, 300, 1, 3, 100, 0, 5, '2026-01-01', 'activa')`)
+		mustExec("INSERT INTO debt_bills (debt_id, installment_number, due_date, amount, status) VALUES (1, 1, ?, 100, 'pending')", pastDate)
+		mustExec("INSERT INTO debt_bills (debt_id, installment_number, due_date, amount, status) VALUES (1, 2, ?, 100, 'pending')", currDate)
+		mustExec("INSERT INTO debt_bills (debt_id, installment_number, due_date, amount, status) VALUES (1, 3, ?, 100, 'pending')", nextMonth)
+
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/deudas_pendientes"))
+		mu.Lock()
+		replies := sent[before:]
+		mu.Unlock()
+		joined := strings.Join(replies, "\n")
+		if len(replies) == 0 {
+			t.Fatal("no se envió respuesta para /deudas_pendientes")
+		}
+		if !strings.Contains(joined, pastDate) {
+			t.Errorf("cuota pasada (%s) debería reportarse:\n%s", pastDate, joined)
+		}
+		if !strings.Contains(joined, currDate) {
+			t.Errorf("cuota del mes en curso (%s) no reportada:\n%s", currDate, joined)
+		}
+		if strings.Contains(joined, nextMonth) {
+			t.Errorf("cuota futura (%s) NO debería reportarse:\n%s", nextMonth, joined)
 		}
 	})
 

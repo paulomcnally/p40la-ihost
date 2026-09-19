@@ -51,7 +51,7 @@ func TestDebtBillListPendingWithDetails(t *testing.T) {
 	store := newDebtBillPendingTestDB(t)
 	ctx := context.Background()
 
-	pending, err := store.ListPendingWithDetails(ctx)
+	pending, err := store.ListPendingWithDetails(ctx, "2026-12-31")
 	if err != nil {
 		t.Fatalf("ListPendingWithDetails: %v", err)
 	}
@@ -95,5 +95,50 @@ func TestDebtBillListPendingWithDetails(t *testing.T) {
 
 	if _, ok := byDebt[3]; ok {
 		t.Error("cuotas de deuda eliminada no deberían aparecer")
+	}
+}
+
+func TestDebtBillListPendingWithDetailsCutoff(t *testing.T) {
+	store := newDebtBillPendingTestDB(t)
+	ctx := context.Background()
+
+	// Cutoff = 2026-03-31 (fin de marzo): solo cuotas con due_date <= esa fecha.
+	pending, err := store.ListPendingWithDetails(ctx, "2026-03-31")
+	if err != nil {
+		t.Fatalf("ListPendingWithDetails: %v", err)
+	}
+
+	// Deuda 1: cuota 2026-02-05 (sí) y 2026-03-05 (sí, límite del mes).
+	// Deuda 2: cuota 2026-02-10 (sí). Cuota 2026-04-05 (pagada, excluida igual).
+	if len(pending) != 3 {
+		t.Fatalf("se esperaban 3 cuotas con cutoff 2026-03-31, got %d (%+v)", len(pending), pending)
+	}
+	for _, d := range pending {
+		if d.DueDate > "2026-03-31" {
+			t.Errorf("cuota con due_date %s no debería aparecer con cutoff 2026-03-31", d.DueDate)
+		}
+	}
+
+	// Cutoff al día anterior al vencimiento de la cuota 2026-03-05: se excluye.
+	pending, err = store.ListPendingWithDetails(ctx, "2026-03-04")
+	if err != nil {
+		t.Fatalf("ListPendingWithDetails: %v", err)
+	}
+	if len(pending) != 2 {
+		t.Fatalf("se esperaban 2 cuotas con cutoff 2026-03-04, got %d (%+v)", len(pending), pending)
+	}
+	for _, d := range pending {
+		if d.DueDate > "2026-03-04" {
+			t.Errorf("cuota con due_date %s no debería aparecer con cutoff 2026-03-04", d.DueDate)
+		}
+	}
+
+	// Cutoff anterior a todo: no hay cuotas.
+	pending, err = store.ListPendingWithDetails(ctx, "2025-12-31")
+	if err != nil {
+		t.Fatalf("ListPendingWithDetails: %v", err)
+	}
+	if len(pending) != 0 {
+		t.Fatalf("se esperaban 0 cuotas con cutoff 2025-12-31, got %d (%+v)", len(pending), pending)
 	}
 }
