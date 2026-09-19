@@ -642,10 +642,20 @@ func (s *SystemSettingsService) ResetEmailPalette(ctx context.Context) error {
 
 // Claves de config del bot de Telegram en system_settings.
 const (
-	TelegramBotEnabledKey = "telegram_bot_enabled"
-	TelegramBotTokenKey   = "telegram_bot_token"
-	TelegramBotChatIDsKey = "telegram_bot_chat_ids"
+	TelegramBotEnabledKey         = "telegram_bot_enabled"
+	TelegramBotTokenKey           = "telegram_bot_token"
+	TelegramBotChatIDsKey         = "telegram_bot_chat_ids"
+	TelegramBotSeparatorLengthKey = "telegram_bot_separator_length"
+	TelegramBotShowMonthsKey      = "telegram_bot_show_months"
 )
+
+// DefaultTelegramBotSeparatorLength es la cantidad de guiones del separador
+// del resumen por defecto (SPEC-084 REQ-014). 0 = sin separador.
+const DefaultTelegramBotSeparatorLength = 20
+
+// DefaultTelegramBotShowMonths es el rango de meses futuros por defecto de
+// /servicios_pendientes (SPEC-084 REQ-016). 1 = solo mes actual.
+const DefaultTelegramBotShowMonths = 1
 
 // GetTelegramBotConfig devuelve la config completa (incluye token). Uso
 // interno: TelegramBotService. NUNCA exponer en responses de API.
@@ -662,10 +672,20 @@ func (s *SystemSettingsService) GetTelegramBotConfig(ctx context.Context) (*mode
 	if err != nil {
 		return nil, err
 	}
+	separatorLength, err := s.GetTelegramBotSeparatorLength(ctx)
+	if err != nil {
+		return nil, err
+	}
+	showMonths, err := s.GetTelegramBotShowMonths(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return &models.TelegramBotConfig{
-		Enabled: enabled,
-		Token:   token,
-		ChatIDs: parseCommaList(chatIDsRaw),
+		Enabled:         enabled,
+		Token:           token,
+		ChatIDs:         parseCommaList(chatIDsRaw),
+		SeparatorLength: separatorLength,
+		ShowMonths:      showMonths,
 	}, nil
 }
 
@@ -677,9 +697,65 @@ func (s *SystemSettingsService) GetTelegramBotConfigPublic(ctx context.Context) 
 		return nil, err
 	}
 	return &models.TelegramBotConfigPublic{
-		Enabled:    cfg.Enabled,
-		Configured: cfg.Token != "",
+		Enabled:         cfg.Enabled,
+		Configured:      cfg.Token != "",
+		SeparatorLength: cfg.SeparatorLength,
+		ShowMonths:      cfg.ShowMonths,
 	}, nil
+}
+
+// GetTelegramBotSeparatorLength devuelve la cantidad de guiones del separador
+// del resumen (SPEC-084 REQ-014). Default 20 si no está configurado o es
+// inválido; 0 = sin separador.
+func (s *SystemSettingsService) GetTelegramBotSeparatorLength(ctx context.Context) (int, error) {
+	raw, err := s.storage.Get(ctx, TelegramBotSeparatorLengthKey)
+	if err != nil {
+		return DefaultTelegramBotSeparatorLength, err
+	}
+	if raw == "" {
+		return DefaultTelegramBotSeparatorLength, nil
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || n < 0 || n > 100 {
+		return DefaultTelegramBotSeparatorLength, nil
+	}
+	return n, nil
+}
+
+// SetTelegramBotSeparatorLength persiste la cantidad de guiones del separador.
+// Rango válido: 0-100 (0 = sin separador).
+func (s *SystemSettingsService) SetTelegramBotSeparatorLength(ctx context.Context, n int) error {
+	if n < 0 || n > 100 {
+		return fmt.Errorf("la cantidad de separadores debe estar entre 0 y 100")
+	}
+	return s.storage.Set(ctx, TelegramBotSeparatorLengthKey, strconv.Itoa(n))
+}
+
+// GetTelegramBotShowMonths devuelve el rango de meses futuros de
+// /servicios_pendientes (SPEC-084 REQ-016). Default 1 si no está configurado
+// o es inválido; rango válido 1-12.
+func (s *SystemSettingsService) GetTelegramBotShowMonths(ctx context.Context) (int, error) {
+	raw, err := s.storage.Get(ctx, TelegramBotShowMonthsKey)
+	if err != nil {
+		return DefaultTelegramBotShowMonths, err
+	}
+	if raw == "" {
+		return DefaultTelegramBotShowMonths, nil
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || n < 1 || n > 12 {
+		return DefaultTelegramBotShowMonths, nil
+	}
+	return n, nil
+}
+
+// SetTelegramBotShowMonths persiste el rango de meses futuros. Rango válido:
+// 1-12.
+func (s *SystemSettingsService) SetTelegramBotShowMonths(ctx context.Context, n int) error {
+	if n < 1 || n > 12 {
+		return fmt.Errorf("el rango de meses debe estar entre 1 y 12")
+	}
+	return s.storage.Set(ctx, TelegramBotShowMonthsKey, strconv.Itoa(n))
 }
 
 // SetTelegramBotEnabled persiste el toggle maestro "Activar Bot de Telegram".

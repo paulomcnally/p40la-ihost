@@ -14,6 +14,8 @@ export default function SettingsTelegramBotPage() {
   const [tbToken, setTbToken] = useState('')
   const [tbChatIDs, setTbChatIDs] = useState('')
   const [tbConfigured, setTbConfigured] = useState(false)
+  const [tbSeparatorLength, setTbSeparatorLength] = useState(20)
+  const [tbShowMonths, setTbShowMonths] = useState(1)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -27,6 +29,8 @@ export default function SettingsTelegramBotPage() {
       if (data) {
         setTbEnabled(data.telegram_bot_enabled ?? false)
         setTbConfigured(data.telegram_bot_configured ?? false)
+        setTbSeparatorLength(data.telegram_bot_separator_length ?? 20)
+        setTbShowMonths(data.telegram_bot_show_months ?? 1)
       }
     } catch {
       // ignore
@@ -52,11 +56,28 @@ export default function SettingsTelegramBotPage() {
       const body: Record<string, unknown> = {}
       if (tbToken.trim()) body.telegram_bot_token = tbToken.trim()
       if (tbChatIDs.trim()) body.telegram_bot_chat_ids = tbChatIDs.trim()
+      body.telegram_bot_separator_length = Number(tbSeparatorLength)
+      body.telegram_bot_show_months = Number(tbShowMonths)
       await api.systemSettings.update(body)
       const data = await api.systemSettings.get()
       if (data) setTbConfigured(data.telegram_bot_configured ?? false)
       setTbToken('')
       setTbChatIDs('')
+      showToast(t('settings.telegram_bot.saved'), 'success')
+    } catch {
+      showToast(t('settings.telegram_bot.save_error'), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveDisplay = async () => {
+    setSaving(true)
+    try {
+      await api.systemSettings.update({
+        telegram_bot_separator_length: Number(tbSeparatorLength),
+        telegram_bot_show_months: Number(tbShowMonths),
+      })
       showToast(t('settings.telegram_bot.saved'), 'success')
     } catch {
       showToast(t('settings.telegram_bot.save_error'), 'error')
@@ -159,6 +180,42 @@ export default function SettingsTelegramBotPage() {
                   {saving ? '...' : t('app.save')}
                 </button>
               )}
+            </div>
+
+            <div className="px-4 py-3.5 border-t border-border">
+              <div className="space-y-3">
+                <div>
+                  <label className={labelCls}>{t('settings.telegram_bot.separator_length')}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={tbSeparatorLength}
+                    onChange={(e) => setTbSeparatorLength(Number(e.target.value))}
+                    className={inputCls}
+                  />
+                  <p className="text-xs text-text-secondary mt-1">{t('settings.telegram_bot.separator_length_hint')}</p>
+                </div>
+                <div>
+                  <label className={labelCls}>{t('settings.telegram_bot.show_months')}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={tbShowMonths}
+                    onChange={(e) => setTbShowMonths(Number(e.target.value))}
+                    className={inputCls}
+                  />
+                  <p className="text-xs text-text-secondary mt-1">{t('settings.telegram_bot.show_months_hint')}</p>
+                </div>
+                <button
+                  onClick={handleSaveDisplay}
+                  disabled={saving}
+                  className="w-full px-4 py-2.5 rounded-ios-sm bg-primary text-white font-medium min-h-[44px] disabled:opacity-50"
+                >
+                  {saving ? '...' : t('app.save')}
+                </button>
+              </div>
             </div>
           </>
         )}
