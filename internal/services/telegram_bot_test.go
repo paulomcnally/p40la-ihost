@@ -340,44 +340,124 @@ t.Run("sin facturas del periodo actual muestra vacío", func(t *testing.T) {
 
 func TestFormatDeudasPendientes(t *testing.T) {
 	format := DefaultCurrencyFormat()
+	// Fecha fija de referencia: 2026-09-19 (zona UTC, ADR-004).
+	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
+	sepLen := DefaultTelegramBotSeparatorLength
+	showMonths := DefaultTelegramBotShowMonths
 
 	t.Run("sin pendientes", func(t *testing.T) {
-		got := formatDeudasPendientes(nil, format)
+		got := formatDeudasPendientes(nil, format, now, sepLen, showMonths)
 		if len(got) != 1 || got[0] != "✅ No hay deudas pendientes." {
 			t.Errorf("esperado único mensaje vacío, got %q", got)
 		}
 	})
 
-	t.Run("itemiza cuotas por deuda + totales, ordenado por monto", func(t *testing.T) {
+	t.Run("itemiza cuotas con semáforo, fecha legible, espaciado y negritas", func(t *testing.T) {
 		pending := []appmodels.PendingDebtDetail{
-			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", DueDate: "2026-09-05", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
-			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", DueDate: "2026-10-05", Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", DueDate: "2026-09-07", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", DueDate: "2026-09-23", Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO"},
 			{DebtID: 2, DebtDescription: "Tarjeta BAC", InstitutionName: "BAC Credomatic", DueDate: "2026-09-10", Amount: 500, CurrencySymbol: "C$", CurrencyCode: "NIO"},
 		}
-		got := formatDeudasPendientes(pending, format)
+		got := formatDeudasPendientes(pending, format, now, sepLen, showMonths)
 		// 2 deudas + 1 totales.
 		if len(got) != 3 {
 			t.Fatalf("esperados 3 mensajes, got %d: %q", len(got), got)
 		}
-		// BAC (500) primero: encabezado + cuota itemizada + resumen.
-		if !contains(got[0], "Tarjeta BAC") || !contains(got[0], "BAC Credomatic") {
+		// BAC (500) primero: encabezado + cuota con semáforo + resumen.
+		if !contains(got[0], "💳 *Tarjeta BAC*") || !contains(got[0], "*Institución*: BAC Credomatic") {
 			t.Errorf("mensaje de BAC sin encabezado:\n%s", got[0])
 		}
-		if !contains(got[0], "📅 2026-09-10 — C$500.00") {
-			t.Errorf("mensaje de BAC sin cuota itemizada:\n%s", got[0])
+		if !contains(got[0], "🔴 Vencida hace 9 días") || !contains(got[0], "📅 10 sep 2026 — C$500.00") {
+			t.Errorf("mensaje de BAC sin semáforo/fecha legible:\n%s", got[0])
 		}
 		if !contains(got[0], "*Cuotas*: 1") || !contains(got[0], "*Pendiente*: C$500.00") {
-			t.Errorf("mensaje de BAC sin resumen:\n%s", got[0])
+			t.Errorf("mensaje de BAC sin resumen en negrita:\n%s", got[0])
 		}
-		// LAFISE: 2 cuotas itemizadas en orden de due_date + resumen.
-		if !contains(got[1], "Préstamo LAFISE") || !contains(got[1], "📅 2026-09-05 — C$100.00") || !contains(got[1], "📅 2026-10-05 — C$50.00") {
-			t.Errorf("mensaje de LAFISE sin cuotas itemizadas:\n%s", got[1])
+		// LAFISE: cuotas con semáforo y fecha legible, línea en blanco entre ellas.
+		if !contains(got[1], "🔴 Vencida hace 12 días") || !contains(got[1], "📅 07 sep 2026 — C$100.00") {
+			t.Errorf("mensaje de LAFISE sin vencida:\n%s", got[1])
+		}
+		if !contains(got[1], "🟡 Vence en 4 días") || !contains(got[1], "📅 23 sep 2026 — C$50.00") {
+			t.Errorf("mensaje de LAFISE sin próxima amarilla:\n%s", got[1])
+		}
+		// Espaciado: cada cuota termina en línea en blanco.
+		if !strings.Contains(got[1], "📅 07 sep 2026 — C$100.00\n\n  🟡") {
+			t.Errorf("sin línea en blanco entre cuotas:\n%s", got[1])
 		}
 		if !contains(got[1], "*Cuotas*: 2") || !contains(got[1], "*Pendiente*: C$150.00") {
 			t.Errorf("mensaje de LAFISE sin resumen:\n%s", got[1])
 		}
 		if !contains(got[2], "Totales") || !contains(got[2], "NIO: C$650.00") {
 			t.Errorf("mensaje de totales incorrecto:\n%s", got[2])
+		}
+	})
+
+	t.Run("filtra cuotas de meses futuros", func(t *testing.T) {
+		pending := []appmodels.PendingDebtDetail{
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", DueDate: "2026-09-01", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", DueDate: "2026-09-30", Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", DueDate: "2026-10-01", Amount: 500, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", DueDate: "2027-03-10", Amount: 700, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+		}
+		got := formatDeudasPendientes(pending, format, now, sepLen, showMonths)
+		// 1 deuda + 1 totales.
+		if len(got) != 2 {
+			t.Fatalf("esperados 2 mensajes, got %d: %q", len(got), got)
+		}
+		// Futuras excluidas del detalle, conteo y totales.
+		if strings.Contains(got[0], "500.00") || strings.Contains(got[0], "700.00") {
+			t.Errorf("cuota futura aparece en el detalle:\n%s", got[0])
+		}
+		if !contains(got[0], "*Cuotas*: 2") || !contains(got[0], "*Pendiente*: C$150.00") {
+			t.Errorf("conteo/total debería excluir futuras:\n%s", got[0])
+		}
+		if !contains(got[1], "NIO: C$150.00") {
+			t.Errorf("totales debería excluir futuras:\n%s", got[1])
+		}
+	})
+
+	t.Run("sin cuotas del periodo actual muestra vacío", func(t *testing.T) {
+		pending := []appmodels.PendingDebtDetail{
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", DueDate: "2026-10-05", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+		}
+		got := formatDeudasPendientes(pending, format, now, sepLen, showMonths)
+		if len(got) != 1 || got[0] != "✅ No hay deudas pendientes." {
+			t.Errorf("esperado único mensaje vacío, got %q", got)
+		}
+	})
+
+	t.Run("showMonths=2 incluye el próximo mes pero no el siguiente", func(t *testing.T) {
+		pending := []appmodels.PendingDebtDetail{
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", DueDate: "2026-07-01", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", DueDate: "2026-10-20", Amount: 200, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", DueDate: "2026-11-15", Amount: 400, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+		}
+		got := formatDeudasPendientes(pending, format, now, sepLen, 2)
+		if len(got) != 2 {
+			t.Fatalf("esperados 2 mensajes, got %d: %q", len(got), got)
+		}
+		if !contains(got[0], "C$100.00") || !contains(got[0], "C$200.00") {
+			t.Errorf("vencida o próximo mes ausente:\n%s", got[0])
+		}
+		if strings.Contains(got[0], "C$400.00") {
+			t.Errorf("cuota de +2 meses no debería aparecer con N=2:\n%s", got[0])
+		}
+		if !contains(got[0], "*Cuotas*: 2") || !contains(got[0], "*Pendiente*: C$300.00") {
+			t.Errorf("conteo/total incorrecto:\n%s", got[0])
+		}
+	})
+
+	t.Run("separador configurable", func(t *testing.T) {
+		pending := []appmodels.PendingDebtDetail{
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", DueDate: "2026-09-05", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+		}
+		got := formatDeudasPendientes(pending, format, now, 30, showMonths)
+		if !strings.Contains(got[0], strings.Repeat("-", 30)) {
+			t.Errorf("separador de 30 guiones no aplicado:\n%s", got[0])
+		}
+		got0 := formatDeudasPendientes(pending, format, now, 0, showMonths)
+		if strings.Contains(got0[0], strings.Repeat("-", 20)) {
+			t.Errorf("separador 0 debería omitirse:\n%s", got0[0])
 		}
 	})
 
@@ -389,7 +469,7 @@ func TestFormatDeudasPendientes(t *testing.T) {
 				DueDate: "2026-09-12", Amount: 620, CurrencySymbol: "C$", CurrencyCode: "NIO",
 			})
 		}
-		got := formatDeudasPendientes(pending, format)
+		got := formatDeudasPendientes(pending, format, now, sepLen, showMonths)
 		// 60 cuotas → 3 bloques (25+25+10) + 1 totales.
 		if len(got) != 4 {
 			t.Fatalf("esperados 4 mensajes (3 bloques + totales), got %d", len(got))
