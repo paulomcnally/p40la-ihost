@@ -143,6 +143,74 @@ func (s *BillingScheduler) checkAndGenerate() {
 	slog.Info("billing scheduler: generación completada", "generated", generated)
 }
 
+// SendNowBillCreated envía un aviso de prueba de "nueva factura generada"
+// (SPEC-090) SIN generar facturas ni tocar last_billing_generation. Salta la
+// hora configurada y el dedup, respeta los canales habilitados de la alerta.
+func (s *BillingScheduler) SendNowBillCreated() AlertSendResult {
+	ctx := context.Background()
+	res := newSendResult(models.AlertKeyBillCreated, "Nueva factura generada")
+
+	if alertMailEnabled(ctx, s.alertService, models.AlertKeyBillCreated) {
+		if err := s.sendBillCreatedTestEmail(ctx); err != nil {
+			slog.Error("billing scheduler: error al enviar email de prueba de factura", "error", err.Error())
+			res.Detail = "Error al enviar email"
+		} else {
+			res.SentChannels = append(res.SentChannels, string(models.AlertChannelMail))
+		}
+	} else {
+		slog.Debug("billing scheduler: aviso de factura sin mail habilitado")
+	}
+
+	speech, err := s.alertService.Speech(ctx, models.AlertKeyBillCreated)
+	if err != nil {
+		slog.Error("billing scheduler: error al obtener speech", "error", err)
+	} else if dispatchVoice(ctx, s.alertService, s.voiceMonkey, models.AlertKeyBillCreated, speech) {
+		res.SentChannels = append(res.SentChannels, string(models.AlertChannelVoice))
+	}
+
+	if dispatchTelegram(ctx, s.alertService, s.telegramBot, models.AlertKeyBillCreated, formatBillCreatedAlert(1)) {
+		res.SentChannels = append(res.SentChannels, string(models.AlertChannelTelegram))
+	}
+
+	res.Items = 1
+	if res.Detail == "" {
+		res.Detail = "Aviso de prueba enviado (sin generar facturas)"
+	}
+	return res
+}
+
+// sendBillCreatedTestEmail envía el email de prueba del aviso de nueva factura
+// a los destinatarios configurados, sin asociarlo a un servicio/factura real.
+func (s *BillingScheduler) sendBillCreatedTestEmail(ctx context.Context) error {
+	if s.emailService == nil {
+		return fmt.Errorf("email service no disponible")
+	}
+
+	recipients, err := s.settingsService.GetAlertEmails(ctx)
+	if err != nil {
+		return fmt.Errorf("obtener destinatarios: %w", err)
+	}
+	if len(recipients) == 0 {
+		return fmt.Errorf("no hay destinatarios configurados")
+	}
+
+	configured, err := s.settingsService.IsSMTPConfigured(ctx)
+	if err != nil {
+		return err
+	}
+	if !configured {
+		return fmt.Errorf("SMTP no configurado")
+	}
+
+	title := "Nueva factura generada — Aviso de prueba"
+	content := `<p>Este es un <strong>aviso de prueba</strong> de la alerta "Nueva factura generada".</p>
+<p>Cuando el sistema genere facturas automáticamente, recibirás un email como este con los detalles del período, el monto y el servicio.</p>
+<p style="margin-top:24px;color:#8e8e93;font-size:13px;">Enviado desde el botón "Enviar alertas ahora" de Configuración → Alertas.</p>`
+
+	html := s.emailService.RenderTemplate(ctx, title, content)
+	return s.emailService.Send(ctx, recipients, title, html)
+}
+
 // createdSpeech adapta el speech de "nueva factura" según la cantidad generada.
 func createdSpeech(base string, n int) string {
 	if n == 1 {

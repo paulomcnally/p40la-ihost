@@ -8,6 +8,14 @@ import type { Alert } from '../types'
 
 type AlertChannelField = 'mail_enabled' | 'voice_enabled' | 'telegram_enabled'
 
+type SendNowResult = {
+  key: string
+  title: string
+  sent_channels: string[]
+  items: number
+  detail: string
+}
+
 export default function SettingsAlertsPage() {
   const { t } = useI18nStore()
   usePageTitle(t('settings.alerts.title'))
@@ -16,6 +24,7 @@ export default function SettingsAlertsPage() {
   const [emailActive, setEmailActive] = useState(false)
   const [vmActive, setVmActive] = useState(false)
   const [tbActive, setTbActive] = useState(false)
+  const [sending, setSending] = useState(false)
 
   useEffect(() => {
     loadAlerts()
@@ -65,8 +74,51 @@ export default function SettingsAlertsPage() {
     }
   }
 
+  const channelLabel = (ch: string): string => {
+    switch (ch) {
+      case 'mail': return t('settings.alerts.channel_mail')
+      case 'voice': return t('settings.alerts.channel_voice')
+      case 'telegram': return t('settings.alerts.channel_telegram')
+      default: return ch
+    }
+  }
+
+  const handleSendNow = async () => {
+    if (sending) return
+    setSending(true)
+    try {
+      const data = await api.alerts.sendNow()
+      if (data) {
+        const lines = (data.results ?? []).map((r: SendNowResult) => {
+          const channels = r.sent_channels.length > 0
+            ? r.sent_channels.map(channelLabel).join(', ')
+            : t('settings.alerts.send_now_no_channels')
+          return `${r.title}: ${channels}`
+        })
+        showToast(`${t('settings.alerts.send_now_sent')}${lines.length ? ` — ${lines.join(' · ')}` : ''}`, 'success')
+      }
+    } catch {
+      showToast(t('settings.alerts.send_now_error'), 'error')
+    } finally {
+      setSending(false)
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
+      <div className="bg-card rounded-ios shadow-ios overflow-hidden mb-4">
+        <div className="px-4 py-3.5">
+          <div className="font-medium">{t('settings.alerts.send_now')}</div>
+          <div className="text-sm text-text-secondary mb-3">{t('settings.alerts.send_now_hint')}</div>
+          <button
+            onClick={handleSendNow}
+            disabled={sending}
+            className="w-full px-4 py-2.5 rounded-ios-sm bg-primary text-white font-medium min-h-[44px] disabled:opacity-50"
+          >
+            {sending ? t('settings.alerts.send_now_sending') : t('settings.alerts.send_now')}
+          </button>
+        </div>
+      </div>
       <div className="bg-card rounded-ios shadow-ios overflow-hidden">
         {alerts.length === 0 && (
           <div className="px-4 py-3.5 text-sm text-text-secondary">...</div>
