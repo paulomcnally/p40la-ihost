@@ -211,7 +211,7 @@ func (s *BillStorage) Reactivate(ctx context.Context, id int64) error {
 func (s *BillStorage) ListPendingWithDetails(ctx context.Context) ([]models.PendingBillDetail, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT b.id, b.service_id, b.year, b.month, b.amount, b.status, b.created_at,
-		       s.home_id, h.name, COALESCE(i.name, s.institution, ''), s.name, COALESCE(c.symbol, '')
+		       s.home_id, h.name, COALESCE(i.name, s.institution, ''), s.name, COALESCE(c.symbol, ''), COALESCE(c.code, '')
 		FROM bills b
 		JOIN services s ON s.id = b.service_id AND s.deleted_at IS NULL
 		JOIN homes h ON h.id = s.home_id
@@ -229,7 +229,7 @@ func (s *BillStorage) ListPendingWithDetails(ctx context.Context) ([]models.Pend
 	for rows.Next() {
 		var d models.PendingBillDetail
 		if err := rows.Scan(&d.BillID, &d.ServiceID, &d.Year, &d.Month, &d.Amount, &d.Status,
-			&d.CreatedAt, &d.HomeID, &d.HomeName, &d.Institution, &d.ServiceName, &d.CurrencySymbol); err != nil {
+			&d.CreatedAt, &d.HomeID, &d.HomeName, &d.Institution, &d.ServiceName, &d.CurrencySymbol, &d.CurrencyCode); err != nil {
 			return nil, fmt.Errorf("escanear factura pendiente: %w", err)
 		}
 		pending = append(pending, d)

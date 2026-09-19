@@ -80,6 +80,9 @@ func TestDebtBillListPendingWithDetails(t *testing.T) {
 		if d.CurrencySymbol != "C$" {
 			t.Errorf("currency_symbol esperado 'C$', got %q", d.CurrencySymbol)
 		}
+		if d.CurrencyCode != "NIO" {
+			t.Errorf("currency_code esperado 'NIO', got %q", d.CurrencyCode)
+		}
 	}
 
 	rows2, ok := byDebt[2]
