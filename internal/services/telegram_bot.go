@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -217,12 +218,32 @@ func (s *TelegramBotService) handleServiciosPendientes(ctx context.Context, b *b
 		currencyFormat = DefaultCurrencyFormat()
 	}
 
-	s.sendMany(ctx, b, update, formatServiciosPendientes(pending, currencyFormat))
+	// "Hoy" en la zona horaria configurada (SPEC-084, ADR-004); fallback UTC.
+	loc, err := s.settings.GetTimezoneLocation(ctx)
+	if err != nil {
+		loc = time.UTC
+	}
+	now := time.Now().In(loc)
+
+	// Cantidad de guiones del separador (SPEC-084 REQ-014).
+	sepLen, err := s.settings.GetTelegramBotSeparatorLength(ctx)
+	if err != nil {
+		sepLen = DefaultTelegramBotSeparatorLength
+	}
+	// Rango de meses futuros a mostrar (SPEC-084 REQ-016).
+	showMonths, err := s.settings.GetTelegramBotShowMonths(ctx)
+	if err != nil {
+		showMonths = DefaultTelegramBotShowMonths
+	}
+
+	s.sendMany(ctx, b, update, formatServiciosPendientes(pending, currencyFormat, now, sepLen, showMonths))
 }
 
 // handleDeudasPendientes responde con un mensaje por cada deuda que tiene
-// cuotas pendientes y un mensaje final con los totales por moneda
-// (REQ-002, REQ-004).
+// cuotas pendientes dentro del rango configurado (showMonths) y un mensaje
+// final con los totales por moneda (REQ-002, REQ-004). El formato replica el
+// de /servicios_pendientes (SPEC-086): semáforo, fecha legible, espaciado,
+// separador configurable y negritas.
 func (s *TelegramBotService) handleDeudasPendientes(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
 	if !s.checkAuthorized(ctx, b, update) {
 		return
@@ -241,7 +262,25 @@ func (s *TelegramBotService) handleDeudasPendientes(ctx context.Context, b *bot.
 		currencyFormat = DefaultCurrencyFormat()
 	}
 
-	s.sendMany(ctx, b, update, formatDeudasPendientes(pending, currencyFormat))
+	// "Hoy" en la zona horaria configurada (SPEC-084, ADR-004); fallback UTC.
+	loc, err := s.settings.GetTimezoneLocation(ctx)
+	if err != nil {
+		loc = time.UTC
+	}
+	now := time.Now().In(loc)
+
+	// Cantidad de guiones del separador (SPEC-084 REQ-014).
+	sepLen, err := s.settings.GetTelegramBotSeparatorLength(ctx)
+	if err != nil {
+		sepLen = DefaultTelegramBotSeparatorLength
+	}
+	// Rango de meses futuros a mostrar (SPEC-084 REQ-016).
+	showMonths, err := s.settings.GetTelegramBotShowMonths(ctx)
+	if err != nil {
+		showMonths = DefaultTelegramBotShowMonths
+	}
+
+	s.sendMany(ctx, b, update, formatDeudasPendientes(pending, currencyFormat, now, sepLen, showMonths))
 }
 
 // checkAuthorized valida el chat contra la allowlist y guarda el último chat
@@ -300,19 +339,159 @@ type pendingGroup struct {
 	count   int
 	amount  float64
 	symbol  string
+	bills   []pendingBill // facturas itemizadas, SPEC-084
+}
+
+// pendingBill es una factura pendiente itemizada con su estado de
+// vencimiento para /servicios_pendientes (SPEC-084).
+type pendingBill struct {
+	label  string // fecha legible ("07 sep 2026") o periodo ("ago 2026")
+	status string // semáforo + texto ("🔴 Vencida hace 3 días")
+	days   int    // días hasta vencimiento (negativo si vencida)
+	hasDue bool   // true si tiene due_date (las sin fecha van al final)
+	amount float64
+}
+
+// maxBillsPerMessage limita la cantidad de facturas itemizadas por mensaje
+// para respetar el límite de 4096 caracteres de Telegram (SPEC-084, ADR-002).
+// Mismo valor que maxInstallmentsPerMessage (SPEC-083).
+const maxBillsPerMessage = 25
+
+// esMonthAbbr son los meses en español abreviados para fechas legibles
+// (SPEC-084, REQ-010).
+var esMonthAbbr = [...]string{"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"}
+
+// billDueDate devuelve la fecha de vencimiento real de la factura y su label
+// legible, o false en hasDue si no tiene due_date (SPEC-084, ADR-001).
+func billDueDate(p appmodels.PendingBillDetail) (string, bool) {
+	if p.DueDate == nil {
+		return "", false
+	}
+	return billDueDateLabel(*p.DueDate)
+}
+
+// billDueDateLabel devuelve la fecha legible ("07 sep 2026") de un string
+// YYYY-MM-DD, o false si está vacía o es inválida (SPEC-084, REQ-010).
+func billDueDateLabel(dueDate string) (string, bool) {
+	if dueDate == "" {
+		return "", false
+	}
+	t, err := time.Parse("2006-01-02", dueDate)
+	if err != nil {
+		return "", false
+	}
+	return fmt.Sprintf("%02d %s %d", t.Day(), esMonthAbbr[t.Month()-1], t.Year()), true
+}
+
+// periodLabel construye el label de periodo (año-mes) de una factura sin
+// due_date: "ago 2026" (SPEC-084, ADR-001).
+func periodLabel(p appmodels.PendingBillDetail) string {
+	if p.Month < 1 || p.Month > 12 {
+		return fmt.Sprintf("%04d", p.Year)
+	}
+	return fmt.Sprintf("%s %d", esMonthAbbr[p.Month-1], p.Year)
+}
+
+// daysUntilDue devuelve los días calendario entre hoy (en la zona del server,
+// ADR-004) y la fecha de vencimiento. Negativo si ya venció.
+func daysUntilDue(dueDate string, now time.Time) int {
+	t, err := time.Parse("2006-01-02", dueDate)
+	if err != nil {
+		return 0
+	}
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	due := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, now.Location())
+	return int(due.Sub(today).Hours() / 24)
+}
+
+// billStatus construye el semáforo de vencimiento de una factura con la misma
+// regla que DueDateBadge (SPEC-081 REQ-008): verde >10 días, amarillo 1-10,
+// rojo vence hoy o vencida. Sin due_date → 🟢 neutro (ADR-003).
+func billStatus(days int, hasDue bool) string {
+	if !hasDue {
+		return "🟢 Sin fecha"
+	}
+	switch {
+	case days > 10:
+		return fmt.Sprintf("🟢 Vence en %d %s", days, dayWord(days))
+	case days >= 1:
+		return fmt.Sprintf("🟡 Vence en %d %s", days, dayWord(days))
+	case days == 0:
+		return "🔴 Vence hoy"
+	default:
+		return fmt.Sprintf("🔴 Vencida hace %d %s", -days, dayWord(-days))
+	}
+}
+
+// dayWord devuelve "día" o "días" según la cantidad (singular/plural).
+func dayWord(n int) string {
+	if n == 1 {
+		return "día"
+	}
+	return "días"
+}
+
+// currentMonthEnd devuelve el último día del mes de now (en su zona horaria).
+func currentMonthEnd(now time.Time) time.Time {
+	firstNext := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, now.Location())
+	return firstNext.AddDate(0, 0, -1)
+}
+
+// dueInRange indica si una fecha de vencimiento cae dentro del rango a
+// mostrar (SPEC-084 REQ-012/016, SPEC-086 REQ-006): las vencidas se muestran
+// SIEMPRE sin importar su antigüedad; las no vencidas solo si su due_date cae
+// dentro de los próximos showMonths meses desde el mes actual (showMonths=1 →
+// solo mes actual). Una fecha vacía o inválida siempre se mantiene.
+func dueInRange(dueDate string, now time.Time, showMonths int) bool {
+	if dueDate == "" {
+		return true
+	}
+	t, err := time.Parse("2006-01-02", dueDate)
+	if err != nil {
+		return true
+	}
+	due := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, now.Location())
+	// Vencida → siempre.
+	if due.Before(now) {
+		return true
+	}
+	// No vencida: límite = fin del mes actual + (showMonths-1) meses.
+	limit := currentMonthEnd(now).AddDate(0, showMonths-1, 0)
+	return !due.After(limit)
+}
+
+// isCurrentPeriod indica si una factura es "del presente" para
+// /servicios_pendientes (REQ-012, REQ-016). Las facturas sin due_date
+// (periodo actual) siempre se mantienen.
+func isCurrentPeriod(p appmodels.PendingBillDetail, now time.Time, showMonths int) bool {
+	if p.DueDate == nil || *p.DueDate == "" {
+		return true
+	}
+	return dueInRange(*p.DueDate, now, showMonths)
 }
 
 // formatServiciosPendientes construye un mensaje por cada servicio con
-// facturas pendientes y agrega al final el mensaje de totales por moneda
-// (SPEC-082). Si no hay pendientes devuelve un único mensaje.
-func formatServiciosPendientes(pending []appmodels.PendingBillDetail, format CurrencyFormat) []string {
-	if len(pending) == 0 {
+// facturas pendientes del periodo actual (REQ-012/016), itemizando cada
+// factura con su semáforo de vencimiento (SPEC-084), y agrega al final el
+// mensaje de totales por moneda (SPEC-082). Si un servicio tiene más de
+// maxBillsPerMessage facturas, su mensaje se particiona en varios bloques
+// (ADR-002). sepLen es la cantidad de guiones del separador del resumen
+// (REQ-014; 0 = sin separador). Si no hay pendientes devuelve un único
+// mensaje.
+func formatServiciosPendientes(pending []appmodels.PendingBillDetail, format CurrencyFormat, now time.Time, sepLen, showMonths int) []string {
+	filtered := make([]appmodels.PendingBillDetail, 0, len(pending))
+	for _, p := range pending {
+		if isCurrentPeriod(p, now, showMonths) {
+			filtered = append(filtered, p)
+		}
+	}
+	if len(filtered) == 0 {
 		return []string{"✅ No hay facturas pendientes."}
 	}
 
 	groups := make(map[int64]*pendingGroup)
 	var order []int64
-	for _, p := range pending {
+	for _, p := range filtered {
 		g, ok := groups[p.ServiceID]
 		if !ok {
 			g = &pendingGroup{service: p.ServiceName, home: p.HomeName, symbol: p.CurrencySymbol}
@@ -321,18 +500,91 @@ func formatServiciosPendientes(pending []appmodels.PendingBillDetail, format Cur
 		}
 		g.count++
 		g.amount += p.Amount
+
+		dueLabel, hasDue := billDueDate(p)
+		if !hasDue {
+			dueLabel = periodLabel(p)
+		}
+		var days int
+		if hasDue {
+			days = daysUntilDue(*p.DueDate, now)
+		}
+		g.bills = append(g.bills, pendingBill{
+			label:  dueLabel,
+			status: billStatus(days, hasDue),
+			days:   days,
+			hasDue: hasDue,
+			amount: p.Amount,
+		})
 	}
 
 	sorted := sortGroups(groups, order)
 
 	msgs := make([]string, 0, len(sorted)+1)
 	for _, g := range sorted {
-		msgs = append(msgs, fmt.Sprintf(
-			"⚡ *%s*\n  Casa: %s\n  Facturas: %d\n  Pendiente: %s",
-			g.service, g.home, g.count, formatAmount(g.amount, g.symbol, format),
-		))
+		msgs = append(msgs, formatServiceGroup(g, format, sepLen)...)
 	}
-	return append(msgs, formatServiciosTotales(pending, format))
+	return append(msgs, formatServiciosTotales(filtered, format))
+}
+
+// formatServiceGroup construye los mensajes de un servicio itemizando sus
+// facturas pendientes (REQ-001) ordenadas por urgencia (REQ-011). Si superan
+// el límite por mensaje, particiona en varios bloques (REQ-005): el
+// encabezado va en el primer bloque y el resumen al final del último
+// (REQ-002, ADR-002). sepLen define los guiones del separador (REQ-014).
+func formatServiceGroup(g *pendingGroup, format CurrencyFormat, sepLen int) []string {
+	sortBillsByDue(g.bills)
+	chunks := chunkBills(g.bills, maxBillsPerMessage)
+	msgs := make([]string, 0, len(chunks))
+	for i, chunk := range chunks {
+		var b strings.Builder
+		if i == 0 {
+			fmt.Fprintf(&b, "⚡ *%s* — %s\n\n", g.service, g.home)
+		}
+		for _, bill := range chunk {
+			fmt.Fprintf(&b, "  %s\n  📅 %s — %s\n\n", bill.status, bill.label, formatAmount(bill.amount, g.symbol, format))
+		}
+		if i == len(chunks)-1 {
+			if sepLen > 0 {
+				fmt.Fprintf(&b, "  %s\n", strings.Repeat("-", sepLen))
+			}
+			fmt.Fprintf(&b, "  *Facturas*: %d\n  *Pendiente*: %s", g.count, formatAmount(g.amount, g.symbol, format))
+		}
+		msgs = append(msgs, strings.TrimRight(b.String(), "\n"))
+	}
+	return msgs
+}
+
+// sortBillsByDue ordena las facturas por urgencia (REQ-011): con due_date
+// primero, por fecha de vencimiento ascendente (más vencida primero); las sin
+// fecha al final, en su orden original.
+func sortBillsByDue(bills []pendingBill) {
+	sort.SliceStable(bills, func(i, j int) bool {
+		if bills[i].hasDue != bills[j].hasDue {
+			return bills[i].hasDue
+		}
+		if !bills[i].hasDue {
+			return false
+		}
+		return bills[i].days < bills[j].days
+	})
+}
+
+// chunkBills particiona la lista de facturas en bloques de tamaño max.
+// Devuelve un único bloque si la lista no excede el máximo.
+func chunkBills(bills []pendingBill, max int) [][]pendingBill {
+	if len(bills) <= max {
+		return [][]pendingBill{bills}
+	}
+	var chunks [][]pendingBill
+	for start := 0; start < len(bills); start += max {
+		end := start + max
+		if end > len(bills) {
+			end = len(bills)
+		}
+		chunks = append(chunks, bills[start:end])
+	}
+	return chunks
 }
 
 // currencyTotal acumula el monto pendiente de una moneda para el mensaje de
@@ -371,21 +623,14 @@ func formatServiciosTotales(pending []appmodels.PendingBillDetail, format Curren
 	return strings.TrimRight(msg, "\n")
 }
 
-// pendingInstallment es una cuota pendiente individual de una deuda para
-// itemizar en /deudas_pendientes (SPEC-083).
-type pendingInstallment struct {
-	dueDate string
-	amount  float64
-}
-
 // debtGroup agrupa las cuotas pendientes de una deuda para /deudas_pendientes.
 type debtGroup struct {
-	debt         string
-	institution  string
-	count        int
-	amount       float64
-	symbol       string
-	installments []pendingInstallment
+	debt        string
+	institution string
+	count       int
+	amount      float64
+	symbol      string
+	bills       []pendingBill // cuotas itemizadas, SPEC-086 (layout de SPEC-084)
 }
 
 // maxInstallmentsPerMessage limita la cantidad de cuotas itemizadas por
@@ -394,18 +639,26 @@ type debtGroup struct {
 const maxInstallmentsPerMessage = 25
 
 // formatDeudasPendientes construye los mensajes de /deudas_pendientes
-// itemizando cada cuota pendiente por deuda (SPEC-083). Si una deuda tiene
-// más de maxInstallmentsPerMessage cuotas, su mensaje se particiona en varios
-// bloques. Agrega al final el mensaje de totales por moneda (SPEC-082). Si no
-// hay pendientes devuelve un único mensaje.
-func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format CurrencyFormat) []string {
-	if len(pending) == 0 {
+// itemizando cada cuota pendiente por deuda con el mismo formato de
+// /servicios_pendientes (SPEC-086): semáforo de vencimiento, fecha legible,
+// línea en blanco entre cuotas, separador configurable y resumen en negrita.
+// El filtro usa dueInRange (REQ-006). Agrega al final el mensaje de totales
+// por moneda (SPEC-082). Si no hay pendientes en rango devuelve un único
+// mensaje.
+func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format CurrencyFormat, now time.Time, sepLen, showMonths int) []string {
+	filtered := make([]appmodels.PendingDebtDetail, 0, len(pending))
+	for _, p := range pending {
+		if dueInRange(p.DueDate, now, showMonths) {
+			filtered = append(filtered, p)
+		}
+	}
+	if len(filtered) == 0 {
 		return []string{"✅ No hay deudas pendientes."}
 	}
 
 	groups := make(map[int64]*debtGroup)
 	var order []int64
-	for _, p := range pending {
+	for _, p := range filtered {
 		g, ok := groups[p.DebtID]
 		if !ok {
 			g = &debtGroup{debt: p.DebtDescription, institution: p.InstitutionName, symbol: p.CurrencySymbol}
@@ -414,56 +667,55 @@ func formatDeudasPendientes(pending []appmodels.PendingDebtDetail, format Curren
 		}
 		g.count++
 		g.amount += p.Amount
-		g.installments = append(g.installments, pendingInstallment{dueDate: p.DueDate, amount: p.Amount})
+
+		dueLabel, hasDue := billDueDateLabel(p.DueDate)
+		var days int
+		if hasDue {
+			days = daysUntilDue(p.DueDate, now)
+		}
+		g.bills = append(g.bills, pendingBill{
+			label:  dueLabel,
+			status: billStatus(days, hasDue),
+			days:   days,
+			hasDue: hasDue,
+			amount: p.Amount,
+		})
 	}
 
 	sorted := sortDebtGroups(groups, order)
 
 	msgs := make([]string, 0, len(sorted)+1)
 	for _, g := range sorted {
-		msgs = append(msgs, formatDebtGroup(g, format)...)
+		msgs = append(msgs, formatDebtGroup(g, format, sepLen)...)
 	}
-	return append(msgs, formatDeudasTotales(pending, format))
+	return append(msgs, formatDeudasTotales(filtered, format))
 }
 
 // formatDebtGroup construye los mensajes de una deuda itemizando sus cuotas
-// pendientes (REQ-001). Si superan el límite por mensaje, particiona en varios
-// bloques (REQ-002): el encabezado va en el primer bloque y el resumen
-// (Cuotas/Pendiente) al final del último (REQ-003).
-func formatDebtGroup(g *debtGroup, format CurrencyFormat) []string {
-	chunks := chunkInstallments(g.installments, maxInstallmentsPerMessage)
+// pendientes con el layout de formatServiceGroup (SPEC-086): encabezado 💳 en
+// el primer bloque, cuota con semáforo + fecha legible + línea en blanco,
+// separador y resumen *Cuotas*/*Pendiente* al final del último bloque.
+func formatDebtGroup(g *debtGroup, format CurrencyFormat, sepLen int) []string {
+	sortBillsByDue(g.bills)
+	chunks := chunkBills(g.bills, maxInstallmentsPerMessage)
 	msgs := make([]string, 0, len(chunks))
 	for i, chunk := range chunks {
 		var b strings.Builder
 		if i == 0 {
-			fmt.Fprintf(&b, "💳 *%s*\n  Institución: %s\n", g.debt, g.institution)
+			fmt.Fprintf(&b, "💳 *%s*\n  *Institución*: %s\n\n", g.debt, g.institution)
 		}
-		for _, inst := range chunk {
-			fmt.Fprintf(&b, "  📅 %s — %s\n", inst.dueDate, formatAmount(inst.amount, g.symbol, format))
+		for _, bill := range chunk {
+			fmt.Fprintf(&b, "  %s\n  📅 %s — %s\n\n", bill.status, bill.label, formatAmount(bill.amount, g.symbol, format))
 		}
 		if i == len(chunks)-1 {
-			fmt.Fprintf(&b, "  Cuotas: %d\n  Pendiente: %s", g.count, formatAmount(g.amount, g.symbol, format))
+			if sepLen > 0 {
+				fmt.Fprintf(&b, "  %s\n", strings.Repeat("-", sepLen))
+			}
+			fmt.Fprintf(&b, "  *Cuotas*: %d\n  *Pendiente*: %s", g.count, formatAmount(g.amount, g.symbol, format))
 		}
 		msgs = append(msgs, strings.TrimRight(b.String(), "\n"))
 	}
 	return msgs
-}
-
-// chunkInstallments particiona la lista de cuotas en bloques de tamaño max.
-// Devuelve un único bloque si la lista no excede el máximo.
-func chunkInstallments(inst []pendingInstallment, max int) [][]pendingInstallment {
-	if len(inst) <= max {
-		return [][]pendingInstallment{inst}
-	}
-	var chunks [][]pendingInstallment
-	for start := 0; start < len(inst); start += max {
-		end := start + max
-		if end > len(inst) {
-			end = len(inst)
-		}
-		chunks = append(chunks, inst[start:end])
-	}
-	return chunks
 }
 
 // formatDeudasTotales construye el mensaje final de /deudas_pendientes con el

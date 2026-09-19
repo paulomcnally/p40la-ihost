@@ -141,6 +141,8 @@ export const api = {
       email_color_border: string
       telegram_bot_enabled: boolean
       telegram_bot_configured: boolean
+      telegram_bot_separator_length: number
+      telegram_bot_show_months: number
     }>('/api/system-settings'),
     update: (body: Record<string, unknown>) => put<{ billing_generation_hour: number; smtp_configured: boolean }>('/api/system-settings', body),
     testEmail: () => post<{ message: string; recipients: string }>('/api/system-settings/test-email', {}),
