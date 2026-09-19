@@ -223,6 +223,7 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"email_color_border":           palette.Border,
 		"telegram_bot_enabled":          telegramBot.Enabled,
 		"telegram_bot_configured":       telegramBot.Configured,
+		"telegram_bot_chat_ids":         telegramBot.ChatIDs,
 		"telegram_bot_chat_ids_count":   telegramBot.ChatIDsCount,
 		"telegram_bot_separator_length": telegramBot.SeparatorLength,
 		"telegram_bot_show_months":      telegramBot.ShowMonths,
@@ -459,6 +460,7 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 		"currency_decimal_digits":      currencyFormat.DecimalDigits,
 		"telegram_bot_enabled":          telegramBot.Enabled,
 		"telegram_bot_configured":       telegramBot.Configured,
+		"telegram_bot_chat_ids":         telegramBot.ChatIDs,
 		"telegram_bot_chat_ids_count":   telegramBot.ChatIDsCount,
 		"telegram_bot_separator_length": telegramBot.SeparatorLength,
 		"telegram_bot_show_months":      telegramBot.ShowMonths,
@@ -584,30 +586,6 @@ func (h *SystemSettingsHandlers) ResetEmailPalette(w http.ResponseWriter, r *htt
 		"email_color_muted":      palette.Muted,
 		"email_color_border":     palette.Border,
 		"message":                "Paleta de emails restablecida a los valores por defecto",
-	})
-}
-
-// DeleteTelegramBot limpia la configuración del bot de Telegram y resetea el
-// toggle a OFF (botón "Reconfigurar", SPEC-079). Detiene el polling.
-func (h *SystemSettingsHandlers) DeleteTelegramBot(w http.ResponseWriter, r *http.Request) {
-	if err := h.settings.ClearTelegramBot(r.Context()); err != nil {
-		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
-		return
-	}
-	if h.telegramBot != nil {
-		h.telegramBot.NotifyConfigChanged()
-	}
-
-	tgBot, err := h.settings.GetTelegramBotConfigPublic(r.Context())
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
-		return
-	}
-
-	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"telegram_bot_enabled":    tgBot.Enabled,
-		"telegram_bot_configured": tgBot.Configured,
-		"message":                 "Configuración del bot de Telegram eliminada",
 	})
 }
 

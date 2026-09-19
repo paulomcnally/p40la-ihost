@@ -29,6 +29,7 @@ export default function SettingsTelegramBotPage() {
       if (data) {
         setTbEnabled(data.telegram_bot_enabled ?? false)
         setTbConfigured(data.telegram_bot_configured ?? false)
+        setTbChatIDs((data.telegram_bot_chat_ids ?? []).join(', '))
         setTbSeparatorLength(data.telegram_bot_separator_length ?? 20)
         setTbShowMonths(data.telegram_bot_show_months ?? 1)
       }
@@ -55,14 +56,16 @@ export default function SettingsTelegramBotPage() {
     try {
       const body: Record<string, unknown> = {}
       if (tbToken.trim()) body.telegram_bot_token = tbToken.trim()
-      if (tbChatIDs.trim()) body.telegram_bot_chat_ids = tbChatIDs.trim()
+      body.telegram_bot_chat_ids = tbChatIDs.trim()
       body.telegram_bot_separator_length = Number(tbSeparatorLength)
       body.telegram_bot_show_months = Number(tbShowMonths)
       await api.systemSettings.update(body)
       const data = await api.systemSettings.get()
-      if (data) setTbConfigured(data.telegram_bot_configured ?? false)
+      if (data) {
+        setTbConfigured(data.telegram_bot_configured ?? false)
+        setTbChatIDs((data.telegram_bot_chat_ids ?? []).join(', '))
+      }
       setTbToken('')
-      setTbChatIDs('')
       showToast(t('settings.telegram_bot.saved'), 'success')
     } catch {
       showToast(t('settings.telegram_bot.save_error'), 'error')
@@ -86,20 +89,6 @@ export default function SettingsTelegramBotPage() {
     }
   }
 
-  const handleReconfigure = async () => {
-    if (!window.confirm(t('settings.telegram_bot.reconfigure_confirm'))) return
-    try {
-      await api.systemSettings.disconnectTelegramBot()
-      setTbEnabled(false)
-      setTbConfigured(false)
-      setTbToken('')
-      setTbChatIDs('')
-      showToast(t('settings.telegram_bot.reconfigured'), 'success')
-    } catch {
-      showToast(t('settings.telegram_bot.save_error'), 'error')
-    }
-  }
-
   const inputCls = 'w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-card min-h-[44px]'
   const labelCls = 'text-sm font-medium text-text-secondary mb-1'
 
@@ -114,73 +103,66 @@ export default function SettingsTelegramBotPage() {
           <Toggle checked={tbEnabled} onChange={handleTbEnabledChange} />
         </div>
 
-        {tbNeedsConfig && (
-          <div className="px-4 py-3 border-b border-border">
-            <p className="text-xs text-amber-600 dark:text-amber-400">{t('settings.telegram_bot.needs_config_hint')}</p>
-          </div>
-        )}
-
         {tbEnabled && (
           <>
             {tbConfigured ? (
-              <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
+              <div className="px-4 py-3.5 border-b border-border">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
                   {t('settings.telegram_bot.configured_status')}
                 </span>
-                <button
-                  onClick={handleReconfigure}
-                  className="px-4 py-2 rounded-ios-sm border border-border font-medium min-h-[44px]"
-                >
-                  {t('settings.telegram_bot.reconfigure')}
-                </button>
               </div>
             ) : (
-              <>
-                <div className="px-4 py-3.5 border-b border-border">
-                  <div className="space-y-3">
-                    <div>
-                      <label className={labelCls}>{t('settings.telegram_bot.token')}</label>
-                      <input
-                        type="password"
-                        value={tbToken}
-                        onChange={(e) => setTbToken(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>{t('settings.telegram_bot.chat_ids')}</label>
-                      <input
-                        type="text"
-                        value={tbChatIDs}
-                        onChange={(e) => setTbChatIDs(e.target.value)}
-                        className={inputCls}
-                      />
-                      <p className="text-xs text-text-secondary mt-1">{t('settings.telegram_bot.chat_ids_hint')}</p>
-                    </div>
-                  </div>
-                </div>
-                <HelpPanel title={t('settings.telegram_bot.help.title')}>
-                  <ol className="list-decimal pl-5 space-y-2">
-                    <li>{t('settings.telegram_bot.help.step1')}</li>
-                    <li>{t('settings.telegram_bot.help.step2')}</li>
-                    <li>{t('settings.telegram_bot.help.step3')}</li>
-                    <li>{t('settings.telegram_bot.help.step4')}</li>
-                  </ol>
-                </HelpPanel>
-              </>
+              <div className="px-4 py-3 border-b border-border">
+                <p className="text-xs text-amber-600 dark:text-amber-400">{t('settings.telegram_bot.needs_config_hint')}</p>
+              </div>
             )}
 
-            <div className="px-4 py-3.5 flex flex-col sm:flex-row gap-3">
-              {!tbConfigured && (
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex-1 px-4 py-2.5 rounded-ios-sm bg-primary text-white font-medium min-h-[44px] disabled:opacity-50"
-                >
-                  {saving ? '...' : t('app.save')}
-                </button>
-              )}
+            <div className="px-4 py-3.5 border-b border-border">
+              <div className="space-y-3">
+                <div>
+                  <label className={labelCls}>{t('settings.telegram_bot.token')}</label>
+                  <input
+                    type="password"
+                    value={tbToken}
+                    onChange={(e) => setTbToken(e.target.value)}
+                    className={inputCls}
+                    autoComplete="new-password"
+                  />
+                  {tbConfigured && (
+                    <p className="text-xs text-text-secondary mt-1">{t('settings.telegram_bot.token_keep_hint')}</p>
+                  )}
+                </div>
+                <div>
+                  <label className={labelCls}>{t('settings.telegram_bot.chat_ids')}</label>
+                  <input
+                    type="text"
+                    value={tbChatIDs}
+                    onChange={(e) => setTbChatIDs(e.target.value)}
+                    className={inputCls}
+                  />
+                  <p className="text-xs text-text-secondary mt-1">{t('settings.telegram_bot.chat_ids_hint')}</p>
+                </div>
+              </div>
             </div>
+
+            <div className="px-4 py-3.5 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 px-4 py-2.5 rounded-ios-sm bg-primary text-white font-medium min-h-[44px] disabled:opacity-50"
+              >
+                {saving ? '...' : t('app.save')}
+              </button>
+            </div>
+
+            <HelpPanel title={t('settings.telegram_bot.help.title')}>
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>{t('settings.telegram_bot.help.step1')}</li>
+                <li>{t('settings.telegram_bot.help.step2')}</li>
+                <li>{t('settings.telegram_bot.help.step3')}</li>
+                <li>{t('settings.telegram_bot.help.step4')}</li>
+              </ol>
+            </HelpPanel>
 
             <div className="px-4 py-3.5 border-t border-border">
               <div className="space-y-3">
