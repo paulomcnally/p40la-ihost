@@ -31,4 +31,5 @@ type PendingDebtDetail struct {
 	DueDate         string
 	Amount          float64
 	CurrencySymbol  string
+	CurrencyCode    string
 }

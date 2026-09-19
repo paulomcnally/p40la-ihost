@@ -32,43 +32,75 @@ func TestFormatServiciosPendientes(t *testing.T) {
 
 	t.Run("sin pendientes", func(t *testing.T) {
 		got := formatServiciosPendientes(nil, format)
-		if got != "✅ No hay facturas pendientes." {
-			t.Errorf("esperado mensaje vacío, got %q", got)
+		if len(got) != 1 || got[0] != "✅ No hay facturas pendientes." {
+			t.Errorf("esperado único mensaje vacío, got %q", got)
 		}
 	})
 
-	t.Run("agrupa por servicio y ordena por monto", func(t *testing.T) {
+	t.Run("un mensaje por servicio + totales, ordenado por monto", func(t *testing.T) {
 		pending := []appmodels.PendingBillDetail{
-			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Amount: 100, CurrencySymbol: "C$"},
-			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Amount: 50, CurrencySymbol: "C$"},
-			{ServiceID: 2, ServiceName: "ENATREL", HomeName: "Casa B", Amount: 500, CurrencySymbol: "C$"},
+			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{ServiceID: 1, ServiceName: "Claro", HomeName: "Casa A", Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{ServiceID: 2, ServiceName: "ENATREL", HomeName: "Casa B", Amount: 500, CurrencySymbol: "C$", CurrencyCode: "NIO"},
 		}
 		got := formatServiciosPendientes(pending, format)
-		if len(got) == 0 {
-			t.Fatal("mensaje vacío")
+		// 2 servicios + 1 totales.
+		if len(got) != 3 {
+			t.Fatalf("esperados 3 mensajes, got %d: %q", len(got), got)
 		}
-		// ENATREL (500) debe aparecer antes que Claro (150).
-		enatrelPos := indexOf(got, "ENATREL")
-		claroPos := indexOf(got, "Claro")
-		if enatrelPos == -1 || claroPos == -1 || enatrelPos > claroPos {
-			t.Errorf("orden incorrecto: ENATREL=%d Claro=%d\n%s", enatrelPos, claroPos, got)
+		// ENATREL (500) antes que Claro (150).
+		enatrelPos := indexOf(got[0], "ENATREL")
+		claroPos := indexOf(got[1], "Claro")
+		if enatrelPos == -1 || claroPos == -1 {
+			t.Fatalf("mensajes por servicio incorrectos:\n%s\n%s", got[0], got[1])
 		}
-		if !contains(got, "Facturas: 2") || !contains(got, "C$150.00") {
-			t.Errorf("conteo/monto de Claro incorrecto:\n%s", got)
+		if !contains(got[1], "Facturas: 2") || !contains(got[1], "C$150.00") {
+			t.Errorf("conteo/monto de Claro incorrecto:\n%s", got[1])
 		}
-		if !contains(got, "C$500.00") {
-			t.Errorf("monto de ENATREL incorrecto:\n%s", got)
+		if !contains(got[0], "C$500.00") {
+			t.Errorf("monto de ENATREL incorrecto:\n%s", got[0])
+		}
+		// Último mensaje: totales por moneda.
+		if !contains(got[2], "Totales") || !contains(got[2], "NIO: C$650.00") {
+			t.Errorf("mensaje de totales incorrecto:\n%s", got[2])
 		}
 	})
 
 	t.Run("formato de moneda personalizado", func(t *testing.T) {
 		format := CurrencyFormat{ThousandsSeparator: ",", DecimalSeparator: ".", DecimalDigits: 2}
 		pending := []appmodels.PendingBillDetail{
-			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Amount: 1250.5, CurrencySymbol: "$"},
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Amount: 1250.5, CurrencySymbol: "$", CurrencyCode: "USD"},
 		}
 		got := formatServiciosPendientes(pending, format)
-		if !contains(got, "$1,250.50") {
-			t.Errorf("formato personalizado incorrecto:\n%s", got)
+		if len(got) != 2 {
+			t.Fatalf("esperados 2 mensajes, got %d: %q", len(got), got)
+		}
+		if !contains(got[0], "$1,250.50") {
+			t.Errorf("formato personalizado incorrecto:\n%s", got[0])
+		}
+		if !contains(got[1], "USD: $1,250.50") {
+			t.Errorf("totales con formato personalizado incorrecto:\n%s", got[1])
+		}
+	})
+
+	t.Run("totales multi-moneda", func(t *testing.T) {
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Amount: 1000, CurrencySymbol: "$", CurrencyCode: "USD"},
+			{ServiceID: 2, ServiceName: "S2", HomeName: "H", Amount: 5000, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+		}
+		got := formatServiciosTotales(pending, format)
+		if !contains(got, "USD: $1,000.00") || !contains(got, "NIO: C$5,000.00") {
+			t.Errorf("totales multi-moneda incorrectos:\n%s", got)
+		}
+	})
+
+	t.Run("totales con código vacío usa símbolo", func(t *testing.T) {
+		pending := []appmodels.PendingBillDetail{
+			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Amount: 100, CurrencySymbol: "C$"},
+		}
+		got := formatServiciosTotales(pending, format)
+		if !contains(got, "C$: C$100.00") {
+			t.Errorf("totales con fallback a símbolo incorrectos:\n%s", got)
 		}
 	})
 }
@@ -78,31 +110,51 @@ func TestFormatDeudasPendientes(t *testing.T) {
 
 	t.Run("sin pendientes", func(t *testing.T) {
 		got := formatDeudasPendientes(nil, format)
-		if got != "✅ No hay deudas pendientes." {
-			t.Errorf("esperado mensaje vacío, got %q", got)
+		if len(got) != 1 || got[0] != "✅ No hay deudas pendientes." {
+			t.Errorf("esperado único mensaje vacío, got %q", got)
 		}
 	})
 
-	t.Run("agrupa por deuda y ordena por monto", func(t *testing.T) {
+	t.Run("un mensaje por deuda + totales, ordenado por monto", func(t *testing.T) {
 		pending := []appmodels.PendingDebtDetail{
-			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", Amount: 100, CurrencySymbol: "C$"},
-			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", Amount: 50, CurrencySymbol: "C$"},
-			{DebtID: 2, DebtDescription: "Tarjeta BAC", InstitutionName: "BAC Credomatic", Amount: 500, CurrencySymbol: "C$"},
+			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 1, DebtDescription: "Préstamo LAFISE", InstitutionName: "Banco LAFISE", Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+			{DebtID: 2, DebtDescription: "Tarjeta BAC", InstitutionName: "BAC Credomatic", Amount: 500, CurrencySymbol: "C$", CurrencyCode: "NIO"},
 		}
 		got := formatDeudasPendientes(pending, format)
-		if len(got) == 0 {
-			t.Fatal("mensaje vacío")
+		// 2 deudas + 1 totales.
+		if len(got) != 3 {
+			t.Fatalf("esperados 3 mensajes, got %d: %q", len(got), got)
 		}
-		bacPos := indexOf(got, "Tarjeta BAC")
-		lafisePos := indexOf(got, "Préstamo LAFISE")
-		if bacPos == -1 || lafisePos == -1 || bacPos > lafisePos {
-			t.Errorf("orden incorrecto: BAC=%d LAFISE=%d\n%s", bacPos, lafisePos, got)
+		if !contains(got[0], "Tarjeta BAC") || !contains(got[0], "C$500.00") {
+			t.Errorf("mensaje de BAC incorrecto:\n%s", got[0])
 		}
-		if !contains(got, "Cuotas: 2") || !contains(got, "C$150.00") {
-			t.Errorf("conteo/monto de LAFISE incorrecto:\n%s", got)
+		if !contains(got[1], "Préstamo LAFISE") || !contains(got[1], "Cuotas: 2") || !contains(got[1], "C$150.00") {
+			t.Errorf("mensaje de LAFISE incorrecto:\n%s", got[1])
 		}
-		if !contains(got, "Banco LAFISE") || !contains(got, "C$500.00") {
-			t.Errorf("institución/monto de BAC incorrecto:\n%s", got)
+		if !contains(got[2], "Totales") || !contains(got[2], "NIO: C$650.00") {
+			t.Errorf("mensaje de totales incorrecto:\n%s", got[2])
+		}
+	})
+
+	t.Run("totales multi-moneda", func(t *testing.T) {
+		pending := []appmodels.PendingDebtDetail{
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", Amount: 200, CurrencySymbol: "$", CurrencyCode: "USD"},
+			{DebtID: 2, DebtDescription: "D2", InstitutionName: "I2", Amount: 300, CurrencySymbol: "C$", CurrencyCode: "NIO"},
+		}
+		got := formatDeudasTotales(pending, format)
+		if !contains(got, "USD: $200.00") || !contains(got, "NIO: C$300.00") {
+			t.Errorf("totales multi-moneda incorrectos:\n%s", got)
+		}
+	})
+
+	t.Run("totales con código vacío usa símbolo", func(t *testing.T) {
+		pending := []appmodels.PendingDebtDetail{
+			{DebtID: 1, DebtDescription: "D1", InstitutionName: "I1", Amount: 75, CurrencySymbol: "C$"},
+		}
+		got := formatDeudasTotales(pending, format)
+		if !contains(got, "C$: C$75.00") {
+			t.Errorf("totales con fallback a símbolo incorrectos:\n%s", got)
 		}
 	})
 }
