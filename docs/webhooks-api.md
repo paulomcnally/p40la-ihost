@@ -1,9 +1,9 @@
 # Webhooks de Facturas por Servicio — Guía de Integración
 
 > **Proyecto**: p40la-ihost (SONOFF iHost)  
-> **Spec**: SPEC-069 — Webhooks por servicio para facturas (SPEC-071 — resiliencia al soft-delete)  
-> **Versión**: 1.1 (2026-09-12)  
-> **Estado**: implementado en rama `feature/SPEC-071`
+> **Spec**: SPEC-069 — Webhooks por servicio para facturas (SPEC-071 — resiliencia al soft-delete, SPEC-081 — fechas de emisión y vencimiento)  
+> **Versión**: 1.2 (2026-09-19)  
+> **Estado**: implementado (SPEC-081 released)
 
 ---
 
@@ -62,7 +62,9 @@ Los clientes deben adaptar su envío a este schema. **`year`, `month` y `amount`
   "status": "paid",
   "paid_at": "2026-09-10T18:30:00Z",
   "payment_reference": "TXN-12345",
-  "drive_url": "https://drive.google.com/file/d/..."
+  "drive_url": "https://drive.google.com/file/d/...",
+  "issue_date": "2026-09-10",
+  "due_date": "2026-10-05"
 }
 ```
 
@@ -78,8 +80,12 @@ Los clientes deben adaptar su envío a este schema. **`year`, `month` y `amount`
 | `paid_at` | string | ❌ | Fecha/hora de pago. Formatos aceptados: `RFC3339` (`2026-09-10T18:30:00Z`), `YYYY-MM-DDTHH:MM:SS`, `YYYY-MM-DD HH:MM:SS`, `YYYY-MM-DD`. Si se envía `status:"paid"` y no se incluye → usa la fecha/hora actual. |
 | `payment_reference` | string | ❌ | Referencia interna del pago (ej: número de transacción) |
 | `drive_url` | string | ❌ | Link de Google Drive del comprobante. Solo se aceptan URLs de `drive.google.com` / `docs.google.com`. |
+| `issue_date` | string | ❌ | Fecha de **emisión** de la factura (cuándo el proveedor la generó). Formatos aceptados: `RFC3339` o `YYYY-MM-DD`. Se normaliza a `YYYY-MM-DD`. **No es `created_at`**: la provee el sistema externo. (SPEC-081) |
+| `due_date` | string | ❌ | Fecha de **vencimiento** de la factura (cuándo hay que pagarla antes de que suspendan el servicio). Formatos aceptados: `RFC3339` o `YYYY-MM-DD`. Se normaliza a `YYYY-MM-DD`. Puede ser futura. (SPEC-081) |
 
-> ⚠️ `paid_at` **no puede ser futura** (más de 24h desde ahora).
+> ⚠️ `paid_at` **no puede ser futura** (más de 24h desde ahora). En cambio `issue_date` y `due_date` **sí pueden ser futuras** (un vencimiento normalmente es futuro).
+
+> **Opcionales y aditivas (SPEC-081)**: `issue_date` y `due_date` no son requeridas — si el sistema externo no las provee, la factura queda con `NULL`. En actualizaciones, si un campo viene ausente se **conserva el valor previo** (no se borra).
 
 ---
 
@@ -95,6 +101,8 @@ El endpoint hace un **upsert** sobre el par `(service_id, year, month)`:
 | **Existe** y payload **omite** `status` | Actualiza solo `amount`, `invoice_number`, `drive_url`. **No toca el estado actual** (si estaba pagada, sigue pagada). |
 | **Reenvío idéntico** | No duplica facturas (idempotente). |
 | **Período con factura soft-deleted** | La factura fue borrada desde la UI (`DELETE /api/bills/{id}`), pero sigue ocupando la clave única. El webhook **la reactiva** y la actualiza con el payload, respondiendo `200` con `created: false` (SPEC-071). |
+
+**Sobre las fechas (SPEC-081)**: en cualquier escenario (crear o actualizar), `issue_date` y `due_date` se persisten normalizadas a `YYYY-MM-DD`. En **actualizaciones** la semántica es **aditiva**: si el campo viene ausente/vacío se conserva el valor previo; solo un valor nuevo lo sobrescribe. En **creaciones** sin estos campos quedan `NULL`.
 
 **Sobre los servicios anuales**: si el servicio tiene `frequency: "yearly"`, el campo `month` del payload **se ignora** y la factura se indexa como `month: 0`. Envialo igual por consistencia o pon `0`.
 
@@ -116,6 +124,8 @@ El endpoint hace un **upsert** sobre el par `(service_id, year, month)`:
     "amount": 1234.56,
     "invoice_number": "INV-2026-09",
     "status": "paid",
+    "issue_date": "2026-09-10",
+    "due_date": "2026-10-05",
     "paid_at": "2026-09-10T18:30:00Z",
     "payment_reference": "TXN-12345"
   },
@@ -146,7 +156,14 @@ El endpoint hace un **upsert** sobre el par `(service_id, year, month)`:
 curl -X POST http://ihost.local:8088/webhooks/fd281ed1-e0b2-4c9c-8dab-d7080f28adf4 \
   -H "X-Webhook-Key: 7381d6dc90a8a9ad421c2e751521a1553ebe10951c7dab491574376d653076bf" \
   -H "Content-Type: application/json" \
-  -d '{"year":2026,"month":9,"amount":520,"invoice_number":"INV-2026-09"}'
+  -d '{
+    "year": 2026,
+    "month": 9,
+    "amount": 520,
+    "invoice_number": "INV-2026-09",
+    "issue_date": "2026-09-10",
+    "due_date": "2026-10-05"
+  }'
 ```
 
 ### 7.2 Marcar una factura como pagada
@@ -242,9 +259,10 @@ Después de regenerar cualquiera de los dos, el proyecto externo debe actualizar
 | `internal/services/system_settings.go` | Toggle `webhook_enabled` |
 | `internal/storage/bill.go` | `FindByServicePeriod`, `FindByServicePeriodIncludingDeleted`, `Create`, `Pay`, `MarkPending`, `Reactivate`, `UpdateWebhookFields` |
 | `migrations/0027_add_services_webhook_uuid.up.sql` | Columna `webhook_uuid` en `services` |
+| `migrations/0030_add_bills_debt_bills_dates.up.sql` | Columnas `issue_date` / `due_date` en `bills` (SPEC-081) |
 | `frontend/src/components/WebhookModal.tsx` | Modal webhook por servicio |
 | `frontend/src/pages/SettingsPage.tsx` | Sección Webhooks (toggle + api_key) |
 
 ---
 
-*Documento generado para integración externa. Cualquier cambio al contrato debe reflejarse en la spec SPEC-069.*
+*Documento generado para integración externa. Cualquier cambio al contrato debe reflejarse en la spec SPEC-069 (y SPEC-081 para las fechas de emisión/vencimiento).*
