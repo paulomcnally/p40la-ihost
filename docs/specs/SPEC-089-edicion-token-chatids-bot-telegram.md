@@ -1,7 +1,7 @@
 ---
 title: "Edición de token y chat_ids del bot de Telegram sin borrar la configuración"
 id: "SPEC-089"
-status: "in_progress"
+status: "released"
 author: "Agente opencode"
 created: "2026-09-19"
 updated: "2026-09-19"
@@ -11,7 +11,7 @@ github_issue: 92
 # Edición de token y chat_ids del bot de Telegram sin borrar la configuración
 
 **ID**: SPEC-089  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: Agente opencode  
 **Creado**: 2026-09-19  
 **Actualizado**: 2026-09-19
@@ -252,3 +252,5 @@ Se retira (dejaba de existir el flujo de borrado). Cualquier cliente que lo invo
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-19 | Agente opencode | Creación inicial de la especificación |
+| 2026-09-19 | Agente opencode | Implementación (ChatIDs en config pública, form editable con precarga, eliminación del flujo de borrado, i18n, tests) y validación manual del usuario |
+| 2026-09-19 | Agente opencode | Release: merge a main (<MERGE_HASH>), push, issue #92 cerrado con label spec/released |
