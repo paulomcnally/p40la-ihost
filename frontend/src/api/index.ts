@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -73,6 +73,9 @@ export const api = {
     getAnalyzerOptions: (id: number) => get<Array<{id: number, institution_id: number, analyzer_id: string, analyzer_name: string}>>(`/api/services/${id}/analyzer-options`),
     regenerateWebhook: (id: number) => post<{ webhook_uuid: string; webhook_url: string }>(`/api/services/${id}/webhook/regenerate`, {}),
     listAutos: (id: number) => get<ServiceAuto[]>(`/api/services/${id}/autos`),
+    listCycles: (id: number) => get<ServiceCycle[]>(`/api/services/${id}/cycles`),
+    renew: (id: number, body: { start_date: string; end_date: string; suggested_amount?: number }) =>
+      post<{ service: Service; cycle: ServiceCycle }>(`/api/services/${id}/renew`, body),
   },
   webhooks: {
     getApiKey: () => get<{ api_key: string }>('/api/webhook/key'),
