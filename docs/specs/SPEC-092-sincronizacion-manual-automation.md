@@ -1,7 +1,7 @@
 ---
 title: "Sincronización manual de servicios con los plugins de p40la-ihost-automation (endpoint + UI + bot)"
 id: "SPEC-092"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-09-24"
 updated: "2026-09-24"
@@ -11,7 +11,7 @@ github_issue: 95
 # Sincronización manual de servicios con los plugins de p40la-ihost-automation (endpoint + UI + bot)
 
 **ID**: SPEC-092  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-09-24  
 **Actualizado**: 2026-09-24
@@ -338,3 +338,4 @@ X-Webhook-Key: <api_key de webhooks de automation>
 | 2026-09-24 | opencode | Alcance ampliado a **dos repos** (confirmado por el usuario): automation agrega `POST /api/accounts/{id}/webhook:run` autenticado por token (`X-Webhook-Key` = api_key de webhooks de automation); p40la-ihost usa `AutomationClient` stateless (base_url + api_key en `system_settings`), sin login ni cookies de sesión. Se actualizaron REQs, ADRs, diseño, contratos, criterios y plan. |
 | 2026-09-24 | opencode | Implementación (p40la-ihost-automation): endpoint `POST /api/accounts/{id}/webhook:run` con auth por token + tests (`webhook_run_handlers_test.go`). Commit `a2c8ea0` en rama `feature/SPEC-017-webhook-run`. |
 | 2026-09-24 | opencode | Implementación (p40la-ihost): migración `0034` (`services.automation_account_id`), modelo+storage, `AutomationClient`, config `automation_base_url`/`automation_api_key` en `system_settings` (Settings → Automation + API), handler `POST /api/services/{id}/sync`, bot `/sincronizar_servicio <id>` + `setMyCommands`, badge `ID: N` en servicios y deudas, item "Sincronizar" en `CardMenu` de servicios, campo `automation_account_id` en `ServiceFormPage`. Tests: `service_sync_test.go`, `automation_client_test.go`, `TestSincronizarServicioCommand`. Validación local E2E OK (200 `{delivered,failed}`, 400 sin cuenta, 404 inexistente, darkmode/build frontend OK). Commits `SPEC-092: ...` en rama `feature/SPEC-092`. |
+| 2026-09-24 | opencode | **Release**: merge a main, versión 0.4.41, issue #95 cerrado. Feature: sincronización manual de servicios con automation (endpoint `POST /api/services/{id}/sync`, UI, bot `/sincronizar_servicio <id>`, badge `ID: N`). Coordinado con SPEC-017 del repo `p40la-ihost-automation`. |
