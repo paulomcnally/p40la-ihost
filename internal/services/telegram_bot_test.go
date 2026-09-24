@@ -520,7 +520,7 @@ func TestFormatDeudasPendientes(t *testing.T) {
 func TestTelegramBotServiceLifecycle(t *testing.T) {
 	settings := testTelegramSettings(t)
 	bills := storage.NewBillStorage(nil)
-	svc := NewTelegramBotService(settings, bills, storage.NewDebtBillStorage(nil))
+	svc := NewTelegramBotService(settings, bills, storage.NewDebtBillStorage(nil), storage.NewServiceStorage(nil), NewAutomationClient(settings))
 
 	// Sin config: Start no debe panicear y el supervisor queda inactivo.
 	svc.Start()
@@ -637,7 +637,7 @@ func TestTelegramBotConfigSettings(t *testing.T) {
 func TestIsAuthorized(t *testing.T) {
 	ctx := context.Background()
 	settings := testTelegramSettings(t)
-	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil), storage.NewDebtBillStorage(nil))
+	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil), storage.NewDebtBillStorage(nil), storage.NewServiceStorage(nil), NewAutomationClient(settings))
 
 	// Sin allowlist: todos autorizados.
 	if !svc.isAuthorized(ctx, 12345) {
@@ -658,7 +658,7 @@ func TestIsAuthorized(t *testing.T) {
 func TestCheckAuthorizedIgnoresNonMessage(t *testing.T) {
 	ctx := context.Background()
 	settings := testTelegramSettings(t)
-	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil), storage.NewDebtBillStorage(nil))
+	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil), storage.NewDebtBillStorage(nil), storage.NewServiceStorage(nil), NewAutomationClient(settings))
 	// update.Message == nil → no autorizado (no panic).
 	ok := svc.checkAuthorized(ctx, nil, &tgmodels.Update{})
 	if ok {
@@ -672,7 +672,7 @@ func TestBotNewFailsInvalidToken(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	settings := testTelegramSettings(t)
-	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil), storage.NewDebtBillStorage(nil))
+	svc := NewTelegramBotService(settings, storage.NewBillStorage(nil), storage.NewDebtBillStorage(nil), storage.NewServiceStorage(nil), NewAutomationClient(settings))
 
 	cfg := &appmodels.TelegramBotConfig{Enabled: true, Token: "token-invalido"}
 	done := make(chan struct{})
@@ -761,7 +761,7 @@ func TestCommandDispatchRealMatcher(t *testing.T) {
 		t.Fatalf("abrir db de test: %v", err)
 	}
 	t.Cleanup(func() { database.Close() })
-	svc := NewTelegramBotService(settings, storage.NewBillStorage(database), storage.NewDebtBillStorage(database))
+	svc := NewTelegramBotService(settings, storage.NewBillStorage(database), storage.NewDebtBillStorage(database), storage.NewServiceStorage(database), NewAutomationClient(settings))
 
 	var sent []string
 	var mu sync.Mutex

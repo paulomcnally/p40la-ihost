@@ -23,6 +23,7 @@ type Service struct {
 	IsInsurance           bool       `json:"is_insurance"`
 	WebhookUUID           string     `json:"webhook_uuid,omitempty"`
 	LastWebhookRequest    *time.Time `json:"last_webhook_request,omitempty"`
+	AutomationAccountID   *int64     `json:"automation_account_id,omitempty"`
 	LatestBillStatus      *string    `json:"latest_bill_status"`
 	DeletedAt             *time.Time `json:"deleted_at,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`

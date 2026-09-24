@@ -235,7 +235,12 @@ export default function DeudasPage() {
                     <Icon name="credit" className="w-6 h-6" />
                   </div>
                 </div>
-                <h3 className="font-semibold text-base truncate">{debt.description}</h3>
+                <h3 className="font-semibold text-base truncate flex items-center gap-2">
+                  {debt.description}
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400 shrink-0">
+                    {`${t('deudas.id')}: ${debt.id}`}
+                  </span>
+                </h3>
                 <p className="text-sm text-text-secondary mt-1 truncate">
                   {debt.institution_name}
                   {debt.identifier && ` · ${debt.identifier}`}

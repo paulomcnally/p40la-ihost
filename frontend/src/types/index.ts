@@ -33,6 +33,7 @@ export interface Service {
   is_insurance: boolean
   webhook_uuid?: string
   last_webhook_request?: string | null
+  automation_account_id?: number
   latest_bill_status: 'paid' | 'pending' | null
 }
 
