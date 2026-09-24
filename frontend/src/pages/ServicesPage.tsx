@@ -12,6 +12,7 @@ import DeleteModal from '../components/DeleteModal'
 import HousePickerModal from '../components/HousePickerModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import WebhookModal from '../components/WebhookModal'
+import { useToast } from '../components/Toast'
 import { formatRelativeTime } from '../utils/relativeTime'
 import type { Service } from '../types'
 
@@ -21,6 +22,7 @@ export default function ServicesPage() {
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { t } = useI18nStore()
   const lang = useI18nStore(s => s.lang)
+  const { showToast } = useToast()
   usePageTitle(t('services.title'))
   const [services, setServices] = useState<Service[]>([])
   const [homeFilter, setHomeFilter] = useState<number | null>(null)
@@ -28,6 +30,7 @@ export default function ServicesPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [webhookService, setWebhookService] = useState<Service | null>(null)
+  const [syncingId, setSyncingId] = useState<number | null>(null)
 
   useEffect(() => {
     loadAll().finally(() => setLoading(false))
@@ -48,6 +51,22 @@ export default function ServicesPage() {
     const list = await api.services.list(homeFilter ?? undefined)
     setServices(list || [])
   }, [deleteTarget, homeFilter])
+
+  const handleSync = useCallback(async (svc: Service) => {
+    setSyncingId(svc.id)
+    try {
+      const res = await api.services.sync(svc.id)
+      if (res) {
+        showToast(`${t('services.sync_ok')} (${res.delivered}/${res.failed})`, 'success')
+        const list = await api.services.list(homeFilter ?? undefined)
+        setServices(list || [])
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : t('services.sync_error'), 'error')
+    } finally {
+      setSyncingId(null)
+    }
+  }, [homeFilter, showToast, t])
 
   if (loading) {
     return <LoadingSpinner />
@@ -127,6 +146,7 @@ export default function ServicesPage() {
                 <CardMenu
                   options={[
                     { label: t('services.webhook_title'), icon: 'link', onClick: () => setWebhookService(svc) },
+                    { label: syncingId === svc.id ? t('services.syncing') : t('services.sync'), icon: 'refresh', onClick: () => handleSync(svc) },
                     { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/services/edit/${svc.id}`) },
                     { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget({ id: svc.id, name: svc.name }) },
                   ]}
@@ -138,7 +158,12 @@ export default function ServicesPage() {
                     <Icon name={svc.icon_key || 'other'} className="w-6 h-6" />
                   </div>
                 </div>
-                <h3 className="font-semibold text-base truncate">{svc.name}</h3>
+                <h3 className="font-semibold text-base truncate flex items-center gap-2">
+                  {svc.name}
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400 shrink-0">
+                    {`${t('services.id')}: ${svc.id}`}
+                  </span>
+                </h3>
                 <p className="text-sm text-text-secondary mt-1">
                   {svc.institution && `${svc.institution} · `}{home?.name || ''}
                 </p>

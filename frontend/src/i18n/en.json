@@ -99,7 +99,8 @@
     "pay_date": "Payment date",
     "payment_reference": "Payment reference",
     "total_day": "Day total",
-    "saved_success": "Debt saved"
+    "saved_success": "Debt saved",
+    "id": "ID"
   },
   "home": {
     "title": "Home",
@@ -152,7 +153,15 @@
     "webhook_regenerated": "Webhook regenerated. Update the URL in the external client.",
     "webhook_schema_desc": "The POST body uses this schema (year, month and amount are required; status can be \"pending\" or \"paid\").",
     "webhook_disabled_hint": "The webhook feature is disabled. Enable it from Settings.",
-    "webhook_never": "Never"
+    "webhook_never": "Never",
+    "sync": "Sync",
+    "syncing": "Syncing...",
+    "sync_ok": "Sync completed",
+    "sync_error": "Sync failed",
+    "id": "ID",
+    "automation_account": "Automation account ID",
+    "automation_account_placeholder": "E.g.: 1",
+    "automation_account_hint": "Account ID in p40la-ihost-automation (for manual sync)."
   },
   "frequency": {
     "monthly": "Monthly",
@@ -499,6 +508,18 @@
       "preview_loading": "Loading preview...",
       "nav_custom": "Custom colors",
       "nav_default": "Default colors"
+    },
+    "automation": {
+      "title": "Automation",
+      "desc": "p40la-ihost-automation settings for manual service sync.",
+      "base_url": "Base URL",
+      "base_url_desc": "Automation project URL (default: http://ihost.local:8089).",
+      "api_key": "API key",
+      "api_key_desc": "Automation webhooks API key (shown in the automation project, Settings → Webhooks).",
+      "api_key_placeholder": "Enter the automation API key",
+      "configured": "Configured",
+      "saved": "Saved",
+      "hint": "Manual sync runs the automation plugins (external call) and sends to the service webhook. Each service needs its Automation account ID configured."
     }
   },
   "notifications": {

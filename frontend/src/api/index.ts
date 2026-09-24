@@ -76,6 +76,7 @@ export const api = {
     listCycles: (id: number) => get<ServiceCycle[]>(`/api/services/${id}/cycles`),
     renew: (id: number, body: { start_date: string; end_date: string; suggested_amount?: number }) =>
       post<{ service: Service; cycle: ServiceCycle }>(`/api/services/${id}/renew`, body),
+    sync: (id: number) => post<{ delivered: number; failed: number }>(`/api/services/${id}/sync`, {}),
   },
   webhooks: {
     getApiKey: () => get<{ api_key: string }>('/api/webhook/key'),
@@ -134,6 +135,8 @@ export const api = {
       email_alerts_enabled: boolean
       webhook_enabled: boolean
       webhook_base_url: string
+      automation_base_url: string
+      automation_configured: boolean
       currency_thousands_separator: string
       currency_decimal_separator: string
       currency_decimal_digits: number

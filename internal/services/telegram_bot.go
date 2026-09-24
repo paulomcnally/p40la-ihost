@@ -20,9 +20,11 @@ import (
 // Consulta la DB local directamente (via storages) y responde comandos por
 // long polling. Solo inicia polling si la config tiene enabled=1 y token.
 type TelegramBotService struct {
-	settings  *SystemSettingsService
-	bills     *storage.BillStorage
-	debtBills *storage.DebtBillStorage
+	settings       *SystemSettingsService
+	bills          *storage.BillStorage
+	debtBills      *storage.DebtBillStorage
+	serviceStorage *storage.ServiceStorage
+	automation     *AutomationClient
 
 	mu         sync.Mutex
 	cancel     context.CancelFunc
@@ -34,12 +36,14 @@ type TelegramBotService struct {
 }
 
 // NewTelegramBotService crea el servicio. Requiere arrancarlo con Start().
-func NewTelegramBotService(settings *SystemSettingsService, bills *storage.BillStorage, debtBills *storage.DebtBillStorage) *TelegramBotService {
+func NewTelegramBotService(settings *SystemSettingsService, bills *storage.BillStorage, debtBills *storage.DebtBillStorage, serviceStorage *storage.ServiceStorage, automation *AutomationClient) *TelegramBotService {
 	return &TelegramBotService{
-		settings:  settings,
-		bills:     bills,
-		debtBills: debtBills,
-		reloadCh:  make(chan struct{}, 1),
+		settings:       settings,
+		bills:          bills,
+		debtBills:      debtBills,
+		serviceStorage: serviceStorage,
+		automation:     automation,
+		reloadCh:       make(chan struct{}, 1),
 	}
 }
 
@@ -136,6 +140,7 @@ func (s *TelegramBotService) runBot(ctx context.Context, cfg *appmodels.Telegram
 	// go-telegram/bot compara data[Offset+1:Offset+Length] (sin la barra).
 	b.RegisterHandler(bot.HandlerTypeMessageText, "servicios_pendientes", bot.MatchTypeCommand, s.handleServiciosPendientes)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "deudas_pendientes", bot.MatchTypeCommand, s.handleDeudasPendientes)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "sincronizar_servicio", bot.MatchTypeCommand, s.handleSincronizarServicio)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "start", bot.MatchTypeCommand, s.handleStart)
 
 	s.registerCommands(ctx, b)
@@ -158,6 +163,7 @@ func (s *TelegramBotService) registerCommands(ctx context.Context, b *bot.Bot) {
 			{Command: "start", Description: "Bienvenida y comandos disponibles"},
 			{Command: "servicios_pendientes", Description: "Servicios con facturas pendientes"},
 			{Command: "deudas_pendientes", Description: "Deudas con cuotas pendientes"},
+			{Command: "sincronizar_servicio", Description: "Sincronizar un servicio con su ID (ej: /sincronizar_servicio 1)"},
 		},
 	})
 	if err != nil {
@@ -259,14 +265,74 @@ func (s *TelegramBotService) handleStart(ctx context.Context, b *bot.Bot, update
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
-	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura).\n\nComandos:\n  `/servicios_pendientes` — servicios con facturas pendientes\n  `/deudas_pendientes` — deudas con cuotas pendientes\n\nAdemás, si activás las alertas por Telegram en P40LA (Configuración → Alertas), este bot te envía los avisos automáticos directamente.")
+	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura) y sincronización manual.\n\nComandos:\n  `/servicios_pendientes` — servicios con facturas pendientes\n  `/deudas_pendientes` — deudas con cuotas pendientes\n  `/sincronizar_servicio <id>` — sincroniza un servicio con su ID (ej: `/sincronizar_servicio 1`)\n\nEl ID de cada servicio y deuda se muestra en las listas de la app (badge `ID: N`).\n\nAdemás, si activás las alertas por Telegram en P40LA (Configuración → Alertas), este bot te envía los avisos automáticos directamente.")
 }
 
 func (s *TelegramBotService) handleDefault(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
-	s.reply(ctx, b, update, "Comando no reconocido. Usa `/servicios_pendientes` o `/deudas_pendientes`.")
+	s.reply(ctx, b, update, "Comando no reconocido. Usa `/servicios_pendientes`, `/deudas_pendientes` o `/sincronizar_servicio <id>`.")
+}
+
+// handleSincronizarServicio ejecuta la sincronización manual de un servicio
+// (SPEC-092): `/sincronizar_servicio <id>` dispara el job de automation
+// (plugin + webhook) y responde con el resultado. El ID es el badge `ID: N`
+// de la lista de servicios.
+func (s *TelegramBotService) handleSincronizarServicio(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
+	if !s.checkAuthorized(ctx, b, update) {
+		return
+	}
+
+	text := ""
+	if update.Message != nil {
+		text = strings.TrimSpace(update.Message.Text)
+	}
+	parts := strings.Fields(text)
+	if len(parts) < 2 {
+		s.reply(ctx, b, update, "Uso: `/sincronizar_servicio <id>`\n\nSincroniza un servicio con su ID (lo encontrás en la lista de servicios, badge `ID: N`). Ej: `/sincronizar_servicio 1`")
+		return
+	}
+
+	id, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil || id <= 0 {
+		s.reply(ctx, b, update, "⚠️ El ID debe ser un número entero positivo. Uso: `/sincronizar_servicio <id>`")
+		return
+	}
+
+	svc, err := s.serviceStorage.GetByID(ctx, id)
+	if err != nil {
+		slog.Error("telegram_bot: /sincronizar_servicio — error de storage", "error", err)
+		s.reply(ctx, b, update, "⚠️ Error al consultar el servicio. Revisá los logs.")
+		return
+	}
+	if svc == nil {
+		s.reply(ctx, b, update, fmt.Sprintf("⚠️ No existe un servicio con ID %d.", id))
+		return
+	}
+	if svc.AutomationAccountID == nil {
+		s.reply(ctx, b, update, fmt.Sprintf("⚠️ El servicio *%s* no tiene vinculada una cuenta de automation. Editá el servicio en la app y configurá el ID de cuenta en Automation.", svc.Name))
+		return
+	}
+
+	configured, err := s.settings.IsAutomationConfigured(ctx)
+	if err != nil {
+		slog.Error("telegram_bot: /sincronizar_servicio — leer config automation", "error", err)
+		s.reply(ctx, b, update, "⚠️ Error al verificar la configuración de Automation.")
+		return
+	}
+	if !configured {
+		s.reply(ctx, b, update, "⚠️ Automation no está configurada. Configurala en P40LA → Configuración → Automation.")
+		return
+	}
+
+	delivered, failed, err := s.automation.SyncAccount(ctx, *svc.AutomationAccountID)
+	if err != nil {
+		s.reply(ctx, b, update, fmt.Sprintf("⚠️ Sincronización fallida: %v", err))
+		return
+	}
+	msg := fmt.Sprintf("✅ Sincronización de *%s*\n  Entregadas: %d\n  Fallidas: %d", svc.Name, delivered, failed)
+	s.reply(ctx, b, update, msg)
 }
 
 // handleServiciosPendientes responde con un mensaje por cada servicio que

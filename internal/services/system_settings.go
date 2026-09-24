@@ -794,3 +794,49 @@ func parseCommaList(val string) []string {
 	}
 	return result
 }
+
+// ---- Configuración de p40la-ihost-automation (SPEC-092) ----
+
+// GetAutomationConfig devuelve la configuración del proyecto de automation
+// (base URL + api_key). Uso interno: AutomationClient. NUNCA exponer la
+// api_key en responses de API.
+func (s *SystemSettingsService) GetAutomationConfig(ctx context.Context) (AutomationConfig, error) {
+	baseURL, err := s.storage.Get(ctx, AutomationBaseURLKey)
+	if err != nil {
+		return AutomationConfig{}, err
+	}
+	apiKey, err := s.storage.Get(ctx, AutomationAPIKeyKey)
+	if err != nil {
+		return AutomationConfig{}, err
+	}
+	if strings.TrimSpace(baseURL) == "" {
+		baseURL = DefaultAutomationBaseURL
+	}
+	return AutomationConfig{BaseURL: baseURL, APIKey: apiKey}, nil
+}
+
+// IsAutomationConfigured indica si hay base URL y api_key de automation.
+func (s *SystemSettingsService) IsAutomationConfigured(ctx context.Context) (bool, error) {
+	cfg, err := s.GetAutomationConfig(ctx)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(cfg.BaseURL) != "" && strings.TrimSpace(cfg.APIKey) != "", nil
+}
+
+// SetAutomationConfig persiste la base URL y la api_key de automation. La
+// api_key vacía no sobrescribe una existente (updates parciales, patrón SMTP).
+func (s *SystemSettingsService) SetAutomationConfig(ctx context.Context, baseURL, apiKey string) error {
+	baseURL = strings.TrimSpace(strings.TrimRight(baseURL, "/"))
+	if baseURL != "" {
+		if err := s.storage.Set(ctx, AutomationBaseURLKey, baseURL); err != nil {
+			return err
+		}
+	}
+	if apiKey != "" {
+		if err := s.storage.Set(ctx, AutomationAPIKeyKey, strings.TrimSpace(apiKey)); err != nil {
+			return err
+		}
+	}
+	return nil
+}

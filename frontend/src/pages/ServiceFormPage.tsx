@@ -34,6 +34,7 @@ export default function ServiceFormPage() {
     is_recurring: false,
     start_date: '',
     end_date: '',
+    automation_account_id: '',
   })
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [analyzerOptions, setAnalyzerOptions] = useState<{id: number, analyzer_id: string, analyzer_name: string}[]>([])
@@ -97,6 +98,7 @@ export default function ServiceFormPage() {
             is_recurring: svc.is_recurring || false,
             start_date: svc.start_date || '',
             end_date: svc.end_date || '',
+            automation_account_id: svc.automation_account_id ? String(svc.automation_account_id) : '',
           })
         }
       }
@@ -166,6 +168,9 @@ export default function ServiceFormPage() {
         is_recurring: formData.is_recurring,
         start_date: formData.is_recurring && formData.start_date ? formData.start_date : undefined,
         end_date: formData.is_recurring && formData.end_date ? formData.end_date : undefined,
+        automation_account_id: formData.automation_account_id
+          ? Number(formData.automation_account_id)
+          : undefined,
       }
       if (isEdit) {
         await api.services.update(Number(id), data)
@@ -287,6 +292,18 @@ export default function ServiceFormPage() {
               className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
             />
           </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">{t('services.automation_account')}</label>
+          <input
+            type="number"
+            min="1"
+            value={formData.automation_account_id}
+            onChange={(e) => handleChange('automation_account_id', e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            placeholder={t('services.automation_account_placeholder')}
+          />
+          <p className="text-xs text-text-secondary mt-1">{t('services.automation_account_hint')}</p>
         </div>
         <div className="flex items-center gap-3">
           <label className="relative inline-flex items-center cursor-pointer">

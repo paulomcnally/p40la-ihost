@@ -100,6 +100,11 @@ type settingsRequest struct {
 	// Base URL de los webhooks (SPEC-069). Default: http://ihost.local:8088.
 	WebhookBaseURL *string `json:"webhook_base_url,omitempty"`
 
+	// Configuración de p40la-ihost-automation (SPEC-092). La api_key solo se
+	// envía para guardar; nunca se devuelve en el GET.
+	AutomationBaseURL *string `json:"automation_base_url,omitempty"`
+	AutomationAPIKey  *string `json:"automation_api_key,omitempty"`
+
 	// Formato de moneda (SPEC-058).
 	CurrencyThousandsSeparator *string `json:"currency_thousands_separator,omitempty"`
 	CurrencyDecimalSeparator   *string `json:"currency_decimal_separator,omitempty"`
@@ -194,6 +199,17 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		return
 	}
 
+	automation, err := h.settings.GetAutomationConfig(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	automationConfigured, err := h.settings.IsAutomationConfigured(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
 	// SMTPConfigPublic.User es siempre "" (info sensible, no se expone).
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour":       hour,
@@ -212,6 +228,8 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"email_alerts_enabled":          emailAlertsEnabled,
 		"webhook_enabled":               webhookEnabled,
 		"webhook_base_url":              webhookBaseURL,
+		"automation_base_url":           automation.BaseURL,
+		"automation_configured":         automationConfigured,
 		"currency_thousands_separator":  currencyFormat.ThousandsSeparator,
 		"currency_decimal_separator":    currencyFormat.DecimalSeparator,
 		"currency_decimal_digits":       currencyFormat.DecimalDigits,
@@ -340,6 +358,23 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 	// Base URL de los webhooks (SPEC-069).
 	if req.WebhookBaseURL != nil {
 		if err := h.settings.SetWebhookBaseURL(r.Context(), *req.WebhookBaseURL); err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+	}
+
+	// Configuración de p40la-ihost-automation (SPEC-092). Updates parciales:
+	// la api_key vacía no sobrescribe la existente.
+	if req.AutomationBaseURL != nil || req.AutomationAPIKey != nil {
+		baseURL := ""
+		apiKey := ""
+		if req.AutomationBaseURL != nil {
+			baseURL = *req.AutomationBaseURL
+		}
+		if req.AutomationAPIKey != nil {
+			apiKey = *req.AutomationAPIKey
+		}
+		if err := h.settings.SetAutomationConfig(r.Context(), baseURL, apiKey); err != nil {
 			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
 			return
 		}

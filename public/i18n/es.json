@@ -99,7 +99,8 @@
     "pay_date": "Fecha de pago",
     "payment_reference": "Referencia de pago",
     "total_day": "Total del día",
-    "saved_success": "Deuda guardada"
+    "saved_success": "Deuda guardada",
+    "id": "ID"
   },
   "home": {
     "title": "Casa",
@@ -152,7 +153,15 @@
     "webhook_regenerated": "Webhook regenerado. Actualiza la URL en el cliente externo.",
     "webhook_schema_desc": "El cuerpo del POST usa este schema (year, month y amount obligatorios; status puede ser \"pending\" o \"paid\").",
     "webhook_disabled_hint": "La feature de webhooks está deshabilitada. Actívala desde Configuración.",
-    "webhook_never": "Nunca"
+    "webhook_never": "Nunca",
+    "sync": "Sincronizar",
+    "syncing": "Sincronizando...",
+    "sync_ok": "Sincronización completada",
+    "sync_error": "Error al sincronizar",
+    "id": "ID",
+    "automation_account": "ID de cuenta en Automation",
+    "automation_account_placeholder": "Ej: 1",
+    "automation_account_hint": "ID de la cuenta en p40la-ihost-automation (para sincronización manual)."
   },
   "frequency": {
     "monthly": "Mensual",
@@ -500,6 +509,18 @@
       "preview_loading": "Cargando vista previa...",
       "nav_custom": "Colores personalizados",
       "nav_default": "Colores predeterminados"
+    },
+    "automation": {
+      "title": "Automation",
+      "desc": "Configuración del proyecto p40la-ihost-automation para la sincronización manual de servicios.",
+      "base_url": "URL base",
+      "base_url_desc": "URL del proyecto de automation (default: http://ihost.local:8089).",
+      "api_key": "API key",
+      "api_key_desc": "API key de webhooks de automation (se muestra en el proyecto de automation, Configuración → Webhooks).",
+      "api_key_placeholder": "Ingresá la API key de automation",
+      "configured": "Configurada",
+      "saved": "Guardado",
+      "hint": "La sincronización manual ejecuta los plugins de automation (llamado externo) y el envío al webhook del servicio. Requiere que cada servicio tenga su ID de cuenta en Automation configurado."
     }
   },
   "notifications": {
