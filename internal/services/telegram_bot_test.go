@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -858,3 +859,137 @@ func TestCommandDispatchRealMatcher(t *testing.T) {
 }
 
 var _ = bot.HandlerFunc(nil) // mantener import de bot en tests
+
+// TestSincronizarServicioCommand verifica el comando /sincronizar_servicio
+// (SPEC-092): con un servicio vinculado responde el resultado del sync; sin
+// argumento o con ID inválido responde ayuda; con ID inexistente avisa.
+func TestSincronizarServicioCommand(t *testing.T) {
+	ctx := context.Background()
+
+	database, err := db.OpenDB(":memory:", "../../migrations")
+	if err != nil {
+		t.Fatalf("abrir db: %v", err)
+	}
+	t.Cleanup(func() { database.Close() })
+
+	settings := NewSystemSettingsService(storage.NewSystemSettingsStorage(database))
+	homeStorage := storage.NewHomeStorage(database)
+	currencyStorage := storage.NewCurrencyStorage(database)
+	serviceStorage := storage.NewServiceStorage(database)
+	billStorage := storage.NewBillStorage(database)
+
+	homeSvc := NewHomeService(homeStorage)
+	currencySvc := NewCurrencyService(currencyStorage)
+	serviceSvc := NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
+
+	home, err := homeSvc.Create(ctx, "Casa Bot", "")
+	if err != nil {
+		t.Fatalf("crear hogar: %v", err)
+	}
+	currencies, _ := currencySvc.List(ctx)
+	if len(currencies) == 0 {
+		t.Fatal("monedas de seed")
+	}
+	accountID := int64(7)
+	svc, err := serviceSvc.Create(ctx, &appmodels.Service{
+		HomeID:              home.ID,
+		Name:                "Internet Bot",
+		CurrencyID:          currencies[0].ID,
+		Frequency:           "monthly",
+		SuggestedAmount:     100,
+		Active:              true,
+		IconKey:             "internet",
+		BillingType:         "variable",
+		AutomationAccountID: &accountID,
+	})
+	if err != nil {
+		t.Fatalf("crear servicio: %v", err)
+	}
+
+	// Fake automation: exige la api_key y responde {delivered, failed}.
+	automationKey := "bot-key-1234567890"
+	automationSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Webhook-Key") != automationKey {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]int{"delivered": 2, "failed": 0})
+	}))
+	defer automationSrv.Close()
+	if err := settings.SetAutomationConfig(ctx, automationSrv.URL, automationKey); err != nil {
+		t.Fatalf("config automation: %v", err)
+	}
+
+	svcBot := NewTelegramBotService(settings, billStorage, storage.NewDebtBillStorage(database), serviceStorage, NewAutomationClient(settings))
+
+	var sent []string
+	var mu sync.Mutex
+	apiSrv := fakeTelegramAPI(t, &sent, &mu)
+
+	b, err := bot.New("TESTTOKEN", bot.WithServerURL(apiSrv.URL), bot.WithNotAsyncHandlers(), bot.WithDefaultHandler(svcBot.handleDefault))
+	if err != nil {
+		t.Fatalf("bot.New: %v", err)
+	}
+	b.RegisterHandler(bot.HandlerTypeMessageText, "sincronizar_servicio", bot.MatchTypeCommand, svcBot.handleSincronizarServicio)
+
+	msg := func(text string) *tgmodels.Update {
+		cmdLen := len(text)
+		if idx := strings.IndexByte(text, ' '); idx > 0 {
+			cmdLen = idx
+		}
+		return &tgmodels.Update{
+			ID: 1,
+			Message: &tgmodels.Message{
+				Chat: tgmodels.Chat{ID: 123},
+				Text: text,
+				Entities: []tgmodels.MessageEntity{
+					{Type: tgmodels.MessageEntityTypeBotCommand, Offset: 0, Length: cmdLen},
+				},
+			},
+		}
+	}
+	lastReply := func(before int) string {
+		mu.Lock()
+		defer mu.Unlock()
+		if len(sent) <= before {
+			return ""
+		}
+		return sent[len(sent)-1]
+	}
+
+	t.Run("con ID válido responde resultado", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/sincronizar_servicio "+strconv.FormatInt(svc.ID, 10)))
+		reply := lastReply(before)
+		if !strings.Contains(reply, "Internet Bot") || !strings.Contains(reply, "Entregadas: 2") || !strings.Contains(reply, "Fallidas: 0") {
+			t.Errorf("respuesta inesperada: %q", reply)
+		}
+	})
+
+	t.Run("sin argumento responde ayuda", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/sincronizar_servicio"))
+		reply := lastReply(before)
+		if !strings.Contains(reply, "Uso:") {
+			t.Errorf("esperaba ayuda, got %q", reply)
+		}
+	})
+
+	t.Run("ID no numérico responde error", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/sincronizar_servicio abc"))
+		reply := lastReply(before)
+		if !strings.Contains(reply, "número entero") {
+			t.Errorf("esperaba error de ID, got %q", reply)
+		}
+	})
+
+	t.Run("servicio inexistente avisa", func(t *testing.T) {
+		before := len(sent)
+		b.ProcessUpdate(ctx, msg("/sincronizar_servicio 99999"))
+		reply := lastReply(before)
+		if !strings.Contains(reply, "No existe un servicio") {
+			t.Errorf("esperaba aviso, got %q", reply)
+		}
+	})
+}
