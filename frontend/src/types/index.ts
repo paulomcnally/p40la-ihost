@@ -30,6 +30,7 @@ export interface Service {
   start_date?: string
   end_date?: string
   is_recurring: boolean
+  is_insurance: boolean
   webhook_uuid?: string
   last_webhook_request?: string | null
   latest_bill_status: 'paid' | 'pending' | null
@@ -105,6 +106,7 @@ export interface AnalyzerInfo {
 export interface Bill {
   id: number
   service_id: number
+  cycle_id?: number
   year: number
   month: number
   amount: number
@@ -115,6 +117,15 @@ export interface Bill {
   due_date?: string
   paid_at?: string
   payment_reference?: string
+}
+
+export interface ServiceCycle {
+  id: number
+  service_id: number
+  sequence: number
+  start_date?: string
+  end_date?: string
+  created_at: string
 }
 
 export interface FieldChange {

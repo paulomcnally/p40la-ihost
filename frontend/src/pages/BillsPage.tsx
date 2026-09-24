@@ -16,6 +16,8 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import WebhookModal from '../components/WebhookModal'
 import BillAnalysis from '../components/BillAnalysis'
 import DueDateBadge from '../components/DueDateBadge'
+import AddPolicyModal from '../components/AddPolicyModal'
+import RenewServiceModal from '../components/RenewServiceModal'
 import type { Bill, Service, ServiceAuto } from '../types'
 
 type TabKey = 'analisis' | 'facturas' | 'polizas'
@@ -42,6 +44,10 @@ export default function BillsPage() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [webhookOpen, setWebhookOpen] = useState(false)
+  const [renewOpen, setRenewOpen] = useState(false)
+  const [addPolicyOpen, setAddPolicyOpen] = useState(false)
+  const [editPolicy, setEditPolicy] = useState<ServiceAuto | null>(null)
+  const [deletePolicyTarget, setDeletePolicyTarget] = useState<{ autoId: number; name: string } | null>(null)
 
   const loadAutos = useCallback(async () => {
     if (!serviceId) return
@@ -90,6 +96,19 @@ export default function BillsPage() {
     return options
   }
 
+  const handlePolicySaved = useCallback(() => {
+    setAddPolicyOpen(false)
+    setEditPolicy(null)
+    loadAutos()
+  }, [loadAutos])
+
+  const handleDeletePolicy = useCallback(async () => {
+    if (!deletePolicyTarget) return
+    await api.autos.removeService(deletePolicyTarget.autoId, Number(serviceId))
+    setDeletePolicyTarget(null)
+    loadAutos()
+  }, [deletePolicyTarget, serviceId, loadAutos])
+
   if (loading) return <LoadingSpinner />
 
   if (!service) return <div className="text-center py-8 text-text-secondary">Loading...</div>
@@ -110,6 +129,7 @@ export default function BillsPage() {
         <CreateMenu options={[
           { label: 'Subir factura', icon: 'upload', onClick: () => setUploadOpen(true) },
           { label: t('bills.create'), icon: 'plus', onClick: () => navigate(`/bills/new?service=${serviceId}`) },
+          { label: t('bills.renew'), icon: 'refresh', onClick: () => setRenewOpen(true) },
           { label: t('services.webhook_title'), icon: 'link', onClick: () => setWebhookOpen(true) },
         ]} />
       </div>
@@ -119,7 +139,9 @@ export default function BillsPage() {
           [
             { key: 'analisis', label: t('bills.tab_analysis'), icon: 'chart' },
             { key: 'facturas', label: t('bills.tab_bills'), icon: 'bill' },
-            { key: 'polizas', label: t('bills.tab_polizas'), icon: 'insurance' },
+            ...(service.is_insurance
+              ? [{ key: 'polizas' as TabKey, label: t('bills.tab_polizas'), icon: 'insurance' }]
+              : []),
           ] as { key: TabKey; label: string; icon: string }[]
         ).map((item) => (
           <button
@@ -140,50 +162,81 @@ export default function BillsPage() {
       {tab === 'analisis' ? (
         <BillAnalysis serviceId={Number(serviceId)} currencySymbol={currency?.symbol} />
       ) : tab === 'polizas' ? (
-        autos.length === 0 ? (
-          <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
-            <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
-              <Icon name="insurance" className="w-full h-full" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('bills.polizas_empty')}</h3>
-            <p className="text-text-secondary text-sm">{t('bills.polizas_empty_subtitle')}</p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold">{t('bills.tab_polizas')}</h3>
+            <button
+              onClick={() => setAddPolicyOpen(true)}
+              className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover transition-colors flex items-center gap-2 text-sm min-h-[44px]"
+            >
+              <Icon name="plus" className="w-4 h-4" />
+              {t('bills.polizas_add')}
+            </button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {autos.map((auto) => (
+          {autos.length === 0 ? (
+            <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
+              <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
+                <Icon name="insurance" className="w-full h-full" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('bills.polizas_empty')}</h3>
+              <p className="text-text-secondary text-sm mb-5">{t('bills.polizas_empty_subtitle')}</p>
               <button
-                key={auto.auto_id}
-                onClick={() => navigate(`/autos/${auto.auto_id}`)}
-                className="w-full text-left bg-card rounded-ios shadow-ios p-4 flex items-center gap-4 hover:bg-border/50 transition-colors"
+                onClick={() => setAddPolicyOpen(true)}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-ios-sm hover:bg-primary-hover transition-colors text-sm min-h-[44px]"
               >
-                <div className="w-10 h-10 rounded-ios bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
-                  <Icon name={auto.icon || 'vehicle'} className="w-6 h-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">
-                    {auto.brand} {auto.model} <span className="text-text-secondary font-normal">{auto.year}</span>
-                  </p>
-                  <p className="text-xs text-text-secondary truncate">{auto.placa} · {auto.color}</p>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      auto.coverage_type === 'full_cover'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                    }`}>
-                      {auto.coverage_type === 'full_cover' ? t('bills.polizas_full_cover') : t('bills.polizas_third_party')}
-                    </span>
-                    <span className="text-xs text-text-secondary break-all">Póliza: {auto.policy_number}</span>
-                    <span className="text-xs text-text-secondary break-all">Aseguradora: {auto.insurer_number}</span>
-                    {auto.certificate && (
-                      <span className="text-xs text-text-secondary break-all">Certificado: {auto.certificate}</span>
-                    )}
-                  </div>
-                </div>
-                <Icon name="chevron" className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                <Icon name="plus" className="w-4 h-4" />
+                {t('bills.polizas_add')}
               </button>
-            ))}
-          </div>
-        )
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {autos.map((auto) => (
+                <div key={auto.auto_id} className="relative bg-card rounded-ios shadow-ios p-4">
+                  <CardMenu
+                    options={[
+                      { label: t('app.edit'), icon: 'edit', onClick: () => setEditPolicy(auto) },
+                      {
+                        label: t('app.delete'),
+                        icon: 'delete',
+                        danger: true,
+                        onClick: () => setDeletePolicyTarget({ autoId: auto.auto_id, name: `${auto.brand} ${auto.model}` }),
+                      },
+                    ]}
+                  />
+                  <button
+                    onClick={() => navigate(`/autos/${auto.auto_id}`)}
+                    className="w-full text-left flex items-center gap-4"
+                  >
+                    <div className="w-10 h-10 rounded-ios bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                      <Icon name={auto.icon || 'vehicle'} className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">
+                        {auto.brand} {auto.model} <span className="text-text-secondary font-normal">{auto.year}</span>
+                      </p>
+                      <p className="text-xs text-text-secondary truncate">{auto.placa} · {auto.color}</p>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                          auto.coverage_type === 'full_cover'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                        }`}>
+                          {auto.coverage_type === 'full_cover' ? t('bills.polizas_full_cover') : t('bills.polizas_third_party')}
+                        </span>
+                        <span className="text-xs text-text-secondary break-all">Póliza: {auto.policy_number}</span>
+                        <span className="text-xs text-text-secondary break-all">Aseguradora: {auto.insurer_number}</span>
+                        {auto.certificate && (
+                          <span className="text-xs text-text-secondary break-all">Certificado: {auto.certificate}</span>
+                        )}
+                      </div>
+                    </div>
+                    <Icon name="chevron" className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       ) : bills.length === 0 ? (
         <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
@@ -311,6 +364,23 @@ export default function BillsPage() {
       />
       {webhookOpen && service && (
         <WebhookModal service={service} onClose={() => setWebhookOpen(false)} />
+      )}
+      {renewOpen && service && (
+        <RenewServiceModal service={service} onSaved={() => { setRenewOpen(false); load() }} onCancel={() => setRenewOpen(false)} />
+      )}
+      {addPolicyOpen && service && (
+        <AddPolicyModal serviceId={service.id} onSaved={handlePolicySaved} onCancel={() => setAddPolicyOpen(false)} />
+      )}
+      {editPolicy && service && (
+        <AddPolicyModal serviceId={service.id} policy={editPolicy} onSaved={handlePolicySaved} onCancel={() => setEditPolicy(null)} />
+      )}
+      {deletePolicyTarget && (
+        <DeleteModal
+          title={t('bills.polizas_delete_confirm')}
+          subtitle={`${deletePolicyTarget.name}`}
+          onConfirm={handleDeletePolicy}
+          onCancel={() => setDeletePolicyTarget(null)}
+        />
       )}
     </div>
   )
