@@ -41,6 +41,21 @@ func (h *AutoServiceHandlers) ListAutoServices(w http.ResponseWriter, r *http.Re
 	respondJSON(w, http.StatusOK, details)
 }
 
+// ListServiceAutos responde con los autos asociados a un servicio (SPEC-091).
+func (h *AutoServiceHandlers) ListServiceAutos(w http.ResponseWriter, r *http.Request) {
+	serviceID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+	details, err := h.service.ListByService(r.Context(), serviceID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, details)
+}
+
 // CreateAutoService asocia un servicio como seguro a un auto.
 func (h *AutoServiceHandlers) CreateAutoService(w http.ResponseWriter, r *http.Request) {
 	autoID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)

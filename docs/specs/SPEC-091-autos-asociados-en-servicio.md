@@ -169,13 +169,7 @@ No hay cambios de esquema. **Migración `NNNN_add_index_auto_services_service_id
 
 **Response 200 vacío**: `[]`
 
-**Response Error**:
-```json
-{
-  "error": "not_found",
-  "message": "servicio no encontrado"
-}
-```
+**Nota**: un `service_id` inexistente o sin asociaciones devuelve `200` con `[]`, consistente con `GET /api/autos/{id}/services` (no se valida existencia del servicio).
 
 ### 4.5 Dependencias
 

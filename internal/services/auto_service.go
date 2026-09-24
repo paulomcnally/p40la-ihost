@@ -24,6 +24,11 @@ func (s *AutoServiceService) ListByAuto(ctx context.Context, autoID int64) ([]mo
 	return s.autoServiceStorage.ListByAuto(ctx, autoID)
 }
 
+// ListByService devuelve los autos asociados a un servicio como seguro (SPEC-091).
+func (s *AutoServiceService) ListByService(ctx context.Context, serviceID int64) ([]models.ServiceAutoDetail, error) {
+	return s.autoServiceStorage.ListByService(ctx, serviceID)
+}
+
 // Create asocia un servicio como seguro a un auto.
 func (s *AutoServiceService) Create(ctx context.Context, autoID, serviceID int64, coverageType, policyNumber, certificate, insurerNumber string) (*models.AutoService, error) {
 	if coverageType != "daños_a_terceros" && coverageType != "full_cover" {

@@ -75,6 +75,46 @@ func (s *AutoServiceStorage) ListByAuto(ctx context.Context, autoID int64) ([]mo
 	return results, rows.Err()
 }
 
+// ListByService devuelve los autos asociados a un servicio (reverse lookup, SPEC-091).
+func (s *AutoServiceStorage) ListByService(ctx context.Context, serviceID int64) ([]models.ServiceAutoDetail, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT
+			asv.auto_id, a.brand, a.model, a.year, a.color, a.icon, a.placa,
+			asv.coverage_type, asv.policy_number, asv.certificate, asv.insurer_number,
+			asv.created_at
+		FROM auto_services asv
+		JOIN autos a ON a.id = asv.auto_id
+		WHERE asv.service_id = ?
+		ORDER BY a.brand, a.model
+	`, serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("listar autos del servicio: %w", err)
+	}
+	defer rows.Close()
+
+	var results = make([]models.ServiceAutoDetail, 0)
+	for rows.Next() {
+		var d models.ServiceAutoDetail
+		var certificate sql.NullString
+		var createdAt sql.NullTime
+		if err := rows.Scan(
+			&d.AutoID, &d.Brand, &d.Model, &d.Year, &d.Color, &d.Icon, &d.Placa,
+			&d.CoverageType, &d.PolicyNumber, &certificate, &d.InsurerNumber,
+			&createdAt,
+		); err != nil {
+			return nil, fmt.Errorf("escanear auto del servicio: %w", err)
+		}
+		if certificate.Valid {
+			d.Certificate = &certificate.String
+		}
+		if createdAt.Valid {
+			d.CreatedAt = createdAt.Time.Format("2006-01-02T15:04:05Z")
+		}
+		results = append(results, d)
+	}
+	return results, rows.Err()
+}
+
 // Create asocia un servicio a un auto como seguro.
 func (s *AutoServiceStorage) Create(ctx context.Context, autoID, serviceID int64, coverageType, policyNumber, certificate, insurerNumber string) (*models.AutoService, error) {
 	var certPtr *string
