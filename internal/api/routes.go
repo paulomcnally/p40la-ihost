@@ -73,6 +73,9 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/services/{id}", authMiddleware(http.HandlerFunc(handler.service.UpdateService)))
 	mux.Handle("DELETE /api/services/{id}", authMiddleware(http.HandlerFunc(handler.service.DeleteService)))
 
+	// Autos asociados a un servicio (reverse lookup de pólizas, SPEC-091)
+	mux.Handle("GET /api/services/{id}/autos", authMiddleware(http.HandlerFunc(handler.autoService.ListServiceAutos)))
+
 	// APIs de facturas
 	mux.Handle("GET /api/services/{service_id}/bills", authMiddleware(http.HandlerFunc(handler.bill.ListBills)))
 	mux.Handle("GET /api/bills/{id}", authMiddleware(http.HandlerFunc(handler.bill.GetBill)))

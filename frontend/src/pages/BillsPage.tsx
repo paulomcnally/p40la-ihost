@@ -16,9 +16,9 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import WebhookModal from '../components/WebhookModal'
 import BillAnalysis from '../components/BillAnalysis'
 import DueDateBadge from '../components/DueDateBadge'
-import type { Bill, Service } from '../types'
+import type { Bill, Service, ServiceAuto } from '../types'
 
-type TabKey = 'analisis' | 'facturas'
+type TabKey = 'analisis' | 'facturas' | 'polizas'
 
 const MONTHS = [
   '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -34,6 +34,7 @@ export default function BillsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
   const [bills, setBills] = useState<Bill[]>([])
+  const [autos, setAutos] = useState<ServiceAuto[]>([])
   const [service, setService] = useState<Service | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
   const [payTarget, setPayTarget] = useState<Bill | null>(null)
@@ -41,6 +42,12 @@ export default function BillsPage() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [webhookOpen, setWebhookOpen] = useState(false)
+
+  const loadAutos = useCallback(async () => {
+    if (!serviceId) return
+    const list = await api.services.listAutos(Number(serviceId))
+    setAutos(list || [])
+  }, [serviceId])
 
   const load = useCallback(async () => {
     if (!serviceId) return
@@ -57,6 +64,10 @@ export default function BillsPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    if (tab === 'polizas') loadAutos()
+  }, [tab, loadAutos])
 
   usePageTitle(service?.name ?? null)
 
@@ -108,6 +119,7 @@ export default function BillsPage() {
           [
             { key: 'analisis', label: t('bills.tab_analysis'), icon: 'chart' },
             { key: 'facturas', label: t('bills.tab_bills'), icon: 'bill' },
+            { key: 'polizas', label: t('bills.tab_polizas'), icon: 'insurance' },
           ] as { key: TabKey; label: string; icon: string }[]
         ).map((item) => (
           <button
@@ -127,6 +139,51 @@ export default function BillsPage() {
 
       {tab === 'analisis' ? (
         <BillAnalysis serviceId={Number(serviceId)} currencySymbol={currency?.symbol} />
+      ) : tab === 'polizas' ? (
+        autos.length === 0 ? (
+          <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
+            <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
+              <Icon name="insurance" className="w-full h-full" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('bills.polizas_empty')}</h3>
+            <p className="text-text-secondary text-sm">{t('bills.polizas_empty_subtitle')}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {autos.map((auto) => (
+              <button
+                key={auto.auto_id}
+                onClick={() => navigate(`/autos/${auto.auto_id}`)}
+                className="w-full text-left bg-card rounded-ios shadow-ios p-4 flex items-center gap-4 hover:bg-border/50 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-ios bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                  <Icon name={auto.icon || 'vehicle'} className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">
+                    {auto.brand} {auto.model} <span className="text-text-secondary font-normal">{auto.year}</span>
+                  </p>
+                  <p className="text-xs text-text-secondary truncate">{auto.placa} · {auto.color}</p>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      auto.coverage_type === 'full_cover'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                    }`}>
+                      {auto.coverage_type === 'full_cover' ? t('bills.polizas_full_cover') : t('bills.polizas_third_party')}
+                    </span>
+                    <span className="text-xs text-text-secondary break-all">Póliza: {auto.policy_number}</span>
+                    <span className="text-xs text-text-secondary break-all">Aseguradora: {auto.insurer_number}</span>
+                    {auto.certificate && (
+                      <span className="text-xs text-text-secondary break-all">Certificado: {auto.certificate}</span>
+                    )}
+                  </div>
+                </div>
+                <Icon name="chevron" className="w-4 h-4 text-text-secondary flex-shrink-0" />
+              </button>
+            ))}
+          </div>
+        )
       ) : bills.length === 0 ? (
         <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">

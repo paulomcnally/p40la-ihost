@@ -57,6 +57,21 @@ export interface AutoService {
   created_at: string
 }
 
+export interface ServiceAuto {
+  auto_id: number
+  brand: string
+  model: string
+  year: number
+  color: string
+  icon: string
+  placa: string
+  coverage_type: 'daños_a_terceros' | 'full_cover'
+  policy_number: string
+  certificate?: string
+  insurer_number: string
+  created_at: string
+}
+
 export interface InstitutionCategory {
   id: number
   key: string
