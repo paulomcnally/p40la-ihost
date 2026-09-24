@@ -24,6 +24,10 @@ const serviceColumns = `
 	start_date, end_date, is_recurring, webhook_uuid,
 	last_webhook_request,
 	(SELECT b.status FROM bills b WHERE b.service_id = services.id AND (b.amount > 0 OR b.invoice_number != '') ORDER BY b.year DESC, b.month DESC, b.id DESC LIMIT 1) AS latest_bill_status,
+	EXISTS (
+		SELECT 1 FROM institutions i JOIN institution_categories ic ON ic.id = i.category_id
+		WHERE i.id = services.institution_id AND ic.key = 'insurance'
+	) AS is_insurance,
 	deleted_at, created_at, updated_at
 `
 
@@ -155,7 +159,7 @@ func scanService(row *sql.Row) (*models.Service, error) {
 	if err := row.Scan(&svc.ID, &svc.HomeID, &svc.Name, &institution, &svc.CurrencyID,
 		&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
 		&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring, &webhookUUID,
-		&lastWebhookRequest, &latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
+		&lastWebhookRequest, &latestBillStatus, &svc.IsInsurance, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -206,7 +210,7 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 		if err := rows.Scan(&svc.ID, &svc.HomeID, &svc.Name, &institution, &svc.CurrencyID,
 			&svc.Frequency, &svc.SuggestedAmount, &svc.Active, &svc.IconKey, &svc.BillingType, &billingDay, &svc.AutoGenerate,
 			&institutionID, &institutionAnalyzerID, &startDate, &endDate, &svc.IsRecurring, &webhookUUID,
-			&lastWebhookRequest, &latestBillStatus, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
+			&lastWebhookRequest, &latestBillStatus, &svc.IsInsurance, &deletedAt, &svc.CreatedAt, &svc.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear servicio: %w", err)
 		}
 		svc.Institution = institution.String

@@ -103,10 +103,10 @@ func TestFormatServiciosPendientes(t *testing.T) {
 	})
 
 	t.Run("filtra facturas de meses futuros", func(t *testing.T) {
-		dueVencida := "2026-09-01"  // vencida → se mantiene
-		dueActual := "2026-09-30"   // último día del mes → se mantiene
-		dueFutura := "2026-10-01"   // mes siguiente → se excluye
-		dueFutura2 := "2026-11-15"  // meses siguientes → se excluye
+		dueVencida := "2026-09-01" // vencida → se mantiene
+		dueActual := "2026-09-30"  // último día del mes → se mantiene
+		dueFutura := "2026-10-01"  // mes siguiente → se excluye
+		dueFutura2 := "2026-11-15" // meses siguientes → se excluye
 		pending := []appmodels.PendingBillDetail{
 			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 9, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueVencida},
 			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 9, Amount: 50, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueActual},
@@ -129,7 +129,7 @@ func TestFormatServiciosPendientes(t *testing.T) {
 		}
 	})
 
-t.Run("sin facturas del periodo actual muestra vacío", func(t *testing.T) {
+	t.Run("sin facturas del periodo actual muestra vacío", func(t *testing.T) {
 		dueFutura := "2026-10-05"
 		pending := []appmodels.PendingBillDetail{
 			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 10, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueFutura},
@@ -141,8 +141,8 @@ t.Run("sin facturas del periodo actual muestra vacío", func(t *testing.T) {
 	})
 
 	t.Run("showMonths=2 incluye el próximo mes pero no el siguiente", func(t *testing.T) {
-		dueVencida := "2026-07-01" // vencida hace mucho → siempre
-		dueProximo := "2026-10-20" // mes siguiente → con N=2 se muestra
+		dueVencida := "2026-07-01"   // vencida hace mucho → siempre
+		dueProximo := "2026-10-20"   // mes siguiente → con N=2 se muestra
 		dueSiguiente := "2026-11-15" // dos meses después → con N=2 se excluye
 		pending := []appmodels.PendingBillDetail{
 			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 7, Amount: 100, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueVencida},
@@ -244,7 +244,7 @@ t.Run("sin facturas del periodo actual muestra vacío", func(t *testing.T) {
 	})
 
 	t.Run("ordena por urgencia: vencidas primero, sin fecha al final", func(t *testing.T) {
-		dueLejana := "2026-09-30" // último día del mes → 🟢
+		dueLejana := "2026-09-30"  // último día del mes → 🟢
 		dueVencida := "2026-09-01" // vencida hace 18 días → 🔴
 		pending := []appmodels.PendingBillDetail{
 			{ServiceID: 1, ServiceName: "S1", HomeName: "H", Year: 2026, Month: 9, Amount: 10, CurrencySymbol: "C$", CurrencyCode: "NIO", DueDate: &dueLejana},

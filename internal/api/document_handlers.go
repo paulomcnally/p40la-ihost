@@ -82,16 +82,16 @@ func (h *DocumentHandlers) CreateBillFromExtracted(w http.ResponseWriter, r *htt
 		return
 	}
 	respondJSON(w, http.StatusCreated, map[string]interface{}{
-		"id":              bill.ID,
-		"service_id":      bill.ServiceID,
-		"year":            bill.Year,
-		"month":           bill.Month,
-		"amount":          bill.Amount,
-		"invoice_number":  bill.InvoiceNumber,
-		"status":          bill.Status,
-		"created_at":      bill.CreatedAt,
-		"updated_at":      bill.UpdatedAt,
-		"updated":         updated,
-		"duplicate":       duplicate,
+		"id":             bill.ID,
+		"service_id":     bill.ServiceID,
+		"year":           bill.Year,
+		"month":          bill.Month,
+		"amount":         bill.Amount,
+		"invoice_number": bill.InvoiceNumber,
+		"status":         bill.Status,
+		"created_at":     bill.CreatedAt,
+		"updated_at":     bill.UpdatedAt,
+		"updated":        updated,
+		"duplicate":      duplicate,
 	})
 }

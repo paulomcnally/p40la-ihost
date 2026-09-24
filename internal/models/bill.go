@@ -6,6 +6,7 @@ import "time"
 type Bill struct {
 	ID               int64      `json:"id"`
 	ServiceID        int64      `json:"service_id"`
+	CycleID          *int64     `json:"cycle_id,omitempty"`
 	Year             int        `json:"year"`
 	Month            int        `json:"month"`
 	Amount           float64    `json:"amount"`

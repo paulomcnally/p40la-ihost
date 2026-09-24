@@ -22,7 +22,7 @@ func NewBillStorage(db *sql.DB) *BillStorage {
 // ListByService devuelve las facturas no eliminadas de un servicio.
 func (s *BillStorage) ListByService(ctx context.Context, serviceID int64) ([]models.Bill, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
+		SELECT id, service_id, cycle_id, year, month, amount, invoice_number, status, drive_url,
 		       file_hash, issue_date, due_date, paid_at, payment_reference, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE service_id = ? AND deleted_at IS NULL
@@ -39,7 +39,7 @@ func (s *BillStorage) ListByService(ctx context.Context, serviceID int64) ([]mod
 // GetByID busca una factura por su ID.
 func (s *BillStorage) GetByID(ctx context.Context, id int64) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
+		SELECT id, service_id, cycle_id, year, month, amount, invoice_number, status, drive_url,
 		       file_hash, issue_date, due_date, paid_at, payment_reference, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE id = ? AND deleted_at IS NULL
@@ -50,7 +50,7 @@ func (s *BillStorage) GetByID(ctx context.Context, id int64) (*models.Bill, erro
 // FindByServicePeriod busca una factura existente por servicio, año y mes.
 func (s *BillStorage) FindByServicePeriod(ctx context.Context, serviceID int64, year, month int) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
+		SELECT id, service_id, cycle_id, year, month, amount, invoice_number, status, drive_url,
 		       file_hash, issue_date, due_date, paid_at, payment_reference, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE service_id = ? AND year = ? AND month = ? AND deleted_at IS NULL
@@ -63,7 +63,7 @@ func (s *BillStorage) FindByServicePeriod(ctx context.Context, serviceID int64, 
 // borrada lógicamente que sigue ocupando la clave UNIQUE(service_id, year, month).
 func (s *BillStorage) FindByServicePeriodIncludingDeleted(ctx context.Context, serviceID int64, year, month int) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
+		SELECT id, service_id, cycle_id, year, month, amount, invoice_number, status, drive_url,
 		       file_hash, issue_date, due_date, paid_at, payment_reference, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE service_id = ? AND year = ? AND month = ?
@@ -75,7 +75,7 @@ func (s *BillStorage) FindByServicePeriodIncludingDeleted(ctx context.Context, s
 // de archivo para el servicio (dedup de subidas, SPEC-041).
 func (s *BillStorage) FindByServiceFileHash(ctx context.Context, serviceID int64, fileHash string) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, service_id, year, month, amount, invoice_number, status, drive_url,
+		SELECT id, service_id, cycle_id, year, month, amount, invoice_number, status, drive_url,
 		       file_hash, issue_date, due_date, paid_at, payment_reference, deleted_at, created_at, updated_at
 		FROM bills
 		WHERE service_id = ? AND file_hash = ? AND deleted_at IS NULL
@@ -84,12 +84,21 @@ func (s *BillStorage) FindByServiceFileHash(ctx context.Context, serviceID int64
 	return scanBill(row)
 }
 
-// Create inserta una nueva factura.
+// Create inserta una nueva factura, resolviendo el ciclo del servicio para su
+// período (SPEC-091). Todas las vías de creación (auto-gen, scheduler, webhook,
+// manual) quedan etiquetadas con el ciclo que contiene el período.
 func (s *BillStorage) Create(ctx context.Context, bill *models.Bill) (*models.Bill, error) {
+	cycleID, err := s.resolveCycleForPeriod(ctx, bill.ServiceID, bill.Year, bill.Month)
+	if err != nil {
+		return nil, err
+	}
+	if cycleID != nil {
+		bill.CycleID = cycleID
+	}
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO bills (service_id, year, month, amount, invoice_number, status, drive_url, file_hash, issue_date, due_date)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, bill.ServiceID, bill.Year, bill.Month, bill.Amount, bill.InvoiceNumber, bill.Status, bill.DriveURL, bill.FileHash, bill.IssueDate, bill.DueDate)
+		INSERT INTO bills (service_id, cycle_id, year, month, amount, invoice_number, status, drive_url, file_hash, issue_date, due_date)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, bill.ServiceID, bill.CycleID, bill.Year, bill.Month, bill.Amount, bill.InvoiceNumber, bill.Status, bill.DriveURL, bill.FileHash, bill.IssueDate, bill.DueDate)
 	if err != nil {
 		return nil, fmt.Errorf("insertar factura: %w", err)
 	}
@@ -98,6 +107,41 @@ func (s *BillStorage) Create(ctx context.Context, bill *models.Bill) (*models.Bi
 		return nil, fmt.Errorf("obtener id de factura: %w", err)
 	}
 	return s.GetByID(ctx, id)
+}
+
+// resolveCycleForPeriod devuelve el cycle_id que contiene el período de la
+// factura (YYYY-MM-01; YYYY-01-01 para anuales). Si ningún ciclo contiene el
+// período, cae al último ciclo del servicio; si no hay ciclos, nil.
+func (s *BillStorage) resolveCycleForPeriod(ctx context.Context, serviceID int64, year, month int) (*int64, error) {
+	monthDate := month
+	if monthDate == 0 {
+		monthDate = 1
+	}
+	period := fmt.Sprintf("%04d-%02d-01", year, monthDate)
+
+	var id sql.NullInt64
+	if err := s.db.QueryRowContext(ctx, `
+		SELECT id FROM service_cycles
+		WHERE service_id = ?
+		  AND start_date IS NOT NULL AND start_date <= ?
+		  AND (end_date IS NULL OR end_date >= ?)
+		ORDER BY sequence DESC
+		LIMIT 1
+	`, serviceID, period, period).Scan(&id); err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf("resolver ciclo de factura: %w", err)
+	}
+	if id.Valid {
+		return &id.Int64, nil
+	}
+	if err := s.db.QueryRowContext(ctx, `
+		SELECT id FROM service_cycles WHERE service_id = ? ORDER BY sequence DESC LIMIT 1
+	`, serviceID).Scan(&id); err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf("resolver último ciclo de factura: %w", err)
+	}
+	if id.Valid {
+		return &id.Int64, nil
+	}
+	return nil, nil
 }
 
 // Update actualiza una factura existente. No toca paid_at ni payment_reference:
@@ -248,14 +292,18 @@ func (s *BillStorage) ListPendingWithDetails(ctx context.Context) ([]models.Pend
 func scanBill(row *sql.Row) (*models.Bill, error) {
 	var b models.Bill
 	var deletedAt, paidAt sql.NullTime
+	var cycleID sql.NullInt64
 	var invoiceNumber, driveURL, fileHash, paymentReference, issueDate, dueDate sql.NullString
-	if err := row.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount,
+	if err := row.Scan(&b.ID, &b.ServiceID, &cycleID, &b.Year, &b.Month, &b.Amount,
 		&invoiceNumber, &b.Status, &driveURL, &fileHash, &issueDate, &dueDate,
 		&paidAt, &paymentReference, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("escanear factura: %w", err)
+	}
+	if cycleID.Valid {
+		b.CycleID = &cycleID.Int64
 	}
 	if deletedAt.Valid {
 		b.DeletedAt = &deletedAt.Time
@@ -281,11 +329,15 @@ func scanBills(rows *sql.Rows) ([]models.Bill, error) {
 	for rows.Next() {
 		var b models.Bill
 		var deletedAt, paidAt sql.NullTime
+		var cycleID sql.NullInt64
 		var invoiceNumber, driveURL, fileHash, paymentReference, issueDate, dueDate sql.NullString
-		if err := rows.Scan(&b.ID, &b.ServiceID, &b.Year, &b.Month, &b.Amount,
+		if err := rows.Scan(&b.ID, &b.ServiceID, &cycleID, &b.Year, &b.Month, &b.Amount,
 			&invoiceNumber, &b.Status, &driveURL, &fileHash, &issueDate, &dueDate,
 			&paidAt, &paymentReference, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear factura: %w", err)
+		}
+		if cycleID.Valid {
+			b.CycleID = &cycleID.Int64
 		}
 		if deletedAt.Valid {
 			b.DeletedAt = &deletedAt.Time

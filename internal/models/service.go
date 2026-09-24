@@ -20,6 +20,7 @@ type Service struct {
 	StartDate             *string    `json:"start_date,omitempty"`
 	EndDate               *string    `json:"end_date,omitempty"`
 	IsRecurring           bool       `json:"is_recurring"`
+	IsInsurance           bool       `json:"is_insurance"`
 	WebhookUUID           string     `json:"webhook_uuid,omitempty"`
 	LastWebhookRequest    *time.Time `json:"last_webhook_request,omitempty"`
 	LatestBillStatus      *string    `json:"latest_bill_status"`
