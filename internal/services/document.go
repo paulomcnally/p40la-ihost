@@ -16,17 +16,17 @@ import (
 )
 
 type DocumentService struct {
-	serviceStorage  *storage.ServiceStorage
-	billStorage     *storage.BillStorage
-	instStorage     *storage.InstitutionStorage
-	history         *storage.BillHistoryStorage
+	serviceStorage *storage.ServiceStorage
+	billStorage    *storage.BillStorage
+	instStorage    *storage.InstitutionStorage
+	history        *storage.BillHistoryStorage
 }
 
 func NewDocumentService(serviceStorage *storage.ServiceStorage, billStorage *storage.BillStorage, instStorage *storage.InstitutionStorage) *DocumentService {
 	return &DocumentService{
-		serviceStorage:  serviceStorage,
-		billStorage:     billStorage,
-		instStorage:     instStorage,
+		serviceStorage: serviceStorage,
+		billStorage:    billStorage,
+		instStorage:    instStorage,
 	}
 }
 
@@ -37,9 +37,9 @@ func (s *DocumentService) SetBillHistoryStorage(h *storage.BillHistoryStorage) {
 }
 
 var allowedMimeTypes = map[string]bool{
-	"application/pdf":      true,
-	"image/png":            true,
-	"image/jpeg":           true,
+	"application/pdf":          true,
+	"image/png":                true,
+	"image/jpeg":               true,
 	"application/octet-stream": true,
 }
 
@@ -181,10 +181,10 @@ func (s *DocumentService) GetAnalyzerOptions(ctx context.Context, institutionID 
 		}
 		info := analyzer.Info()
 		options = append(options, map[string]interface{}{
-			"id":              ia.ID,
-			"institution_id":  ia.InstitutionID,
-			"analyzer_id":     ia.AnalyzerID,
-			"analyzer_name":   info.Name,
+			"id":             ia.ID,
+			"institution_id": ia.InstitutionID,
+			"analyzer_id":    ia.AnalyzerID,
+			"analyzer_name":  info.Name,
 		})
 	}
 	return options, nil

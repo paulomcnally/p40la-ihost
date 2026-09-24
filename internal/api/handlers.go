@@ -10,30 +10,31 @@ import (
 
 // Handler agrupa los handlers HTTP de la aplicación.
 type Handler struct {
-	auth                 *services.AuthService
-	settings             *SettingsHandlers
-	systemSettings       *SystemSettingsHandlers
-	alerts               *AlertsHandlers
-	currency             *CurrencyHandlers
-	home                 *HomeHandlers
-	service              *ServiceHandlers
-	bill                 *BillHandlers
-	institution          *InstitutionHandlers
-	document             *DocumentHandlers
-	auto                 *AutoHandlers
-	autoService          *AutoServiceHandlers
-	institutionCategory  *InstitutionCategoryHandlers
-	notification         *NotificationHandlers
-	child                *ChildHandlers
-	salary               *SalaryHandlers
-	pensionCategory      *PensionCategoryHandlers
-	supportRecord        *SupportRecordHandlers
-	salaryPayment        *SalaryPaymentHandlers
-	monthClosing         *MonthClosingHandlers
-	config               *ChildSupportConfigHandlers
-	pensionDashboard     *PensionDashboardHandlers
-	debt                 *DebtHandlers
-	webhooks             *WebhookHandlers
+	auth                *services.AuthService
+	settings            *SettingsHandlers
+	systemSettings      *SystemSettingsHandlers
+	alerts              *AlertsHandlers
+	currency            *CurrencyHandlers
+	home                *HomeHandlers
+	service             *ServiceHandlers
+	bill                *BillHandlers
+	institution         *InstitutionHandlers
+	document            *DocumentHandlers
+	auto                *AutoHandlers
+	autoService         *AutoServiceHandlers
+	serviceCycle        *ServiceCycleHandlers
+	institutionCategory *InstitutionCategoryHandlers
+	notification        *NotificationHandlers
+	child               *ChildHandlers
+	salary              *SalaryHandlers
+	pensionCategory     *PensionCategoryHandlers
+	supportRecord       *SupportRecordHandlers
+	salaryPayment       *SalaryPaymentHandlers
+	monthClosing        *MonthClosingHandlers
+	config              *ChildSupportConfigHandlers
+	pensionDashboard    *PensionDashboardHandlers
+	debt                *DebtHandlers
+	webhooks            *WebhookHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -50,6 +51,7 @@ func NewHandler(
 	document *DocumentHandlers,
 	auto *AutoHandlers,
 	autoService *AutoServiceHandlers,
+	serviceCycle *ServiceCycleHandlers,
 	institutionCategory *InstitutionCategoryHandlers,
 	notification *NotificationHandlers,
 	child *ChildHandlers,
@@ -76,6 +78,7 @@ func NewHandler(
 		document:            document,
 		auto:                auto,
 		autoService:         autoService,
+		serviceCycle:        serviceCycle,
 		institutionCategory: institutionCategory,
 		notification:        notification,
 		child:               child,

@@ -89,6 +89,7 @@ func main() {
 	debtStorage := storage.NewDebtStorage(database)
 	debtBillStorage := storage.NewDebtBillStorage(database)
 	billHistoryStorage := storage.NewBillHistoryStorage(database)
+	serviceCycleStorage := storage.NewServiceCycleStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -106,6 +107,7 @@ func main() {
 	documentService.SetBillHistoryStorage(billHistoryStorage)
 	autoService := services.NewAutoService(autoStorage)
 	autoInsuranceService := services.NewAutoServiceService(autoServiceStorage)
+	serviceCycleService := services.NewServiceCycleService(serviceStorage, serviceCycleStorage)
 	institutionCategoryService := services.NewInstitutionCategoryService(institutionCategoryStorage)
 	notificationService := services.NewNotificationService(notificationStorage)
 	childService := services.NewChildService(childStorage)
@@ -166,6 +168,7 @@ func main() {
 	documentHandlers := api.NewDocumentHandlers(documentService)
 	autoHandlers := api.NewAutoHandlers(autoService)
 	autoServiceHandlers := api.NewAutoServiceHandlers(autoInsuranceService)
+	serviceCycleHandlers := api.NewServiceCycleHandlers(serviceCycleService)
 	institutionCategoryHandlers := api.NewInstitutionCategoryHandlers(institutionCategoryService)
 	notificationHandlers := api.NewNotificationHandlers(notificationService)
 	childHandlers := api.NewChildHandlers(childService)
@@ -179,7 +182,7 @@ func main() {
 	debtHandlers := api.NewDebtHandlers(debtService)
 	webhookHandlers := api.NewWebhookHandlers(webhookService, serviceService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers)
 
 	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
 	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {
