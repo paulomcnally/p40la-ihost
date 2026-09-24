@@ -1,7 +1,7 @@
 ---
 title: "Pólizas y ciclos de servicio: ver, agregar y renovar en el detalle"
 id: "SPEC-091"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-09-24"
 updated: "2026-09-24"
@@ -11,7 +11,7 @@ github_issue: 94
 # Pólizas y ciclos de servicio: ver, agregar y renovar en el detalle
 
 **ID**: SPEC-091  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-09-24  
 **Actualizado**: 2026-09-24
@@ -291,3 +291,4 @@ Entidad: services (computado en API)
 | 2026-09-24 | opencode | Creación inicial: reverse lookup + pestaña Pólizas (solo lectura) |
 | 2026-09-24 | opencode | Ampliación: ciclos de servicio, botón Renovar, agregar/editar/eliminar pólizas desde el servicio, gating por institución de seguro (requerimientos del usuario) |
 | 2026-09-24 | opencode | Renovar aplica a todos los servicios (corrección del usuario); CAs validados por el usuario en local → pending_release |
+| 2026-09-24 | opencode | **Release**: merge a main, versión 0.4.40, issue #94 cerrado. Feature: pólizas, ciclos y renovación en el detalle del servicio |
