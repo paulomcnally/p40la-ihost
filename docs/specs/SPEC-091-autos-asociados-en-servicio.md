@@ -1,7 +1,7 @@
 ---
 title: "Ver autos y pólizas asociadas en el detalle de un servicio"
 id: "SPEC-091"
-status: "draft"
+status: "pending_execution"
 author: "opencode"
 created: "2026-09-24"
 updated: "2026-09-24"
@@ -11,7 +11,7 @@ github_issue: 94
 # Ver autos y pólizas asociadas en el detalle de un servicio
 
 **ID**: SPEC-091  
-**Estado**: draft  
+**Estado**: pending_execution  
 **Autor**: opencode  
 **Creado**: 2026-09-24  
 **Actualizado**: 2026-09-24
