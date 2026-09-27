@@ -309,9 +309,9 @@ salaries: {
       delete: (id: number) => del(`/api/budget/category-groups/${id}`),
     },
     categories: {
-      create: (body: { category_group_id: number; name: string; icon: string; target_amount?: number | null }) =>
+      create: (body: { category_group_id: number; name: string; icon: string; target_amount?: number | null; service_id?: number | null; account_id?: number | null }) =>
         post<BudgetCategory>('/api/budget/categories', body),
-      update: (id: number, body: { category_group_id: number; name: string; icon: string; target_amount?: number | null }) =>
+      update: (id: number, body: { category_group_id: number; name: string; icon: string; target_amount?: number | null; service_id?: number | null; account_id?: number | null }) =>
         put<BudgetCategory>(`/api/budget/categories/${id}`, body),
       delete: (id: number) => del(`/api/budget/categories/${id}`),
     },
