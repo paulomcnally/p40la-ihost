@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -294,5 +294,42 @@ salaries: {
     billsByMonth: (year: number, month: number) => get<DebtBill[]>(`/api/debt-bills?year=${year}&month=${month}`),
     payBill: (id: number, body: { paid_at: string; payment_reference?: string }) =>
       put<DebtBill>(`/api/debt-bills/${id}/pay`, body),
+  },
+  budget: {
+    monthView: (year: number, month: number) => get<BudgetMonthView>(`/api/budget/months/${year}/${month}`),
+    assign: (year: number, month: number, categoryId: number, body: { amount: number; currency_id: number; make_recurring?: boolean }) =>
+      put<Assignment>(`/api/budget/months/${year}/${month}/assignments/${categoryId}`, body),
+    toggleRecurring: (id: number, active: boolean) =>
+      put<RecurringRule>(`/api/budget/recurring-rules/${id}`, { active }),
+    deleteRecurringRule: (id: number) => del(`/api/budget/recurring-rules/${id}`),
+    categoryGroups: {
+      list: () => get<CategoryGroup[]>('/api/budget/category-groups'),
+      create: (body: { name: string; icon: string }) => post<{ id: number; name: string; icon: string }>('/api/budget/category-groups', body),
+      update: (id: number, body: { name: string; icon: string }) => put(`/api/budget/category-groups/${id}`, body),
+      delete: (id: number) => del(`/api/budget/category-groups/${id}`),
+    },
+    categories: {
+      create: (body: { category_group_id: number; name: string; icon: string; target_amount?: number | null }) =>
+        post<BudgetCategory>('/api/budget/categories', body),
+      update: (id: number, body: { category_group_id: number; name: string; icon: string; target_amount?: number | null }) =>
+        put<BudgetCategory>(`/api/budget/categories/${id}`, body),
+      delete: (id: number) => del(`/api/budget/categories/${id}`),
+    },
+    accounts: {
+      list: () => get<Account[]>('/api/budget/accounts'),
+      create: (body: { name: string; type: string; currency_id: number; starting_balance: number }) =>
+        post<Account>('/api/budget/accounts', body),
+      update: (id: number, body: { name: string; type: string; currency_id: number; starting_balance: number }) =>
+        put<Account>(`/api/budget/accounts/${id}`, body),
+      delete: (id: number) => del(`/api/budget/accounts/${id}`),
+    },
+    transactions: {
+      list: (year: number, month: number) => get<BudgetTransaction[]>(`/api/budget/transactions?year=${year}&month=${month}`),
+      listByCategory: (categoryId: number, year: number, month: number) =>
+        get<BudgetTransaction[]>(`/api/budget/categories/${categoryId}/transactions?year=${year}&month=${month}`),
+      create: (body: Partial<BudgetTransaction>) => post<BudgetTransaction>('/api/budget/transactions', body),
+      update: (id: number, body: Partial<BudgetTransaction>) => put<BudgetTransaction>(`/api/budget/transactions/${id}`, body),
+      delete: (id: number) => del(`/api/budget/transactions/${id}`),
+    },
   },
 }

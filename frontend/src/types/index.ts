@@ -316,3 +316,112 @@ export interface DebtBill {
   created_at: string
   updated_at: string
 }
+
+export interface CategoryGroup {
+  id: number
+  name: string
+  icon: string
+  sort_order: number
+  categories: BudgetCategory[]
+}
+
+export interface BudgetCategory {
+  id: number
+  category_group_id: number
+  name: string
+  icon: string
+  sort_order: number
+  target_amount?: number | null
+  target_type?: string | null
+  target_date?: string | null
+  deleted_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Account {
+  id: number
+  name: string
+  type: 'checking' | 'savings' | 'credit_card' | 'cash'
+  currency_id: number
+  currency_code?: string
+  starting_balance: number
+  created_at: string
+  updated_at: string
+}
+
+export interface RecurringRule {
+  id: number
+  category_id: number
+  amount: number
+  frequency: string
+  start_month: string
+  end_month?: string
+  active: boolean
+}
+
+export interface Assignment {
+  id: number
+  budget_month_id: number
+  category_id: number
+  currency_id: number
+  currency_code?: string
+  amount: number
+  source: 'one_time' | 'recurring'
+  recurring_rule_id?: number
+}
+
+export interface BudgetTransaction {
+  id: number
+  account_id: number
+  account_name?: string
+  category_id?: number | null
+  category_name?: string
+  currency_id: number
+  currency_code?: string
+  date: string
+  payee: string
+  memo: string
+  outflow: number
+  inflow: number
+  cleared: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface BudgetCategoryRow {
+  id: number
+  category_group_id: number
+  name: string
+  icon: string
+  sort_order: number
+  target_amount?: number | null
+  assigned: Record<string, number>
+  activity: Record<string, number>
+  available: Record<string, number>
+  recurring_rule?: RecurringRule | null
+}
+
+export interface BudgetMonthGroup {
+  id: number
+  name: string
+  icon: string
+  sort_order: number
+  categories: BudgetCategoryRow[]
+}
+
+export interface CurrencyTotal {
+  currency_id: number
+  code: string
+  symbol: string
+  total_income: number
+  total_assigned: number
+  unassigned: number
+}
+
+export interface BudgetMonthView {
+  year: number
+  month: number
+  currency_totals: CurrencyTotal[]
+  groups: BudgetMonthGroup[]
+}

@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 92 |
+| **Total de specs** | 93 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 92 🟢 |
+| **Released** | 93 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-092 |
+| **Último ID usado** | SPEC-093 |
 
 ---
 
@@ -113,6 +113,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-090 | Botón de envío manual de alertas desde Configuración → Alertas | released | 2026-09-19 | opencode |
 | SPEC-092 | Sincronización manual de servicios con los plugins de p40la-ihost-automation (endpoint + UI + bot) | released | 2026-09-24 | opencode |
 | SPEC-091 | Pólizas y ciclos de servicio: ver, agregar y renovar en el detalle | released | 2026-09-24 | opencode |
+| SPEC-093 | Sistema de Presupuesto estilo YNAB: grupos/categorías, asignación mensual, recurrencia y transacciones | released | 2026-09-27 | opencode |
 
 ---
 
@@ -182,4 +183,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-24 — SPEC-092 (Sincronización manual de servicios con los plugins de p40la-ihost-automation) released.*
+*Última actualización de este tracker: 2026-09-27 — SPEC-093 (Sistema de Presupuesto estilo YNAB) released.*
