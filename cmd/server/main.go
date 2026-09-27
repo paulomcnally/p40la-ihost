@@ -136,6 +136,9 @@ func main() {
 	accountService := services.NewAccountService(accountStorage, currencyStorage)
 	budgetService := services.NewBudgetService(categoryGroupStorage, categoryStorage, budgetMonthStorage, assignmentStorage, recurringRuleStorage, budgetTransactionStorage, currencyStorage)
 	budgetTransactionService := services.NewBudgetTransactionService(budgetTransactionStorage, accountStorage, categoryStorage, currencyStorage)
+	budgetBillLinkService := services.NewBudgetBillLinkService(serviceStorage, categoryStorage, accountStorage, budgetTransactionStorage)
+	billService.SetBillBudgetLinker(budgetBillLinkService)
+	categoryService.SetServiceStorage(serviceStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {

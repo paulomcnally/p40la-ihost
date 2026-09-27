@@ -21,7 +21,7 @@ func NewTransactionStorage(db *sql.DB) *TransactionStorage {
 const transactionColumns = `
 	t.id, t.account_id, COALESCE(a.name, ''), t.category_id, COALESCE(cat.name, ''),
 	t.currency_id, COALESCE(c.code, ''), t.date, t.payee, t.memo,
-	t.outflow, t.inflow, t.cleared, t.deleted_at, t.created_at, t.updated_at
+	t.outflow, t.inflow, t.cleared, t.source_bill_id, t.deleted_at, t.created_at, t.updated_at
 `
 
 // ListByMonth devuelve las transacciones de un mes (rango de fechas).
@@ -78,14 +78,28 @@ func (s *TransactionStorage) GetByID(ctx context.Context, id int64) (*models.Tra
 	return scanTransaction(row)
 }
 
+// GetBySourceBill devuelve la transacción generada por una factura de servicio
+// (SPEC-094, idempotencia). El índice único parcial garantiza a lo sumo una.
+func (s *TransactionStorage) GetBySourceBill(ctx context.Context, billID int64) (*models.Transaction, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT `+transactionColumns+`
+		FROM transactions t
+		LEFT JOIN accounts a ON a.id = t.account_id
+		LEFT JOIN categories cat ON cat.id = t.category_id
+		LEFT JOIN currencies c ON c.id = t.currency_id
+		WHERE t.source_bill_id = ? AND t.deleted_at IS NULL
+	`, billID)
+	return scanTransaction(row)
+}
+
 // Create inserta una nueva transacción.
 func (s *TransactionStorage) Create(ctx context.Context, tx *models.Transaction) (*models.Transaction, error) {
 	result, err := s.db.ExecContext(ctx, `
 		INSERT INTO transactions (account_id, category_id, currency_id, date, payee,
-		                          memo, outflow, inflow, cleared)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		                          memo, outflow, inflow, cleared, source_bill_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, tx.AccountID, tx.CategoryID, tx.CurrencyID, tx.Date, tx.Payee,
-		tx.Memo, tx.Outflow, tx.Inflow, boolToInt(tx.Cleared))
+		tx.Memo, tx.Outflow, tx.Inflow, boolToInt(tx.Cleared), tx.SourceBillID)
 	if err != nil {
 		return nil, fmt.Errorf("insertar transacción: %w", err)
 	}
@@ -101,10 +115,11 @@ func (s *TransactionStorage) Update(ctx context.Context, tx *models.Transaction)
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE transactions
 		SET account_id = ?, category_id = ?, currency_id = ?, date = ?, payee = ?,
-		    memo = ?, outflow = ?, inflow = ?, cleared = ?, updated_at = CURRENT_TIMESTAMP
+		    memo = ?, outflow = ?, inflow = ?, cleared = ?, source_bill_id = ?,
+		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND deleted_at IS NULL
 	`, tx.AccountID, tx.CategoryID, tx.CurrencyID, tx.Date, tx.Payee,
-		tx.Memo, tx.Outflow, tx.Inflow, boolToInt(tx.Cleared), tx.ID)
+		tx.Memo, tx.Outflow, tx.Inflow, boolToInt(tx.Cleared), tx.SourceBillID, tx.ID)
 	if err != nil {
 		return nil, fmt.Errorf("actualizar transacción: %w", err)
 	}
@@ -195,11 +210,11 @@ func scanTransaction(row *sql.Row) (*models.Transaction, error) {
 	var t models.Transaction
 	var deletedAt sql.NullTime
 	var accountName, categoryName, code sql.NullString
-	var categoryID sql.NullInt64
+	var categoryID, sourceBillID sql.NullInt64
 	var cleared int
 	if err := row.Scan(&t.ID, &t.AccountID, &accountName, &categoryID, &categoryName,
 		&t.CurrencyID, &code, &t.Date, &t.Payee, &t.Memo,
-		&t.Outflow, &t.Inflow, &cleared, &deletedAt, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		&t.Outflow, &t.Inflow, &cleared, &sourceBillID, &deletedAt, &t.CreatedAt, &t.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -211,6 +226,10 @@ func scanTransaction(row *sql.Row) (*models.Transaction, error) {
 	if categoryID.Valid {
 		cid := categoryID.Int64
 		t.CategoryID = &cid
+	}
+	if sourceBillID.Valid {
+		sid := sourceBillID.Int64
+		t.SourceBillID = &sid
 	}
 	t.Cleared = cleared == 1
 	if deletedAt.Valid {
@@ -225,11 +244,11 @@ func scanTransactions(rows *sql.Rows) ([]models.Transaction, error) {
 		var t models.Transaction
 		var deletedAt sql.NullTime
 		var accountName, categoryName, code sql.NullString
-		var categoryID sql.NullInt64
+		var categoryID, sourceBillID sql.NullInt64
 		var cleared int
 		if err := rows.Scan(&t.ID, &t.AccountID, &accountName, &categoryID, &categoryName,
 			&t.CurrencyID, &code, &t.Date, &t.Payee, &t.Memo,
-			&t.Outflow, &t.Inflow, &cleared, &deletedAt, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			&t.Outflow, &t.Inflow, &cleared, &sourceBillID, &deletedAt, &t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear transacción: %w", err)
 		}
 		t.AccountName = accountName.String
@@ -238,6 +257,10 @@ func scanTransactions(rows *sql.Rows) ([]models.Transaction, error) {
 		if categoryID.Valid {
 			cid := categoryID.Int64
 			t.CategoryID = &cid
+		}
+		if sourceBillID.Valid {
+			sid := sourceBillID.Int64
+			t.SourceBillID = &sid
 		}
 		t.Cleared = cleared == 1
 		if deletedAt.Valid {

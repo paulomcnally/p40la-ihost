@@ -28,17 +28,24 @@ func NewCategoryStorage(db *sql.DB) *CategoryStorage {
 }
 
 const categoryColumns = `
-	id, category_group_id, name, icon, sort_order,
-	target_amount, target_type, target_date, deleted_at, created_at, updated_at
+	c.id, c.category_group_id, c.name, c.icon, c.sort_order,
+	c.target_amount, c.target_type, c.target_date,
+	c.service_id, c.account_id, COALESCE(s.name, ''),
+	c.deleted_at, c.created_at, c.updated_at
+`
+
+const categoryFromJoins = `
+	FROM categories c
+	LEFT JOIN services s ON s.id = c.service_id
 `
 
 // ListByGroup devuelve las categorías no archivadas de un grupo, ordenadas.
 func (s *CategoryStorage) ListByGroup(ctx context.Context, groupID int64) ([]models.Category, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT `+categoryColumns+`
-		FROM categories
-		WHERE category_group_id = ? AND deleted_at IS NULL
-		ORDER BY sort_order, id
+		`+categoryFromJoins+`
+		WHERE c.category_group_id = ? AND c.deleted_at IS NULL
+		ORDER BY c.sort_order, c.id
 	`, groupID)
 	if err != nil {
 		return nil, fmt.Errorf("listar categorías del grupo: %w", err)
@@ -51,9 +58,9 @@ func (s *CategoryStorage) ListByGroup(ctx context.Context, groupID int64) ([]mod
 func (s *CategoryStorage) ListAll(ctx context.Context) ([]models.Category, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT `+categoryColumns+`
-		FROM categories
-		WHERE deleted_at IS NULL
-		ORDER BY category_group_id, sort_order, id
+		`+categoryFromJoins+`
+		WHERE c.deleted_at IS NULL
+		ORDER BY c.category_group_id, c.sort_order, c.id
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("listar categorías: %w", err)
@@ -66,20 +73,46 @@ func (s *CategoryStorage) ListAll(ctx context.Context) ([]models.Category, error
 func (s *CategoryStorage) GetByID(ctx context.Context, id int64) (*models.Category, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT `+categoryColumns+`
-		FROM categories
-		WHERE id = ?
+		`+categoryFromJoins+`
+		WHERE c.id = ?
 	`, id)
 	return scanCategory(row)
+}
+
+// GetByServiceID devuelve la categoría activa vinculada a un servicio
+// (SPEC-094). El índice único parcial garantiza a lo sumo una fila activa.
+func (s *CategoryStorage) GetByServiceID(ctx context.Context, serviceID int64) (*models.Category, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT `+categoryColumns+`
+		`+categoryFromJoins+`
+		WHERE c.service_id = ? AND c.deleted_at IS NULL
+	`, serviceID)
+	return scanCategory(row)
+}
+
+// ServiceLinkInUse indica si el servicio ya está vinculado a otra categoría
+// activa distinta de excludeCategoryID (SPEC-094, validación de unicidad).
+func (s *CategoryStorage) ServiceLinkInUse(ctx context.Context, serviceID, excludeCategoryID int64) (bool, error) {
+	var count int64
+	if err := s.db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM categories
+		WHERE service_id = ? AND deleted_at IS NULL AND id != ?
+	`, serviceID, excludeCategoryID).Scan(&count); err != nil {
+		return false, fmt.Errorf("verificar vínculo de servicio: %w", err)
+	}
+	return count > 0, nil
 }
 
 // Create inserta una nueva categoría.
 func (s *CategoryStorage) Create(ctx context.Context, cat *models.Category) (*models.Category, error) {
 	result, err := s.db.ExecContext(ctx, `
 		INSERT INTO categories (category_group_id, name, icon, sort_order,
-		                        target_amount, target_type, target_date)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		                        target_amount, target_type, target_date,
+		                        service_id, account_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, cat.CategoryGroupID, cat.Name, cat.Icon, cat.SortOrder,
-		cat.TargetAmount, nullableStringValue(cat.TargetType), nullableStringValue(cat.TargetDate))
+		cat.TargetAmount, nullableStringValue(cat.TargetType), nullableStringValue(cat.TargetDate),
+		cat.ServiceID, cat.AccountID)
 	if err != nil {
 		return nil, fmt.Errorf("insertar categoría: %w", err)
 	}
@@ -96,10 +129,12 @@ func (s *CategoryStorage) Update(ctx context.Context, cat *models.Category) (*mo
 		UPDATE categories
 		SET category_group_id = ?, name = ?, icon = ?, sort_order = ?,
 		    target_amount = ?, target_type = ?, target_date = ?,
+		    service_id = ?, account_id = ?,
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND deleted_at IS NULL
 	`, cat.CategoryGroupID, cat.Name, cat.Icon, cat.SortOrder,
-		cat.TargetAmount, nullableStringValue(cat.TargetType), nullableStringValue(cat.TargetDate), cat.ID)
+		cat.TargetAmount, nullableStringValue(cat.TargetType), nullableStringValue(cat.TargetDate),
+		cat.ServiceID, cat.AccountID, cat.ID)
 	if err != nil {
 		return nil, fmt.Errorf("actualizar categoría: %w", err)
 	}
@@ -162,9 +197,13 @@ func scanCategory(row *sql.Row) (*models.Category, error) {
 	var c models.Category
 	var targetAmount sql.NullFloat64
 	var targetType, targetDate sql.NullString
+	var serviceID, accountID sql.NullInt64
+	var serviceName sql.NullString
 	var deletedAt sql.NullTime
 	if err := row.Scan(&c.ID, &c.CategoryGroupID, &c.Name, &c.Icon, &c.SortOrder,
-		&targetAmount, &targetType, &targetDate, &deletedAt, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		&targetAmount, &targetType, &targetDate,
+		&serviceID, &accountID, &serviceName,
+		&deletedAt, &c.CreatedAt, &c.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -179,6 +218,17 @@ func scanCategory(row *sql.Row) (*models.Category, error) {
 	if targetDate.Valid {
 		c.TargetDate = targetDate.String
 	}
+	if serviceID.Valid {
+		sid := serviceID.Int64
+		c.ServiceID = &sid
+	}
+	if accountID.Valid {
+		aid := accountID.Int64
+		c.AccountID = &aid
+	}
+	if serviceName.Valid {
+		c.ServiceName = serviceName.String
+	}
 	if deletedAt.Valid {
 		c.DeletedAt = &deletedAt.Time
 	}
@@ -191,9 +241,13 @@ func scanCategories(rows *sql.Rows) ([]models.Category, error) {
 		var c models.Category
 		var targetAmount sql.NullFloat64
 		var targetType, targetDate sql.NullString
+		var serviceID, accountID sql.NullInt64
+		var serviceName sql.NullString
 		var deletedAt sql.NullTime
 		if err := rows.Scan(&c.ID, &c.CategoryGroupID, &c.Name, &c.Icon, &c.SortOrder,
-			&targetAmount, &targetType, &targetDate, &deletedAt, &c.CreatedAt, &c.UpdatedAt); err != nil {
+			&targetAmount, &targetType, &targetDate,
+			&serviceID, &accountID, &serviceName,
+			&deletedAt, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear categoría: %w", err)
 		}
 		if targetAmount.Valid {
@@ -204,6 +258,17 @@ func scanCategories(rows *sql.Rows) ([]models.Category, error) {
 		}
 		if targetDate.Valid {
 			c.TargetDate = targetDate.String
+		}
+		if serviceID.Valid {
+			sid := serviceID.Int64
+			c.ServiceID = &sid
+		}
+		if accountID.Valid {
+			aid := accountID.Int64
+			c.AccountID = &aid
+		}
+		if serviceName.Valid {
+			c.ServiceName = serviceName.String
 		}
 		if deletedAt.Valid {
 			c.DeletedAt = &deletedAt.Time
