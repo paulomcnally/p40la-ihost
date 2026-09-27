@@ -311,4 +311,4 @@ El hook se ejecuta de forma transparente. `source_bill_id` y los demás campos d
 |-------|-------|-------------|
 | 2026-09-27 | opencode | Creación inicial de la especificación (requerimiento relevado con usuario: vincular categoría de presupuesto ↔ servicio del sistema; transacción automática al pagar factura; asociación durante creación o posterior) |
 | 2026-09-27 | opencode | Implementación completa: migración 0036, hook en PayBill, validaciones, UI (selects Servicio/Cuenta), badge en vista mensual (visible también en móvil), tests unitarios e integración. Validación manual en local OK (flujo completo). |
-| 2026-09-27 | opencode | **Release**: commit `aff2f56` mergeado y pusheado a `main`. Issue #97 cerrado con label `spec/released`. |
+| 2026-09-27 | opencode | **Release**: merge a `main` con `ca1dde9` (incluye `aff2f56` + `0cb550c`), pusheado. Issue #97 cerrado con label `spec/released`. |
