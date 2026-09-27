@@ -10,15 +10,23 @@ import (
 )
 
 // CategoryService contiene la lógica de negocio para categorías de presupuesto
-// (SPEC-093).
+// (SPEC-093). SPEC-094: valida el vínculo con servicios del sistema.
 type CategoryService struct {
 	categories *storage.CategoryStorage
 	groups     *storage.CategoryGroupStorage
+	services   *storage.ServiceStorage
 }
 
 // NewCategoryService crea un nuevo CategoryService.
 func NewCategoryService(categories *storage.CategoryStorage, groups *storage.CategoryGroupStorage) *CategoryService {
 	return &CategoryService{categories: categories, groups: groups}
+}
+
+// SetServiceStorage habilita la validación de vínculos con servicios del
+// sistema (SPEC-094). Si no se configura, service_id/account_id se aceptan sin
+// validar la existencia del servicio.
+func (s *CategoryService) SetServiceStorage(services *storage.ServiceStorage) {
+	s.services = services
 }
 
 // GetByID busca una categoría por ID.
@@ -91,6 +99,29 @@ func (s *CategoryService) validate(ctx context.Context, cat *models.Category) er
 	}
 	if cat.TargetAmount != nil && *cat.TargetAmount < 0 {
 		return fmt.Errorf("la meta no puede ser negativa")
+	}
+
+	// Vínculo con servicio (SPEC-094).
+	if cat.ServiceID != nil && *cat.ServiceID != 0 && cat.AccountID == nil {
+		return fmt.Errorf("si vincula un servicio debe seleccionar una cuenta")
+	}
+	if cat.ServiceID != nil && *cat.ServiceID != 0 {
+		if s.services != nil {
+			svc, err := s.services.GetByID(ctx, *cat.ServiceID)
+			if err != nil {
+				return fmt.Errorf("validar servicio: %w", err)
+			}
+			if svc == nil {
+				return fmt.Errorf("el servicio seleccionado no existe")
+			}
+		}
+		inUse, err := s.categories.ServiceLinkInUse(ctx, *cat.ServiceID, cat.ID)
+		if err != nil {
+			return err
+		}
+		if inUse {
+			return fmt.Errorf("el servicio ya está vinculado a otra categoría")
+		}
 	}
 	return nil
 }
