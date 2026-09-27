@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ type BillService struct {
 	storage  *storage.BillStorage
 	services *storage.ServiceStorage
 	history  *storage.BillHistoryStorage
+	budget   BillBudgetLinker
 }
 
 // NewBillService crea un nuevo BillService.
@@ -29,6 +31,13 @@ func NewBillService(st *storage.BillStorage, services *storage.ServiceStorage) *
 // (SPEC-070). Si no se configura, los flujos existentes no registran historial.
 func (s *BillService) SetBillHistoryStorage(h *storage.BillHistoryStorage) {
 	s.history = h
+}
+
+// SetBillBudgetLinker habilita la generación automática de transacciones de
+// presupuesto al pagar facturas de servicios vinculados (SPEC-094). Si no se
+// configura, el flujo de pago queda sin cambios.
+func (s *BillService) SetBillBudgetLinker(b BillBudgetLinker) {
+	s.budget = b
 }
 
 // ListByService devuelve las facturas de un servicio.
@@ -128,6 +137,14 @@ func (s *BillService) PayBill(ctx context.Context, id int64, paidAt time.Time, d
 	}
 	if err := recordBillHistory(ctx, s.history, paid.ID, models.BillActionPaid, models.BillSourceDashboard, diffBillChanges(&before, paid)); err != nil {
 		return nil, fmt.Errorf("registrar historial de factura: %w", err)
+	}
+	// Transacción de presupuesto automática (SPEC-094). El pago ya está
+	// commiteado; si la generación falla se loguea y no se bloquea el pago.
+	if s.budget != nil {
+		if err := s.budget.OnBillPaid(ctx, paid); err != nil {
+			slog.Error("generar transacción de presupuesto al pagar factura",
+				"bill_id", paid.ID, "error", err)
+		}
 	}
 	return paid, nil
 }

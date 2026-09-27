@@ -771,6 +771,12 @@
     "previous_month": "Mes anterior",
     "next_month": "Mes siguiente",
     "recurring_paused": "Recurrente pausada",
-    "month_label": "Mes"
+    "month_label": "Mes",
+    "link_service": "Servicio (opcional)",
+    "link_service_hint": "Al pagar una factura de este servicio se registrará la transacción en esta categoría.",
+    "no_service": "Sin servicio",
+    "link_account": "Cuenta",
+    "link_account_required": "Seleccioná la cuenta para registrar los pagos.",
+    "linked_service_badge": "Vinculado a:"
   }
 }

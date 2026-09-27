@@ -770,6 +770,12 @@
     "previous_month": "Previous month",
     "next_month": "Next month",
     "recurring_paused": "Recurring paused",
-    "month_label": "Month"
+    "month_label": "Month",
+    "link_service": "Service (optional)",
+    "link_service_hint": "When a bill of this service is paid, the transaction will be recorded in this category.",
+    "no_service": "No service",
+    "link_account": "Account",
+    "link_account_required": "Select the account to record payments.",
+    "linked_service_badge": "Linked to:"
   }
 }

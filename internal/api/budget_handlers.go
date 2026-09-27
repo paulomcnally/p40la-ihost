@@ -11,11 +11,11 @@ import (
 
 // BudgetHandlers agrupa los handlers del módulo de presupuesto (SPEC-093).
 type BudgetHandlers struct {
-	budget      *services.BudgetService
+	budget         *services.BudgetService
 	categoryGroups *services.CategoryGroupService
-	categories  *services.CategoryService
-	accounts    *services.AccountService
-	transactions *services.BudgetTransactionService
+	categories     *services.CategoryService
+	accounts       *services.AccountService
+	transactions   *services.BudgetTransactionService
 }
 
 // NewBudgetHandlers crea un nuevo BudgetHandlers.
@@ -208,6 +208,8 @@ type categoryRequest struct {
 	Name            string   `json:"name"`
 	Icon            string   `json:"icon"`
 	TargetAmount    *float64 `json:"target_amount"`
+	ServiceID       *int64   `json:"service_id"`
+	AccountID       *int64   `json:"account_id"`
 }
 
 // CreateCategory crea una categoría.
@@ -222,6 +224,8 @@ func (h *BudgetHandlers) CreateCategory(w http.ResponseWriter, r *http.Request) 
 		Name:            req.Name,
 		Icon:            req.Icon,
 		TargetAmount:    req.TargetAmount,
+		ServiceID:       req.ServiceID,
+		AccountID:       req.AccountID,
 	})
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
@@ -248,6 +252,8 @@ func (h *BudgetHandlers) UpdateCategory(w http.ResponseWriter, r *http.Request) 
 		Name:            req.Name,
 		Icon:            req.Icon,
 		TargetAmount:    req.TargetAmount,
+		ServiceID:       req.ServiceID,
+		AccountID:       req.AccountID,
 	})
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())

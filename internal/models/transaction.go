@@ -4,6 +4,8 @@ import "time"
 
 // Transaction representa un movimiento real de dinero asociado a una cuenta y
 // opcionalmente a una categoría. SPEC-093. null category = "Sin categorizar".
+// SPEC-094: SourceBillID identifica la factura de servicio que generó la
+// transacción automáticamente (idempotencia).
 type Transaction struct {
 	ID           int64      `json:"id"`
 	AccountID    int64      `json:"account_id"`
@@ -18,6 +20,7 @@ type Transaction struct {
 	Outflow      float64    `json:"outflow"`
 	Inflow       float64    `json:"inflow"`
 	Cleared      bool       `json:"cleared"`
+	SourceBillID *int64     `json:"source_bill_id,omitempty"`
 	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
