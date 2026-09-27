@@ -84,6 +84,7 @@ export const iconCatalog: IconDefinition[] = [
   { key: 'pension', label: 'Pensión', category: 'Finanzas' },
   { key: 'investment', label: 'Inversión', category: 'Finanzas' },
   { key: 'savings', label: 'Ahorro', category: 'Finanzas' },
+  { key: 'wallet', label: 'Billetera', category: 'Finanzas' },
   // Comunicación
   { key: 'mail', label: 'Correo', category: 'Comunicación' },
   { key: 'newspaper', label: 'Periódico', category: 'Comunicación' },

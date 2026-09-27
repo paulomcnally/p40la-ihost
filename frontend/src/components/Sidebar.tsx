@@ -14,6 +14,7 @@ export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
   const location = useLocation()
   const { t } = useI18nStore()
   const [pensionOpen, setPensionOpen] = useState(false)
+  const [budgetOpen, setBudgetOpen] = useState(false)
 
   const items = [
     { key: 'home', icon: 'home', label: t('menu.home') },
@@ -31,7 +32,13 @@ export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
     { path: '/pension/notificaciones', icon: 'bell', label: t('pension.notifications') },
   ]
 
+  const budgetItems = [
+    { path: '/budget', icon: 'calendar', label: t('budget.monthly') },
+    { path: '/budget/transacciones', icon: 'tag', label: t('budget.transactions') },
+  ]
+
   const isPensionActive = activeBase === 'pension'
+  const isBudgetActive = activeBase === 'budget'
 
   const handleNavigate = (key: string) => {
     navigate(`/${key}`)
@@ -90,6 +97,44 @@ export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
           {pensionOpen && (
             <div className="mt-1 space-y-1">
               {pensionItems.map((item) => {
+                const isActive = location.pathname === item.path
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => handleNavigate(item.path.slice(1))}
+                    className={`w-full flex items-center gap-3 pl-9 pr-3 py-2 rounded-ios-sm text-sm transition-colors min-h-[44px] ${
+                      isActive
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'hover:bg-bg'
+                    }`}
+                  >
+                    <Icon name={item.icon} className="w-5 h-5" />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          <button
+            onClick={() => setBudgetOpen((o) => !o)}
+            className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-ios-sm text-sm transition-colors min-h-[44px] ${
+              isBudgetActive
+                ? 'bg-primary/10 text-primary font-medium'
+                : 'hover:bg-bg'
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <Icon name="wallet" className="w-5 h-5" />
+              <span>{t('menu.budget')}</span>
+            </span>
+            <Icon
+              name="chevron"
+              className={`w-4 h-4 transition-transform ${budgetOpen ? 'rotate-90' : ''}`}
+            />
+          </button>
+          {budgetOpen && (
+            <div className="mt-1 space-y-1">
+              {budgetItems.map((item) => {
                 const isActive = location.pathname === item.path
                 return (
                   <button

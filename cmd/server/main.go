@@ -90,6 +90,13 @@ func main() {
 	debtBillStorage := storage.NewDebtBillStorage(database)
 	billHistoryStorage := storage.NewBillHistoryStorage(database)
 	serviceCycleStorage := storage.NewServiceCycleStorage(database)
+	categoryGroupStorage := storage.NewCategoryGroupStorage(database)
+	categoryStorage := storage.NewCategoryStorage(database)
+	accountStorage := storage.NewAccountStorage(database)
+	budgetMonthStorage := storage.NewBudgetMonthStorage(database)
+	recurringRuleStorage := storage.NewRecurringRuleStorage(database)
+	assignmentStorage := storage.NewAssignmentStorage(database)
+	budgetTransactionStorage := storage.NewTransactionStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -124,6 +131,11 @@ func main() {
 	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
 	webhookService := services.NewWebhookService(systemSettingsStorage, systemSettingsService, serviceStorage, billStorage)
 	webhookService.SetBillHistoryStorage(billHistoryStorage)
+	categoryGroupService := services.NewCategoryGroupService(categoryGroupStorage, categoryStorage)
+	categoryService := services.NewCategoryService(categoryStorage, categoryGroupStorage)
+	accountService := services.NewAccountService(accountStorage, currencyStorage)
+	budgetService := services.NewBudgetService(categoryGroupStorage, categoryStorage, budgetMonthStorage, assignmentStorage, recurringRuleStorage, budgetTransactionStorage, currencyStorage)
+	budgetTransactionService := services.NewBudgetTransactionService(budgetTransactionStorage, accountStorage, categoryStorage, currencyStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
@@ -182,8 +194,9 @@ func main() {
 	pensionDashboardHandlers := api.NewPensionDashboardHandlers(pensionGenerationService)
 	debtHandlers := api.NewDebtHandlers(debtService)
 	webhookHandlers := api.NewWebhookHandlers(webhookService, serviceService)
+	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers, budgetHandlers)
 
 	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
 	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {

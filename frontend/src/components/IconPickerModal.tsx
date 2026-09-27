@@ -8,9 +8,10 @@ interface IconPickerModalProps {
   selectedIcon: string
   onSelect: (key: string) => void
   onClose: () => void
+  zIndex?: string
 }
 
-export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClose }: IconPickerModalProps) {
+export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClose, zIndex = 'z-50' }: IconPickerModalProps) {
   const { t } = useI18nStore()
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string>('')
@@ -49,7 +50,7 @@ export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClos
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className={`fixed inset-0 ${zIndex} flex items-center justify-center bg-black/40`}>
       <div ref={modalRef} className="bg-card rounded-ios shadow-ios w-full max-w-sm sm:max-w-lg mx-4 max-h-[80vh] flex flex-col">
         <div className="p-4 border-b border-border">
           <h3 className="text-base sm:text-lg font-bold mb-3">{t('services.select_icon')}</h3>
@@ -63,10 +64,10 @@ export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClos
           />
         </div>
 
-        <div className="flex gap-1 px-4 py-2 border-b border-border overflow-x-auto">
+        <div className="flex flex-wrap gap-1.5 px-4 py-2 border-b border-border">
           <button
             onClick={() => setActiveCategory('')}
-            className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors min-h-[32px] ${
               !activeCategory ? 'bg-primary text-white' : 'bg-bg text-text-secondary hover:bg-border'
             }`}
           >
@@ -76,7 +77,7 @@ export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClos
             <button
               key={cat}
               onClick={() => setActiveCategory(cat === activeCategory ? '' : cat)}
-              className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors min-h-[32px] ${
                 activeCategory === cat ? 'bg-primary text-white' : 'bg-bg text-text-secondary hover:bg-border'
               }`}
             >
