@@ -29,6 +29,37 @@ error() {
   exit 1
 }
 
+# Abre una URL en el navegador del sistema.
+# Linux: prefiere Google Chrome; si no está, delega en el handler de xdg-open.
+# Darwin (macOS): `open`. Windows (Git Bash/WSL): `start`.
+# Otros sistemas: solo loguea la URL.
+open_url() {
+  local url="$1"
+  local os
+
+  os="$(uname -s)"
+  case "${os}" in
+    Linux)
+      if command -v google-chrome >/dev/null 2>&1; then
+        google-chrome "${url}" >/dev/null 2>&1 &
+      elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "${url}" >/dev/null 2>&1 &
+      else
+        log "No se pudo abrir el navegador automáticamente. URL: ${url}"
+      fi
+      ;;
+    Darwin)
+      open "${url}"
+      ;;
+    CYGWIN* | MINGW* | MSYS*)
+      cmd.exe /c start "" "${url}" >/dev/null 2>&1 || log "No se pudo abrir el navegador automáticamente. URL: ${url}"
+      ;;
+    *)
+      log "Sistema operativo no soportado para abrir navegador. URL: ${url}"
+      ;;
+  esac
+}
+
 # Extrae la última versión semver pura (X.Y.Z) desde la respuesta JSON de Docker Hub.
 parse_latest_version() {
   local response="$1"
@@ -261,6 +292,7 @@ log "Docker Hub: https://hub.docker.com/r/${REPO}/tags"
 
 if [[ -n "${RUN_URL}" && "${RUN_URL}" != "null" ]]; then
   log "GitHub Action: ${RUN_URL}"
+  open_url "${RUN_URL}"
 else
   log "GitHub Actions: https://github.com/${GITHUB_REPO}/actions"
   log "(No se pudo obtener la URL exacta tras ${MAX_ATTEMPTS} intentos; revisá manualmente: gh run list --workflow=\"${WORKFLOW_NAME}\")"
