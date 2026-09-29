@@ -125,12 +125,8 @@ func main() {
 	monthClosingService := services.NewMonthClosingService(monthClosingStorage)
 	childSupportConfigService := services.NewChildSupportConfigService(childSupportConfigStorage, childStorage, pensionCategoryStorage)
 	automationClient := services.NewAutomationClient(systemSettingsService)
-	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage, debtBillStorage, serviceStorage, automationClient)
-	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage, telegramBotService)
-	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
-	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
-	webhookService := services.NewWebhookService(systemSettingsStorage, systemSettingsService, serviceStorage, billStorage)
-	webhookService.SetBillHistoryStorage(billHistoryStorage)
+	// Servicios del módulo de presupuesto (SPEC-093). Se crean antes del bot de
+	// Telegram porque /budget_transaction (SPEC-097) los inyecta.
 	categoryGroupService := services.NewCategoryGroupService(categoryGroupStorage, categoryStorage)
 	categoryService := services.NewCategoryService(categoryStorage, categoryGroupStorage)
 	accountService := services.NewAccountService(accountStorage, currencyStorage)
@@ -139,6 +135,12 @@ func main() {
 	budgetBillLinkService := services.NewBudgetBillLinkService(serviceStorage, categoryStorage, accountStorage, budgetTransactionStorage)
 	billService.SetBillBudgetLinker(budgetBillLinkService)
 	categoryService.SetServiceStorage(serviceStorage)
+	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage, debtBillStorage, serviceStorage, automationClient, categoryGroupService, accountService, currencyService, budgetTransactionService)
+	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage, telegramBotService)
+	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
+	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
+	webhookService := services.NewWebhookService(systemSettingsStorage, systemSettingsService, serviceStorage, billStorage)
+	webhookService.SetBillHistoryStorage(billHistoryStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
