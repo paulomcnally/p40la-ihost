@@ -36,6 +36,21 @@ func (s *BillStorage) ListByService(ctx context.Context, serviceID int64) ([]mod
 	return scanBills(rows)
 }
 
+// LatestByService devuelve la factura más reciente (por año/mes) de un
+// servicio, o nil si no tiene ninguna (SPEC-098). Se usa para sugerir el monto
+// asignado de una categoría vinculada a servicios.
+func (s *BillStorage) LatestByService(ctx context.Context, serviceID int64) (*models.Bill, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, service_id, cycle_id, year, month, amount, invoice_number, status, drive_url,
+		       file_hash, issue_date, due_date, paid_at, payment_reference, deleted_at, created_at, updated_at
+		FROM bills
+		WHERE service_id = ? AND deleted_at IS NULL
+		ORDER BY year DESC, month DESC, id DESC
+		LIMIT 1
+	`, serviceID)
+	return scanBill(row)
+}
+
 // GetByID busca una factura por su ID.
 func (s *BillStorage) GetByID(ctx context.Context, id int64) (*models.Bill, error) {
 	row := s.db.QueryRowContext(ctx, `

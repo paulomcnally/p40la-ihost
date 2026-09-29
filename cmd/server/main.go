@@ -135,6 +135,7 @@ func main() {
 	budgetBillLinkService := services.NewBudgetBillLinkService(serviceStorage, categoryStorage, accountStorage, budgetTransactionStorage)
 	billService.SetBillBudgetLinker(budgetBillLinkService)
 	categoryService.SetServiceStorage(serviceStorage)
+	categoryService.SetBillStorage(billStorage)
 	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage, debtBillStorage, serviceStorage, automationClient, categoryGroupService, accountService, currencyService, budgetTransactionService)
 	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage, telegramBotService)
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
