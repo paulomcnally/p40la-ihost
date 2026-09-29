@@ -63,7 +63,7 @@ func newTestBudgetBillLink(t *testing.T) (*BudgetBillLinkService, *BudgetTransac
 		CategoryGroupID: groupID,
 		Name:            "Internet",
 		Icon:            "wifi",
-		ServiceID:       &serviceID,
+		ServiceIDs:      []int64{serviceID},
 		AccountID:       &account.ID,
 	})
 	if err != nil {
@@ -194,7 +194,8 @@ func TestBudgetBillLinkNoOpWhenAccountMissing(t *testing.T) {
 
 	serviceID := int64(1)
 	// Categoría vinculada al servicio SIN account_id (config incompleta).
-	mustExec("INSERT INTO categories (category_group_id, name, icon, service_id, account_id) VALUES (1, 'Internet', 'wifi', 1, NULL)")
+	mustExec("INSERT INTO categories (category_group_id, name, icon, account_id) VALUES (1, 'Internet', 'wifi', NULL)")
+	mustExec("INSERT INTO category_service_links (category_id, service_id) VALUES (1, 1)")
 
 	linkSvc := NewBudgetBillLinkService(serviceStorage, categoryStorage, accountStorage, txStorage)
 	txSvc := NewBudgetTransactionService(txStorage, accountStorage, categoryStorage, currencyStorage)
@@ -255,22 +256,22 @@ func TestCategoryServiceServiceLinkValidation(t *testing.T) {
 
 	serviceID := int64(1)
 
-	// service_id sin account_id → error.
+	// service_ids sin account_id → error.
 	_, err = catSvc.Create(ctx, &models.Category{
 		CategoryGroupID: 1,
 		Name:            "Sin cuenta",
-		ServiceID:       &serviceID,
+		ServiceIDs:      []int64{serviceID},
 		AccountID:       nil,
 	})
 	if err == nil {
-		t.Error("esperaba error: service_id sin account_id")
+		t.Error("esperaba error: service_ids sin account_id")
 	}
 
-	// service_id con account_id → ok.
+	// service_ids con account_id → ok.
 	first, err := catSvc.Create(ctx, &models.Category{
 		CategoryGroupID: 1,
 		Name:            "Luz",
-		ServiceID:       &serviceID,
+		ServiceIDs:      []int64{serviceID},
 		AccountID:       &account.ID,
 	})
 	if err != nil {
@@ -281,17 +282,119 @@ func TestCategoryServiceServiceLinkValidation(t *testing.T) {
 	_, err = catSvc.Create(ctx, &models.Category{
 		CategoryGroupID: 1,
 		Name:            "Luz 2",
-		ServiceID:       &serviceID,
+		ServiceIDs:      []int64{serviceID},
 		AccountID:       &account.ID,
 	})
 	if err == nil {
 		t.Error("esperaba error: servicio ya vinculado a otra categoría")
 	}
 
-	// Editar la primera para desvincular (service_id nil) debe ser válido.
-	first.ServiceID = nil
+	// Editar la primera para desvincular (service_ids vacío) debe ser válido.
+	first.ServiceIDs = []int64{}
 	first.AccountID = nil
 	if _, err := catSvc.Update(ctx, first); err != nil {
 		t.Fatalf("desvincular categoría: %v", err)
+	}
+}
+
+// TestBudgetBillLinkMultipleServices verifica que una categoría vinculada a dos
+// servicios genera transacciones al pagar facturas de cualquiera de ellos
+// (SPEC-096).
+func TestBudgetBillLinkMultipleServices(t *testing.T) {
+	ctx := context.Background()
+	database, err := db.OpenDB(":memory:", "../../migrations")
+	if err != nil {
+		t.Fatalf("abrir db de prueba: %v", err)
+	}
+	t.Cleanup(func() { database.Close() })
+
+	serviceStorage := storage.NewServiceStorage(database)
+	categoryStorage := storage.NewCategoryStorage(database)
+	accountStorage := storage.NewAccountStorage(database)
+	txStorage := storage.NewTransactionStorage(database)
+	currencyStorage := storage.NewCurrencyStorage(database)
+	groupStorage := storage.NewCategoryGroupStorage(database)
+
+	currencies, err := currencyStorage.List(ctx)
+	if err != nil || len(currencies) == 0 {
+		t.Fatalf("obtener monedas: %v", err)
+	}
+	currencyID := currencies[0].ID
+
+	mustExec := func(query string, args ...any) {
+		t.Helper()
+		if _, err := database.ExecContext(ctx, query, args...); err != nil {
+			t.Fatalf("insertar dato de prueba (%q): %v", query, err)
+		}
+	}
+	mustExec("INSERT INTO homes (name) VALUES ('Casa')")
+	mustExec(`INSERT INTO services (home_id, name, institution, currency_id, frequency, suggested_amount, active, icon_key, billing_type, is_recurring)
+		VALUES (1, 'Claro Internet Móvil', 'Claro', ?, 'monthly', 100, 1, 'internet', 'fixed', 1)`, currencyID)
+	mustExec(`INSERT INTO services (home_id, name, institution, currency_id, frequency, suggested_amount, active, icon_key, billing_type, is_recurring)
+		VALUES (1, 'Tigo Internet Móvil', 'Tigo', ?, 'monthly', 100, 1, 'internet', 'fixed', 1)`, currencyID)
+	mustExec("INSERT INTO category_groups (name, icon) VALUES ('Servicios', 'home')")
+
+	catSvc := NewCategoryService(categoryStorage, groupStorage)
+	catSvc.SetServiceStorage(serviceStorage)
+
+	account, err := accountStorage.Create(ctx, &models.Account{Name: "Efectivo", Type: "cash", CurrencyID: currencyID})
+	if err != nil {
+		t.Fatalf("crear cuenta: %v", err)
+	}
+
+	// Una categoría "Internet Móvil" vinculada a dos servicios (Claro y Tigo).
+	cat, err := catSvc.Create(ctx, &models.Category{
+		CategoryGroupID: 1,
+		Name:            "Internet Móvil",
+		Icon:            "internet",
+		ServiceIDs:      []int64{1, 2},
+		AccountID:       &account.ID,
+	})
+	if err != nil {
+		t.Fatalf("crear categoría multi-servicio: %v", err)
+	}
+	if len(cat.ServiceIDs) != 2 {
+		t.Errorf("esperaba 2 service_ids, got %d", len(cat.ServiceIDs))
+	}
+
+	linkSvc := NewBudgetBillLinkService(serviceStorage, categoryStorage, accountStorage, txStorage)
+	txSvc := NewBudgetTransactionService(txStorage, accountStorage, categoryStorage, currencyStorage)
+
+	paidAt := time.Date(2026, 9, 25, 0, 0, 0, 0, time.UTC)
+	// Factura de Claro (servicio 1) y factura de Tigo (servicio 2).
+	bill1 := paidBill(1, 1, 1000, paidAt)
+	bill2 := paidBill(2, 2, 800, paidAt)
+	if err := linkSvc.OnBillPaid(ctx, bill1); err != nil {
+		t.Fatalf("OnBillPaid servicio 1: %v", err)
+	}
+	if err := linkSvc.OnBillPaid(ctx, bill2); err != nil {
+		t.Fatalf("OnBillPaid servicio 2: %v", err)
+	}
+
+	txs, err := txSvc.ListByCategoryMonth(ctx, cat.ID, 2026, 9)
+	if err != nil {
+		t.Fatalf("listar transacciones de categoría: %v", err)
+	}
+	if len(txs) != 2 {
+		t.Fatalf("esperaba 2 transacciones en la categoría, got %d", len(txs))
+	}
+	got := map[string]bool{}
+	for _, tx := range txs {
+		got[tx.Payee] = true
+	}
+	if !got["Claro Internet Móvil"] || !got["Tigo Internet Móvil"] {
+		t.Errorf("transacciones esperadas de ambos servicios, got %v", got)
+	}
+
+	// Idempotencia: re-procesar la factura de Tigo no duplica.
+	if err := linkSvc.OnBillPaid(ctx, bill2); err != nil {
+		t.Fatalf("OnBillPaid re-procesado: %v", err)
+	}
+	txs, err = txSvc.ListByCategoryMonth(ctx, cat.ID, 2026, 9)
+	if err != nil {
+		t.Fatalf("listar transacciones: %v", err)
+	}
+	if len(txs) != 2 {
+		t.Errorf("esperaba 2 transacciones (idempotencia), got %d", len(txs))
 	}
 }
