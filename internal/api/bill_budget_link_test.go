@@ -89,7 +89,7 @@ func TestPayBillCreatesBudgetTransaction(t *testing.T) {
 		CategoryGroupID: group.ID,
 		Name:            "Internet",
 		Icon:            "wifi",
-		ServiceID:       &serviceID,
+		ServiceIDs:      []int64{serviceID},
 		AccountID:       &account.ID,
 	})
 	if err != nil {
