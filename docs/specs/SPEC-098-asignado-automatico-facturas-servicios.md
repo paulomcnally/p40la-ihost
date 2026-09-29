@@ -1,7 +1,7 @@
 ---
 title: "Auto-completar 'Asignado' de una categoría con la suma de la factura más reciente por servicio vinculado"
 id: "SPEC-098"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-09-28"
 updated: "2026-09-28"
@@ -11,7 +11,7 @@ github_issue: 101
 # Auto-completar 'Asignado' de una categoría con la suma de la factura más reciente por servicio vinculado
 
 **ID**: SPEC-098  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-09-28  
 **Actualizado**: 2026-09-28
@@ -234,3 +234,4 @@ Entidad: bills (existente)
 |-------|-------|-------------|
 | 2026-09-28 | opencode | Creación inicial de la especificación (requerimiento relevado con usuario: al agregar servicios a una categoría, auto-completar "Asignado" con la suma de la factura más reciente de cada servicio vinculado; como sugerencia editable en el modal; aplica a cada mes sin asignar; 1 factura por servicio, no 2) |
 | 2026-09-28 | opencode | Implementación: `BillStorage.LatestByService`, modelo `SuggestedAssignment`, `CategoryService.SuggestedAssignment` (suma por moneda, `applies`), handler + ruta `GET /api/budget/categories/{id}/suggested-assignment`, wiring en `main.go`, frontend (api method, tipo, pre-relleno editable en `AssignModal`, indicador i18n `budget.assigned_suggestion`), tests unit/integración. Validación en local con server + DB de prueba OK. |
+| 2026-09-28 | opencode | **Release**: validación manual del usuario OK (server local + DB mock: sugerencia 800 = 500 Claro + 300 Tigo). Merge a `main`, issue #101 cerrado con label `spec/released`. |
