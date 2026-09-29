@@ -12,10 +12,12 @@ import (
 // CategoryService contiene la lógica de negocio para categorías de presupuesto
 // (SPEC-093). SPEC-094: valida el vínculo con servicios del sistema.
 // SPEC-096: una categoría puede vincularse a N servicios (service_ids).
+// SPEC-098: sugiere el monto asignado a partir de las facturas de los servicios.
 type CategoryService struct {
 	categories *storage.CategoryStorage
 	groups     *storage.CategoryGroupStorage
 	services   *storage.ServiceStorage
+	bills      *storage.BillStorage
 }
 
 // NewCategoryService crea un nuevo CategoryService.
@@ -28,6 +30,13 @@ func NewCategoryService(categories *storage.CategoryStorage, groups *storage.Cat
 // validar la existencia del servicio.
 func (s *CategoryService) SetServiceStorage(services *storage.ServiceStorage) {
 	s.services = services
+}
+
+// SetBillStorage habilita la sugerencia de asignación a partir de las facturas
+// de los servicios vinculados (SPEC-098). Si no se configura, la sugerencia
+// devuelve applies=false.
+func (s *CategoryService) SetBillStorage(bills *storage.BillStorage) {
+	s.bills = bills
 }
 
 // GetByID busca una categoría por ID.
@@ -80,6 +89,52 @@ func (s *CategoryService) hardDelete(ctx context.Context, id int64) error {
 // Reorder actualiza el orden de las categorías de un grupo.
 func (s *CategoryService) Reorder(ctx context.Context, groupID int64, ids []int64) error {
 	return s.categories.Reorder(ctx, groupID, ids)
+}
+
+// SuggestedAssignment calcula la sugerencia de asignación de una categoría
+// (SPEC-098): la suma de la factura más reciente por cada servicio vinculado,
+// agrupada por moneda (currency_id del servicio). Devuelve applies=false si la
+// categoría no tiene servicios vinculados, si no tiene storage de facturas
+// configurado o si ningún servicio tiene facturas.
+func (s *CategoryService) SuggestedAssignment(ctx context.Context, categoryID int64) (*models.SuggestedAssignment, error) {
+	cat, err := s.categories.GetByID(ctx, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	if cat == nil || cat.DeletedAt != nil {
+		return nil, fmt.Errorf("la categoría no existe")
+	}
+
+	res := &models.SuggestedAssignment{
+		Suggested:          map[int64]float64{},
+		SourceServiceIDs:   []int64{},
+		SourceServiceNames: []string{},
+	}
+	if len(cat.ServiceIDs) == 0 || s.bills == nil {
+		return res, nil
+	}
+
+	for _, sid := range cat.ServiceIDs {
+		svc, err := s.services.GetByID(ctx, sid)
+		if err != nil {
+			return nil, err
+		}
+		if svc == nil {
+			continue
+		}
+		bill, err := s.bills.LatestByService(ctx, sid)
+		if err != nil {
+			return nil, err
+		}
+		if bill == nil {
+			continue
+		}
+		res.Suggested[svc.CurrencyID] += bill.Amount
+		res.SourceServiceIDs = append(res.SourceServiceIDs, sid)
+		res.SourceServiceNames = append(res.SourceServiceNames, svc.Name)
+	}
+	res.Applies = len(res.Suggested) > 0
+	return res, nil
 }
 
 func (s *CategoryService) validate(ctx context.Context, cat *models.Category) error {

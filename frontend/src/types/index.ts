@@ -431,3 +431,10 @@ export interface BudgetMonthView {
   currency_totals: CurrencyTotal[]
   groups: BudgetMonthGroup[]
 }
+
+export interface SuggestedAssignment {
+  suggested: Record<string, number>
+  applies: boolean
+  source_service_ids?: number[]
+  source_service_names?: string[]
+}

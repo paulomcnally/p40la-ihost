@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -314,6 +314,7 @@ salaries: {
       update: (id: number, body: { category_group_id: number; name: string; icon: string; target_amount?: number | null; service_ids?: number[]; account_id?: number | null }) =>
         put<BudgetCategory>(`/api/budget/categories/${id}`, body),
       delete: (id: number) => del(`/api/budget/categories/${id}`),
+      suggestedAssignment: (id: number) => get<SuggestedAssignment>(`/api/budget/categories/${id}/suggested-assignment`),
     },
     accounts: {
       list: () => get<Account[]>('/api/budget/accounts'),

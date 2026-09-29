@@ -280,6 +280,23 @@ func (h *BudgetHandlers) DeleteCategory(w http.ResponseWriter, r *http.Request) 
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Categoría eliminada"})
 }
 
+// SuggestedAssignment responde la sugerencia de asignación de una categoría
+// (SPEC-098): suma de la factura más reciente por cada servicio vinculado,
+// agrupada por moneda.
+func (h *BudgetHandlers) SuggestedAssignment(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID de categoría inválido")
+		return
+	}
+	suggestion, err := h.categories.SuggestedAssignment(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, suggestion)
+}
+
 // ---- Cuentas ----
 
 type accountRequest struct {
