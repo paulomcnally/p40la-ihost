@@ -103,7 +103,7 @@ func TestDispatchVoice_Enabled(t *testing.T) {
 func newTelegramBotForTest(t *testing.T, sent *[]string, mu *sync.Mutex) (*TelegramBotService, *SystemSettingsService) {
 	t.Helper()
 	settings := testTelegramSettings(t)
-	svc := NewTelegramBotService(settings, nil, nil, storage.NewServiceStorage(nil), NewAutomationClient(settings))
+	svc := NewTelegramBotService(settings, nil, nil, storage.NewServiceStorage(nil), NewAutomationClient(settings), nil, nil, nil, nil)
 
 	srv := fakeTelegramAPI(t, sent, mu)
 	b, err := bot.New("TESTTOKEN", bot.WithServerURL(srv.URL), bot.WithNotAsyncHandlers(), bot.WithDefaultHandler(svc.handleDefault))
@@ -213,7 +213,7 @@ func TestDispatchTelegram_SendsToAllAuthorizedChatIDs(t *testing.T) {
 
 func TestSendAlerts_NoChatIDs(t *testing.T) {
 	settings := testTelegramSettings(t)
-	svc := NewTelegramBotService(settings, nil, nil, storage.NewServiceStorage(nil), NewAutomationClient(settings))
+	svc := NewTelegramBotService(settings, nil, nil, storage.NewServiceStorage(nil), NewAutomationClient(settings), nil, nil, nil, nil)
 	ctx := context.Background()
 
 	if err := settings.SetTelegramBotEnabled(ctx, true); err != nil {

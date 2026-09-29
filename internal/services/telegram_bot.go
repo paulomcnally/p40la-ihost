@@ -26,6 +26,13 @@ type TelegramBotService struct {
 	serviceStorage *storage.ServiceStorage
 	automation     *AutomationClient
 
+	// Dependencias del módulo de presupuesto para /budget_transaction
+	// (SPEC-097). Solo lectura de catálogos + creación validada de transacciones.
+	budgetGroups *CategoryGroupService
+	accounts     *AccountService
+	currencies   *CurrencyService
+	transactions *BudgetTransactionService
+
 	mu         sync.Mutex
 	cancel     context.CancelFunc
 	reloadCh   chan struct{}
@@ -33,17 +40,39 @@ type TelegramBotService struct {
 
 	botMu     sync.Mutex
 	activeBot *bot.Bot // instancia del bot en polling (para alertas push, SPEC-088)
+
+	// Sesiones de conversación guiada de /budget_transaction (SPEC-097),
+	// en memoria por chat_id con TTL. Protegidas por txMu.
+	txMu      sync.Mutex
+	txSession map[int64]*budgetTxSession
 }
 
 // NewTelegramBotService crea el servicio. Requiere arrancarlo con Start().
-func NewTelegramBotService(settings *SystemSettingsService, bills *storage.BillStorage, debtBills *storage.DebtBillStorage, serviceStorage *storage.ServiceStorage, automation *AutomationClient) *TelegramBotService {
+// Los parámetros del módulo de presupuesto (SPEC-097) pueden ser nil: en ese
+// caso el comando /budget_transaction se degrada a un aviso de no disponible.
+func NewTelegramBotService(
+	settings *SystemSettingsService,
+	bills *storage.BillStorage,
+	debtBills *storage.DebtBillStorage,
+	serviceStorage *storage.ServiceStorage,
+	automation *AutomationClient,
+	budgetGroups *CategoryGroupService,
+	accounts *AccountService,
+	currencies *CurrencyService,
+	transactions *BudgetTransactionService,
+) *TelegramBotService {
 	return &TelegramBotService{
 		settings:       settings,
 		bills:          bills,
 		debtBills:      debtBills,
 		serviceStorage: serviceStorage,
 		automation:     automation,
+		budgetGroups:   budgetGroups,
+		accounts:       accounts,
+		currencies:     currencies,
+		transactions:   transactions,
 		reloadCh:       make(chan struct{}, 1),
+		txSession:      make(map[int64]*budgetTxSession),
 	}
 }
 
@@ -142,6 +171,9 @@ func (s *TelegramBotService) runBot(ctx context.Context, cfg *appmodels.Telegram
 	b.RegisterHandler(bot.HandlerTypeMessageText, "deudas_pendientes", bot.MatchTypeCommand, s.handleDeudasPendientes)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "sincronizar_servicio", bot.MatchTypeCommand, s.handleSincronizarServicio)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "start", bot.MatchTypeCommand, s.handleStart)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "budget_transaction", bot.MatchTypeCommand, s.handleBudgetTransaction)
+	// Botones inline de la conversación /budget_transaction (SPEC-097, ADR-003).
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "bt:", bot.MatchTypePrefix, s.handleBudgetCallback)
 
 	s.registerCommands(ctx, b)
 
@@ -164,6 +196,7 @@ func (s *TelegramBotService) registerCommands(ctx context.Context, b *bot.Bot) {
 			{Command: "servicios_pendientes", Description: "Servicios con facturas pendientes"},
 			{Command: "deudas_pendientes", Description: "Deudas con cuotas pendientes"},
 			{Command: "sincronizar_servicio", Description: "Sincronizar un servicio con su ID (ej: /sincronizar_servicio 1)"},
+			{Command: "budget_transaction", Description: "Registrar una transacción del presupuesto"},
 		},
 	})
 	if err != nil {
@@ -265,14 +298,19 @@ func (s *TelegramBotService) handleStart(ctx context.Context, b *bot.Bot, update
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
-	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura) y sincronización manual.\n\nComandos:\n  `/servicios_pendientes` — servicios con facturas pendientes\n  `/deudas_pendientes` — deudas con cuotas pendientes\n  `/sincronizar_servicio <id>` — sincroniza un servicio con su ID (ej: `/sincronizar_servicio 1`)\n\nEl ID de cada servicio y deuda se muestra en las listas de la app (badge `ID: N`).\n\nAdemás, si activás las alertas por Telegram en P40LA (Configuración → Alertas), este bot te envía los avisos automáticos directamente.")
+	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura) y sincronización manual.\n\nComandos:\n  `/servicios_pendientes` — servicios con facturas pendientes\n  `/deudas_pendientes` — deudas con cuotas pendientes\n  `/sincronizar_servicio <id>` — sincroniza un servicio con su ID (ej: `/sincronizar_servicio 1`)\n  `/budget_transaction` — registra una transacción del presupuesto (guía paso a paso)\n\nEl ID de cada servicio y deuda se muestra en las listas de la app (badge `ID: N`).\n\nAdemás, si activás las alertas por Telegram en P40LA (Configuración → Alertas), este bot te envía los avisos automáticos directamente.")
 }
 
 func (s *TelegramBotService) handleDefault(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
-	s.reply(ctx, b, update, "Comando no reconocido. Usa `/servicios_pendientes`, `/deudas_pendientes` o `/sincronizar_servicio <id>`.")
+	// Si hay una conversación /budget_transaction activa, el mensaje es una
+	// respuesta a un paso de texto (SPEC-097). Si no, cae en el aviso por defecto.
+	if s.budgetHandleText(ctx, b, update) {
+		return
+	}
+	s.reply(ctx, b, update, "Comando no reconocido. Usa `/servicios_pendientes`, `/deudas_pendientes`, `/sincronizar_servicio <id>` o `/budget_transaction`.")
 }
 
 // handleSincronizarServicio ejecuta la sincronización manual de un servicio
@@ -419,6 +457,638 @@ func (s *TelegramBotService) handleDeudasPendientes(ctx context.Context, b *bot.
 	}
 
 	s.sendMany(ctx, b, update, formatDeudasPendientes(pending, currencyFormat, now, sepLen, showMonths))
+}
+
+// ---------------------------------------------------------------------------
+// /budget_transaction — conversación guiada para registrar una transacción del
+// presupuesto (SPEC-097). Máquina de estados en memoria por chat_id (ADR-001)
+// con pasos: grupo → categoría → tipo → monto → fecha → cuenta → payee →
+// confirmación. Los pasos de selección usan botones inline; monto/fecha/payee
+// se ingresan por texto y caen en handleDefault → budgetHandleText.
+// ---------------------------------------------------------------------------
+
+// budgetTxStep es la etapa actual de una conversación /budget_transaction.
+type budgetTxStep int
+
+const (
+	stepGroup budgetTxStep = iota
+	stepCategory
+	stepType
+	stepAmount
+	stepDate
+	stepAccount
+	stepPayee
+	stepConfirm
+)
+
+// budgetTxSession guarda el estado en memoria de una conversación
+// /budget_transaction para un chat (SPEC-097, ADR-001).
+type budgetTxSession struct {
+	chatID         int64
+	step           budgetTxStep
+	groupID        int64
+	categoryID     int64
+	categoryName   string
+	isInflow       bool
+	amount         float64
+	date           string
+	accountID      int64
+	accountName    string
+	currencyID     int64
+	currencySymbol string
+	payee          string
+	expiresAt      time.Time
+}
+
+// budgetTxTTL es el tiempo máximo de inactividad de una sesión antes de
+// descartarse (SPEC-097 REQ-012).
+const budgetTxTTL = 15 * time.Minute
+
+// handleBudgetTransaction inicia (o reinicia) la conversación /budget_transaction
+// (SPEC-097 REQ-001). Valida prerequisitos antes de arrancar (REQ-002).
+func (s *TelegramBotService) handleBudgetTransaction(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
+	if !s.checkAuthorized(ctx, b, update) {
+		return
+	}
+	if update.Message == nil {
+		return
+	}
+	chatID := update.Message.Chat.ID
+
+	if s.budgetGroups == nil || s.accounts == nil || s.transactions == nil {
+		s.reply(ctx, b, update, "⚠️ El módulo de presupuesto no está disponible en este servidor.")
+		return
+	}
+
+	groups, err := s.budgetGroups.List(ctx)
+	if err != nil {
+		slog.Error("telegram_bot: /budget_transaction — listar grupos", "error", err)
+		s.reply(ctx, b, update, "⚠️ Error al leer los grupos de presupuesto. Revisá los logs.")
+		return
+	}
+	hasCategories := false
+	for i := range groups {
+		if len(groups[i].Categories) > 0 {
+			hasCategories = true
+			break
+		}
+	}
+	if !hasCategories {
+		s.reply(ctx, b, update, "⚠️ Aún no hay categorías de presupuesto. Creá un grupo y una categoría en P40LA → Presupuesto → Vista mensual.")
+		return
+	}
+	accounts, err := s.accounts.List(ctx)
+	if err != nil {
+		slog.Error("telegram_bot: /budget_transaction — listar cuentas", "error", err)
+		s.reply(ctx, b, update, "⚠️ Error al leer las cuentas. Revisá los logs.")
+		return
+	}
+	if len(accounts) == 0 {
+		s.reply(ctx, b, update, "⚠️ Aún no hay cuentas. Creá una cuenta en P40LA → Presupuesto → Transacciones.")
+		return
+	}
+
+	s.budgetCleanup()
+	session := &budgetTxSession{
+		chatID:    chatID,
+		step:      stepGroup,
+		expiresAt: time.Now().Add(budgetTxTTL),
+	}
+	s.txMu.Lock()
+	s.txSession[chatID] = session
+	s.txMu.Unlock()
+
+	s.budgetSend(ctx, b, chatID, "📝 *Nueva transacción de presupuesto*\n\nElegí el *grupo*:", s.budgetGroupKeyboard(groups))
+}
+
+// handleBudgetCallback procesa los botones inline `bt:...` de /budget_transaction
+// (SPEC-097 REQ-003..010). Valida la sesión activa y que el callback corresponda
+// al paso actual; los callbacks fuera de paso se ignoran en silencio.
+func (s *TelegramBotService) handleBudgetCallback(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
+	if update.CallbackQuery == nil {
+		return
+	}
+	msg := update.CallbackQuery.Message.Message
+	if msg == nil {
+		// Mensaje inaccesible: responder el callback y salir (no hay Chat/MessageID).
+		s.answerCallback(ctx, b, update, "")
+		return
+	}
+	chatID := msg.Chat.ID
+	if !s.isAuthorized(ctx, chatID) {
+		return
+	}
+	s.mu.Lock()
+	s.lastChatID = chatID
+	s.mu.Unlock()
+
+	s.txMu.Lock()
+	session := s.txSession[chatID]
+	if session != nil {
+		session.expiresAt = time.Now().Add(budgetTxTTL)
+	}
+	s.txMu.Unlock()
+
+	if session == nil {
+		s.answerCallback(ctx, b, update, "La sesión expiró o no existe. Usá /budget_transaction para empezar.")
+		return
+	}
+
+	parts := strings.Split(update.CallbackQuery.Data, ":")
+	if len(parts) < 2 || parts[0] != "bt" {
+		s.answerCallback(ctx, b, update, "")
+		return
+	}
+	msgID := msg.ID
+
+	switch parts[1] {
+	case "cancel":
+		s.txMu.Lock()
+		delete(s.txSession, chatID)
+		s.txMu.Unlock()
+		s.answerCallback(ctx, b, update, "Operación cancelada.")
+		s.budgetClearKeyboard(ctx, b, chatID, msgID)
+
+	case "grp":
+		if session.step != stepGroup || len(parts) < 3 {
+			s.answerCallback(ctx, b, update, "")
+			return
+		}
+		id, err := strconv.ParseInt(parts[2], 10, 64)
+		if err != nil {
+			s.answerCallback(ctx, b, update, "")
+			return
+		}
+		group, err := s.budgetGroupByID(ctx, id)
+		if err != nil || group == nil {
+			s.answerCallback(ctx, b, update, "Grupo no encontrado.")
+			return
+		}
+		session.groupID = group.ID
+		session.step = stepCategory
+		s.answerCallback(ctx, b, update, "")
+		s.budgetClearKeyboard(ctx, b, chatID, msgID)
+		s.budgetSend(ctx, b, chatID, fmt.Sprintf("Grupo: *%s*\n\nElegí la *categoría*:", s.budgetGroupLabel(group)), s.budgetCategoryKeyboard(group.Categories))
+
+	case "cat":
+		if session.step != stepCategory || len(parts) < 3 {
+			s.answerCallback(ctx, b, update, "")
+			return
+		}
+		id, err := strconv.ParseInt(parts[2], 10, 64)
+		if err != nil {
+			s.answerCallback(ctx, b, update, "")
+			return
+		}
+		cat, err := s.budgetCategoryByID(ctx, id)
+		if err != nil || cat == nil {
+			s.answerCallback(ctx, b, update, "Categoría no encontrada.")
+			return
+		}
+		session.categoryID = cat.ID
+		session.categoryName = cat.Name
+		session.step = stepType
+		s.answerCallback(ctx, b, update, "")
+		s.budgetClearKeyboard(ctx, b, chatID, msgID)
+		s.budgetSend(ctx, b, chatID, fmt.Sprintf("Categoría: *%s*\n\n¿Es un *gasto* o un *ingreso*?", session.categoryName), s.budgetTypeKeyboard())
+
+	case "type":
+		if session.step != stepType || len(parts) < 3 {
+			s.answerCallback(ctx, b, update, "")
+			return
+		}
+		switch parts[2] {
+		case "outflow":
+			session.isInflow = false
+		case "inflow":
+			session.isInflow = true
+		default:
+			s.answerCallback(ctx, b, update, "")
+			return
+		}
+		session.step = stepAmount
+		s.answerCallback(ctx, b, update, "")
+		s.budgetClearKeyboard(ctx, b, chatID, msgID)
+		s.budgetSend(ctx, b, chatID, s.budgetAmountPrompt(session), nil)
+
+	case "acct":
+		if session.step != stepAccount || len(parts) < 3 {
+			s.answerCallback(ctx, b, update, "")
+			return
+		}
+		id, err := strconv.ParseInt(parts[2], 10, 64)
+		if err != nil {
+			s.answerCallback(ctx, b, update, "")
+			return
+		}
+		acc, err := s.budgetAccountByID(ctx, id)
+		if err != nil || acc == nil {
+			s.answerCallback(ctx, b, update, "Cuenta no encontrada.")
+			return
+		}
+		session.accountID = acc.ID
+		session.accountName = acc.Name
+		session.currencyID = acc.CurrencyID
+		cur, err := s.currencyByID(ctx, acc.CurrencyID)
+		if err != nil || cur == nil {
+			s.answerCallback(ctx, b, update, "Moneda de la cuenta no encontrada.")
+			return
+		}
+		session.currencySymbol = cur.Symbol
+		session.step = stepPayee
+		s.answerCallback(ctx, b, update, "")
+		s.budgetClearKeyboard(ctx, b, chatID, msgID)
+		s.budgetSend(ctx, b, chatID, fmt.Sprintf("Cuenta: *%s*\n\n¿*Concepto/payee*? (opcional — escribí algo o /saltar)", session.accountName), nil)
+
+	case "ok":
+		if session.step != stepConfirm {
+			s.answerCallback(ctx, b, update, "")
+			return
+		}
+		s.answerCallback(ctx, b, update, "Guardando…")
+		s.budgetClearKeyboard(ctx, b, chatID, msgID)
+		s.budgetCreateAndReply(ctx, b, chatID, session)
+
+	default:
+		s.answerCallback(ctx, b, update, "")
+	}
+}
+
+// budgetHandleText avanza los pasos de texto (monto, fecha, payee) de
+// /budget_transaction. Devuelve true si consumió el mensaje (había sesión
+// activa); false si el mensaje debe caer en la respuesta por defecto
+// (SPEC-097 REQ-012).
+func (s *TelegramBotService) budgetHandleText(ctx context.Context, b *bot.Bot, update *tgmodels.Update) bool {
+	if update.Message == nil {
+		return false
+	}
+	chatID := update.Message.Chat.ID
+	text := strings.TrimSpace(update.Message.Text)
+
+	s.txMu.Lock()
+	session := s.txSession[chatID]
+	if session != nil {
+		session.expiresAt = time.Now().Add(budgetTxTTL)
+	}
+	s.txMu.Unlock()
+	if session == nil {
+		return false
+	}
+
+	switch session.step {
+	case stepAmount:
+		amount, ok := parseAmount(text)
+		if !ok {
+			s.reply(ctx, b, update, "⚠️ Monto inválido. Escribí un número mayor a cero (ej: 150.50 o 150,50).")
+			return true
+		}
+		session.amount = amount
+		session.step = stepDate
+		s.reply(ctx, b, update, s.budgetDatePrompt())
+	case stepDate:
+		date, ok := parseDate(text, time.Now().In(s.budgetLocation(ctx)))
+		if !ok {
+			s.reply(ctx, b, update, "⚠️ Fecha inválida. Usá el formato *YYYY-MM-DD* (ej: 2026-09-28) o escribí *hoy*.")
+			return true
+		}
+		session.date = date
+		session.step = stepAccount
+		s.budgetAskAccount(ctx, b, chatID, session)
+	case stepPayee:
+		if text != "" && text != "/saltar" {
+			session.payee = text
+		}
+		session.step = stepConfirm
+		format, err := s.settings.GetCurrencyFormat(ctx)
+		if err != nil {
+			format = DefaultCurrencyFormat()
+		}
+		s.budgetSend(ctx, b, chatID, s.budgetSummary(session, format), s.budgetConfirmKeyboard())
+	default:
+		s.reply(ctx, b, update, "Respondé con los botones de arriba para continuar la transacción.")
+	}
+	return true
+}
+
+// budgetCreateAndReply persiste la transacción vía BudgetTransactionService
+// (validación de SPEC-093) y responde el resultado. Siempre elimina la sesión
+// del chat, exitosa o no (SPEC-097 REQ-010).
+func (s *TelegramBotService) budgetCreateAndReply(ctx context.Context, b *bot.Bot, chatID int64, session *budgetTxSession) {
+	tx := budgetBuildTransaction(session)
+
+	created, err := s.transactions.Create(ctx, tx)
+	if err != nil {
+		slog.Error("telegram_bot: budget_transaction — crear transacción", "error", err)
+		s.txMu.Lock()
+		delete(s.txSession, chatID)
+		s.txMu.Unlock()
+		s.budgetSend(ctx, b, chatID, "⚠️ No se pudo guardar la transacción: "+err.Error(), nil)
+		return
+	}
+
+	format, err := s.settings.GetCurrencyFormat(ctx)
+	if err != nil {
+		format = DefaultCurrencyFormat()
+	}
+	msg := fmt.Sprintf("✅ *Transacción guardada* (#%d)\n  %s — %s\n  %s\n  Fecha: %s · Cuenta: %s",
+		created.ID,
+		session.categoryName,
+		formatAmount(session.amount, session.currencySymbol, format),
+		budgetKindLabel(session.isInflow),
+		session.date,
+		session.accountName,
+	)
+	s.txMu.Lock()
+	delete(s.txSession, chatID)
+	s.txMu.Unlock()
+	s.budgetSend(ctx, b, chatID, msg, nil)
+}
+
+// budgetBuildTransaction arma el models.Transaction a partir de la sesión
+// (SPEC-097 REQ-010). Función pura para testear el armado del payload.
+func budgetBuildTransaction(session *budgetTxSession) *appmodels.Transaction {
+	tx := &appmodels.Transaction{
+		AccountID:  session.accountID,
+		CategoryID: &session.categoryID,
+		CurrencyID: session.currencyID,
+		Date:       session.date,
+		Payee:      session.payee,
+		Memo:       "",
+		Cleared:    false,
+	}
+	if session.isInflow {
+		tx.Inflow = session.amount
+	} else {
+		tx.Outflow = session.amount
+	}
+	return tx
+}
+
+// budgetAskAccount lista las cuentas con botones inline para el paso Cuenta
+// (SPEC-097 REQ-008). La moneda se deriva de la cuenta elegida.
+func (s *TelegramBotService) budgetAskAccount(ctx context.Context, b *bot.Bot, chatID int64, session *budgetTxSession) {
+	accounts, err := s.accounts.List(ctx)
+	if err != nil {
+		slog.Error("telegram_bot: budget_transaction — listar cuentas", "error", err)
+		s.budgetSend(ctx, b, chatID, "⚠️ Error al leer las cuentas. Cancelá y volvé a intentar.", nil)
+		return
+	}
+	s.budgetSend(ctx, b, chatID, fmt.Sprintf("Fecha: *%s*\n\nElegí la *cuenta* (la moneda será la de la cuenta):", session.date), s.budgetAccountKeyboard(accounts))
+}
+
+// budgetGroupByID devuelve un grupo con sus categorías activas por ID.
+func (s *TelegramBotService) budgetGroupByID(ctx context.Context, id int64) (*BudgetCategoryGroup, error) {
+	groups, err := s.budgetGroups.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range groups {
+		if groups[i].ID == id {
+			return &groups[i], nil
+		}
+	}
+	return nil, nil
+}
+
+// budgetCategoryByID busca una categoría activa por ID en todos los grupos.
+func (s *TelegramBotService) budgetCategoryByID(ctx context.Context, id int64) (*appmodels.Category, error) {
+	groups, err := s.budgetGroups.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range groups {
+		for j := range groups[i].Categories {
+			if groups[i].Categories[j].ID == id {
+				return &groups[i].Categories[j], nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+// budgetAccountByID busca una cuenta activa por ID.
+func (s *TelegramBotService) budgetAccountByID(ctx context.Context, id int64) (*appmodels.Account, error) {
+	accounts, err := s.accounts.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range accounts {
+		if accounts[i].ID == id {
+			return &accounts[i], nil
+		}
+	}
+	return nil, nil
+}
+
+// currencyByID busca una moneda por ID.
+func (s *TelegramBotService) currencyByID(ctx context.Context, id int64) (*appmodels.Currency, error) {
+	currencies, err := s.currencies.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range currencies {
+		if currencies[i].ID == id {
+			return &currencies[i], nil
+		}
+	}
+	return nil, nil
+}
+
+// budgetCleanup elimina las sesiones expiradas (SPEC-097 REQ-012).
+func (s *TelegramBotService) budgetCleanup() {
+	now := time.Now()
+	s.txMu.Lock()
+	defer s.txMu.Unlock()
+	for chatID, session := range s.txSession {
+		if now.After(session.expiresAt) {
+			delete(s.txSession, chatID)
+		}
+	}
+}
+
+// budgetLocation devuelve la zona horaria configurada para fechas (SPEC-084 ADR-004).
+func (s *TelegramBotService) budgetLocation(ctx context.Context) *time.Location {
+	loc, err := s.settings.GetTimezoneLocation(ctx)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
+// budgetSend envía un mensaje al chat, opcionalmente con un teclado inline.
+func (s *TelegramBotService) budgetSend(ctx context.Context, b *bot.Bot, chatID int64, text string, keyboard *tgmodels.InlineKeyboardMarkup) {
+	params := &bot.SendMessageParams{
+		ChatID:    chatID,
+		Text:      text,
+		ParseMode: tgmodels.ParseModeMarkdownV1,
+	}
+	if keyboard != nil {
+		params.ReplyMarkup = keyboard
+	}
+	if _, err := b.SendMessage(ctx, params); err != nil {
+		slog.Warn("telegram_bot: budget_transaction — enviar mensaje", "error", err)
+	}
+}
+
+// answerCallback responde el callback query para quitar el "reloj" del botón
+// (REQ-014) y mostrar feedback opcional.
+func (s *TelegramBotService) answerCallback(ctx context.Context, b *bot.Bot, update *tgmodels.Update, text string) {
+	if update.CallbackQuery == nil {
+		return
+	}
+	if _, err := b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+		CallbackQueryID: update.CallbackQuery.ID,
+		Text:            text,
+	}); err != nil {
+		slog.Warn("telegram_bot: budget_transaction — answer callback", "error", err)
+	}
+}
+
+// budgetClearKeyboard quita los botones del mensaje previo al avanzar de paso
+// (REQ-014): el chat no acumula teclados viejos.
+func (s *TelegramBotService) budgetClearKeyboard(ctx context.Context, b *bot.Bot, chatID int64, messageID int) {
+	if _, err := b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+		ChatID:    chatID,
+		MessageID: messageID,
+	}); err != nil {
+		slog.Debug("telegram_bot: budget_transaction — limpiar teclado", "error", err)
+	}
+}
+
+// budgetGroupKeyboard arma el teclado de selección de grupos (solo grupos con
+// categorías activas).
+func (s *TelegramBotService) budgetGroupKeyboard(groups []BudgetCategoryGroup) *tgmodels.InlineKeyboardMarkup {
+	rows := make([][]tgmodels.InlineKeyboardButton, 0, len(groups)+1)
+	for i := range groups {
+		if len(groups[i].Categories) == 0 {
+			continue
+		}
+		rows = append(rows, []tgmodels.InlineKeyboardButton{{
+			Text:         s.budgetGroupLabel(&groups[i]),
+			CallbackData: fmt.Sprintf("bt:grp:%d", groups[i].ID),
+		}})
+	}
+	rows = append(rows, []tgmodels.InlineKeyboardButton{{Text: "❌ Cancelar", CallbackData: "bt:cancel"}})
+	return &tgmodels.InlineKeyboardMarkup{InlineKeyboard: rows}
+}
+
+// budgetGroupLabel formatea el label de un grupo con su ícono si tiene.
+func (s *TelegramBotService) budgetGroupLabel(g *BudgetCategoryGroup) string {
+	if g.Icon != "" {
+		return g.Icon + " " + g.Name
+	}
+	return g.Name
+}
+
+// budgetCategoryKeyboard arma el teclado de categorías de un grupo.
+func (s *TelegramBotService) budgetCategoryKeyboard(cats []appmodels.Category) *tgmodels.InlineKeyboardMarkup {
+	rows := make([][]tgmodels.InlineKeyboardButton, 0, len(cats)+1)
+	for i := range cats {
+		rows = append(rows, []tgmodels.InlineKeyboardButton{{
+			Text:         s.budgetCategoryLabel(&cats[i]),
+			CallbackData: fmt.Sprintf("bt:cat:%d", cats[i].ID),
+		}})
+	}
+	rows = append(rows, []tgmodels.InlineKeyboardButton{{Text: "❌ Cancelar", CallbackData: "bt:cancel"}})
+	return &tgmodels.InlineKeyboardMarkup{InlineKeyboard: rows}
+}
+
+// budgetCategoryLabel formatea el label de una categoría con su ícono si tiene.
+func (s *TelegramBotService) budgetCategoryLabel(c *appmodels.Category) string {
+	if c.Icon != "" {
+		return c.Icon + " " + c.Name
+	}
+	return c.Name
+}
+
+// budgetTypeKeyboard arma el teclado Gasto/Ingreso.
+func (s *TelegramBotService) budgetTypeKeyboard() *tgmodels.InlineKeyboardMarkup {
+	return &tgmodels.InlineKeyboardMarkup{InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
+		{{Text: "💸 Gasto", CallbackData: "bt:type:outflow"}},
+		{{Text: "💰 Ingreso", CallbackData: "bt:type:inflow"}},
+		{{Text: "❌ Cancelar", CallbackData: "bt:cancel"}},
+	}}
+}
+
+// budgetAccountKeyboard arma el teclado de cuentas.
+func (s *TelegramBotService) budgetAccountKeyboard(accounts []appmodels.Account) *tgmodels.InlineKeyboardMarkup {
+	rows := make([][]tgmodels.InlineKeyboardButton, 0, len(accounts)+1)
+	for i := range accounts {
+		rows = append(rows, []tgmodels.InlineKeyboardButton{{
+			Text:         accounts[i].Name,
+			CallbackData: fmt.Sprintf("bt:acct:%d", accounts[i].ID),
+		}})
+	}
+	rows = append(rows, []tgmodels.InlineKeyboardButton{{Text: "❌ Cancelar", CallbackData: "bt:cancel"}})
+	return &tgmodels.InlineKeyboardMarkup{InlineKeyboard: rows}
+}
+
+// budgetConfirmKeyboard arma el teclado Confirmar/Cancelar.
+func (s *TelegramBotService) budgetConfirmKeyboard() *tgmodels.InlineKeyboardMarkup {
+	return &tgmodels.InlineKeyboardMarkup{InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
+		{{Text: "✅ Confirmar", CallbackData: "bt:ok"}},
+		{{Text: "❌ Cancelar", CallbackData: "bt:cancel"}},
+	}}
+}
+
+// budgetAmountPrompt arma el mensaje del paso Monto.
+func (s *TelegramBotService) budgetAmountPrompt(session *budgetTxSession) string {
+	return fmt.Sprintf("Categoría: *%s* · %s\n\nEscribí el *monto* (ej: 150.50):", session.categoryName, budgetKindLabel(session.isInflow))
+}
+
+// budgetDatePrompt arma el mensaje del paso Fecha.
+func (s *TelegramBotService) budgetDatePrompt() string {
+	return "Escribí la *fecha* en formato *YYYY-MM-DD* (ej: 2026-09-28) o *hoy* para usar la fecha actual:"
+}
+
+// budgetSummary arma el resumen de la transacción para la confirmación.
+func (s *TelegramBotService) budgetSummary(session *budgetTxSession, format CurrencyFormat) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "📝 *Resumen*\n")
+	fmt.Fprintf(&b, "  Categoría: %s\n", session.categoryName)
+	fmt.Fprintf(&b, "  Tipo: %s\n", budgetKindLabel(session.isInflow))
+	fmt.Fprintf(&b, "  Monto: %s\n", formatAmount(session.amount, session.currencySymbol, format))
+	fmt.Fprintf(&b, "  Fecha: %s\n", session.date)
+	fmt.Fprintf(&b, "  Cuenta: %s\n", session.accountName)
+	if session.payee != "" {
+		fmt.Fprintf(&b, "  Concepto: %s\n", session.payee)
+	}
+	return b.String()
+}
+
+// budgetKindLabel devuelve la etiqueta del tipo de transacción.
+func budgetKindLabel(inflow bool) string {
+	if inflow {
+		return "💰 Ingreso"
+	}
+	return "💸 Gasto"
+}
+
+// parseAmount valida un monto positivo. Acepta punto o coma decimal.
+func parseAmount(s string) (float64, bool) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0, false
+	}
+	s = strings.ReplaceAll(s, ",", ".")
+	amount, err := strconv.ParseFloat(s, 64)
+	if err != nil || amount <= 0 || amount > 1e12 {
+		return 0, false
+	}
+	return amount, true
+}
+
+// parseDate normaliza la fecha a "YYYY-MM-DD". Vacío/"hoy"/"today" usa `now`.
+func parseDate(s string, now time.Time) (string, bool) {
+	s = strings.TrimSpace(strings.ToLower(s))
+	if s == "" || s == "hoy" || s == "today" {
+		return fmt.Sprintf("%04d-%02d-%02d", now.Year(), now.Month(), now.Day()), true
+	}
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return "", false
+	}
+	return fmt.Sprintf("%04d-%02d-%02d", t.Year(), t.Month(), t.Day()), true
 }
 
 // checkAuthorized valida el chat contra la allowlist y guarda el último chat
