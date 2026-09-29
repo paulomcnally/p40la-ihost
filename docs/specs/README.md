@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 95 |
+| **Total de specs** | 96 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 95 🟢 |
+| **Released** | 96 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-096 |
+| **Último ID usado** | SPEC-097 |
 
 ---
 
@@ -116,6 +116,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-093 | Sistema de Presupuesto estilo YNAB: grupos/categorías, asignación mensual, recurrencia y transacciones | released | 2026-09-27 | opencode |
 | SPEC-094 | Vincular categorías de presupuesto con servicios: transacción automática al pagar facturas | released | 2026-09-27 | opencode |
 | SPEC-096 | Categorías de presupuesto vinculadas a múltiples servicios + fix dropdown detrás del modal | released | 2026-09-28 | opencode |
+| SPEC-097 | Bot Telegram: comando /budget_transaction para registrar transacciones del presupuesto por conversación guiada | released | 2026-09-28 | opencode |
 
 ---
 
@@ -185,4 +186,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-28 — SPEC-096 (Categorías de presupuesto vinculadas a múltiples servicios + fix dropdown detrás del modal) released.*
+*Última actualización de este tracker: 2026-09-28 — SPEC-097 (Bot Telegram /budget_transaction para registrar transacciones del presupuesto) released.*
