@@ -1,29 +1,25 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from './Icons'
+import type { SelectOption } from './Select'
 
-export interface SelectOption {
-  value: string | number
-  label: string
-}
-
-export interface SelectProps {
+export interface MultiSelectProps {
   options: SelectOption[]
-  value: string | number
-  onChange: (value: string | number) => void
+  value: (string | number)[]
+  onChange: (value: (string | number)[]) => void
   placeholder?: string
   searchable?: boolean
   zIndex?: string
 }
 
-export default function Select({ options, value, onChange, placeholder, searchable = false, zIndex = 'z-50' }: SelectProps) {
+export default function MultiSelect({ options, value, onChange, placeholder, searchable = false, zIndex = 'z-50' }: MultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number } | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const selected = options.find(o => o.value === value)
+  const selected = options.filter(o => value.includes(o.value))
   const filtered = searchable
     ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
     : options
@@ -65,10 +61,16 @@ export default function Select({ options, value, onChange, placeholder, searchab
     }
   }, [open, searchable])
 
-  const handleSelect = (opt: SelectOption) => {
-    onChange(opt.value)
-    close()
+  const toggle = (optValue: string | number) => {
+    const next = value.includes(optValue)
+      ? value.filter(v => v !== optValue)
+      : [...value, optValue]
+    onChange(next)
   }
+
+  const label = selected.length === 0
+    ? (placeholder || 'Seleccionar...')
+    : selected.map(o => o.label).join(', ')
 
   return (
     <div className="relative" ref={ref}>
@@ -77,10 +79,10 @@ export default function Select({ options, value, onChange, placeholder, searchab
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-3 py-2 border border-border rounded-ios-sm bg-card hover:border-primary/50 focus:outline-none focus:border-primary transition-colors text-left text-text"
       >
-        <span className={selected ? '' : 'text-text-secondary'}>
-          {selected?.label || placeholder || 'Seleccionar...'}
+        <span className={`truncate ${selected.length === 0 ? 'text-text-secondary' : ''}`}>
+          {label}
         </span>
-        <Icon name="chevron" className={`w-4 h-4 text-text-secondary transition-transform ${open ? 'rotate-180' : ''}`} />
+        <Icon name="chevron" className={`w-4 h-4 text-text-secondary flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open &&
@@ -99,7 +101,7 @@ export default function Select({ options, value, onChange, placeholder, searchab
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar..."
-                  className="w-full px-2 py-1.5 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-card"
+                  className="w-full px-2 py-1.5 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-card text-text"
                 />
               </div>
             )}
@@ -111,12 +113,17 @@ export default function Select({ options, value, onChange, placeholder, searchab
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => handleSelect(opt)}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-bg transition-colors ${
-                      opt.value === value ? 'text-primary font-medium bg-primary/5' : ''
+                    onClick={() => toggle(opt.value)}
+                    className={`w-full flex items-center gap-2 text-left px-3 py-2 text-sm hover:bg-bg transition-colors ${
+                      value.includes(opt.value) ? 'text-primary font-medium bg-primary/5' : ''
                     }`}
                   >
-                    {opt.label}
+                    <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                      value.includes(opt.value) ? 'bg-primary border-primary text-white' : 'border-border'
+                    }`}>
+                      {value.includes(opt.value) && <Icon name="check" className="w-3 h-3" />}
+                    </span>
+                    <span className="truncate">{opt.label}</span>
                   </button>
                 ))
               )}

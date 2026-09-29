@@ -4,11 +4,15 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 )
 
 // TestMigration0036UpDown verifica que la migración 0036 aplique (up) y
-// revierta (down) limpiamente en una DB temporal en disco.
+// revierta (down) limpiamente. Como la 0037 (SPEC-096) elimina luego
+// categories.service_id, el down de la 0036 se prueba contra una DB migrada
+// únicamente hasta la 0036 (rollback fiel del punto de la historia).
 func TestMigration0036UpDown(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "app.db")
@@ -17,9 +21,10 @@ func TestMigration0036UpDown(t *testing.T) {
 		t.Fatalf("abs migraciones: %v", err)
 	}
 
-	db, err := OpenDB(dbPath, migrationsDir)
+	// Aplicar migraciones hasta la 0036 inclusive.
+	db, err := openMigrateUpTo(migrationsDir, dbPath, "0036")
 	if err != nil {
-		t.Fatalf("open+migrate up: %v", err)
+		t.Fatalf("open+migrate up to 0036: %v", err)
 	}
 
 	hasColumn := func(table, col string) bool {
@@ -43,17 +48,17 @@ func TestMigration0036UpDown(t *testing.T) {
 	}
 
 	if !hasColumn("categories", "service_id") {
-		t.Error("categories.service_id no existe tras up")
+		t.Error("categories.service_id no existe tras up de 0036")
 	}
 	if !hasColumn("categories", "account_id") {
-		t.Error("categories.account_id no existe tras up")
+		t.Error("categories.account_id no existe tras up de 0036")
 	}
 	if !hasColumn("transactions", "source_bill_id") {
-		t.Error("transactions.source_bill_id no existe tras up")
+		t.Error("transactions.source_bill_id no existe tras up de 0036")
 	}
 	db.Close()
 
-	// Revertir: aplicar el .down.sql de la 0036 manualmente (simula rollback).
+	// Revertir: aplicar el .down.sql de la 0036 (rollback).
 	db2, err := sql.Open("sqlite", "file:"+dbPath+"?_pragma=foreign_keys(1)")
 	if err != nil {
 		t.Fatalf("reabrir: %v", err)
@@ -91,6 +96,52 @@ func TestMigration0036UpDown(t *testing.T) {
 		}
 	}
 	if found {
-		t.Error("categories.service_id/account_id siguen existiendo tras down")
+		t.Error("categories.service_id/account_id siguen existiendo tras down de 0036")
 	}
+}
+
+// openMigrateUpTo crea una DB y aplica solo las migraciones .up.sql cuyo nombre
+// es <= al prefijo dado (ej. "0036").
+func openMigrateUpTo(migrationsDir, dbPath, upTo string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", "file:"+dbPath)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY)`); err != nil {
+		db.Close()
+		return nil, err
+	}
+	entries, err := os.ReadDir(migrationsDir)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	names := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if !strings.HasSuffix(e.Name(), ".up.sql") {
+			continue
+		}
+		names = append(names, e.Name())
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		prefix := name[:4]
+		if prefix > upTo {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(migrationsDir, name))
+		if err != nil {
+			db.Close()
+			return nil, err
+		}
+		if _, err := db.Exec(string(data)); err != nil {
+			db.Close()
+			return nil, err
+		}
+		if _, err := db.Exec("INSERT INTO schema_migrations (version) VALUES (?)", name); err != nil {
+			db.Close()
+			return nil, err
+		}
+	}
+	return db, nil
 }

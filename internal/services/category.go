@@ -11,6 +11,7 @@ import (
 
 // CategoryService contiene la lógica de negocio para categorías de presupuesto
 // (SPEC-093). SPEC-094: valida el vínculo con servicios del sistema.
+// SPEC-096: una categoría puede vincularse a N servicios (service_ids).
 type CategoryService struct {
 	categories *storage.CategoryStorage
 	groups     *storage.CategoryGroupStorage
@@ -101,26 +102,36 @@ func (s *CategoryService) validate(ctx context.Context, cat *models.Category) er
 		return fmt.Errorf("la meta no puede ser negativa")
 	}
 
-	// Vínculo con servicio (SPEC-094).
-	if cat.ServiceID != nil && *cat.ServiceID != 0 && cat.AccountID == nil {
-		return fmt.Errorf("si vincula un servicio debe seleccionar una cuenta")
-	}
-	if cat.ServiceID != nil && *cat.ServiceID != 0 {
-		if s.services != nil {
-			svc, err := s.services.GetByID(ctx, *cat.ServiceID)
+	// Vínculo con servicios (SPEC-094/096).
+	if len(cat.ServiceIDs) > 0 {
+		if cat.AccountID == nil {
+			return fmt.Errorf("si vincula servicios debe seleccionar una cuenta")
+		}
+		seen := make(map[int64]struct{}, len(cat.ServiceIDs))
+		for _, sid := range cat.ServiceIDs {
+			if sid == 0 {
+				continue
+			}
+			if _, dup := seen[sid]; dup {
+				return fmt.Errorf("el servicio %d está repetido en la lista", sid)
+			}
+			seen[sid] = struct{}{}
+			if s.services != nil {
+				svc, err := s.services.GetByID(ctx, sid)
+				if err != nil {
+					return fmt.Errorf("validar servicio: %w", err)
+				}
+				if svc == nil {
+					return fmt.Errorf("el servicio %d no existe", sid)
+				}
+			}
+			inUse, err := s.categories.ServiceLinkInUse(ctx, sid, cat.ID)
 			if err != nil {
-				return fmt.Errorf("validar servicio: %w", err)
+				return err
 			}
-			if svc == nil {
-				return fmt.Errorf("el servicio seleccionado no existe")
+			if inUse {
+				return fmt.Errorf("el servicio %d ya está vinculado a otra categoría", sid)
 			}
-		}
-		inUse, err := s.categories.ServiceLinkInUse(ctx, *cat.ServiceID, cat.ID)
-		if err != nil {
-			return err
-		}
-		if inUse {
-			return fmt.Errorf("el servicio ya está vinculado a otra categoría")
 		}
 	}
 	return nil

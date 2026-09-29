@@ -208,7 +208,7 @@ type categoryRequest struct {
 	Name            string   `json:"name"`
 	Icon            string   `json:"icon"`
 	TargetAmount    *float64 `json:"target_amount"`
-	ServiceID       *int64   `json:"service_id"`
+	ServiceIDs      []int64  `json:"service_ids"`
 	AccountID       *int64   `json:"account_id"`
 }
 
@@ -224,7 +224,7 @@ func (h *BudgetHandlers) CreateCategory(w http.ResponseWriter, r *http.Request) 
 		Name:            req.Name,
 		Icon:            req.Icon,
 		TargetAmount:    req.TargetAmount,
-		ServiceID:       req.ServiceID,
+		ServiceIDs:      req.ServiceIDs,
 		AccountID:       req.AccountID,
 	})
 	if err != nil {
@@ -252,7 +252,7 @@ func (h *BudgetHandlers) UpdateCategory(w http.ResponseWriter, r *http.Request) 
 		Name:            req.Name,
 		Icon:            req.Icon,
 		TargetAmount:    req.TargetAmount,
-		ServiceID:       req.ServiceID,
+		ServiceIDs:      req.ServiceIDs,
 		AccountID:       req.AccountID,
 	})
 	if err != nil {
