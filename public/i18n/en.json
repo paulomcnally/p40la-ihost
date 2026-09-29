@@ -725,6 +725,7 @@
     "income": "Income",
     "reset_note": "Balance resets each month",
     "assign": "Assign",
+    "assigned_suggestion": "Suggested from the latest bill of {services}",
     "make_recurring": "Make recurring from this month",
     "recurring": "Recurring",
     "pause": "Pause",

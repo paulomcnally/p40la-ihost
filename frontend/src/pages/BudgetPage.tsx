@@ -14,7 +14,7 @@ import IconPickerModal from '../components/IconPickerModal'
 import Select from '../components/Select'
 import ServicePickerModal from '../components/ServicePickerModal'
 import { useToast } from '../components/Toast'
-import type { BudgetMonthView, BudgetCategoryRow, BudgetMonthGroup, Currency, CategoryGroup, BudgetCategory, RecurringRule, Account, Service } from '../types'
+import type { BudgetMonthView, BudgetCategoryRow, BudgetMonthGroup, Currency, CategoryGroup, BudgetCategory, RecurringRule, Account, Service, SuggestedAssignment } from '../types'
 
 interface CategoryAmount {
   currencyId: number
@@ -490,11 +490,30 @@ function AssignModal({ category, year, month, currencies, formatMoney, onClose, 
   const [saving, setSaving] = useState(false)
   const [history, setHistory] = useState<Array<{ id: number; payee: string; date: string; outflow: number; inflow: number; currency_code?: string }>>([])
   const [rule, setRule] = useState<RecurringRule | null>(category.recurring_rule || null)
+  const [suggestion, setSuggestion] = useState<SuggestedAssignment | null>(null)
 
   useEffect(() => {
     api.budget.transactions.listByCategory(category.id, year, month)
       .then((list) => setHistory(list || []))
       .catch(() => setHistory([]))
+  }, [category.id, year, month])
+
+  // Sugerencia de asignación (SPEC-098): solo para categorías con servicios
+  // vinculados y sin monto asignado en el mes.
+  useEffect(() => {
+    const hasAssigned = Object.keys(category.assigned || {}).length > 0
+    if (!category.service_ids || category.service_ids.length === 0 || hasAssigned) return
+    api.budget.categories.suggestedAssignment(category.id)
+      .then((s) => {
+        if (!s || !s.applies) return
+        setSuggestion(s)
+        const first = s.suggested[currencyId]
+        if (first != null) {
+          setAmount(String(first))
+        }
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category.id, year, month])
 
   const handleSave = async () => {
@@ -588,11 +607,23 @@ function AssignModal({ category, year, month, currencies, formatMoney, onClose, 
             <label className="block text-sm font-medium mb-1">{t('budget.currency')}</label>
             <Select
               value={currencyId}
-              onChange={(v) => setCurrencyId(Number(v))}
+              onChange={(v) => {
+                const next = Number(v)
+                setCurrencyId(next)
+                if (suggestion?.applies && suggestion.suggested[next] != null) {
+                  setAmount(String(suggestion.suggested[next]))
+                }
+              }}
               options={currencies.map((c) => ({ value: c.id, label: `${c.code} (${c.symbol})` }))}
               zIndex="z-[80]"
             />
           </div>
+
+          {suggestion?.applies && suggestion.source_service_names && suggestion.source_service_names.length > 0 && (
+            <p className="text-xs text-text-secondary">
+              {t('budget.assigned_suggestion', `Sugerido según última factura de {services}`).replace('{services}', suggestion.source_service_names.join(' · '))}
+            </p>
+          )}
 
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
