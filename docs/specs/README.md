@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 94 |
-| **En draft** | 0 🟡 |
+| **Total de specs** | 95 |
+| **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 94 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-094 |
+| **Último ID usado** | SPEC-096 |
 
 ---
 
@@ -115,6 +115,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-091 | Pólizas y ciclos de servicio: ver, agregar y renovar en el detalle | released | 2026-09-24 | opencode |
 | SPEC-093 | Sistema de Presupuesto estilo YNAB: grupos/categorías, asignación mensual, recurrencia y transacciones | released | 2026-09-27 | opencode |
 | SPEC-094 | Vincular categorías de presupuesto con servicios: transacción automática al pagar facturas | released | 2026-09-27 | opencode |
+| SPEC-096 | Categorías de presupuesto vinculadas a múltiples servicios + fix dropdown detrás del modal | draft | 2026-09-28 | opencode |
 
 ---
 
@@ -184,4 +185,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-27 — SPEC-094 (Vincular categorías de presupuesto con servicios) released.*
+*Última actualización de este tracker: 2026-09-28 — SPEC-096 (Categorías de presupuesto vinculadas a múltiples servicios + fix dropdown detrás del modal) draft.*
