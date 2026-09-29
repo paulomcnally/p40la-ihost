@@ -1,7 +1,7 @@
 ---
 title: "Auto-completar 'Asignado' de una categoría con la suma de la factura más reciente por servicio vinculado"
 id: "SPEC-098"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-09-28"
 updated: "2026-09-28"
@@ -11,7 +11,7 @@ github_issue: 101
 # Auto-completar 'Asignado' de una categoría con la suma de la factura más reciente por servicio vinculado
 
 **ID**: SPEC-098  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-09-28  
 **Actualizado**: 2026-09-28
@@ -174,21 +174,21 @@ Entidad: bills (existente)
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Abrir el modal de asignación de una categoría con 2 servicios vinculados (ej. Claro y Tigo), ambos con facturas, en un mes **sin** assignment → el campo monto se pre-rellena con la suma de la última factura de cada servicio (1 por servicio). *(Verificar por API y UI.)*
-- [ ] CA-002: Si el mes ya tiene un assignment para la categoría, el modal muestra el monto existente (no se pre-rellena ni se sobreescribe).
-- [ ] CA-003: Si la categoría no tiene servicios vinculados o ninguno tiene facturas, el campo queda vacío (sin sugerencia, sin error).
-- [ ] CA-004: La sugerencia es editable: el usuario puede cambiar el monto y guardar; se persiste el monto editado.
-- [ ] CA-005: Con servicios en monedas distintas, el monto sugerido corresponde a la moneda seleccionada en el `Select` del modal.
-- [ ] CA-006: El modal muestra un indicador claro (REQ-006) de que el monto es una sugerencia basada en las últimas facturas de los servicios (ej. "Sugerido según última factura de Claro y Tigo").
-- [ ] CA-DARK: El input de monto usa tokens del tema (`bg-card`, `text-text`) y el indicador es legible en darkmode (SPEC-060). *(Código usa tokens; verificación visual darkmode pendiente de QA.)*
-- [ ] CA-SELECT: El dropdown de moneda sigue usando el componente custom `Select`, nunca `<select>` nativo (SPEC-004 REQ-024).
-- [ ] CA-BACK: No aplica (no hay páginas de detalle/formularios nuevos con lista padre; la sugerencia vive en el modal existente). Verificar que no se introducen links "← Título".
+- [x] CA-001: Abrir el modal de asignación de una categoría con 2 servicios vinculados (ej. Claro y Tigo), ambos con facturas, en un mes **sin** assignment → el campo monto se pre-rellena con la suma de la última factura de cada servicio (1 por servicio). *(Verificado por API y UI.)*
+- [x] CA-002: Si el mes ya tiene un assignment para la categoría, el modal muestra el monto existente (no se pre-rellena ni se sobreescribe).
+- [x] CA-003: Si la categoría no tiene servicios vinculados o ninguno tiene facturas, el campo queda vacío (sin sugerencia, sin error). *(Verificado por API.)*
+- [x] CA-004: La sugerencia es editable: el usuario puede cambiar el monto y guardar; se persiste el monto editado.
+- [x] CA-005: Con servicios en monedas distintas, el monto sugerido corresponde a la moneda seleccionada en el `Select` del modal. *(Cambiar moneda en el `Select` re-rellena con la sugerencia de esa moneda.)*
+- [x] CA-006: El modal muestra un indicador claro (REQ-006) de que el monto es una sugerencia basada en las últimas facturas de los servicios (ej. "Sugerido según última factura de Claro y Tigo"). *(Clave i18n `budget.assigned_suggestion`.)*
+- [x] CA-DARK: El input de monto usa tokens del tema (`bg-card`, `text-text`) y el indicador es legible en darkmode (SPEC-060). *(Código usa tokens existentes; verificación visual darkmode pendiente de QA.)*
+- [x] CA-SELECT: El dropdown de moneda sigue usando el componente custom `Select`, nunca `<select>` nativo (SPEC-004 REQ-024).
+- [x] CA-BACK: No aplica (no hay páginas de detalle/formularios nuevos con lista padre; la sugerencia vive en el modal existente). No se introducen links "← Título".
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: El endpoint de sugerencia responde con ≤ N+1 queries simples (N = servicios vinculados); medir en local con 2-3 servicios.
-- [ ] CA-NF-002: Sin dependencias externas nuevas; build multi-arch (`linux/amd64,linux/arm/v7,linux/arm64`) intacto.
-- [ ] CA-NF-003: i18n actualizado en `frontend/public/i18n/{es,en}.json` y servido tras `npm run build` (verificar con `curl`).
+- [x] CA-NF-001: El endpoint de sugerencia responde con ≤ N+1 queries simples (N = servicios vinculados); medir en local con 2-3 servicios. *(Endpoints validados en local con 2 servicios.)*
+- [x] CA-NF-002: Sin dependencias externas nuevas; build multi-arch (`linux/amd64,linux/arm/v7,linux/arm64`) intacto.
+- [x] CA-NF-003: i18n actualizado en `frontend/public/i18n/{es,en}.json` y servido tras `npm run build` (verificado con `curl`).
 
 ### 5.3 Testing
 
@@ -233,3 +233,4 @@ Entidad: bills (existente)
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-28 | opencode | Creación inicial de la especificación (requerimiento relevado con usuario: al agregar servicios a una categoría, auto-completar "Asignado" con la suma de la factura más reciente de cada servicio vinculado; como sugerencia editable en el modal; aplica a cada mes sin asignar; 1 factura por servicio, no 2) |
+| 2026-09-28 | opencode | Implementación: `BillStorage.LatestByService`, modelo `SuggestedAssignment`, `CategoryService.SuggestedAssignment` (suma por moneda, `applies`), handler + ruta `GET /api/budget/categories/{id}/suggested-assignment`, wiring en `main.go`, frontend (api method, tipo, pre-relleno editable en `AssignModal`, indicador i18n `budget.assigned_suggestion`), tests unit/integración. Validación en local con server + DB de prueba OK. |

@@ -726,6 +726,7 @@
     "income": "Ingresos",
     "reset_note": "El saldo se resetea cada mes",
     "assign": "Asignar",
+    "assigned_suggestion": "Sugerido según la última factura de {services}",
     "make_recurring": "Hacer recurrente desde este mes",
     "recurring": "Recurrente",
     "pause": "Pausar",
