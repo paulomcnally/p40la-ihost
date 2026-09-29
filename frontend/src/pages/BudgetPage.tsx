@@ -11,8 +11,8 @@ import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import IconPickerModal from '../components/IconPickerModal'
-import Select, { type SelectOption } from '../components/Select'
-import MultiSelect from '../components/MultiSelect'
+import Select from '../components/Select'
+import ServicePickerModal from '../components/ServicePickerModal'
 import { useToast } from '../components/Toast'
 import type { BudgetMonthView, BudgetCategoryRow, BudgetMonthGroup, Currency, CategoryGroup, BudgetCategory, RecurringRule, Account, Service } from '../types'
 
@@ -280,6 +280,7 @@ export default function BudgetPage() {
           onClose={() => setCatForm(null)}
           services={services}
           accounts={accounts}
+          linkedServiceIds={((view && view.groups) || []).flatMap((g) => (g.categories || []).flatMap((c) => c.service_ids || []))}
         />
       )}
 
@@ -852,6 +853,7 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
           onClose={() => setCatForm(null)}
           services={services}
           accounts={accounts}
+          linkedServiceIds={groups.flatMap((g) => (g.categories || []).flatMap((c) => c.service_ids || []))}
         />
       )}
 
@@ -926,7 +928,7 @@ function GroupFormModal({ form, onChange, onIconPick, onSave, onClose }: {
   )
 }
 
-function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, services, accounts }: {
+function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, services, accounts, linkedServiceIds }: {
   form: { id?: number; groupId: number; name: string; icon: string; target?: string; serviceIds?: number[]; accountId?: number | null }
   onChange: (f: { id?: number; groupId: number; name: string; icon: string; target?: string; serviceIds?: number[]; accountId?: number | null }) => void
   onIconPick: () => void
@@ -934,11 +936,25 @@ function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, servic
   onClose: () => void
   services: Service[]
   accounts: Account[]
+  linkedServiceIds?: number[]
 }) {
   const { t } = useI18nStore()
-  const serviceOptions: SelectOption[] = services.map((s) => ({ value: s.id, label: s.name }))
+  const [pickerOpen, setPickerOpen] = useState(false)
   const accountOptions = accounts.map((a) => ({ value: a.id, label: `${a.name} (${a.currency_code || ''})` }))
   const linkedServices = form.serviceIds || []
+  const linkedServiceNames = linkedServices
+    .map((id) => services.find((s) => s.id === id))
+    .filter((s): s is Service => Boolean(s))
+  // Servicios ya vinculados a OTRA categoría activa: no se ofrecen en el picker
+  // (el backend los rechazaría). Se conservan los de esta categoría.
+  const usedElsewhere = new Set<number>((linkedServiceIds || []).filter((id) => !linkedServices.includes(id)))
+  const availableServices = services.filter((s) => !usedElsewhere.has(s.id))
+  const toggleService = (id: number) => {
+    const next = linkedServices.includes(id)
+      ? linkedServices.filter((v) => v !== id)
+      : [...linkedServices, id]
+    onChange({ ...form, serviceIds: next, accountId: next.length > 0 ? form.accountId : null })
+  }
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-sm p-4 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -967,17 +983,34 @@ function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, servic
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">{t('budget.link_service')}</label>
-          <MultiSelect
-            value={linkedServices}
-            onChange={(vals) => {
-              const ids = vals.map(Number)
-              onChange({ ...form, serviceIds: ids, accountId: ids.length > 0 ? form.accountId : null })
-            }}
-            options={serviceOptions}
-            placeholder={t('budget.no_service')}
-            searchable={services.length > 8}
-            zIndex="z-[80]"
-          />
+          {linkedServiceNames.length > 0 ? (
+            <div className="space-y-2 mb-2">
+              {linkedServiceNames.map((svc) => (
+                <div key={svc.id} className="flex items-center justify-between gap-2 px-3 py-2 bg-bg border border-border rounded-ios-sm">
+                  <span className="flex items-center gap-2 text-sm text-text min-w-0">
+                    <Icon name={svc.icon_key || 'services'} className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                    <span className="truncate">{svc.name}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleService(svc.id)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-border transition-colors flex-shrink-0"
+                    title={t('app.remove')}
+                  >
+                    <Icon name="cancel" className="w-4 h-4 text-text-secondary" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed border-border rounded-ios-sm text-sm text-primary hover:border-primary hover:bg-primary/5 transition-colors min-h-[44px]"
+          >
+            <Icon name="plus" className="w-4 h-4" />
+            {linkedServiceNames.length > 0 ? t('budget.add_service') : t('budget.no_service')}
+          </button>
           <p className="text-xs text-text-secondary mt-1">{t('budget.link_service_hint')}</p>
         </div>
         {linkedServices.length > 0 ? (
@@ -1012,6 +1045,17 @@ function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, servic
           </button>
         </div>
       </div>
+      <ServicePickerModal
+        isOpen={pickerOpen}
+        services={availableServices}
+        selectedIds={linkedServices}
+        onToggle={toggleService}
+        onClose={() => setPickerOpen(false)}
+        title={t('budget.add_service')}
+        searchPlaceholder={t('budget.search_service')}
+        emptyText={t('budget.no_services_found')}
+        doneText={t('app.done')}
+      />
     </div>
   )
 }

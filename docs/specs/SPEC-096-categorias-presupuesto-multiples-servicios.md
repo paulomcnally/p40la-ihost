@@ -1,7 +1,7 @@
 ---
 title: "Categorías de presupuesto vinculadas a múltiples servicios + fix dropdown detrás del modal"
 id: "SPEC-096"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-09-28"
 updated: "2026-09-28"
@@ -11,7 +11,7 @@ github_issue: 99
 # Categorías de presupuesto vinculadas a múltiples servicios + fix dropdown detrás del modal
 
 **ID**: SPEC-096  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-09-28  
 **Actualizado**: 2026-09-28
@@ -37,8 +37,8 @@ Segundo, **un requerimiento funcional**: una categoría de presupuesto debe pode
 3. **REQ-003**: Modelo y storage — `Category` cambia `ServiceID *int64`/`ServiceName string` por `ServiceIDs []int64` y `ServiceNames []string` (o una lista de enlaces con nombre para el badge). `CategoryStorage`: `ListByGroup`/`ListAll`/`GetByID` obtienen los servicios vinculados con un join a `category_service_links` + `services`; `GetByServiceID(serviceID)` pasa a consultar la tabla de enlace y devuelve la categoría activa (a lo sumo una); `ServiceLinkInUse` consulta la tabla de enlace; `Create`/`Update` reciben `service_ids []int64` y persisten las filas de enlace en una transacción (reemplazo completo del set).
 4. **REQ-004**: Backend CRUD — `categoryRequest` acepta `service_ids []int64` (además de `account_id`). Validación: si viene `service_ids`, `account_id` obligatorio; cada servicio debe existir y no estar vinculado a otra categoría activa distinta; `service_ids` vacío limpia el vínculo. Respuestas incluyen `service_ids` y `service_names`.
 5. **REQ-005**: Hook de pago `BudgetBillLinkService.OnBillPaid` (SPEC-094) — resolver la categoría vía `GetByServiceID` (que ahora consulta la tabla de enlace). Sin cambios de contrato: la factura de cualquiera de los N servicios vinculados a la categoría genera la transacción en esa categoría, idempotente por `source_bill_id`.
-6. **REQ-006**: UI crear/editar categoría (`CategoryFormModal` de `BudgetPage.tsx` y `BudgetConfigModal`) — el campo "Servicio" pasa a ser una **selección múltiple**: lista de servicios con checkboxes (modo `multiple` en el `Select`, o un componente `MultiSelect` ligero siguiendo el patrón), con búsqueda si hay muchos servicios. Se muestra la cuenta seleccionada como hoy. El badge de la vista mensual muestra el/los nombre(s) de servicio vinculados (si son varios, mostrar el primero + "+N" o lista truncada).
-7. **REQ-007**: i18n — actualizar/agregar claves `budget` en `frontend/public/i18n/{es,en}.json` para la selección múltiple (ej. `link_services`, `linked_services`, `N_services`) y correr `npm run build`. Fuente de verdad: `frontend/public/i18n/`, nunca `public/i18n/`.
+6. **REQ-006**: UI crear/editar categoría (`CategoryFormModal` de `BudgetPage.tsx` y `BudgetConfigModal`) — el campo "Servicio" pasa a una UI de **"Agregar servicio"**: se muestran los servicios ya vinculados como chips/tags visibles (con nombre e ícono y botón de quitar), un botón **"+ Agregar servicio"** abre un picker modal con búsqueda y toggle por servicio (patrón `AnalyzerPickerModal`), y se muestra la cuenta seleccionada como hoy. **Los servicios ya vinculados a otra categoría activa NO aparecen en el picker** (el backend los rechazaría; ocultarlos evita la confusión). El badge de la vista mensual muestra el/los nombre(s) de servicio vinculados (si son varios, mostrar el primero + "+N" o lista truncada).
+7. **REQ-007**: i18n — actualizar/agregar claves `budget` en `frontend/public/i18n/{es,en}.json` para la UI de agregar servicio (ej. `add_service`, `linked_services`, `search_service`, `n_services`) y correr `npm run build`. Fuente de verdad: `frontend/public/i18n/`, nunca `public/i18n/`.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -79,7 +79,8 @@ Segundo, **un requerimiento funcional**: una categoría de presupuesto debe pode
 | Mantener `service_id` y agregar tabla de enlace en paralelo | Compatibilidad | Dos fuentes de verdad; confusión en hooks | ❌ Rechazada (se elimina `service_id`) |
 | `Select` con prop `zIndex` (fix puntual) | Mínimo cambio, consistente con `IconPickerModal` | Hay que pasar la prop en cada modal | ✅ Seleccionada |
 | Subir el z-index del menú de `Select` globalmente a `z-[80]` | Un solo cambio | Podría pisar otros overlays no modales (bajo riesgo) | ⚠️ Evaluada; se prefiere prop explícita para control |
-| Multi-select como checklist inline en el modal | Sin componente nuevo complejo | Ocupa espacio; sin búsqueda | ⚠️ Evaluada; se prefiere `Select` con modo `multiple` si es simple, si no checklist con búsqueda |
+| Multi-select como checklist inline en el modal | Sin componente nuevo complejo | Ocupa espacio; sin búsqueda; los servicios asociados quedan ocultos en un dropdown | ❌ Rechazada |
+| UI "Agregar servicio": chips de vinculados + botón que abre picker modal con búsqueda | Los servicios asociados son evidentes; patrón existente (`AnalyzerPickerModal`) | Un componente modal más | ✅ Seleccionada |
 
 ### 3.3 Decisiones arquitectónicas (ADRs)
 
@@ -98,7 +99,12 @@ Segundo, **un requerimiento funcional**: una categoría de presupuesto debe pode
 - **Decisión**: agregar prop `zIndex?: string` a `Select` (default `z-50`, no rompe usos actuales) y pasarla en los modales que contienen selects (ej. `z-[80]`). El menú renderizado conserva la clase indicada.
 - **Consecuencias**: control explícito por caller; sin efectos colaterales en selects fuera de modales.
 
-**ADR-004**: El badge de la vista mensual muestra el/los servicios vinculados.
+**ADR-004**: UI de vinculación con botón "Agregar servicio" y picker modal, en vez de un multi-select.
+- **Contexto**: con muchos servicios, un multi-select oculta cuáles están asociados; el usuario pidió que los servicios vinculados sean evidentes.
+- **Decisión**: en el formulario de categoría se muestran los servicios vinculados como chips con botón de quitar, y un botón "+ Agregar servicio" abre un picker modal con búsqueda y toggle (patrón `AnalyzerPickerModal`). El badge de la vista mensual muestra el/los servicios.
+- **Consecuencias**: UI más explícita; el estado vive en `serviceIds` del form; el picker es reutilizable para futuros multi-servicios.
+
+**ADR-005**: El badge de la vista mensual muestra el/los servicios vinculados.
 - **Contexto**: antes se mostraba `service_name` único; ahora puede haber N.
 - **Decisión**: si hay 1 servicio se muestra su nombre; si hay N se muestra el primero + "+N" (con tooltip/listado en P2 REQ-011).
 - **Consecuencias**: UI compacta en móvil; sin sobrecarga visual.
@@ -142,9 +148,9 @@ Segundo, **un requerimiento funcional**: una categoría de presupuesto debe pode
 
 #### 4.2.2 Frontend
 
-- **`frontend/src/components/Select.tsx`**: agregar prop `zIndex?: string` (default `z-50`) aplicada al menú portado. Opcional: soporte `multiple` (si se decide el multi-select con `Select`).
-- **`frontend/src/components/MultiSelect.tsx`** (nuevo, si no se extiende `Select`): lista con checkboxes + búsqueda, siguiendo el patrón de `Select` (menú portado, tokens del tema, `zIndex` prop).
-- **`frontend/src/pages/BudgetPage.tsx`**: `CategoryFormModal` y `BudgetConfigModal` usan multi-select de servicios; pasar `zIndex` alto a los `Select`/`MultiSelect` dentro de modales. Badge de vista mensual con nombre(s) de servicio (1 → nombre; N → primero + "+N"). Estado del form con `serviceIds?: number[]`.
+- **`frontend/src/components/Select.tsx`**: agregar prop `zIndex?: string` (default `z-50`) aplicada al menú portado.
+- **`frontend/src/components/ServicePickerModal.tsx`** (nuevo): modal con búsqueda y toggle por servicio (patrón `AnalyzerPickerModal`), para agregar/quitar servicios vinculados a una categoría.
+- **`frontend/src/pages/BudgetPage.tsx`**: `CategoryFormModal` y `BudgetConfigModal` usan chips de servicios vinculados + botón "+ Agregar servicio" que abre `ServicePickerModal`; pasar `zIndex` alto a los `Select` dentro de modales. Badge de vista mensual con nombre(s) de servicio (1 → nombre; N → primero + "+N"). Estado del form con `serviceIds?: number[]`.
 - **`frontend/src/types/index.ts`**: `BudgetCategory`/`BudgetCategoryRow` cambian `service_id?: number|null`/`service_name?: string` por `service_ids?: number[]` y `service_names?: string[]`.
 - **`frontend/src/api/index.ts`**: `budget.categories.create/update` aceptan `service_ids: number[]`.
 - **`frontend/public/i18n/{es,en}.json`**: claves `budget.*` para multi-selección (`link_services`, `linked_services`, `N_services`, etc.). Luego `npm run build`.
@@ -236,7 +242,7 @@ El hook se ejecuta de forma transparente; una factura de cualquier servicio vinc
 
 ### 4.5 Dependencias
 
-- **Internas**: `migrations/0037_*`, `internal/models/category.go`, `internal/storage/category.go`, `internal/services/category.go`, `internal/services/budget_bill_link.go`, `internal/api/budget_handlers.go`, `frontend/src/components/Select.tsx` (+ posible `MultiSelect.tsx`), `frontend/src/pages/BudgetPage.tsx`, `frontend/src/types/index.ts`, `frontend/src/api/index.ts`, `frontend/public/i18n/{es,en}.json`.
+- **Internas**: `migrations/0037_*`, `internal/models/category.go`, `internal/storage/category.go`, `internal/services/category.go`, `internal/services/budget_bill_link.go`, `internal/api/budget_handlers.go`, `frontend/src/components/Select.tsx`, `frontend/src/components/ServicePickerModal.tsx` (nuevo), `frontend/src/pages/BudgetPage.tsx`, `frontend/src/types/index.ts`, `frontend/src/api/index.ts`, `frontend/public/i18n/{es,en}.json`.
 - **Externas**: ninguna nueva.
 
 ## 5. Criterios de Aceptación
@@ -248,7 +254,7 @@ El hook se ejecuta de forma transparente; una factura de cualquier servicio vinc
 - [x] CA-003: Al pagar una factura de cualquiera de los servicios vinculados se crea la transacción en la categoría (outflow, moneda del servicio, payee, `source_bill_id`), y aparece en la grilla del mes y en activity/available. *(Verificado por API y tests.)*
 - [x] CA-004: Pagar la misma factura dos veces no crea transacciones duplicadas (idempotencia por `source_bill_id`). *(Flujo de pago rechaza re-pay; `OnBillPaid` idempotente.)*
 - [x] CA-005: Al editar se puede cambiar el set de servicios (agregar/quitar/vaciar) y la cuenta; las transacciones previas se conservan. *(Verificado por API.)*
-- [x] CA-006: No se puede vincular el mismo servicio a dos categorías activas (backend rechaza con error claro). *(Verificado por API y tests.)*
+- [x] CA-006: No se puede vincular el mismo servicio a dos categorías activas (backend rechaza con error claro). *(Verificado por API y tests.)* **El picker de servicios no muestra los servicios ya vinculados a otra categoría activa.**
 - [x] CA-007: Si se envían `service_ids` sin `account_id`, el backend rechaza con error claro. *(Verificado por API y tests.)*
 - [x] CA-008: Un servicio sin categoría vinculada sigue pagándose normalmente (hook no-op). *(`TestBudgetBillLinkNoOpWithoutCategory`.)*
 - [x] CA-009: El badge de la vista mensual muestra el/los servicio(s) vinculado(s) (1 → nombre; N → primero + "+N"). *(Implementado en `BudgetPage.tsx`; verificación visual pendiente.)*
@@ -309,3 +315,6 @@ El hook se ejecuta de forma transparente; una factura de cualquier servicio vinc
 |-------|-------|-------------|
 | 2026-09-28 | opencode | Creación inicial de la especificación (requerimiento relevado con usuario: fix dropdown de servicio detrás del modal + soporte de múltiples servicios por categoría de presupuesto, ej. categoría "Internet Móvil" con servicios Claro y Tigo) |
 | 2026-09-28 | opencode | Implementación completa: fix z-index en `Select` (prop `zIndex`), migración `0037` (tabla `category_service_links`), modelo/storage/services/API con `service_ids`/`service_names`, hook `OnBillPaid` vía link table, UI multi-select (`MultiSelect.tsx`), badge "+N", i18n, tests unit/integración. Validación manual en local OK (categoría con 2 servicios → transacciones de ambos). |
+| 2026-09-28 | opencode | Cambio iterativo solicitado por usuario (evaluación local): reemplazar el multi-select por una UI "Agregar servicio" (chips de servicios vinculados + botón que abre `ServicePickerModal` con búsqueda y toggle, patrón `AnalyzerPickerModal`). Se elimina `MultiSelect.tsx`. |
+| 2026-09-28 | opencode | Cambio iterativo solicitado por usuario: el picker de servicios oculta los servicios ya vinculados a otra categoría activa (evita ofrecer selecciones que el backend rechazaría). `CategoryFormModal` recibe `linkedServiceIds` y filtra `availableServices`. |
+| 2026-09-28 | opencode | **Release**: merge a `main`, issue #99 cerrado con label `spec/released`. Validación manual del usuario OK. |
