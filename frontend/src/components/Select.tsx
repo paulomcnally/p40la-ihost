@@ -13,9 +13,10 @@ export interface SelectProps {
   onChange: (value: string | number) => void
   placeholder?: string
   searchable?: boolean
+  zIndex?: string
 }
 
-export default function Select({ options, value, onChange, placeholder, searchable = false }: SelectProps) {
+export default function Select({ options, value, onChange, placeholder, searchable = false, zIndex = 'z-50' }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number } | null>(null)
@@ -86,7 +87,7 @@ export default function Select({ options, value, onChange, placeholder, searchab
         menuPos &&
         createPortal(
           <div
-            className="fixed bg-card border border-border rounded-ios-sm shadow-ios-lg z-50 overflow-hidden"
+            className={`fixed bg-card border border-border rounded-ios-sm shadow-ios-lg ${zIndex} overflow-hidden`}
             style={{ top: menuPos.top, left: menuPos.left, width: menuPos.width }}
             onMouseDown={(e) => e.stopPropagation()}
           >

@@ -11,7 +11,8 @@ import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import IconPickerModal from '../components/IconPickerModal'
-import Select, { type SelectOption } from '../components/Select'
+import Select from '../components/Select'
+import ServicePickerModal from '../components/ServicePickerModal'
 import { useToast } from '../components/Toast'
 import type { BudgetMonthView, BudgetCategoryRow, BudgetMonthGroup, Currency, CategoryGroup, BudgetCategory, RecurringRule, Account, Service } from '../types'
 
@@ -37,7 +38,7 @@ export default function BudgetPage() {
   const [loading, setLoading] = useState(true)
   const [configOpen, setConfigOpen] = useState(false)
   const [groupForm, setGroupForm] = useState<{ id?: number; name: string; icon: string } | null>(null)
-  const [catForm, setCatForm] = useState<{ id?: number; groupId: number; name: string; icon: string; target?: string; serviceId?: number | null; accountId?: number | null } | null>(null)
+  const [catForm, setCatForm] = useState<{ id?: number; groupId: number; name: string; icon: string; target?: string; serviceIds?: number[]; accountId?: number | null } | null>(null)
   const [iconPickerFor, setIconPickerFor] = useState<'group' | 'category' | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'group' | 'category'; id: number; name: string } | null>(null)
   const [services, setServices] = useState<Service[]>([])
@@ -102,8 +103,8 @@ export default function BudgetPage() {
         name: catForm.name,
         icon: catForm.icon,
         target_amount: target,
-        service_id: catForm.serviceId || null,
-        account_id: catForm.serviceId ? (catForm.accountId || null) : null,
+        service_ids: catForm.serviceIds || [],
+        account_id: (catForm.serviceIds && catForm.serviceIds.length > 0) ? (catForm.accountId || null) : null,
       }
       if (catForm.id) {
         await api.budget.categories.update(catForm.id, body)
@@ -243,10 +244,10 @@ export default function BudgetPage() {
               services={services}
               accounts={accounts}
               onAssigned={() => loadView(year, month)}
-              onAddCategory={(groupId) => setCatForm({ groupId, name: '', icon: 'tag', target: '', serviceId: null, accountId: null })}
+              onAddCategory={(groupId) => setCatForm({ groupId, name: '', icon: 'tag', target: '', serviceIds: [], accountId: null })}
               onEditGroup={(g) => setGroupForm({ id: g.id, name: g.name, icon: g.icon })}
               onDeleteGroup={(g) => setDeleteTarget({ kind: 'group', id: g.id, name: g.name })}
-              onEditCategory={(cat) => setCatForm({ id: cat.id, groupId: cat.category_group_id, name: cat.name, icon: cat.icon, target: cat.target_amount != null ? String(cat.target_amount) : '', serviceId: cat.service_id || null, accountId: cat.account_id || null })}
+              onEditCategory={(cat) => setCatForm({ id: cat.id, groupId: cat.category_group_id, name: cat.name, icon: cat.icon, target: cat.target_amount != null ? String(cat.target_amount) : '', serviceIds: cat.service_ids || [], accountId: cat.account_id || null })}
               onDeleteCategory={(cat) => setDeleteTarget({ kind: 'category', id: cat.id, name: cat.name })}
             />
           ))}
@@ -279,6 +280,7 @@ export default function BudgetPage() {
           onClose={() => setCatForm(null)}
           services={services}
           accounts={accounts}
+          linkedServiceIds={((view && view.groups) || []).flatMap((g) => (g.categories || []).flatMap((c) => c.service_ids || []))}
         />
       )}
 
@@ -390,10 +392,10 @@ function BudgetGroupTable({ group, currencies, formatMoney, symbolOf, year, mont
                   <span className="flex items-center gap-2 text-sm font-medium min-w-0 sm:pr-8">
                     <Icon name={cat.icon || 'tag'} className="w-4 h-4 text-text-secondary flex-shrink-0" />
                     <span className="truncate">{cat.name}</span>
-                    {cat.service_name && (
+                    {(cat.service_names && cat.service_names.length > 0) && (
                       <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap min-w-0">
                         <Icon name="services" className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{cat.service_name}</span>
+                        <span className="truncate">{cat.service_names.length === 1 ? cat.service_names[0] : `${cat.service_names.length} ${t('budget.n_services')}`}</span>
                       </span>
                     )}
                     {cat.recurring_rule && (
@@ -588,6 +590,7 @@ function AssignModal({ category, year, month, currencies, formatMoney, onClose, 
               value={currencyId}
               onChange={(v) => setCurrencyId(Number(v))}
               options={currencies.map((c) => ({ value: c.id, label: `${c.code} (${c.symbol})` }))}
+              zIndex="z-[80]"
             />
           </div>
 
@@ -669,7 +672,7 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
   const [groups, setGroups] = useState<CategoryGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [groupForm, setGroupForm] = useState<{ id?: number; name: string; icon: string } | null>(null)
-  const [catForm, setCatForm] = useState<{ id?: number; groupId: number; name: string; icon: string; target?: string; serviceId?: number | null; accountId?: number | null } | null>(null)
+  const [catForm, setCatForm] = useState<{ id?: number; groupId: number; name: string; icon: string; target?: string; serviceIds?: number[]; accountId?: number | null } | null>(null)
   const [iconPickerFor, setIconPickerFor] = useState<'group' | 'category' | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'group' | 'category'; id: number; name: string } | null>(null)
 
@@ -714,8 +717,8 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
         name: catForm.name,
         icon: catForm.icon,
         target_amount: target,
-        service_id: catForm.serviceId || null,
-        account_id: catForm.serviceId ? (catForm.accountId || null) : null,
+        service_ids: catForm.serviceIds || [],
+        account_id: (catForm.serviceIds && catForm.serviceIds.length > 0) ? (catForm.accountId || null) : null,
       }
       if (catForm.id) {
         await api.budget.categories.update(catForm.id, body)
@@ -793,7 +796,7 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
                       </span>
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => setCatForm({ id: cat.id, groupId: group.id, name: cat.name, icon: cat.icon, target: cat.target_amount != null ? String(cat.target_amount) : '', serviceId: cat.service_id || null, accountId: cat.account_id || null })}
+                          onClick={() => setCatForm({ id: cat.id, groupId: group.id, name: cat.name, icon: cat.icon, target: cat.target_amount != null ? String(cat.target_amount) : '', serviceIds: cat.service_ids || [], accountId: cat.account_id || null })}
                           className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-border transition-colors"
                           title={t('app.edit')}
                         >
@@ -810,7 +813,7 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
                     </div>
                   ))}
                   <button
-                    onClick={() => setCatForm({ groupId: group.id, name: '', icon: 'tag', target: '', serviceId: null, accountId: null })}
+                    onClick={() => setCatForm({ groupId: group.id, name: '', icon: 'tag', target: '', serviceIds: [], accountId: null })}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-bg transition-colors"
                   >
                     <Icon name="plus" className="w-4 h-4" />
@@ -850,6 +853,7 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
           onClose={() => setCatForm(null)}
           services={services}
           accounts={accounts}
+          linkedServiceIds={groups.flatMap((g) => (g.categories || []).flatMap((c) => c.service_ids || []))}
         />
       )}
 
@@ -924,21 +928,33 @@ function GroupFormModal({ form, onChange, onIconPick, onSave, onClose }: {
   )
 }
 
-function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, services, accounts }: {
-  form: { id?: number; groupId: number; name: string; icon: string; target?: string; serviceId?: number | null; accountId?: number | null }
-  onChange: (f: { id?: number; groupId: number; name: string; icon: string; target?: string; serviceId?: number | null; accountId?: number | null }) => void
+function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, services, accounts, linkedServiceIds }: {
+  form: { id?: number; groupId: number; name: string; icon: string; target?: string; serviceIds?: number[]; accountId?: number | null }
+  onChange: (f: { id?: number; groupId: number; name: string; icon: string; target?: string; serviceIds?: number[]; accountId?: number | null }) => void
   onIconPick: () => void
   onSave: () => void
   onClose: () => void
   services: Service[]
   accounts: Account[]
+  linkedServiceIds?: number[]
 }) {
   const { t } = useI18nStore()
-  const serviceOptions: SelectOption[] = [
-    { value: 0, label: t('budget.no_service') },
-    ...services.map((s) => ({ value: s.id, label: s.name })),
-  ]
+  const [pickerOpen, setPickerOpen] = useState(false)
   const accountOptions = accounts.map((a) => ({ value: a.id, label: `${a.name} (${a.currency_code || ''})` }))
+  const linkedServices = form.serviceIds || []
+  const linkedServiceNames = linkedServices
+    .map((id) => services.find((s) => s.id === id))
+    .filter((s): s is Service => Boolean(s))
+  // Servicios ya vinculados a OTRA categoría activa: no se ofrecen en el picker
+  // (el backend los rechazaría). Se conservan los de esta categoría.
+  const usedElsewhere = new Set<number>((linkedServiceIds || []).filter((id) => !linkedServices.includes(id)))
+  const availableServices = services.filter((s) => !usedElsewhere.has(s.id))
+  const toggleService = (id: number) => {
+    const next = linkedServices.includes(id)
+      ? linkedServices.filter((v) => v !== id)
+      : [...linkedServices, id]
+    onChange({ ...form, serviceIds: next, accountId: next.length > 0 ? form.accountId : null })
+  }
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-sm p-4 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -967,18 +983,37 @@ function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, servic
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">{t('budget.link_service')}</label>
-          <Select
-            value={form.serviceId || 0}
-            onChange={(v) => {
-              const sid = Number(v)
-              onChange({ ...form, serviceId: sid || null, accountId: sid ? form.accountId : null })
-            }}
-            options={serviceOptions}
-            searchable={services.length > 8}
-          />
+          {linkedServiceNames.length > 0 ? (
+            <div className="space-y-2 mb-2">
+              {linkedServiceNames.map((svc) => (
+                <div key={svc.id} className="flex items-center justify-between gap-2 px-3 py-2 bg-bg border border-border rounded-ios-sm">
+                  <span className="flex items-center gap-2 text-sm text-text min-w-0">
+                    <Icon name={svc.icon_key || 'services'} className="w-4 h-4 text-text-secondary flex-shrink-0" />
+                    <span className="truncate">{svc.name}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleService(svc.id)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-border transition-colors flex-shrink-0"
+                    title={t('app.remove')}
+                  >
+                    <Icon name="cancel" className="w-4 h-4 text-text-secondary" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed border-border rounded-ios-sm text-sm text-primary hover:border-primary hover:bg-primary/5 transition-colors min-h-[44px]"
+          >
+            <Icon name="plus" className="w-4 h-4" />
+            {linkedServiceNames.length > 0 ? t('budget.add_service') : t('budget.no_service')}
+          </button>
           <p className="text-xs text-text-secondary mt-1">{t('budget.link_service_hint')}</p>
         </div>
-        {form.serviceId ? (
+        {linkedServices.length > 0 ? (
           <div>
             <label className="block text-sm font-medium mb-1">{t('budget.link_account')}</label>
             <Select
@@ -987,6 +1022,7 @@ function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, servic
               options={accountOptions}
               placeholder={t('budget.link_account_required')}
               searchable={accounts.length > 8}
+              zIndex="z-[80]"
             />
           </div>
         ) : null}
@@ -1009,6 +1045,17 @@ function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, servic
           </button>
         </div>
       </div>
+      <ServicePickerModal
+        isOpen={pickerOpen}
+        services={availableServices}
+        selectedIds={linkedServices}
+        onToggle={toggleService}
+        onClose={() => setPickerOpen(false)}
+        title={t('budget.add_service')}
+        searchPlaceholder={t('budget.search_service')}
+        emptyText={t('budget.no_services_found')}
+        doneText={t('app.done')}
+      />
     </div>
   )
 }

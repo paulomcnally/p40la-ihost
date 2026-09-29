@@ -334,9 +334,9 @@ export interface BudgetCategory {
   target_amount?: number | null
   target_type?: string | null
   target_date?: string | null
-  service_id?: number | null
+  service_ids?: number[]
   account_id?: number | null
-  service_name?: string
+  service_names?: string[]
   deleted_at?: string | null
   created_at: string
   updated_at: string
@@ -399,9 +399,9 @@ export interface BudgetCategoryRow {
   icon: string
   sort_order: number
   target_amount?: number | null
-  service_id?: number | null
+  service_ids?: number[]
   account_id?: number | null
-  service_name?: string
+  service_names?: string[]
   assigned: Record<string, number>
   activity: Record<string, number>
   available: Record<string, number>
