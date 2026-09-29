@@ -1,7 +1,7 @@
 ---
 title: "Bot Telegram: comando /budget_transaction para registrar transacciones del presupuesto por conversación guiada"
 id: "SPEC-097"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-09-28"
 updated: "2026-09-28"
@@ -11,7 +11,7 @@ github_issue: 100
 # Bot Telegram: comando /budget_transaction para registrar transacciones del presupuesto por conversación guiada
 
 **ID**: SPEC-097  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-09-28  
 **Actualizado**: 2026-09-28
@@ -268,3 +268,4 @@ Confirmar llama `BudgetTransactionService.Create` con:
 |-------|-------|-------------|
 | 2026-09-28 | opencode | Creación inicial de la especificación (requerimiento relevado con usuario: botónes inline, flujo completo grupo/categoría/tipo/monto/fecha/cuenta/payee/confirmación). Estado: draft → pending_execution |
 | 2026-09-28 | opencode | Implementación: inyección de servicios de presupuesto en `TelegramBotService` (main.go), máquina de estados `/budget_transaction` en `telegram_bot.go` (pasos + callbacks `bt:` + routing en `handleDefault`), registro del comando y ayuda `/start`, unit tests en `budget_transaction_test.go`. Estado: in_progress. Build y `go test ./...` en verde; server local levantado para evaluación del usuario. |
+| 2026-09-28 | opencode | **Release**: usuario autoriza release asumiendo funcionamiento correcto (prueba en vivo pendiente de despliegue a iHost). Merge de `feature/SPEC-097` a `main` + push a `origin/main`. Issue #100 cerrado con label `spec/released`. Worktree y rama de la spec limpiados. |
