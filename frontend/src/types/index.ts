@@ -349,6 +349,7 @@ export interface Account {
   currency_id: number
   currency_code?: string
   starting_balance: number
+  balance: number
   created_at: string
   updated_at: string
 }
@@ -387,6 +388,23 @@ export interface BudgetTransaction {
   memo: string
   outflow: number
   inflow: number
+  cleared: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Transfer {
+  id: number
+  from_account_id: number
+  from_account_name?: string
+  to_account_id: number
+  to_account_name?: string
+  currency_id: number
+  currency_code?: string
+  date: string
+  payee: string
+  memo: string
+  amount: number
   cleared: boolean
   created_at: string
   updated_at: string
