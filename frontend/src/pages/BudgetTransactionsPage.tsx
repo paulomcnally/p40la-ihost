@@ -11,7 +11,7 @@ import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select from '../components/Select'
 import { useToast } from '../components/Toast'
-import type { BudgetTransaction, Account, BudgetCategory } from '../types'
+import type { BudgetTransaction, Account, BudgetCategory, Transfer } from '../types'
 
 export default function BudgetTransactionsPage() {
   const { t } = useI18nStore()
@@ -24,25 +24,31 @@ export default function BudgetTransactionsPage() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [transactions, setTransactions] = useState<BudgetTransaction[]>([])
+  const [transfers, setTransfers] = useState<Transfer[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<BudgetCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<BudgetTransaction | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BudgetTransaction | null>(null)
+  const [transferFormOpen, setTransferFormOpen] = useState(false)
+  const [editTransfer, setEditTransfer] = useState<Transfer | null>(null)
+  const [deleteTransfer, setDeleteTransfer] = useState<Transfer | null>(null)
   const [accountsOpen, setAccountsOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [txList, accList, groups] = await Promise.all([
+      const [txList, accList, groups, trList] = await Promise.all([
         api.budget.transactions.list(year, month),
         api.budget.accounts.list(),
         api.budget.categoryGroups.list(),
+        api.budget.transfers.list(year, month),
       ])
       setTransactions(txList || [])
       setAccounts(accList || [])
       setCategories(groups?.flatMap((g) => g.categories) || [])
+      setTransfers(trList || [])
     } catch (err) {
       showToast((err as Error).message, 'error')
     } finally {
@@ -75,8 +81,20 @@ export default function BudgetTransactionsPage() {
     }
   }
 
+  const handleDeleteTransfer = async () => {
+    if (!deleteTransfer) return
+    try {
+      await api.budget.transfers.delete(deleteTransfer.id)
+      setDeleteTransfer(null)
+      await load()
+    } catch (err) {
+      showToast((err as Error).message, 'error')
+    }
+  }
+
   const createOptions = [
     { label: t('budget.create_transaction'), icon: 'plus', onClick: () => { setEditTarget(null); setFormOpen(true) } },
+    { label: t('budget.create_transfer'), icon: 'send', onClick: () => { setEditTransfer(null); setTransferFormOpen(true) } },
     { label: t('budget.accounts'), icon: 'bank', onClick: () => setAccountsOpen(true) },
   ]
 
@@ -135,7 +153,7 @@ export default function BudgetTransactionsPage() {
             {t('budget.create_account')}
           </button>
         </div>
-      ) : transactions.length === 0 ? (
+      ) : transactions.length === 0 && transfers.length === 0 ? (
         <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
             <Icon name="tag" className="w-full h-full" />
@@ -219,13 +237,90 @@ export default function BudgetTransactionsPage() {
                         ]}
                       />
                     </td>
+</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Transferencias: cards (mobile) */}
+        {transfers.length > 0 && (
+          <div className="sm:hidden space-y-3 mt-6">
+            <h3 className="text-sm font-semibold text-text-secondary uppercase px-1 flex items-center gap-2">
+              <Icon name="send" className="w-4 h-4" />
+              {t('budget.transfers')}
+            </h3>
+            {transfers.map((tr) => (
+              <div key={tr.id} className="bg-card rounded-ios shadow-ios p-4 relative">
+                <CardMenu
+                  options={[
+                    { label: t('app.edit'), icon: 'edit', onClick: () => { setEditTransfer(tr); setTransferFormOpen(true) } },
+                    { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTransfer(tr) },
+                  ]}
+                />
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium truncate flex items-center gap-2">
+                    <Icon name="send" className="w-4 h-4 text-text-secondary" />
+                    {tr.from_account_name || tr.payee || tr.date}
+                  </span>
+                  <span className="font-semibold text-text-secondary">→ {tr.to_account_name}</span>
+                </div>
+                <div className="text-sm text-text-secondary flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-text">{formatMoney(tr.amount, tr.currency_code)}</span>
+                  <span>·</span>
+                  <span>{tr.memo || t('budget.transfer')}</span>
+                  <span>·</span>
+                  <span>{tr.date}</span>
+                  {tr.cleared && <span className="text-primary text-xs">✓</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Transferencias: tabla (desktop) */}
+        {transfers.length > 0 && (
+          <div className="hidden sm:block bg-card rounded-ios shadow-ios overflow-x-auto mt-6">
+            <table className="w-full min-w-[720px]">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('budget.date')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('budget.from_account')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('budget.to_account')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('budget.memo')}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('budget.amount')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-secondary uppercase">{t('budget.cleared')}</th>
+                  <th className="w-10"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {transfers.map((tr) => (
+                  <tr key={tr.id} className="border-b border-border last:border-b-0 hover:bg-bg/50">
+                    <td className="px-4 py-3 text-sm whitespace-nowrap">{tr.date}</td>
+                    <td className="px-4 py-3 text-sm font-medium flex items-center gap-1.5">
+                      <Icon name="send" className="w-4 h-4 text-text-secondary" />
+                      {tr.from_account_name || tr.payee || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-text-secondary">→ {tr.to_account_name}</td>
+                    <td className="px-4 py-3 text-sm text-text-secondary">{tr.memo || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-right font-semibold">{formatMoney(tr.amount, tr.currency_code)}</td>
+                    <td className="px-4 py-3 text-sm">{tr.cleared ? '✓' : ''}</td>
+                    <td className="px-2 py-3">
+                      <CardMenu
+                        options={[
+                          { label: t('app.edit'), icon: 'edit', onClick: () => { setEditTransfer(tr); setTransferFormOpen(true) } },
+                          { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTransfer(tr) },
+                        ]}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </>
-      )}
+        )}
+      </>
+    )}
 
       {formOpen && (
         <TransactionFormModal
@@ -254,6 +349,26 @@ export default function BudgetTransactionsPage() {
           subtitle={`${t('budget.transactions')}: ${deleteTarget.payee || deleteTarget.date}`}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {transferFormOpen && (
+        <TransferFormModal
+          edit={editTransfer}
+          accounts={accounts}
+          currencies={currencies}
+          defaultDate={`${year}-${String(month).padStart(2, '0')}-01`}
+          onClose={() => { setTransferFormOpen(false); setEditTransfer(null) }}
+          onSaved={() => { setTransferFormOpen(false); setEditTransfer(null); load() }}
+        />
+      )}
+
+      {deleteTransfer && (
+        <DeleteModal
+          title={t('app.confirm')}
+          subtitle={`${t('budget.transfers')}: ${deleteTransfer.from_account_name || deleteTransfer.date}`}
+          onConfirm={handleDeleteTransfer}
+          onCancel={() => setDeleteTransfer(null)}
         />
       )}
     </div>
@@ -449,6 +564,7 @@ function AccountsModal({ accounts, currencies, onClose, onChanged }: {
 }) {
   const { t } = useI18nStore()
   const { showToast } = useToast()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [form, setForm] = useState<Account | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Account | null>(null)
   const [local, setLocal] = useState<Account[]>(accounts)
@@ -492,21 +608,26 @@ function AccountsModal({ accounts, currencies, onClose, onChanged }: {
                     {t(`budget.account_types_${a.type}`)} · {a.currency_code}
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setForm(a)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-border transition-colors"
-                    title={t('app.edit')}
-                  >
-                    <Icon name="edit" className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(a)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-border transition-colors"
-                    title={t('app.delete')}
-                  >
-                    <Icon name="delete" className="w-4 h-4" />
-                  </button>
+                <div className="flex items-center gap-2">
+                  <div className={`text-sm font-semibold ${a.balance < 0 ? 'text-red-500' : 'text-primary'}`}>
+                    {formatMoney(a.balance, a.currency_code)}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setForm(a)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-border transition-colors"
+                      title={t('app.edit')}
+                    >
+                      <Icon name="edit" className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(a)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-border transition-colors"
+                      title={t('app.delete')}
+                    >
+                      <Icon name="delete" className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
@@ -632,6 +753,173 @@ function AccountFormModal({ edit, currencies, onClose, onSaved }: {
             {t('app.cancel')}
           </button>
           <button onClick={save} disabled={saving} className="flex-1 px-4 py-3 bg-primary text-white rounded-ios-sm font-semibold hover:opacity-90 transition-opacity min-h-[44px]">
+            {saving ? t('app.saving') : t('app.save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TransferFormModal({ edit, accounts, currencies, defaultDate, onClose, onSaved }: {
+  edit: Transfer | null
+  accounts: Account[]
+  currencies: { id: number; code: string; symbol: string }[]
+  defaultDate: string
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const { t } = useI18nStore()
+  const { showToast } = useToast()
+  const usable = accounts.filter((a) => a.type !== 'credit_card')
+  const fromOptions = (usable.length > 0 ? usable : accounts).map((a) => ({ value: a.id, label: a.name }))
+  const toOptions = accounts.map((a) => ({ value: a.id, label: a.name }))
+  const [form, setForm] = useState({
+    from_account_id: edit?.from_account_id || fromOptions[0]?.value || 0,
+    to_account_id: edit?.to_account_id || accounts[1]?.id || accounts[0]?.id || 0,
+    currency_id: edit?.currency_id || currencies[0]?.id || 0,
+    date: edit?.date || defaultDate,
+    payee: edit?.payee || '',
+    memo: edit?.memo || '',
+    amount: edit?.amount ? String(edit.amount) : '',
+    cleared: edit?.cleared ?? true,
+  })
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    const amount = parseFloat(form.amount) || 0
+    if (amount <= 0) {
+      showToast(t('budget.transfer_amount_required', 'Ingresá un monto mayor a cero'), 'error')
+      return
+    }
+    if (form.from_account_id === form.to_account_id) {
+      showToast(t('budget.transfer_same_account', 'Las cuentas deben ser distintas'), 'error')
+      return
+    }
+    const body = {
+      from_account_id: form.from_account_id,
+      to_account_id: form.to_account_id,
+      currency_id: form.currency_id,
+      date: form.date,
+      payee: form.payee,
+      memo: form.memo,
+      amount,
+      cleared: form.cleared,
+    }
+    setSaving(true)
+    try {
+      if (edit) {
+        await api.budget.transfers.update(edit.id, body)
+      } else {
+        await api.budget.transfers.create(body)
+      }
+      onSaved()
+    } catch (err) {
+      showToast((err as Error).message, 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-card rounded-ios shadow-ios w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h3 className="font-bold">{edit ? t('app.edit') : t('budget.create_transfer')}</h3>
+          <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-bg transition-colors" title={t('app.close')}>
+            <Icon name="cancel" className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('budget.date')}</label>
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('budget.payee')}</label>
+              <input
+                type="text"
+                value={form.payee}
+                onChange={(e) => setForm({ ...form, payee: e.target.value })}
+                placeholder={t('budget.payee')}
+                className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('budget.from_account')}</label>
+            <Select
+              value={form.from_account_id}
+              onChange={(v) => setForm({ ...form, from_account_id: Number(v) })}
+              options={fromOptions}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('budget.to_account')}</label>
+            <Select
+              value={form.to_account_id}
+              onChange={(v) => setForm({ ...form, to_account_id: Number(v) })}
+              options={toOptions}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('budget.currency')}</label>
+            <Select
+              value={form.currency_id}
+              onChange={(v) => setForm({ ...form, currency_id: Number(v) })}
+              options={currencies.map((c) => ({ value: c.id, label: `${c.code} (${c.symbol})` }))}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('budget.amount')}</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              placeholder="0.00"
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('budget.memo')}</label>
+            <input
+              type="text"
+              value={form.memo}
+              onChange={(e) => setForm({ ...form, memo: e.target.value })}
+              placeholder={t('budget.memo')}
+              className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.cleared}
+              onChange={(e) => setForm({ ...form, cleared: e.target.checked })}
+              className="w-4 h-4"
+            />
+            {t('budget.cleared')}
+          </label>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full px-4 py-3 bg-primary text-white rounded-ios-sm font-semibold hover:opacity-90 transition-opacity min-h-[44px]"
+          >
             {saving ? t('app.saving') : t('app.save')}
           </button>
         </div>

@@ -16,6 +16,7 @@ type BudgetHandlers struct {
 	categories     *services.CategoryService
 	accounts       *services.AccountService
 	transactions   *services.BudgetTransactionService
+	transfers      *services.TransferService
 }
 
 // NewBudgetHandlers crea un nuevo BudgetHandlers.
@@ -25,6 +26,7 @@ func NewBudgetHandlers(
 	categories *services.CategoryService,
 	accounts *services.AccountService,
 	transactions *services.BudgetTransactionService,
+	transfers *services.TransferService,
 ) *BudgetHandlers {
 	return &BudgetHandlers{
 		budget:         budget,
@@ -32,6 +34,7 @@ func NewBudgetHandlers(
 		categories:     categories,
 		accounts:       accounts,
 		transactions:   transactions,
+		transfers:      transfers,
 	}
 }
 
@@ -511,4 +514,120 @@ func (h *BudgetHandlers) DeleteTransaction(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Transacción eliminada"})
+}
+
+// ---- Transferencias ----
+
+type transferRequest struct {
+	FromAccountID int64   `json:"from_account_id"`
+	ToAccountID   int64   `json:"to_account_id"`
+	CurrencyID    int64   `json:"currency_id"`
+	Date          string  `json:"date"`
+	Payee         string  `json:"payee"`
+	Memo          string  `json:"memo"`
+	Amount        float64 `json:"amount"`
+	Cleared       bool    `json:"cleared"`
+}
+
+// ListTransfers responde las transferencias (opcionalmente filtradas por mes).
+func (h *BudgetHandlers) ListTransfers(w http.ResponseWriter, r *http.Request) {
+	yearStr := r.URL.Query().Get("year")
+	monthStr := r.URL.Query().Get("month")
+	if yearStr == "" && monthStr == "" {
+		transfers, err := h.transfers.List(r.Context())
+		if err != nil {
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+			return
+		}
+		respondJSON(w, http.StatusOK, transfers)
+		return
+	}
+	year, err := strconv.Atoi(yearStr)
+	if err != nil || year < 1900 || year > 3000 {
+		respondError(w, http.StatusBadRequest, "invalid_year", "Año inválido")
+		return
+	}
+	month, err := strconv.Atoi(monthStr)
+	if err != nil || month < 1 || month > 12 {
+		respondError(w, http.StatusBadRequest, "invalid_month", "Mes inválido")
+		return
+	}
+	transfers, err := h.transfers.ListByMonth(r.Context(), year, month)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, transfers)
+}
+
+// CreateTransfer crea una transferencia.
+func (h *BudgetHandlers) CreateTransfer(w http.ResponseWriter, r *http.Request) {
+	var req transferRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
+		return
+	}
+	transfer, err := h.transfers.Create(r.Context(), &models.Transfer{
+		FromAccountID: req.FromAccountID,
+		ToAccountID:   req.ToAccountID,
+		CurrencyID:    req.CurrencyID,
+		Date:          req.Date,
+		Payee:         req.Payee,
+		Memo:          req.Memo,
+		Amount:        req.Amount,
+		Cleared:       req.Cleared,
+	})
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusCreated, transfer)
+}
+
+// UpdateTransfer actualiza una transferencia.
+func (h *BudgetHandlers) UpdateTransfer(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+	var req transferRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
+		return
+	}
+	transfer, err := h.transfers.Update(r.Context(), &models.Transfer{
+		ID:            id,
+		FromAccountID: req.FromAccountID,
+		ToAccountID:   req.ToAccountID,
+		CurrencyID:    req.CurrencyID,
+		Date:          req.Date,
+		Payee:         req.Payee,
+		Memo:          req.Memo,
+		Amount:        req.Amount,
+		Cleared:       req.Cleared,
+	})
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+	if transfer == nil {
+		respondError(w, http.StatusNotFound, "not_found", "Transferencia no encontrada")
+		return
+	}
+	respondJSON(w, http.StatusOK, transfer)
+}
+
+// DeleteTransfer elimina una transferencia.
+func (h *BudgetHandlers) DeleteTransfer(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+	if err := h.transfers.Delete(r.Context(), id); err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]string{"message": "Transferencia eliminada"})
 }
