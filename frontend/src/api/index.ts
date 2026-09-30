@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -331,6 +331,15 @@ salaries: {
       create: (body: Partial<BudgetTransaction>) => post<BudgetTransaction>('/api/budget/transactions', body),
       update: (id: number, body: Partial<BudgetTransaction>) => put<BudgetTransaction>(`/api/budget/transactions/${id}`, body),
       delete: (id: number) => del(`/api/budget/transactions/${id}`),
+    },
+    transfers: {
+      list: (year?: number, month?: number) => {
+        const q = year && month ? `?year=${year}&month=${month}` : ''
+        return get<Transfer[]>(`/api/budget/transfers${q}`)
+      },
+      create: (body: Partial<Transfer>) => post<Transfer>('/api/budget/transfers', body),
+      update: (id: number, body: Partial<Transfer>) => put<Transfer>(`/api/budget/transfers/${id}`, body),
+      delete: (id: number) => del(`/api/budget/transfers/${id}`),
     },
   },
 }

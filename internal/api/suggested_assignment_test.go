@@ -43,7 +43,7 @@ func TestSuggestedAssignmentEndpoint(t *testing.T) {
 	catSvc.SetBillStorage(billStorage)
 
 	// BudgetHandlers solo necesita el CategoryService para este endpoint.
-	handlers := NewBudgetHandlers(nil, nil, catSvc, nil, nil)
+	handlers := NewBudgetHandlers(nil, nil, catSvc, nil, nil, nil)
 
 	mustExec := func(query string, args ...any) {
 		t.Helper()

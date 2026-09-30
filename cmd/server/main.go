@@ -97,6 +97,7 @@ func main() {
 	recurringRuleStorage := storage.NewRecurringRuleStorage(database)
 	assignmentStorage := storage.NewAssignmentStorage(database)
 	budgetTransactionStorage := storage.NewTransactionStorage(database)
+	transferStorage := storage.NewTransferStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -132,6 +133,7 @@ func main() {
 	accountService := services.NewAccountService(accountStorage, currencyStorage)
 	budgetService := services.NewBudgetService(categoryGroupStorage, categoryStorage, budgetMonthStorage, assignmentStorage, recurringRuleStorage, budgetTransactionStorage, currencyStorage)
 	budgetTransactionService := services.NewBudgetTransactionService(budgetTransactionStorage, accountStorage, categoryStorage, currencyStorage)
+	transferService := services.NewTransferService(transferStorage, accountStorage, currencyStorage)
 	budgetBillLinkService := services.NewBudgetBillLinkService(serviceStorage, categoryStorage, accountStorage, budgetTransactionStorage)
 	billService.SetBillBudgetLinker(budgetBillLinkService)
 	categoryService.SetServiceStorage(serviceStorage)
@@ -200,7 +202,7 @@ func main() {
 	pensionDashboardHandlers := api.NewPensionDashboardHandlers(pensionGenerationService)
 	debtHandlers := api.NewDebtHandlers(debtService)
 	webhookHandlers := api.NewWebhookHandlers(webhookService, serviceService)
-	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService)
+	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService, transferService)
 
 	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers, budgetHandlers)
 
