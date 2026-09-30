@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 97 |
+| **Total de specs** | 98 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 97 🟢 |
+| **Released** | 98 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-098 |
+| **Último ID usado** | SPEC-099 |
 
 ---
 
@@ -118,6 +118,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-096 | Categorías de presupuesto vinculadas a múltiples servicios + fix dropdown detrás del modal | released | 2026-09-28 | opencode |
 | SPEC-097 | Bot Telegram: comando /budget_transaction para registrar transacciones del presupuesto por conversación guiada | released | 2026-09-28 | opencode |
 | SPEC-098 | Auto-completar 'Asignado' de una categoría con la suma de la factura más reciente por servicio vinculado | released | 2026-09-28 | opencode |
+| SPEC-099 | Transferencias entre cuentas y balance por cuenta en el presupuesto | released | 2026-09-30 | opencode |
 
 ---
 
@@ -187,4 +188,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-09-28 — SPEC-098 (Auto-completar "Asignado" de una categoría con la suma de la factura más reciente por servicio vinculado) released.*
+*Última actualización de este tracker: 2026-09-30 — SPEC-099 (Transferencias entre cuentas y balance por cuenta en el presupuesto) released.*
