@@ -12,9 +12,10 @@ import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtCalendar from '../components/DebtCalendar'
 import DebtAnalysis from '../components/DebtAnalysis'
+import DebtChart from '../components/DebtChart'
 import type { Debt, Institution } from '../types'
 
-type TabKey = 'calendario' | 'deudas' | 'analisis'
+type TabKey = 'calendario' | 'deudas' | 'analisis' | 'grafica'
 type DebtFilter = 'all' | 'activa' | 'inactiva' | 'finalizada'
 
 export default function DeudasPage() {
@@ -26,7 +27,7 @@ export default function DeudasPage() {
   const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
   const rawFilter = searchParams.get('status')
   const debtFilter: DebtFilter = rawFilter === 'all' || rawFilter === 'activa' || rawFilter === 'inactiva' || rawFilter === 'finalizada' ? rawFilter : 'activa'
-  const tabTitle = tab === 'calendario' ? t('deudas.tab_calendar') : tab === 'deudas' ? t('deudas.tab_debts') : t('deudas.tab_analysis')
+  const tabTitle = tab === 'calendario' ? t('deudas.tab_calendar') : tab === 'deudas' ? t('deudas.tab_debts') : tab === 'grafica' ? t('deudas.tab_chart') : t('deudas.tab_analysis')
   usePageTitle(tabTitle)
 
   const [debts, setDebts] = useState<Debt[]>([])
@@ -134,6 +135,7 @@ export default function DeudasPage() {
             { key: 'analisis', label: t('deudas.tab_analysis'), icon: 'chart' },
             { key: 'calendario', label: t('deudas.tab_calendar'), icon: 'calendar' },
             { key: 'deudas', label: t('deudas.tab_debts'), icon: 'credit' },
+            { key: 'grafica', label: t('deudas.tab_chart'), icon: 'bar' },
           ] as { key: TabKey; label: string; icon: string }[]
         ).map((item) => (
           <button
@@ -151,7 +153,9 @@ export default function DeudasPage() {
         ))}
       </div>
 
-      {tab === 'calendario' ? (
+      {tab === 'grafica' ? (
+        <DebtChart debts={debts} />
+      ) : tab === 'calendario' ? (
         <DebtCalendar />
       ) : tab === 'analisis' ? (
         <DebtAnalysis />
