@@ -1,7 +1,7 @@
 ---
 title: "Rediseño del tab Gráfica en Deudas: Cronograma y Saldo total (prototipo deudas-grafica.html)"
 id: "SPEC-101"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-09-30"
 updated: "2026-09-30"
@@ -11,7 +11,7 @@ github_issue: 104
 # Rediseño del tab Gráfica en Deudas: Cronograma y Saldo total (prototipo deudas-grafica.html)
 
 **ID**: SPEC-101  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-09-30  
 **Actualizado**: 2026-09-30
@@ -245,3 +245,4 @@ Sin endpoints nuevos. Uso de los existentes:
 |-------|-------|-------------|
 | 2026-09-30 | opencode | Creación inicial de la especificación (draft) |
 | 2026-09-30 | opencode | Desarrollo (in_progress): helpers debtEndDate/leftTime + tests, reemplazo de DebtChart.tsx (tarjetas resumen, Cronograma + Saldo total, tooltips, selector de moneda, empty state), integración en DeudasPage, i18n es/en |
+| 2026-09-30 | opencode | Release: commit de implementación `1b74107`, merge a main, issue #104 cerrado (spec/released) |
