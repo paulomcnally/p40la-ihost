@@ -172,7 +172,7 @@ export default function DebtAnalysis() {
             </button>
           </div>
           {currencyOptions.length > 1 && (
-            <div className="w-44">
+            <div className="w-full sm:w-44">
               <Select options={currencyOptions} value={currencyFilter} onChange={(v) => setCurrencyFilter(String(v))} />
             </div>
           )}
@@ -204,9 +204,9 @@ export default function DebtAnalysis() {
             <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">{t('deudas.analysis_needed')}</p>
-                <p className="text-2xl sm:text-3xl font-bold text-amber-500 dark:text-amber-400">
+                <p className="text-2xl sm:text-3xl font-bold text-amber-500 dark:text-amber-400 flex flex-wrap gap-x-3 gap-y-1">
                   {[...totals.entries()].map(([cur, e]) => (
-                    <span key={cur} className="mr-3">{cur} {formatMoney(e.pending)}</span>
+                    <span key={cur}>{cur} {formatMoney(e.pending)}</span>
                   ))}
                 </p>
               </div>
@@ -250,8 +250,8 @@ export default function DebtAnalysis() {
               <h3 className="font-semibold mb-1">{t('deudas.analysis_by_debt')}</h3>
               <p className="text-xs text-text-secondary mb-4">{t('deudas.analysis_by_debt_subtitle')}</p>
               <div className="flex flex-col sm:flex-row items-center gap-6">
-                <div className="relative shrink-0">
-                  <svg width="180" height="180" viewBox="0 0 180 180" className="block">
+                <div className="relative w-full max-w-[180px] mx-auto sm:mx-0 shrink-0">
+                  <svg viewBox="0 0 180 180" className="block w-full h-auto" role="img" aria-label={t('deudas.analysis_by_debt')}>
                     <circle cx="90" cy="90" r="72" fill="none" stroke="var(--color-border, #e5e5ea)" strokeWidth="22" />
                     {donutData.map((seg) => (
                       <path
