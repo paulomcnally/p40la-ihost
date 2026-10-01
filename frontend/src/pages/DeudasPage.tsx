@@ -154,7 +154,7 @@ export default function DeudasPage() {
       </div>
 
       {tab === 'grafica' ? (
-        <DebtChart debts={debts} />
+        <DebtChart debts={debts} currencies={currencies} />
       ) : tab === 'calendario' ? (
         <DebtCalendar />
       ) : tab === 'analisis' ? (
