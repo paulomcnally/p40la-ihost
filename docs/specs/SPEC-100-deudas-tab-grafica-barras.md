@@ -244,4 +244,4 @@ Sin endpoints nuevos. Uso de los existentes:
 |-------|-------|-------------|
 | 2026-09-30 | opencode | Creación inicial de la especificación (draft) |
 | 2026-09-30 | opencode | Desarrollo completo (in_progress): función de agrupación + tests, DebtChart, tab en DeudasPage, icono bar, i18n |
-| 2026-09-30 | opencode | Release: merge a main + issue #103 cerrado (spec/released) |
+| 2026-09-30 | opencode | Release: merge a main (commit `26ede1f`, v0.4.46) + issue #103 cerrado (spec/released) |
