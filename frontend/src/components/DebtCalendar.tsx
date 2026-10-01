@@ -16,6 +16,39 @@ function dateKey(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
+function BillRow({ bill, onPay }: { bill: DebtBill; onPay: (b: DebtBill) => void }) {
+  const { t } = useI18nStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
+  return (
+    <div className="flex items-center justify-between gap-3 border border-border rounded-ios-sm p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium truncate">{bill.debt_description}</p>
+        <p className="text-xs text-text-secondary">
+          {t('deudas.installment')} #{bill.installment_number} · {bill.institution_name}
+        </p>
+        <p className="text-sm font-semibold mt-1">
+          {formatMoney(bill.amount, bill.currency_code)}
+        </p>
+      </div>
+      <div className="flex flex-col items-end gap-2 shrink-0 min-w-0">
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
+          bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
+        }`}>
+          {t(`bills.status_${bill.status}`)}
+        </span>
+        {bill.status === 'pending' && (
+          <button
+            onClick={() => onPay(bill)}
+            className="text-xs font-semibold text-primary hover:underline"
+          >
+            {t('deudas.pay')}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function DebtCalendar() {
   const { t, lang } = useI18nStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
@@ -71,6 +104,11 @@ export default function DebtCalendar() {
 
   const billsByDay = (day: number) => bills.filter((b) => b.due_date === dayKey(day))
 
+  const daysWithBills = useMemo(() => {
+    const dates = [...new Set(bills.map((b) => b.due_date))].filter((d) => d.startsWith(`${year}-${String(month).padStart(2, '0')}`))
+    return dates.sort()
+  }, [bills, year, month])
+
   const selectedBills = selectedDay ? bills.filter((b) => b.due_date === selectedDay) : []
   const totalDay = selectedBills.reduce((sum, b) => sum + b.amount, 0)
   const weekdays = lang === 'es' ? WEEKDAYS_ES : WEEKDAYS_EN
@@ -78,113 +116,142 @@ export default function DebtCalendar() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between gap-1 mb-3">
         <button
           onClick={goPrev}
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-bg transition-colors min-h-[44px]"
+          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center hover:bg-bg transition-colors min-h-[44px]"
           title={t('app.close')}
         >
           <Icon name="chevron" className="w-4 h-4 rotate-180" />
         </button>
-        <h3 className="text-base font-semibold">
+        <h3 className="text-base font-semibold min-w-0 truncate text-center">
           {t(`months.${month}`)} {year}
         </h3>
         <button
           onClick={goNext}
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-bg transition-colors min-h-[44px]"
+          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center hover:bg-bg transition-colors min-h-[44px]"
           title={t('app.close')}
         >
           <Icon name="chevron" className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 sm:gap-2">
-        {weekdays.map((wd) => (
-          <div key={wd} className="text-center text-xs font-semibold text-text-secondary py-1">
-            {wd}
-          </div>
-        ))}
-        {cells.map((day, i) =>
-          day === null ? (
-            <div key={`empty-${i}`} />
-          ) : (
-            <button
-              key={day}
-              onClick={() => setSelectedDay(dayKey(day))}
-              className={`relative min-h-[44px] sm:min-h-[56px] rounded-ios-sm border text-sm flex flex-col items-center justify-center gap-1 transition-colors ${
-                selectedDay === dayKey(day)
-                  ? 'bg-primary/10 border-primary text-primary font-semibold'
-                  : 'bg-card border-border hover:bg-bg'
-              } ${todayKey === dayKey(day) ? 'ring-2 ring-primary/40' : ''}`}
-            >
-              <span>{day}</span>
-              {billsByDay(day).length > 0 && (
-                <span className="flex gap-0.5">
-                  {billsByDay(day).slice(0, 3).map((b) => (
-                    <span
-                      key={b.id}
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        b.status === 'paid' ? 'bg-success' : 'bg-warning'
-                      }`}
-                    />
-                  ))}
+      {/* Grilla desktop */}
+      <div className="hidden sm:block">
+        <div className="grid grid-cols-7 gap-2">
+          {weekdays.map((wd) => (
+            <div key={wd} className="text-center text-xs font-semibold text-text-secondary py-1">
+              {wd}
+            </div>
+          ))}
+          {cells.map((day, i) =>
+            day === null ? (
+              <div key={`empty-${i}`} />
+            ) : (
+              <button
+                key={day}
+                onClick={() => setSelectedDay(dayKey(day))}
+                className={`relative min-h-[56px] rounded-ios-sm border text-sm flex flex-col items-center justify-center gap-1 transition-colors ${
+                  selectedDay === dayKey(day)
+                    ? 'bg-primary/10 border-primary text-primary font-semibold'
+                    : 'bg-card border-border hover:bg-bg'
+                } ${todayKey === dayKey(day) ? 'ring-2 ring-primary/40' : ''}`}
+              >
+                <span>{day}</span>
+                {billsByDay(day).length > 0 && (
+                  <span className="flex gap-0.5">
+                    {billsByDay(day).slice(0, 3).map((b) => (
+                      <span
+                        key={b.id}
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          b.status === 'paid' ? 'bg-success' : 'bg-warning'
+                        }`}
+                      />
+                    ))}
+                  </span>
+                )}
+              </button>
+            )
+          )}
+        </div>
+
+        {selectedDay && (
+          <div className="mt-4 bg-card rounded-ios shadow-ios p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h4 className="font-semibold min-w-0 truncate">{selectedDay}</h4>
+              {selectedBills.length > 0 && (
+                <span className="text-sm text-text-secondary shrink-0">
+                  {t('deudas.total_day')}:{' '}
+                  <strong>{formatMoney(totalDay, selectedBills[0].currency_code)}</strong>
                 </span>
               )}
-            </button>
-          )
+            </div>
+            {selectedBills.length === 0 ? (
+              <p className="text-sm text-text-secondary">{t('deudas.no_bills_day')}</p>
+            ) : (
+              <div className="space-y-2">
+                {selectedBills.map((b) => (
+                  <BillRow key={b.id} bill={b} onPay={setPayTarget} />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {selectedDay && (
-        <div className="mt-4 bg-card rounded-ios shadow-ios p-4">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <h4 className="font-semibold min-w-0 truncate">{selectedDay}</h4>
-            {selectedBills.length > 0 && (
-              <span className="text-sm text-text-secondary shrink-0">
-                {t('deudas.total_day')}:{' '}
-                <strong>{formatMoney(totalDay, selectedBills[0].currency_code)}</strong>
-              </span>
-            )}
-          </div>
-          {selectedBills.length === 0 ? (
-            <p className="text-sm text-text-secondary">{t('deudas.no_bills_day')}</p>
-          ) : (
-            <div className="space-y-2">
-              {selectedBills.map((b) => (
-                <div
-                  key={b.id}
-                  className="flex items-center justify-between gap-3 border border-border rounded-ios-sm p-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{b.debt_description}</p>
-                    <p className="text-xs text-text-secondary">
-                      {t('deudas.installment')} #{b.installment_number} · {b.institution_name}
-                    </p>
-                    <p className="text-sm font-semibold mt-1">
-                      {formatMoney(b.amount, b.currency_code)}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0 min-w-0">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
-                      b.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
-                    }`}>
-                      {t(`bills.status_${b.status}`)}
-                    </span>
-                    {b.status === 'pending' && (
-                      <button
-                        onClick={() => setPayTarget(b)}
-                        className="text-xs font-semibold text-primary hover:underline"
-                      >
-                        {t('deudas.pay')}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+      {/* Agenda móvil */}
+      <div className="sm:hidden space-y-3">
+        {daysWithBills.length === 0 ? (
+          <div className="bg-card rounded-ios shadow-ios p-8 text-center">
+            <div className="w-12 h-12 mx-auto mb-3 text-primary opacity-80">
+              <Icon name="calendar" className="w-full h-full" />
             </div>
-          )}
-        </div>
-      )}
+            <p className="text-sm font-semibold">{t('deudas.calendar_empty_month')}</p>
+            <p className="text-xs text-text-secondary mt-1">{t('deudas.calendar_empty_month_subtitle')}</p>
+          </div>
+        ) : (
+          daysWithBills.map((d) => {
+            const dayBills = bills.filter((b) => b.due_date === d)
+            const dayTotal = dayBills.reduce((s, b) => s + b.amount, 0)
+            const isToday = d === todayKey
+            const dObj = new Date(`${d}T00:00:00`)
+            const weekday = weekdays[(dObj.getDay() + 6) % 7]
+            const dayNum = Number(d.slice(8, 10))
+            return (
+              <div key={d} className="bg-card rounded-ios shadow-ios p-3">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-sm font-bold ${
+                      isToday ? 'bg-primary text-white' : 'bg-bg text-text'
+                    }`}>
+                      {dayNum}
+                    </span>
+                    <div className="min-w-0">
+                      <p className={`text-sm font-semibold truncate ${isToday ? 'text-primary' : ''}`}>
+                        {weekday}, {t(`months.${Number(d.slice(5, 7))}`)} {dayNum}
+                      </p>
+                      <p className="text-xs text-text-secondary">
+                        {dayBills.length} {dayBills.length === 1 ? t('deudas.installment') : `${t('deudas.installment')}s`} · {formatMoney(dayTotal, dayBills[0].currency_code)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedDay(d)}
+                    className="text-xs font-semibold text-primary shrink-0 min-h-[44px]"
+                  >
+                    {t('deudas.view_day')}
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {dayBills.map((b) => (
+                    <BillRow key={b.id} bill={b} onPay={setPayTarget} />
+                  ))}
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
 
       {payTarget && (
         <DebtPayModal
