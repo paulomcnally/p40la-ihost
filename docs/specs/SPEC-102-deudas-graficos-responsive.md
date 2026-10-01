@@ -1,7 +1,7 @@
 ---
 title: "Responsividad de los gráficos de Deudas: Gráfica, Análisis y Calendario"
 id: "SPEC-102"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-09-30"
 updated: "2026-09-30"
@@ -11,7 +11,7 @@ github_issue: 105
 # Responsividad de los gráficos de Deudas: Gráfica, Análisis y Calendario
 
 **ID**: SPEC-102  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-09-30  
 **Actualizado**: 2026-09-30
@@ -262,3 +262,4 @@ Sin endpoints nuevos. Uso de los existentes:
 | 2026-09-30 | opencode | Cambio iterativo solicitado por el usuario (in_progress): vista móvil dedicada del cronograma en Gráfica (lista con barras de progreso) + REQ-010/011, ADR-004, CA-007 |
 | 2026-09-30 | opencode | Cambio iterativo solicitado por el usuario (in_progress): selector de moneda filtra todo el tab Gráfica (cronograma incluido) + REQ-012, ADR-005, CA-008 |
 | 2026-09-30 | opencode | Cambio iterativo solicitado por el usuario (in_progress): agenda por mes en móvil para el tab Calendario + REQ-013, ADR-006, CA-009 |
+| 2026-09-30 | opencode | Release: commit de implementación `2195f81`, merge a main, issue #105 cerrado (spec/released) |
