@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { debtEndMonth, aggregateDebtsByEndMonth } from '../src/utils/debtMonthlyAggregation.ts'
+import { debtEndMonth, aggregateDebtsByEndMonth, debtEndDate, leftTime } from '../src/utils/debtMonthlyAggregation.ts'
 import type { Debt } from '../src/types/index.ts'
 
 function makeDebt(overrides: Partial<Debt>): Debt {
@@ -74,4 +74,50 @@ test('aggregateDebtsByEndMonth excluye meses sin deudas y deudas sin fecha váli
   const buckets = aggregateDebtsByEndMonth(debts, debtEndMonth, (m) => String(m))
   assert.equal(buckets.length, 1)
   assert.equal(buckets[0].debts.length, 1)
+})
+
+test('debtEndDate deriva la fecha exacta de finalización clampeando al último día del mes', () => {
+  assert.deepEqual(debtEndDate(makeDebt({ start_date: '2026-01-10', installments_total: 12 })), {
+    year: 2027,
+    month: 1,
+    day: 31,
+  })
+  assert.deepEqual(debtEndDate(makeDebt({ start_date: '2026-01-10', installments_total: 1 })), {
+    year: 2026,
+    month: 2,
+    day: 28,
+  })
+  assert.deepEqual(debtEndDate(makeDebt({ start_date: '2024-02-10', installments_total: 12 })), {
+    year: 2025,
+    month: 2,
+    day: 28,
+  })
+})
+
+test('debtEndDate cruza el límite de año', () => {
+  assert.deepEqual(debtEndDate(makeDebt({ start_date: '2026-11-20', installments_total: 2 })), {
+    year: 2027,
+    month: 1,
+    day: 31,
+  })
+})
+
+test('debtEndDate devuelve null con datos inválidos', () => {
+  assert.equal(debtEndDate(makeDebt({ start_date: '' })), null)
+  assert.equal(debtEndDate(makeDebt({ installments_total: 0 })), null)
+  assert.equal(debtEndDate(makeDebt({ start_date: 'invalida' })), null)
+  assert.equal(debtEndDate(makeDebt({ start_date: '2026-13-10' })), null)
+})
+
+test('leftTime calcula años y meses restantes', () => {
+  const now = new Date(2026, 0, 15) // 15 ene 2026
+  assert.deepEqual(leftTime(new Date(2026, 0, 20), now), { years: 0, months: 0, thisMonth: true })
+  assert.deepEqual(leftTime(new Date(2026, 1, 20), now), { years: 0, months: 1, thisMonth: false })
+  assert.deepEqual(leftTime(new Date(2027, 1, 20), now), { years: 1, months: 1, thisMonth: false })
+  assert.deepEqual(leftTime(new Date(2029, 5, 30), now), { years: 3, months: 5, thisMonth: false })
+})
+
+test('leftTime marca thisMonth para fechas pasadas', () => {
+  const now = new Date(2026, 0, 15)
+  assert.deepEqual(leftTime(new Date(2025, 10, 1), now), { years: 0, months: 0, thisMonth: true })
 })
