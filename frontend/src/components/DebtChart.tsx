@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
@@ -17,8 +17,18 @@ const BORDER_COLOR = 'rgb(var(--color-border))'
 
 const DAY_MS = 86400000
 
+// Ancho de diseño del SVG; el navegador lo escala al contenedor con viewBox
+// (patrón responsive de BillAnalysis). min-w en el wrapper evita aplastar en pantallas medias.
+const DESIGN_W = 720
+
+const TIP_MAX_W = 240 // coincide con max-w-60 del tooltip
+
 function monthShort(t: (k: string) => string, m: number) {
   return t(`months.${m}`).slice(0, 3)
+}
+
+function truncateLabel(s: string, max = 26) {
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s
 }
 
 export default function DebtChart({ debts, currencies }: { debts: Debt[]; currencies: Currency[] }) {
@@ -29,18 +39,6 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   const [view, setView] = useState<View>('cronograma')
   const [currencyFilter, setCurrencyFilter] = useState<string>('')
   const [tip, setTip] = useState<{ left: number; top: number; html: string } | null>(null)
-  const chartRef = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(640)
-
-  useEffect(() => {
-    const el = chartRef.current
-    if (!el) return
-    const update = () => setWidth(Math.max(el.clientWidth, 320))
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   const items = useMemo(() => {
     return debts
@@ -82,16 +80,30 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
     ? currencyFilter
     : defaultCurrency
 
-  const saldoItems = useMemo(
+  // Todas las vistas del tab se alimentan del mismo conjunto filtrado por moneda
+  // (cronograma móvil + SVG, saldo total y tarjetas). Ver ADR-005.
+  const filteredItems = useMemo(
     () => (effectiveCurrency ? items.filter((i) => (i.debt.currency_code || '') === effectiveCurrency) : []),
     [items, effectiveCurrency]
   )
 
-  const lastEnd = items.length > 0 ? items[items.length - 1].endDate : now
-  const totalOwed = saldoItems.reduce((s, i) => s + (i.debt.total || 0), 0)
+  const lastEnd = filteredItems.length > 0 ? filteredItems[filteredItems.length - 1].endDate : now
+  const totalOwed = filteredItems.reduce((s, i) => s + (i.debt.total || 0), 0)
   const currencySymbol = currencies.find((c) => c.code === effectiveCurrency)?.symbol || effectiveCurrency
 
   if (items.length === 0) {
+    return (
+      <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
+          <Icon name="bar" className="w-full h-full" />
+        </div>
+        <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('deudas.chart_empty')}</h3>
+        <p className="text-text-secondary">{t('deudas.chart_empty_subtitle')}</p>
+      </div>
+    )
+  }
+
+  if (filteredItems.length === 0) {
     return (
       <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
         <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
@@ -115,11 +127,9 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   const fm = (d: Date) => `${monthShort(t, d.getMonth() + 1)} ${d.getFullYear()}`
 
   const showTip = (e: React.MouseEvent, html: string) => {
-    setTip({
-      left: Math.min(e.clientX + 14, window.innerWidth - 250),
-      top: e.clientY + 14,
-      html,
-    })
+    const left = Math.min(Math.max(e.clientX + 14, 8), window.innerWidth - TIP_MAX_W - 8)
+    const top = Math.min(Math.max(e.clientY + 14, 8), window.innerHeight - 96)
+    setTip({ left, top, html })
   }
 
   const rowTooltip = (item: { debt: Debt; endDate: Date }) => {
@@ -162,23 +172,25 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   const renderCronograma = () => {
     const row = 38
     const top = 8
-    const L = Math.min(190, width * 0.34)
+    const W = DESIGN_W
+    const L = Math.min(190, W * 0.34)
     const R = 84
-    const w = width - L - R
-    const H = top + items.length * row
+    const w = W - L - R
+    const H = top + filteredItems.length * row
+    const nameMax = Math.floor((L - 8) / 7) // ~7px por carácter a fontSize 13
     return (
-      <svg width={width} height={H + 26} role="img" aria-label={t('deudas.chart_title_cronograma')}>
+      <svg viewBox={`0 0 ${W} ${H + 26}`} className="block w-full min-w-[360px]" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('deudas.chart_title_cronograma')}>
         {yearTicks(L, w, H)}
-        {items.map((item, i) => {
+        {filteredItems.map((item, i) => {
           const y = top + i * row
           const x2 = L + (item.endDate.getTime() - t0) / SPAN * w
           const bw = Math.max(5, x2 - L)
           const sym = currencies.find((c) => c.code === item.debt.currency_code)?.symbol || item.debt.currency_code || ''
           return (
             <g key={item.debt.id} style={{ cursor: 'default' }}>
-              <rect x={0} y={y} width={width} height={row} fill="transparent" onMouseMove={(e) => showTip(e, rowTooltip(item))} onMouseLeave={() => setTip(null)} />
+              <rect x={0} y={y} width={W} height={row} fill="transparent" onMouseMove={(e) => showTip(e, rowTooltip(item))} onMouseLeave={() => setTip(null)} />
               <text x={0} y={y + 16} fontSize="13" fontWeight="600" fill={TEXT_COLOR}>
-                {item.debt.description}
+                {truncateLabel(item.debt.description, nameMax)}
               </text>
               <text className="m" x={0} y={y + 30} fontSize="11" fill={TEXT_SECONDARY}>
                 {formatMoney(item.debt.total, sym)}
@@ -200,18 +212,19 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   }
 
   const renderSaldo = () => {
+    const W = DESIGN_W
     const L = 56
     const R = 20
     const top = 24
     const H = 300
-    const w = width - L - R
+    const w = W - L - R
     const h = H - top
     const X = (tt: number) => L + (tt - t0) / SPAN * w
     const Y = (v: number) => top + h - (v / Math.max(totalOwed, 1)) * h
 
     let bal = totalOwed
     const pts: [number, number][] = [[t0, bal]]
-    for (const item of saldoItems) {
+    for (const item of filteredItems) {
       pts.push([item.endDate.getTime(), bal])
       bal -= item.debt.total || 0
       pts.push([item.endDate.getTime(), bal])
@@ -220,7 +233,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
     const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join(' ')
 
     return (
-      <svg width={width} height={H + 26} role="img" aria-label={t('deudas.chart_title_saldo')}>
+      <svg viewBox={`0 0 ${W} ${H + 26}`} className="block w-full min-w-[360px]" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('deudas.chart_title_saldo')}>
         {[0, 1, 2, 3, 4].map((i) => {
           const v = (totalOwed * i) / 4
           const y = Y(v)
@@ -239,7 +252,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
         <path d={line} fill="none" stroke={ACCENT} strokeWidth="2.5" />
         {(() => {
           let balAfter = totalOwed
-          return saldoItems.map((item, i) => {
+          return filteredItems.map((item, i) => {
             balAfter -= item.debt.total || 0
             const sym = currencies.find((c) => c.code === item.debt.currency_code)?.symbol || item.debt.currency_code || ''
             return (
@@ -265,6 +278,29 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
     )
   }
 
+  const renderCronogramaMovil = () => {
+    return (
+      <div className="space-y-2.5">
+        {filteredItems.map((item, i) => {
+          const pct = Math.min(100, Math.max(2, ((item.endDate.getTime() - t0) / SPAN) * 100))
+          const sym = currencies.find((c) => c.code === item.debt.currency_code)?.symbol || item.debt.currency_code || ''
+          return (
+            <div key={item.debt.id} className="border border-border rounded-ios-sm p-3">
+              <div className="flex items-center justify-between gap-2 mb-0.5">
+                <p className="text-sm font-semibold truncate min-w-0">{item.debt.description}</p>
+                <span className="text-xs text-text-secondary shrink-0">{fm(item.endDate)}</span>
+              </div>
+              <p className="text-xs text-text-secondary mb-2">{formatMoney(item.debt.total, sym)}</p>
+              <div className="h-2 rounded-full bg-border overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COL[i % COL.length] }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3 sm:space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -274,7 +310,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
         </div>
         <div className="bg-card rounded-ios shadow-ios p-4">
           <span className="text-xs text-text-secondary">{t('deudas.chart_stat_active')}</span>
-          <b className="block text-2xl font-bold mt-1">{items.length}</b>
+          <b className="block text-2xl font-bold mt-1">{filteredItems.length}</b>
         </div>
         <div className="bg-card rounded-ios shadow-ios p-4">
           <span className="text-xs text-text-secondary">{t('deudas.chart_stat_free')}</span>
@@ -320,8 +356,15 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
           </div>
         </div>
 
-        <div ref={chartRef} className="overflow-x-auto">
-          {view === 'cronograma' ? renderCronograma() : renderSaldo()}
+        <div className="overflow-x-auto">
+          {view === 'cronograma' ? (
+            <>
+              <div className="sm:hidden">{renderCronogramaMovil()}</div>
+              <div className="hidden sm:block">{renderCronograma()}</div>
+            </>
+          ) : (
+            renderSaldo()
+          )}
         </div>
 
         <p className="text-[10px] text-text-secondary mt-2">
@@ -332,7 +375,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
       {tip && (
         <div
           className="fixed pointer-events-none bg-text text-bg px-2.5 py-2 rounded-ios-sm text-xs leading-relaxed z-[60] max-w-60"
-          style={{ left: tip.left, top: tip.top }}
+          style={{ left: tip.left, top: tip.top, maxWidth: TIP_MAX_W }}
           dangerouslySetInnerHTML={{ __html: tip.html }}
         />
       )}
