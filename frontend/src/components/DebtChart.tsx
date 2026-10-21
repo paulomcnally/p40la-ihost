@@ -3,10 +3,11 @@ import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import Select from './Select'
+import DebtHistoryChart from './DebtHistoryChart'
 import { debtPendingEndDate, leftTime } from '../utils/debtMonthlyAggregation'
 import type { Debt, Currency } from '../types'
 
-type View = 'cronograma' | 'saldo'
+type View = 'cronograma' | 'saldo' | 'historial'
 
 const COL = ['#0a84ff', '#30b0c7', '#5e5ce6', '#34c759', '#ff9f0a', '#ff375f']
 
@@ -99,26 +100,72 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   const totalOwed = filteredItems.reduce((s, i) => s + (i.debt.pending_amount || 0), 0)
   const currencySymbol = currencies.find((c) => c.code === effectiveCurrency)?.symbol || effectiveCurrency
 
+  const segmented = (
+    <div className="flex items-center gap-1 bg-bg rounded-ios p-1">
+      <button
+        onClick={() => setView('cronograma')}
+        aria-pressed={view === 'cronograma'}
+        className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
+          view === 'cronograma' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
+        }`}
+      >
+        {t('deudas.chart_view_cronograma')}
+      </button>
+      <button
+        onClick={() => setView('saldo')}
+        aria-pressed={view === 'saldo'}
+        className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
+          view === 'saldo' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
+        }`}
+      >
+        {t('deudas.chart_view_saldo')}
+      </button>
+      <button
+        onClick={() => setView('historial')}
+        aria-pressed={view === 'historial'}
+        className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
+          view === 'historial' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
+        }`}
+      >
+        {t('deudas.chart_view_history')}
+      </button>
+    </div>
+  )
+
+  const emptyCard = (
+    <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
+      <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
+        <Icon name="bar" className="w-full h-full" />
+      </div>
+      <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('deudas.chart_empty')}</h3>
+      <p className="text-text-secondary">{t('deudas.chart_empty_subtitle')}</p>
+    </div>
+  )
+
+  // SPEC-105: la vista histórica se muestra aunque no queden deudas abiertas.
+  if (view === 'historial') {
+    return (
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex justify-end">{segmented}</div>
+        <DebtHistoryChart />
+      </div>
+    )
+  }
+
   if (items.length === 0) {
     return (
-      <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
-        <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
-          <Icon name="bar" className="w-full h-full" />
-        </div>
-        <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('deudas.chart_empty')}</h3>
-        <p className="text-text-secondary">{t('deudas.chart_empty_subtitle')}</p>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex justify-end">{segmented}</div>
+        {emptyCard}
       </div>
     )
   }
 
   if (filteredItems.length === 0) {
     return (
-      <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
-        <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
-          <Icon name="bar" className="w-full h-full" />
-        </div>
-        <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('deudas.chart_empty')}</h3>
-        <p className="text-text-secondary">{t('deudas.chart_empty_subtitle')}</p>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex justify-end">{segmented}</div>
+        {emptyCard}
       </div>
     )
   }
@@ -342,26 +389,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1 bg-bg rounded-ios p-1">
-            <button
-              onClick={() => setView('cronograma')}
-              aria-pressed={view === 'cronograma'}
-              className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
-                view === 'cronograma' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
-              }`}
-            >
-              {t('deudas.chart_view_cronograma')}
-            </button>
-            <button
-              onClick={() => setView('saldo')}
-              aria-pressed={view === 'saldo'}
-              className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
-                view === 'saldo' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
-              }`}
-            >
-              {t('deudas.chart_view_saldo')}
-            </button>
-          </div>
+          {segmented}
         </div>
 
         <div className="overflow-x-auto">

@@ -67,6 +67,26 @@ func (h *DebtHandlers) ListDebts(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, debts)
 }
 
+// GetDebtHistory responde con la evolución mensual de deudas (SPEC-105).
+func (h *DebtHandlers) GetDebtHistory(w http.ResponseWriter, r *http.Request) {
+	months := 12
+	if raw := r.URL.Query().Get("months"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 1 || parsed > 24 {
+			respondError(w, http.StatusBadRequest, "invalid_months", "months debe estar entre 1 y 24")
+			return
+		}
+		months = parsed
+	}
+
+	history, err := h.service.History(r.Context(), months, time.Now())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, history)
+}
+
 // GetDebt responde con una deuda por ID.
 func (h *DebtHandlers) GetDebt(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)

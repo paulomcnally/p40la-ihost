@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 )
@@ -131,6 +132,70 @@ func (s *DebtStorage) SoftDelete(ctx context.Context, id int64) error {
 		return fmt.Errorf("eliminar deuda: %w", err)
 	}
 	return nil
+}
+
+// DebtHistoryRow es una deuda con los datos necesarios para reconstruir la
+// serie histórica mensual (SPEC-105). Incluye deudas eliminadas lógicamente.
+type DebtHistoryRow struct {
+	ID                int64
+	CurrencyID        int64
+	CurrencyCode      string
+	CurrencySymbol    string
+	Total             float64
+	StartDate         string
+	InstallmentsTotal int
+	Status            string
+	UpdatedAt         time.Time
+	DeletedAt         sql.NullTime
+	LastPaidAt        string
+	PendingCount      int
+	PaidCount         int
+	PendingAmount     float64
+}
+
+// ListForHistory devuelve todas las deudas, incluidas las eliminadas
+// lógicamente, con el último pago y el resumen de cuotas. La historia no debe
+// perder las deudas borradas: se usa deleted_at como fecha de cierre.
+func (s *DebtStorage) ListForHistory(ctx context.Context) ([]DebtHistoryRow, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT d.id, d.currency_id, COALESCE(c.code, ''), COALESCE(c.symbol, ''),
+		       d.total, d.start_date, d.installments_total, d.status, d.updated_at, d.deleted_at,
+		       COALESCE(s.last_paid_at, ''), COALESCE(s.pending_count, 0),
+		       COALESCE(s.paid_count, 0), COALESCE(s.pending_amount, 0)
+		FROM debts d
+		LEFT JOIN currencies c ON c.id = d.currency_id
+		LEFT JOIN (
+			SELECT debt_id,
+			       MAX(CASE WHEN status = 'paid' THEN paid_at END) AS last_paid_at,
+			       SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_count,
+			       SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid_count,
+			       SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS pending_amount
+			FROM debt_bills
+			WHERE deleted_at IS NULL
+			GROUP BY debt_id
+		) s ON s.debt_id = d.id
+		ORDER BY d.id
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("listar deudas para historia: %w", err)
+	}
+	defer rows.Close()
+
+	var result []DebtHistoryRow
+	for rows.Next() {
+		var row DebtHistoryRow
+		if err := rows.Scan(&row.ID, &row.CurrencyID, &row.CurrencyCode, &row.CurrencySymbol,
+			&row.Total, &row.StartDate, &row.InstallmentsTotal, &row.Status,
+			&row.UpdatedAt, &row.DeletedAt, &row.LastPaidAt, &row.PendingCount,
+			&row.PaidCount, &row.PendingAmount); err != nil {
+			return nil, fmt.Errorf("escanear deuda para historia: %w", err)
+		}
+		result = append(result, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func scanDebt(row *sql.Row) (*models.Debt, error) {
