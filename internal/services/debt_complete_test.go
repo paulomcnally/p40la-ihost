@@ -124,6 +124,49 @@ func TestDebtCloseLifecycle(t *testing.T) {
 		t.Errorf("tras reducir, pendientes: got %d, want 0", reduced.PendingCount)
 	}
 
+	// Volver a ampliar reutiliza las cuotas eliminadas (sin violar UNIQUE).
+	if _, err := svc.Update(ctx, &models.Debt{
+		ID:                debt.ID,
+		InstitutionID:     1,
+		Identifier:        "D-1",
+		Description:       "Préstamo de prueba",
+		Total:             300,
+		Principal:         300,
+		CurrencyID:        1,
+		InstallmentsTotal: 3,
+		InstallmentAmount: 100,
+		PaymentDay:        5,
+		StartDate:         "2026-09-01",
+		Status:            DebtStatusActive,
+	}); err != nil {
+		t.Fatalf("Update (re-ampliar): %v", err)
+	}
+	bills, err = svc.ListBills(ctx, debt.ID)
+	if err != nil || len(bills) != 3 {
+		t.Fatalf("cuotas tras re-ampliar: got %d, err %v", len(bills), err)
+	}
+	if bills[1].Status != "pending" || bills[2].Status != "pending" {
+		t.Errorf("cuotas restauradas: got %q/%q, want pending/pending", bills[1].Status, bills[2].Status)
+	}
+
+	// Volver a reducir para que el reconciliador pueda cerrarla.
+	if _, err := svc.Update(ctx, &models.Debt{
+		ID:                debt.ID,
+		InstitutionID:     1,
+		Identifier:        "D-1",
+		Description:       "Préstamo de prueba",
+		Total:             100,
+		Principal:         100,
+		CurrencyID:        1,
+		InstallmentsTotal: 1,
+		InstallmentAmount: 100,
+		PaymentDay:        5,
+		StartDate:         "2026-09-01",
+		Status:            DebtStatusActive,
+	}); err != nil {
+		t.Fatalf("Update (reducir 2): %v", err)
+	}
+
 	// REQ-002: el reconciliador cierra la deuda que quedó completa.
 	if err := svc.ReconcileDebtBills(ctx); err != nil {
 		t.Fatalf("ReconcileDebtBills: %v", err)

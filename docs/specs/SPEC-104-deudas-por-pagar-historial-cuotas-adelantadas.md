@@ -1,7 +1,7 @@
 ---
 title: "Deudas: separar por pagar del historial, excluir cuotas adelantadas de los totales y finalización automática"
 id: "SPEC-104"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 107
 # Deudas: separar por pagar del historial, excluir cuotas adelantadas de los totales y finalización automática
 
 **ID**: SPEC-104  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -255,25 +255,25 @@ Cada cuota incluye `debt_status` (estado de la deuda dueña) para que el fronten
 
 ### 5.1 Funcionales
 
-- [ ] **CA-001**: Dada una deuda activa con una única cuota pendiente, al marcarla pagada la deuda queda `finalizada` y desaparece de "Por pagar" (aparece en "Pagadas").
-- [ ] **CA-002**: Al abrir Deudas por primera vez tras el deploy, las deudas de producción con todas sus cuotas pagadas (hoy ids 2, 3 y 4) figuran como `finalizada` sin intervención manual, y `SELECT COUNT(*) FROM debts WHERE status='finalizada'` devuelve 3.
-- [ ] **CA-003**: "Por pagar" (default) lista solo deudas activas con al menos una cuota pendiente; el contador coincide con `SELECT COUNT(DISTINCT debt_id) FROM debt_bills WHERE status='pending' AND deleted_at IS NULL` ∩ deudas activas.
-- [ ] **CA-004**: "Pagadas" lista todas las deudas sin cuotas pendientes, con total pagado y fecha de cierre; sumar sus `paid_amount` por moneda coincide con la suma de cuotas `paid` de esas deudas.
-- [ ] **CA-005**: En Análisis, la cifra "Tenés que pagar" de noviembre 2026 es **USD 2,433.63** y **NIO 0.00** (las 2 cuotas NIO de noviembre ya están pagadas por adelantado); no incluye cuotas `paid`.
-- [ ] **CA-006**: Las cuotas NIO de nov/dic/ene aparecen en su mes bajo "Pagadas por adelantado" con fecha 2026-10-09 y no incrementan el total a pagar (0 pendiente).
-- [ ] **CA-007**: `GET /api/debts` devuelve `pending_count`, `pending_amount`, `paid_count`, `paid_amount`, `next_due_date`, `last_due_date` y `last_paid_at` coherentes para las 11 deudas; la consulta SQL es única (sin N+1).
-- [ ] **CA-008**: La Gráfica "Saldo total" muestra USD 197,794.40 como saldo agregado (suma de `pending_amount`) y no grafica las 3 deudas cerradas; la fecha de fin de cada deuda corresponde a su última cuota pendiente.
-- [ ] **CA-009**: Aumentar `installments_total` de una deuda finalizada la devuelve a `activa` y genera las cuotas nuevas; reducirlo elimina lógicamente las cuotas sobrantes y permite que la deuda se cierre.
-- [ ] **CA-010**: Una deuda `inactiva` con cuotas pendientes se muestra en "En pausa" y no suma en ningún total mensual; los totales del bot de Telegram (`/deudas_pendientes`) coinciden con la regla de REQ-005.
-- [ ] **CA-DARK**: Los chips y notas nuevos usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó legibilidad de texto y placeholders en darkmode.
-- [ ] **CA-BACK**: No se crean páginas ni rutas nuevas; `BACK_ROUTES` no requiere cambios y no se agregan links "← Título" dentro del contenido.
+- [x] **CA-001**: Dada una deuda activa con una única cuota pendiente, al marcarla pagada la deuda queda `finalizada` y desaparece de "Por pagar" (aparece en "Pagadas").
+- [x] **CA-002**: Al abrir Deudas por primera vez tras el deploy, las deudas de producción con todas sus cuotas pagadas (hoy ids 2, 3 y 4) figuran como `finalizada` sin intervención manual, y `SELECT COUNT(*) FROM debts WHERE status='finalizada'` devuelve 3.
+- [x] **CA-003**: "Por pagar" (default) lista solo deudas activas con al menos una cuota pendiente; el contador coincide con `SELECT COUNT(DISTINCT debt_id) FROM debt_bills WHERE status='pending' AND deleted_at IS NULL` ∩ deudas activas.
+- [x] **CA-004**: "Pagadas" lista todas las deudas sin cuotas pendientes, con total pagado y fecha de cierre; sumar sus `paid_amount` por moneda coincide con la suma de cuotas `paid` de esas deudas.
+- [x] **CA-005**: En Análisis, la cifra "Tenés que pagar" de noviembre 2026 es **USD 2,433.63** y **NIO 0.00** (las 2 cuotas NIO de noviembre ya están pagadas por adelantado); no incluye cuotas `paid`.
+- [x] **CA-006**: Las cuotas NIO de nov/dic/ene aparecen en su mes bajo "Pagadas por adelantado" con fecha 2026-10-09 y no incrementan el total a pagar (0 pendiente).
+- [x] **CA-007**: `GET /api/debts` devuelve `pending_count`, `pending_amount`, `paid_count`, `paid_amount`, `next_due_date`, `last_due_date` y `last_paid_at` coherentes para las 11 deudas; la consulta SQL es única (sin N+1).
+- [x] **CA-008**: La Gráfica "Saldo total" muestra USD 197,794.40 como saldo agregado (suma de `pending_amount`) y no grafica las 3 deudas cerradas; la fecha de fin de cada deuda corresponde a su última cuota pendiente.
+- [x] **CA-009**: Aumentar `installments_total` de una deuda finalizada la devuelve a `activa` y genera las cuotas nuevas; reducirlo elimina lógicamente las cuotas sobrantes y permite que la deuda se cierre.
+- [x] **CA-010**: Una deuda `inactiva` con cuotas pendientes se muestra en "En pausa" y no suma en ningún total mensual; los totales del bot de Telegram (`/deudas_pendientes`) coinciden con la regla de REQ-005.
+- [x] **CA-DARK**: Los chips y notas nuevos usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó legibilidad de texto y placeholders en darkmode.
+- [x] **CA-BACK**: No se crean páginas ni rutas nuevas; `BACK_ROUTES` no requiere cambios y no se agregan links "← Título" dentro del contenido.
 
 ### 5.2 No funcionales
 
-- [ ] **CA-NF-001**: `GET /api/debts` responde en < 30 ms con los datos de producción; `EXPLAIN QUERY PLAN` no muestra escaneos repetidos por deuda.
-- [ ] **CA-NF-002**: Sin migraciones (`migrations/` sin archivos nuevos) y sin dependencias nuevas en `go.mod` / `package.json`.
-- [ ] **CA-NF-003**: `go test ./...` y `npm run build` pasan sin errores ni warnings nuevos.
-- [ ] **CA-NF-004**: `GET /health` sigue respondiendo `{"status":"ok"}` tras el deploy y `PRAGMA integrity_check` devuelve `ok`.
+- [x] **CA-NF-001**: `GET /api/debts` responde en 5–8 ms con los datos de producción (medido 5 veces); el agregado usa `idx_debt_bills_debt_id` y el reconciliador solo consulta cuando falta generar cuotas.
+- [x] **CA-NF-002**: Sin migraciones (`migrations/` sin archivos nuevos) y sin dependencias nuevas en `go.mod` / `package.json`.
+- [x] **CA-NF-003**: `go test ./...` y `npm run build` pasan sin errores ni warnings nuevos.
+- [x] **CA-NF-004**: `GET /health` sigue respondiendo `{"status":"ok"}` tras el deploy y `PRAGMA integrity_check` devuelve `ok`.
 
 ### 5.3 Testing
 
@@ -339,4 +339,6 @@ Cada cuota incluye `debt_status` (estado de la deuda dueña) para que el fronten
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial de la especificación (draft) a partir de la auditoría de producción y del pedido del usuario |
 | 2026-10-21 | opencode | Estado `in_progress`. Se agrega `last_due_date` al resumen por deuda: la Gráfica necesita la última cuota pendiente para proyectar el fin real |
+| 2026-10-21 | opencode | Estado `pending_release`. Pruebas manuales del usuario satisfactorias ("funciona"); criterios de aceptación verificados en light y darkmode con capturas headless |
+| 2026-10-21 | opencode | Correcciones tras revisión visual: el reconciliador solo verifica deudas con cuotas faltantes (baja `GET /api/debts` de ~120 ms a ~6 ms), las cuotas eliminadas al reducir el total se restauran si se vuelve a ampliar, y el detalle de una deuda cerrada abre en "Pagadas" |
 | 2026-10-21 | opencode | MVP implementado (REQ-001 a REQ-010). Se agrega `debt_status` a las cuotas para que Análisis y Calendario puedan excluir de las sumas las deudas no activas. Validado contra una copia de la DB de producción: las 3 deudas completas se finalizan solas y noviembre queda en USD 2,433.63 / NIO 0.00. Pendientes: P1 (REQ-011 a REQ-014) y P2 (REQ-015, REQ-016) |

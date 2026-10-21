@@ -59,14 +59,29 @@ func (s *DebtBillStorage) GetByID(ctx context.Context, id int64) (*models.DebtBi
 	return scanDebtBill(row)
 }
 
-// FindByDebtInstallment busca una cuota existente por deuda y número (dedup).
+// FindByDebtInstallment busca una cuota por deuda y número (dedup), incluyendo
+// cuotas eliminadas lógicamente para poder reutilizarlas (SPEC-104).
 func (s *DebtBillStorage) FindByDebtInstallment(ctx context.Context, debtID int64, number int) (*models.DebtBill, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT `+debtBillColumns+`
 		`+debtBillJoins+`
-		WHERE db.debt_id = ? AND db.installment_number = ? AND db.deleted_at IS NULL
+		WHERE db.debt_id = ? AND db.installment_number = ?
 	`, debtID, number)
 	return scanDebtBill(row)
+}
+
+// Restore reactiva una cuota eliminada lógicamente, actualizando fecha de
+// vencimiento y monto (SPEC-104). Conserva su estado de pago.
+func (s *DebtBillStorage) Restore(ctx context.Context, id int64, dueDate string, amount float64) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE debt_bills
+		SET deleted_at = NULL, due_date = ?, amount = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, dueDate, amount, id)
+	if err != nil {
+		return fmt.Errorf("restaurar cuota: %w", err)
+	}
+	return nil
 }
 
 // ListDueOnDate devuelve las cuotas pending que vencen en una fecha dada
