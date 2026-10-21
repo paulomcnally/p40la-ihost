@@ -116,6 +116,7 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 
 	// APIs de deudas y cuotas (SPEC-054)
 	mux.Handle("GET /api/debts", authMiddleware(http.HandlerFunc(handler.debt.ListDebts)))
+	mux.Handle("GET /api/debts/history", authMiddleware(http.HandlerFunc(handler.debt.GetDebtHistory)))
 	mux.Handle("GET /api/debts/{id}", authMiddleware(http.HandlerFunc(handler.debt.GetDebt)))
 	mux.Handle("POST /api/debts", authMiddleware(http.HandlerFunc(handler.debt.CreateDebt)))
 	mux.Handle("PUT /api/debts/{id}", authMiddleware(http.HandlerFunc(handler.debt.UpdateDebt)))
