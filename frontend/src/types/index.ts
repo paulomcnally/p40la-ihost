@@ -325,6 +325,35 @@ export interface DebtBill {
   updated_at: string
 }
 
+// SPEC-105: evolución mensual de deudas (cantidad, no montos).
+export interface DebtHistoryPoint {
+  month: string
+  open_count: number
+  closed_count: number
+}
+
+export interface DebtHistorySummary {
+  start_count: number
+  end_count: number
+  change_count: number
+  change_pct: number | null
+  closed_count: number
+  pending_amount_current: number
+}
+
+export interface DebtHistoryCurrency {
+  code: string
+  symbol: string
+  series: DebtHistoryPoint[]
+  summary: DebtHistorySummary
+}
+
+export interface DebtHistoryResponse {
+  months: number
+  generated_at: string
+  currencies: DebtHistoryCurrency[]
+}
+
 export interface CategoryGroup {
   id: number
   name: string

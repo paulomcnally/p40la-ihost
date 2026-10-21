@@ -3,10 +3,11 @@ import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import Select from './Select'
+import DebtHistoryChart from './DebtHistoryChart'
 import { debtPendingEndDate, leftTime } from '../utils/debtMonthlyAggregation'
 import type { Debt, Currency } from '../types'
 
-type View = 'cronograma' | 'saldo'
+type View = 'cronograma' | 'saldo' | 'historial'
 
 const COL = ['#0a84ff', '#30b0c7', '#5e5ce6', '#34c759', '#ff9f0a', '#ff375f']
 
@@ -99,26 +100,72 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   const totalOwed = filteredItems.reduce((s, i) => s + (i.debt.pending_amount || 0), 0)
   const currencySymbol = currencies.find((c) => c.code === effectiveCurrency)?.symbol || effectiveCurrency
 
+  const segmented = (
+    <div className="flex items-center gap-1 bg-bg rounded-ios p-1">
+      <button
+        onClick={() => setView('cronograma')}
+        aria-pressed={view === 'cronograma'}
+        className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
+          view === 'cronograma' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
+        }`}
+      >
+        {t('deudas.chart_view_cronograma')}
+      </button>
+      <button
+        onClick={() => setView('saldo')}
+        aria-pressed={view === 'saldo'}
+        className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
+          view === 'saldo' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
+        }`}
+      >
+        {t('deudas.chart_view_saldo')}
+      </button>
+      <button
+        onClick={() => setView('historial')}
+        aria-pressed={view === 'historial'}
+        className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
+          view === 'historial' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
+        }`}
+      >
+        {t('deudas.chart_view_history')}
+      </button>
+    </div>
+  )
+
+  const emptyCard = (
+    <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
+      <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
+        <Icon name="bar" className="w-full h-full" />
+      </div>
+      <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('deudas.chart_empty')}</h3>
+      <p className="text-text-secondary">{t('deudas.chart_empty_subtitle')}</p>
+    </div>
+  )
+
+  // SPEC-105: la vista histórica se muestra aunque no queden deudas abiertas.
+  if (view === 'historial') {
+    return (
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex justify-end">{segmented}</div>
+        <DebtHistoryChart />
+      </div>
+    )
+  }
+
   if (items.length === 0) {
     return (
-      <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
-        <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
-          <Icon name="bar" className="w-full h-full" />
-        </div>
-        <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('deudas.chart_empty')}</h3>
-        <p className="text-text-secondary">{t('deudas.chart_empty_subtitle')}</p>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex justify-end">{segmented}</div>
+        {emptyCard}
       </div>
     )
   }
 
   if (filteredItems.length === 0) {
     return (
-      <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
-        <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
-          <Icon name="bar" className="w-full h-full" />
-        </div>
-        <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('deudas.chart_empty')}</h3>
-        <p className="text-text-secondary">{t('deudas.chart_empty_subtitle')}</p>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex justify-end">{segmented}</div>
+        {emptyCard}
       </div>
     )
   }
@@ -177,42 +224,93 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
     )
   }
 
+  // SPEC-105: Cronograma vertical. Una columna por deuda; la altura es el
+  // tiempo restante hasta su finalización. En pantallas angostas se permite
+  // scroll horizontal manteniendo el tamaño de fuente legible.
   const renderCronograma = () => {
-    const row = 38
-    const top = 8
-    const W = DESIGN_W
-    const L = Math.min(190, W * 0.34)
-    const R = 84
-    const w = W - L - R
-    const H = top + filteredItems.length * row
-    const nameMax = Math.floor((L - 8) / 7) // ~7px por carácter a fontSize 13
+    const n = filteredItems.length
+    const L = 40
+    const R = 12
+    const TOP = 30
+    const BOTTOM = 78
+    const H = 360
+    const slot = Math.max(48, Math.min(84, 480 / Math.max(n, 1)))
+    const plotW = slot * n
+    const W = L + plotW + R
+    const plotH = H - TOP - BOTTOM
+    const baseline = TOP + plotH
+    const Y = (tt: number) => TOP + plotH - ((tt - t0) / SPAN) * plotH
+    const barW = Math.min(44, Math.max(14, slot * 0.52))
+    const nameMax = Math.max(8, Math.floor(slot / 5.5))
+    const firstYear = now.getFullYear() + 1
+    const lastYear = lastEnd.getFullYear() + 1
+    const yearStep = Math.max(1, Math.ceil((lastYear - firstYear + 1) / 8))
+    const tickYears: number[] = []
+    for (let y = firstYear; y <= lastYear; y += yearStep) tickYears.push(y)
+
     return (
-      <svg viewBox={`0 0 ${W} ${H + 26}`} className="block w-full min-w-[360px]" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('deudas.chart_title_cronograma')}>
-        {yearTicks(L, w, H)}
-        {filteredItems.map((item, i) => {
-          const y = top + i * row
-          const x2 = L + (item.endDate.getTime() - t0) / SPAN * w
-          const bw = Math.max(5, x2 - L)
-          const sym = currencies.find((c) => c.code === item.debt.currency_code)?.symbol || item.debt.currency_code || ''
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="block w-full"
+        style={{ minWidth: `${Math.max(320, W)}px` }}
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label={t('deudas.chart_title_cronograma')}
+      >
+        {tickYears.map((year) => {
+          const y = Y(new Date(year, 0, 1).getTime())
+          if (y < TOP || y > baseline) return null
           return (
-            <g key={item.debt.id} style={{ cursor: 'default' }}>
-              <rect x={0} y={y} width={W} height={row} fill="transparent" onMouseMove={(e) => showTip(e, rowTooltip(item))} onMouseLeave={() => setTip(null)} />
-              <text x={0} y={y + 16} fontSize="13" fontWeight="600" fill={TEXT_COLOR}>
-                {truncateLabel(item.debt.description, nameMax)}
-              </text>
-              <text className="m" x={0} y={y + 30} fontSize="11" fill={TEXT_SECONDARY}>
-                {formatMoney(item.debt.pending_amount, sym)}
-              </text>
-              <rect x={L} y={y + 8} width={w} height={20} rx={5} fill={BORDER_COLOR} />
-              <rect x={L} y={y + 8} width={bw} height={20} rx={5} fill={COL[i % COL.length]} />
-              <text x={L + bw + 8} y={y + 23} fontSize="12" fill={TEXT_COLOR}>
-                {fm(item.endDate)}
+            <g key={year}>
+              <line x1={L} x2={L + plotW} y1={y} y2={y} stroke={BORDER_COLOR} strokeDasharray="3 4" />
+              <text className="m" x={L - 6} y={y + 4} fontSize="11" textAnchor="end" fill={TEXT_SECONDARY}>
+                {year}
               </text>
             </g>
           )
         })}
-        <line x1={L} x2={L} y1={8} y2={H} stroke={ACCENT} strokeWidth="2" />
-        <text x={L + 4} y={H + 16} fontSize="11" fill={ACCENT} style={{ fill: ACCENT }}>
+
+        {filteredItems.map((item, i) => {
+          const cx = L + i * slot + slot / 2
+          const yEnd = Math.min(baseline, Math.max(TOP, Y(item.endDate.getTime())))
+          const barH = Math.max(3, baseline - yEnd)
+          const sym = currencies.find((c) => c.code === item.debt.currency_code)?.symbol || item.debt.currency_code || ''
+          return (
+            <g key={item.debt.id} style={{ cursor: 'default' }}>
+              <rect
+                x={L + i * slot}
+                y={TOP}
+                width={slot}
+                height={plotH}
+                fill="transparent"
+                onMouseMove={(e) => showTip(e, rowTooltip(item))}
+                onMouseLeave={() => setTip(null)}
+              />
+              <rect x={cx - barW / 2} y={yEnd} width={barW} height={barH} rx={4} fill={COL[i % COL.length]} pointerEvents="none" />
+              <text className="m" x={cx} y={yEnd - 6} fontSize="11" textAnchor="middle" fill={TEXT_SECONDARY} pointerEvents="none">
+                {`${monthShort(t, item.endDate.getMonth() + 1)} ${String(item.endDate.getFullYear()).slice(2)}`}
+              </text>
+              <text
+                className="m"
+                x={cx + 3}
+                y={baseline + 14}
+                fontSize="11"
+                textAnchor="end"
+                fill={TEXT_COLOR}
+                transform={`rotate(-38 ${cx + 3} ${baseline + 14})`}
+                pointerEvents="none"
+              >
+                {truncateLabel(item.debt.description, nameMax)}
+              </text>
+              <text className="m" x={cx} y={H - 6} fontSize="11" textAnchor="middle" fill={TEXT_SECONDARY} pointerEvents="none">
+                {formatMoney(item.debt.pending_amount, sym)}
+              </text>
+            </g>
+          )
+        })}
+
+        <line x1={L} x2={L + plotW} y1={baseline} y2={baseline} stroke={ACCENT} strokeWidth="1.5" />
+        <text className="m" x={L + plotW} y={baseline + 12} fontSize="11" textAnchor="end" fill={ACCENT}>
           {t('deudas.chart_today')}
         </text>
       </svg>
@@ -286,29 +384,6 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
     )
   }
 
-  const renderCronogramaMovil = () => {
-    return (
-      <div className="space-y-2.5">
-        {filteredItems.map((item, i) => {
-          const pct = Math.min(100, Math.max(2, ((item.endDate.getTime() - t0) / SPAN) * 100))
-          const sym = currencies.find((c) => c.code === item.debt.currency_code)?.symbol || item.debt.currency_code || ''
-          return (
-            <div key={item.debt.id} className="border border-border rounded-ios-sm p-3">
-              <div className="flex items-center justify-between gap-2 mb-0.5">
-                <p className="text-sm font-semibold truncate min-w-0">{item.debt.description}</p>
-                <span className="text-xs text-text-secondary shrink-0">{fm(item.endDate)}</span>
-              </div>
-              <p className="text-xs text-text-secondary mb-2">{formatMoney(item.debt.pending_amount, sym)}</p>
-              <div className="h-2 rounded-full bg-border overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COL[i % COL.length] }} />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-3 sm:space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -342,37 +417,11 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1 bg-bg rounded-ios p-1">
-            <button
-              onClick={() => setView('cronograma')}
-              aria-pressed={view === 'cronograma'}
-              className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
-                view === 'cronograma' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
-              }`}
-            >
-              {t('deudas.chart_view_cronograma')}
-            </button>
-            <button
-              onClick={() => setView('saldo')}
-              aria-pressed={view === 'saldo'}
-              className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
-                view === 'saldo' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
-              }`}
-            >
-              {t('deudas.chart_view_saldo')}
-            </button>
-          </div>
+          {segmented}
         </div>
 
         <div className="overflow-x-auto">
-          {view === 'cronograma' ? (
-            <>
-              <div className="sm:hidden">{renderCronogramaMovil()}</div>
-              <div className="hidden sm:block">{renderCronograma()}</div>
-            </>
-          ) : (
-            renderSaldo()
-          )}
+          {view === 'cronograma' ? renderCronograma() : renderSaldo()}
         </div>
 
         <p className="text-[10px] text-text-secondary mt-2">
