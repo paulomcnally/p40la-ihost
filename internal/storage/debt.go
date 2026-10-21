@@ -22,16 +22,38 @@ const debtColumns = `
 	d.id, d.institution_id, COALESCE(i.name, ''), d.identifier, d.description,
 	d.total, d.principal, d.currency_id, COALESCE(c.code, ''),
 	d.installments_total, d.installment_amount, d.interest_rate, d.payment_day,
-	d.start_date, d.status, d.deleted_at, d.created_at, d.updated_at
+	d.start_date, d.status,
+	COALESCE(s.pending_count, 0), COALESCE(s.pending_amount, 0),
+	COALESCE(s.paid_count, 0), COALESCE(s.paid_amount, 0),
+	COALESCE(s.next_due_date, ''), COALESCE(s.last_due_date, ''), COALESCE(s.last_paid_at, ''),
+	d.deleted_at, d.created_at, d.updated_at
 `
 
-// List devuelve todas las deudas no eliminadas, con acreedor y moneda.
+// debtJoins agrega el resumen de cuotas por deuda en una sola consulta
+// (SPEC-104): pendientes, pagadas, próxima y última cuota pendiente, último pago.
+const debtJoins = `
+	FROM debts d
+	LEFT JOIN institutions i ON i.id = d.institution_id
+	LEFT JOIN currencies c ON c.id = d.currency_id
+	LEFT JOIN (
+		SELECT debt_id,
+		       SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_count,
+		       SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS pending_amount,
+		       SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid_count,
+		       SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS paid_amount,
+		       MIN(CASE WHEN status = 'pending' THEN due_date END) AS next_due_date,
+		       MAX(CASE WHEN status = 'pending' THEN due_date END) AS last_due_date,
+		       MAX(CASE WHEN status = 'paid' THEN paid_at END) AS last_paid_at
+		FROM debt_bills
+		WHERE deleted_at IS NULL
+		GROUP BY debt_id
+	) s ON s.debt_id = d.id
+`
+
+// List devuelve todas las deudas no eliminadas, con acreedor, moneda y resumen de cuotas.
 func (s *DebtStorage) List(ctx context.Context) ([]models.Debt, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT `+debtColumns+`
-		FROM debts d
-		LEFT JOIN institutions i ON i.id = d.institution_id
-		LEFT JOIN currencies c ON c.id = d.currency_id
+		SELECT `+debtColumns+debtJoins+`
 		WHERE d.deleted_at IS NULL
 		ORDER BY d.description
 	`)
@@ -43,13 +65,10 @@ func (s *DebtStorage) List(ctx context.Context) ([]models.Debt, error) {
 	return scanDebts(rows)
 }
 
-// GetByID busca una deuda por su ID.
+// GetByID busca una deuda por su ID, con su resumen de cuotas.
 func (s *DebtStorage) GetByID(ctx context.Context, id int64) (*models.Debt, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT `+debtColumns+`
-		FROM debts d
-		LEFT JOIN institutions i ON i.id = d.institution_id
-		LEFT JOIN currencies c ON c.id = d.currency_id
+		SELECT `+debtColumns+debtJoins+`
 		WHERE d.id = ? AND d.deleted_at IS NULL
 	`, id)
 	return scanDebt(row)
@@ -117,11 +136,14 @@ func (s *DebtStorage) SoftDelete(ctx context.Context, id int64) error {
 func scanDebt(row *sql.Row) (*models.Debt, error) {
 	var d models.Debt
 	var deletedAt sql.NullTime
-	var institutionName, currencyCode sql.NullString
+	var institutionName, currencyCode, nextDue, lastDue, lastPaid sql.NullString
 	if err := row.Scan(&d.ID, &d.InstitutionID, &institutionName, &d.Identifier, &d.Description,
 		&d.Total, &d.Principal, &d.CurrencyID, &currencyCode,
 		&d.InstallmentsTotal, &d.InstallmentAmount, &d.InterestRate, &d.PaymentDay,
-		&d.StartDate, &d.Status, &deletedAt, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		&d.StartDate, &d.Status,
+		&d.PendingCount, &d.PendingAmount, &d.PaidCount, &d.PaidAmount,
+		&nextDue, &lastDue, &lastPaid,
+		&deletedAt, &d.CreatedAt, &d.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -129,6 +151,9 @@ func scanDebt(row *sql.Row) (*models.Debt, error) {
 	}
 	d.InstitutionName = institutionName.String
 	d.CurrencyCode = currencyCode.String
+	d.NextDueDate = nextDue.String
+	d.LastDueDate = lastDue.String
+	d.LastPaidAt = lastPaid.String
 	if deletedAt.Valid {
 		d.DeletedAt = &deletedAt.Time
 	}
@@ -140,15 +165,21 @@ func scanDebts(rows *sql.Rows) ([]models.Debt, error) {
 	for rows.Next() {
 		var d models.Debt
 		var deletedAt sql.NullTime
-		var institutionName, currencyCode sql.NullString
+		var institutionName, currencyCode, nextDue, lastDue, lastPaid sql.NullString
 		if err := rows.Scan(&d.ID, &d.InstitutionID, &institutionName, &d.Identifier, &d.Description,
 			&d.Total, &d.Principal, &d.CurrencyID, &currencyCode,
 			&d.InstallmentsTotal, &d.InstallmentAmount, &d.InterestRate, &d.PaymentDay,
-			&d.StartDate, &d.Status, &deletedAt, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			&d.StartDate, &d.Status,
+			&d.PendingCount, &d.PendingAmount, &d.PaidCount, &d.PaidAmount,
+			&nextDue, &lastDue, &lastPaid,
+			&deletedAt, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear deuda: %w", err)
 		}
 		d.InstitutionName = institutionName.String
 		d.CurrencyCode = currencyCode.String
+		d.NextDueDate = nextDue.String
+		d.LastDueDate = lastDue.String
+		d.LastPaidAt = lastPaid.String
 		if deletedAt.Valid {
 			d.DeletedAt = &deletedAt.Time
 		}

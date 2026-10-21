@@ -21,7 +21,7 @@ func NewDebtBillStorage(db *sql.DB) *DebtBillStorage {
 
 const debtBillColumns = `
 	db.id, db.debt_id, COALESCE(d.description, ''), COALESCE(i.name, ''),
-	COALESCE(c.code, ''), db.installment_number, db.due_date, db.issue_date, db.amount,
+	COALESCE(c.code, ''), COALESCE(d.status, ''), db.installment_number, db.due_date, db.issue_date, db.amount,
 	db.status, db.paid_at, db.payment_reference, db.deleted_at,
 	db.created_at, db.updated_at
 `
@@ -179,12 +179,81 @@ func (s *DebtBillStorage) SoftDeleteByDebt(ctx context.Context, debtID int64) er
 	return nil
 }
 
+// SoftDeleteOverflow marca como eliminadas las cuotas cuyo número supera el
+// total de cuotas configurado en la deuda (SPEC-104, REQ-009b).
+func (s *DebtBillStorage) SoftDeleteOverflow(ctx context.Context, debtID int64, maxInstallment int) error {
+	if maxInstallment < 1 {
+		return nil
+	}
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE debt_bills
+		SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+		WHERE debt_id = ? AND installment_number > ? AND deleted_at IS NULL
+	`, debtID, maxInstallment)
+	if err != nil {
+		return fmt.Errorf("eliminar cuotas sobrantes de deuda: %w", err)
+	}
+	return nil
+}
+
+// FinalizeCompleted marca como finalizadas todas las deudas activas que ya no
+// tienen cuotas pendientes (SPEC-104, REQ-002). Es idempotente.
+func (s *DebtBillStorage) FinalizeCompleted(ctx context.Context) (int64, error) {
+	result, err := s.db.ExecContext(ctx, `
+		UPDATE debts
+		SET status = 'finalizada', updated_at = CURRENT_TIMESTAMP
+		WHERE status = 'activa' AND deleted_at IS NULL
+		  AND EXISTS (
+		    SELECT 1 FROM debt_bills b
+		    WHERE b.debt_id = debts.id AND b.deleted_at IS NULL
+		  )
+		  AND NOT EXISTS (
+		    SELECT 1 FROM debt_bills b
+		    WHERE b.debt_id = debts.id AND b.deleted_at IS NULL AND b.status = 'pending'
+		  )
+	`)
+	if err != nil {
+		return 0, fmt.Errorf("finalizar deudas completas: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("contar deudas finalizadas: %w", err)
+	}
+	return affected, nil
+}
+
+// FinalizeIfCompleted finaliza una deuda puntual si está activa y ya no le
+// quedan cuotas pendientes (SPEC-104, REQ-001). Devuelve true si la cerró.
+func (s *DebtBillStorage) FinalizeIfCompleted(ctx context.Context, debtID int64) (bool, error) {
+	result, err := s.db.ExecContext(ctx, `
+		UPDATE debts
+		SET status = 'finalizada', updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND status = 'activa' AND deleted_at IS NULL
+		  AND EXISTS (
+		    SELECT 1 FROM debt_bills b
+		    WHERE b.debt_id = debts.id AND b.deleted_at IS NULL
+		  )
+		  AND NOT EXISTS (
+		    SELECT 1 FROM debt_bills b
+		    WHERE b.debt_id = debts.id AND b.deleted_at IS NULL AND b.status = 'pending'
+		  )
+	`, debtID)
+	if err != nil {
+		return false, fmt.Errorf("finalizar deuda completa: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("contar deudas finalizadas: %w", err)
+	}
+	return affected > 0, nil
+}
+
 func scanDebtBill(row *sql.Row) (*models.DebtBill, error) {
 	var b models.DebtBill
 	var deletedAt, paidAt sql.NullTime
-	var debtDescription, institutionName, currencyCode, paymentReference, issueDate sql.NullString
+	var debtDescription, institutionName, currencyCode, debtStatus, paymentReference, issueDate sql.NullString
 	if err := row.Scan(&b.ID, &b.DebtID, &debtDescription, &institutionName,
-		&currencyCode, &b.InstallmentNumber, &b.DueDate, &issueDate, &b.Amount,
+		&currencyCode, &debtStatus, &b.InstallmentNumber, &b.DueDate, &issueDate, &b.Amount,
 		&b.Status, &paidAt, &paymentReference, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -194,6 +263,7 @@ func scanDebtBill(row *sql.Row) (*models.DebtBill, error) {
 	b.DebtDescription = debtDescription.String
 	b.InstitutionName = institutionName.String
 	b.CurrencyCode = currencyCode.String
+	b.DebtStatus = debtStatus.String
 	b.PaymentReference = paymentReference.String
 	if issueDate.Valid {
 		b.IssueDate = &issueDate.String
@@ -212,15 +282,16 @@ func scanDebtBills(rows *sql.Rows) ([]models.DebtBill, error) {
 	for rows.Next() {
 		var b models.DebtBill
 		var deletedAt, paidAt sql.NullTime
-		var debtDescription, institutionName, currencyCode, paymentReference, issueDate sql.NullString
+		var debtDescription, institutionName, currencyCode, debtStatus, paymentReference, issueDate sql.NullString
 		if err := rows.Scan(&b.ID, &b.DebtID, &debtDescription, &institutionName,
-			&currencyCode, &b.InstallmentNumber, &b.DueDate, &issueDate, &b.Amount,
+			&currencyCode, &debtStatus, &b.InstallmentNumber, &b.DueDate, &issueDate, &b.Amount,
 			&b.Status, &paidAt, &paymentReference, &deletedAt, &b.CreatedAt, &b.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear cuota: %w", err)
 		}
 		b.DebtDescription = debtDescription.String
 		b.InstitutionName = institutionName.String
 		b.CurrencyCode = currencyCode.String
+		b.DebtStatus = debtStatus.String
 		b.PaymentReference = paymentReference.String
 		if issueDate.Valid {
 			b.IssueDate = &issueDate.String

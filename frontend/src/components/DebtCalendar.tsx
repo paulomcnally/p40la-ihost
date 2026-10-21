@@ -4,6 +4,7 @@ import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import DebtPayModal from './DebtPayModal'
+import { isPaidAhead } from '../utils/debtMonthlyAggregation'
 import type { DebtBill } from '../types'
 
 const WEEKDAYS_ES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
@@ -31,11 +32,18 @@ function BillRow({ bill, onPay }: { bill: DebtBill; onPay: (b: DebtBill) => void
         </p>
       </div>
       <div className="flex flex-col items-end gap-2 shrink-0 min-w-0">
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
-          bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
-        }`}>
-          {t(`bills.status_${bill.status}`)}
-        </span>
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {isPaidAhead(bill) && (
+            <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary whitespace-nowrap">
+              {t('deudas.paid_ahead_short')}
+            </span>
+          )}
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${
+            bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
+          }`}>
+            {t(`bills.status_${bill.status}`)}
+          </span>
+        </div>
         {bill.status === 'pending' && (
           <button
             onClick={() => onPay(bill)}
@@ -110,7 +118,11 @@ export default function DebtCalendar() {
   }, [bills, year, month])
 
   const selectedBills = selectedDay ? bills.filter((b) => b.due_date === selectedDay) : []
-  const totalDay = selectedBills.reduce((sum, b) => sum + b.amount, 0)
+  // SPEC-104 REQ-005: el total del día solo cuenta cuotas pendientes de deudas activas.
+  const payableBills = selectedBills.filter(
+    (b) => b.status === 'pending' && (b.debt_status ?? 'activa') === 'activa'
+  )
+  const totalDay = payableBills.reduce((sum, b) => sum + b.amount, 0)
   const weekdays = lang === 'es' ? WEEKDAYS_ES : WEEKDAYS_EN
   const todayKey = dateKey(now)
 
@@ -181,8 +193,14 @@ export default function DebtCalendar() {
               <h4 className="font-semibold min-w-0 truncate">{selectedDay}</h4>
               {selectedBills.length > 0 && (
                 <span className="text-sm text-text-secondary shrink-0">
-                  {t('deudas.total_day')}:{' '}
-                  <strong>{formatMoney(totalDay, selectedBills[0].currency_code)}</strong>
+                  {payableBills.length > 0 ? (
+                    <>
+                      {t('deudas.total_day')}:{' '}
+                      <strong>{formatMoney(totalDay, payableBills[0].currency_code)}</strong>
+                    </>
+                  ) : (
+                    <span className="text-emerald-600 dark:text-emerald-400">{t('deudas.all_paid_day')}</span>
+                  )}
                 </span>
               )}
             </div>
@@ -212,7 +230,10 @@ export default function DebtCalendar() {
         ) : (
           daysWithBills.map((d) => {
             const dayBills = bills.filter((b) => b.due_date === d)
-            const dayTotal = dayBills.reduce((s, b) => s + b.amount, 0)
+            const dayPayable = dayBills.filter(
+              (b) => b.status === 'pending' && (b.debt_status ?? 'activa') === 'activa'
+            )
+            const dayTotal = dayPayable.reduce((s, b) => s + b.amount, 0)
             const isToday = d === todayKey
             const dObj = new Date(`${d}T00:00:00`)
             const weekday = weekdays[(dObj.getDay() + 6) % 7]
@@ -231,7 +252,9 @@ export default function DebtCalendar() {
                         {weekday}, {t(`months.${Number(d.slice(5, 7))}`)} {dayNum}
                       </p>
                       <p className="text-xs text-text-secondary">
-                        {dayBills.length} {dayBills.length === 1 ? t('deudas.installment') : `${t('deudas.installment')}s`} · {formatMoney(dayTotal, dayBills[0].currency_code)}
+                        {dayPayable.length > 0
+                          ? `${dayPayable.length} ${t('deudas.filter_pending').toLowerCase()} · ${formatMoney(dayTotal, dayPayable[0].currency_code)}`
+                          : t('deudas.all_paid_day')}
                       </p>
                     </div>
                   </div>
