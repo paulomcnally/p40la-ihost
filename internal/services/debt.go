@@ -164,7 +164,7 @@ func (s *DebtService) ReconcileDebtBills(ctx context.Context) error {
 		return err
 	}
 	for i := range debts {
-		if debts[i].Status == DebtStatusActive {
+		if debts[i].Status == DebtStatusActive && debts[i].PaidCount+debts[i].PendingCount < debts[i].InstallmentsTotal {
 			if err := s.ensureDebtBills(ctx, &debts[i]); err != nil {
 				return err
 			}
@@ -198,14 +198,22 @@ func (s *DebtService) ensureDebtBills(ctx context.Context, debt *models.Debt) er
 		if err != nil {
 			return err
 		}
+		dueDate := dueDateForInstallment(start, k, debt.PaymentDay)
 		if existing != nil {
+			// SPEC-104: si la cuota había sido eliminada por reducir el total,
+			// se reutiliza en lugar de chocar con la restricción única.
+			if existing.DeletedAt != nil {
+				if err := s.debtBills.Restore(ctx, existing.ID, dueDate, amount); err != nil {
+					return err
+				}
+			}
 			continue
 		}
 
 		bill := &models.DebtBill{
 			DebtID:            debt.ID,
 			InstallmentNumber: k,
-			DueDate:           dueDateForInstallment(start, k, debt.PaymentDay),
+			DueDate:           dueDate,
 			Amount:            amount,
 			Status:            "pending",
 		}

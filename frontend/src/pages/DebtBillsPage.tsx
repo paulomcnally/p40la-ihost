@@ -38,8 +38,12 @@ export default function DebtBillsPage() {
     ])
     setDebt(debtData)
     setBills(billList || [])
+    // SPEC-104: en una deuda cerrada, abrir directamente el historial de cuotas pagadas.
+    if (!searchParams.get('status') && debtData && (debtData.pending_count ?? 0) === 0) {
+      setSearchParams({ status: 'paid' }, { replace: true })
+    }
     setLoading(false)
-  }, [id])
+  }, [id, searchParams, setSearchParams])
 
   useEffect(() => {
     load()

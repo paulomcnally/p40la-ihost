@@ -139,18 +139,16 @@ export default function DebtAnalysis() {
     [filteredBills]
   )
 
-  const totalAll = useMemo(() => [...totals.values()].reduce((s, e) => s + e.total, 0), [totals])
-  const paidAll = useMemo(() => [...totals.values()].reduce((s, e) => s + e.paid, 0), [totals])
-  const pendingAll = useMemo(() => [...totals.values()].reduce((s, e) => s + e.pending, 0), [totals])
-  const paidPct = totalAll > 0 ? Math.round((paidAll / totalAll) * 100) : 0
-  const mainCurrency = [...totals.entries()].sort((a, b) => b[1].pending - a[1].pending)[0]?.[0] || ''
+  const mainCurrency = [...totals.entries()].sort((a, b) => b[1].pending - a[1].pending || b[1].total - a[1].total)[0]?.[0] || ''
   const displayCurrency = currencyFilter !== 'all' ? currencyFilter : mainCurrency
+  const displayTotals = totals.get(displayCurrency) || { total: 0, paid: 0, pending: 0 }
+  const paidPct = displayTotals.total > 0 ? Math.round((displayTotals.paid / displayTotals.total) * 100) : 0
 
   const byDebt = useMemo(() => {
-    const map = new Map<string, { total: number; paid: number; pending: number }>()
+    const map = new Map<string, { total: number; paid: number; pending: number; currency: string }>()
     for (const b of filteredBills) {
       const key = b.debt_description || `#${b.debt_id}`
-      const entry = map.get(key) || { total: 0, paid: 0, pending: 0 }
+      const entry = map.get(key) || { total: 0, paid: 0, pending: 0, currency: b.currency_code || 'NIO' }
       entry.total += b.amount
       if (b.status === 'paid') entry.paid += b.amount
       else if ((b.debt_status ?? 'activa') === 'activa') entry.pending += b.amount
@@ -162,10 +160,12 @@ export default function DebtAnalysis() {
   }, [filteredBills])
 
   const donutData = useMemo(() => {
-    const totalPending = byDebt.reduce((s, d) => s + d.pending, 0)
+    // El gráfico de torta se muestra en una sola moneda para no mezclar montos.
+    const scoped = byDebt.filter((d) => d.currency === displayCurrency)
+    const totalPending = scoped.reduce((s, d) => s + d.pending, 0)
     if (totalPending === 0) return []
-    const top = byDebt.filter((d) => d.pending > 0).slice(0, 6)
-    const othersPending = byDebt.filter((d) => d.pending > 0).slice(6).reduce((s, d) => s + d.pending, 0)
+    const top = scoped.filter((d) => d.pending > 0).slice(0, 6)
+    const othersPending = scoped.filter((d) => d.pending > 0).slice(6).reduce((s, d) => s + d.pending, 0)
     const items = top.map((d) => ({ label: d.name, value: d.pending }))
     if (othersPending > 0) items.push({ label: t('deudas.analysis_others'), value: othersPending })
     let acc = 0
@@ -175,7 +175,7 @@ export default function DebtAnalysis() {
       const end = (acc / totalPending) * 360
       return { ...item, color: PALETTE[i % PALETTE.length], startAngle: start, endAngle: end }
     })
-  }, [byDebt, t])
+  }, [byDebt, displayCurrency, t])
 
   const periodLabel = `${t(`months.${month}`)} ${year}`
 
@@ -317,7 +317,8 @@ export default function DebtAnalysis() {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-xs text-text-secondary">{t('deudas.analysis_pending')}</span>
-                    <span className="text-lg font-bold">{displayCurrency}{' '}{formatMoney(pendingAll)}</span>
+                    <span className="text-[10px] font-medium text-text-secondary">{displayCurrency}</span>
+                    <span className="text-lg font-bold">{formatMoney(displayTotals.pending)}</span>
                   </div>
                 </div>
                 <div className="flex-1 w-full min-w-0">
@@ -350,15 +351,15 @@ export default function DebtAnalysis() {
                     <div key={d.name}>
                       <div className="flex items-center justify-between gap-3 mb-1.5">
                         <span className="text-sm font-medium truncate">{d.name}</span>
-                        <span className="text-sm font-semibold shrink-0">{displayCurrency} {formatMoney(total)}</span>
+                        <span className="text-sm font-semibold shrink-0">{d.currency} {formatMoney(total)}</span>
                       </div>
                       <div className="h-2 rounded-full bg-border overflow-hidden flex">
                         <div className="h-full bg-success" style={{ width: `${paidPctDebt}%` }} />
                         <div className="h-full bg-amber-400" style={{ width: `${pendingPctDebt}%` }} />
                       </div>
                       <div className="flex items-center justify-between gap-3 mt-1 text-xs text-text-secondary">
-                        <span>{t('deudas.analysis_paid')}: {displayCurrency} {formatMoney(d.paid)}</span>
-                        <span>{t('deudas.analysis_pending')}: {displayCurrency} {formatMoney(d.pending)}</span>
+                        <span>{t('deudas.analysis_paid')}: {d.currency} {formatMoney(d.paid)}</span>
+                        <span>{t('deudas.analysis_pending')}: {d.currency} {formatMoney(d.pending)}</span>
                       </div>
                     </div>
                   )
