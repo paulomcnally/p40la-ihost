@@ -4,10 +4,11 @@ import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import Select from './Select'
 import DebtHistoryChart from './DebtHistoryChart'
+import DebtProjectionChart from './DebtProjectionChart'
 import { debtPendingEndDate, leftTime } from '../utils/debtMonthlyAggregation'
 import type { Debt, Currency } from '../types'
 
-type View = 'cronograma' | 'saldo' | 'historial'
+type View = 'cronograma' | 'saldo' | 'historial' | 'proyeccion'
 
 const COL = ['#0a84ff', '#30b0c7', '#5e5ce6', '#34c759', '#ff9f0a', '#ff375f']
 
@@ -103,11 +104,11 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   const currencySymbol = currencies.find((c) => c.code === effectiveCurrency)?.symbol || effectiveCurrency
 
   const segmented = (
-    <div className="flex items-center gap-1 bg-bg rounded-ios p-1">
+    <div className="flex flex-wrap items-center gap-1 bg-bg rounded-ios p-1 max-w-full">
       <button
         onClick={() => setView('cronograma')}
         aria-pressed={view === 'cronograma'}
-        className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
+        className={`px-2.5 sm:px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] whitespace-nowrap shrink-0 ${
           view === 'cronograma' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
         }`}
       >
@@ -116,7 +117,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
       <button
         onClick={() => setView('saldo')}
         aria-pressed={view === 'saldo'}
-        className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
+        className={`px-2.5 sm:px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] whitespace-nowrap shrink-0 ${
           view === 'saldo' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
         }`}
       >
@@ -125,11 +126,20 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
       <button
         onClick={() => setView('historial')}
         aria-pressed={view === 'historial'}
-        className={`px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] ${
+        className={`px-2.5 sm:px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] whitespace-nowrap shrink-0 ${
           view === 'historial' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
         }`}
       >
         {t('deudas.chart_view_history')}
+      </button>
+      <button
+        onClick={() => setView('proyeccion')}
+        aria-pressed={view === 'proyeccion'}
+        className={`px-2.5 sm:px-3 py-1.5 rounded-ios-sm text-xs font-medium transition-colors min-h-[44px] whitespace-nowrap shrink-0 ${
+          view === 'proyeccion' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-border'
+        }`}
+      >
+        {t('deudas.chart_view_projection')}
       </button>
     </div>
   )
@@ -407,7 +417,11 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3 flex-wrap">
             <p className="text-sm font-semibold">
-              {view === 'cronograma' ? t('deudas.chart_title_cronograma') : t('deudas.chart_title_saldo')}
+              {view === 'cronograma'
+                ? t('deudas.chart_title_cronograma')
+                : view === 'proyeccion'
+                  ? t('deudas.chart_title_projection')
+                  : t('deudas.chart_title_saldo')}
             </p>
             {currencyOptions.length > 1 && (
               <div className="w-44">
@@ -423,12 +437,24 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
         </div>
 
         <div className="overflow-x-auto">
-          {view === 'cronograma' ? renderCronograma() : renderSaldo()}
+          {view === 'cronograma' ? (
+            renderCronograma()
+          ) : view === 'proyeccion' ? (
+            <DebtProjectionChart
+              items={filteredItems}
+              currencies={currencies}
+              effectiveCurrency={effectiveCurrency}
+            />
+          ) : (
+            renderSaldo()
+          )}
         </div>
 
-        <p className="text-[10px] text-text-secondary mt-2">
-          {view === 'cronograma' ? t('deudas.chart_note_cronograma') : t('deudas.chart_note_saldo')}
-        </p>
+        {view !== 'proyeccion' && (
+          <p className="text-[10px] text-text-secondary mt-2">
+            {view === 'cronograma' ? t('deudas.chart_note_cronograma') : t('deudas.chart_note_saldo')}
+          </p>
+        )}
         {closedCount > 0 && (
           <p className="text-[10px] text-text-secondary mt-1">
             {closedCount} {t('deudas.chart_closed_out')}
