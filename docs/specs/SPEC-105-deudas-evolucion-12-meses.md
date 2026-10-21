@@ -34,7 +34,7 @@ El cálculo se hace en el backend con una consulta agregada liviana (una fila po
 
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
 
-1. **REQ-001**: Agregar una **tercera vista "Últimos 12 meses"** al segmented control del tab Gráfica de Deudas, junto a "Cronograma" y "Saldo total", sin modificar el contenido ni el comportamiento de esas dos vistas ni de los demás tabs (Análisis, Calendario, Deudas). La vista debe poder abrirse **aunque todas las deudas estén cerradas**: el early-return actual de `DebtChart` basado en `items.length === 0` (deudas con `pending_count > 0`) debe volverse condicional a las vistas Cronograma/Saldo, no aplicar a la vista histórica.
+1. **REQ-001**: Agregar una **tercera vista "Últimos 12 meses"** al segmented control del tab Gráfica de Deudas, junto a "Cronograma" y "Saldo total", sin modificar el contenido ni el comportamiento de esas dos vistas ni de los demás tabs (Análisis, Calendario, Deudas). La vista por defecto sigue siendo **Cronograma**; "Últimos 12 meses" se activa manualmente. La vista debe poder abrirse **aunque todas las deudas estén cerradas**: el early-return actual de `DebtChart` basado en `items.length === 0` (deudas con `pending_count > 0`) debe volverse condicional a las vistas Cronograma/Saldo, no aplicar a la vista histórica.
 2. **REQ-002**: La vista muestra un **gráfico de barras verticales** con **12 puntos mensuales**, del mes más antiguo al mes actual (incluido). Cada barra representa la **cantidad de deudas abiertas al cierre de ese mes** en la moneda seleccionada. La altura de la barra es un conteo entero, no un monto.
 3. **REQ-003**: Una deuda **cuenta como abierta** en un mes `m` si su `start_date` es anterior o igual al cierre de `m` y **no estaba cerrada** a esa fecha. Se considera cerrada cuando:
    - (a) fue **eliminada lógicamente** (`deleted_at` no nulo) y la eliminación ocurrió en `m` o antes;
@@ -368,7 +368,7 @@ pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el 
 - SPEC-054 (modelo de deudas), SPEC-081 (fechas), SPEC-100/101/102 (gráficas de deudas).
 - **SPEC-104** (released, merge `ec2e28c`): finalización automática, `last_paid_at`, `pending_amount` y advertencia de formatos de `paid_at`. Es la base de ADR-006; la vista histórica es complementaria y no reemplaza sus tabs.
 - `docs/specs/templates/spec-template.md` — estructura.
-- Decisión del usuario (2026-10-21): tercera vista dentro del tab Gráfica; métrica = **cantidad** de deudas abiertas por mes; "pagada" = finalizada o sin cuotas pendientes con al menos un pago; el mes de pago no cuenta; totales en cantidades + saldo pendiente actual de referencia; selector por moneda; ventana de 12 meses incluyendo el actual.
+- Decisión del usuario (2026-10-21): tercera vista dentro del tab Gráfica, con Cronograma como vista por defecto; métrica = **cantidad** de deudas abiertas por mes; "pagada" = finalizada o sin cuotas pendientes con al menos un pago; el mes de pago no cuenta; totales en cantidades + saldo pendiente actual de referencia; selector por moneda; ventana de 12 meses incluyendo el actual.
 
 ## 9. Historial de Cambios
 
@@ -379,3 +379,4 @@ pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el 
 | 2026-10-21 | opencode | Incluir deudas eliminadas lógicamente en la historia, usando `deleted_at` como fecha de cierre (REQ-003/REQ-004, CA-014/CA-015) |
 | 2026-10-21 | opencode | Incorporar SPEC-104 (ya en `main`): finalización automática, `last_paid_at`, comparación `YYYY-MM` de `paid_at`, early-return de `DebtChart` y ADR-006 |
 | 2026-10-21 | opencode | Cambiar la métrica a cantidad de deudas (montos solo como referencia), definir "pagada" como finalizada/sin pendientes con pagos, mes de pago excluido y totales en cantidades (ADR-002/003, REQ-002..009) |
+| 2026-10-21 | opencode | Confirmar Cronograma como vista por defecto del tab Gráfica (REQ-001) |
