@@ -1,7 +1,7 @@
 ---
 title: "Deudas: separar por pagar del historial, excluir cuotas adelantadas de los totales y finalización automática"
 id: "SPEC-104"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 107
 # Deudas: separar por pagar del historial, excluir cuotas adelantadas de los totales y finalización automática
 
 **ID**: SPEC-104  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -339,6 +339,7 @@ Cada cuota incluye `debt_status` (estado de la deuda dueña) para que el fronten
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial de la especificación (draft) a partir de la auditoría de producción y del pedido del usuario |
 | 2026-10-21 | opencode | Estado `in_progress`. Se agrega `last_due_date` al resumen por deuda: la Gráfica necesita la última cuota pendiente para proyectar el fin real |
+| 2026-10-21 | opencode | Release a `main` (merge de `feature/SPEC-104`, implementación `4c0de57`). Estado `released`. |
 | 2026-10-21 | opencode | Estado `pending_release`. Pruebas manuales del usuario satisfactorias ("funciona"); criterios de aceptación verificados en light y darkmode con capturas headless |
 | 2026-10-21 | opencode | Correcciones tras revisión visual: el reconciliador solo verifica deudas con cuotas faltantes (baja `GET /api/debts` de ~120 ms a ~6 ms), las cuotas eliminadas al reducir el total se restauran si se vuelve a ampliar, y el detalle de una deuda cerrada abre en "Pagadas" |
 | 2026-10-21 | opencode | MVP implementado (REQ-001 a REQ-010). Se agrega `debt_status` a las cuotas para que Análisis y Calendario puedan excluir de las sumas las deudas no activas. Validado contra una copia de la DB de producción: las 3 deudas completas se finalizan solas y noviembre queda en USD 2,433.63 / NIO 0.00. Pendientes: P1 (REQ-011 a REQ-014) y P2 (REQ-015, REQ-016) |
