@@ -67,11 +67,14 @@ El cálculo se hace en el backend con una consulta agregada liviana (una fila po
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
-1. **REQ-018 (P0, cambio solicitado durante evaluación)**: Cambiar la vista **Cronograma** de barras horizontales a **barras verticales**: una columna por deuda, ordenadas por fecha de finalización, con la altura de la barra representando el tiempo restante hasta esa fecha. Debe verse bien en móvil, tablet y desktop: tamaño de fuente legible, etiquetas rotadas y scroll horizontal solo dentro de la tarjeta cuando no entren las columnas. Para que el scroll interno funcione, el contenedor del layout (`DashboardLayout`) debe permitir encogerse (`min-w-0` en el wrapper y el `<main>`), evitando que un gráfico ancho ensanche toda la página en móvil. Aplica solo a Cronograma; las vistas Saldo total e histórica no cambian.
-2. **REQ-016**: Permitir consultar períodos de **6 o 24 meses** además de 12 mediante un selector (el endpoint acepta `months` entre 1 y 24).
+1. **REQ-016**: Permitir consultar períodos de **6 o 24 meses** además de 12 mediante un selector (el endpoint acepta `months` entre 1 y 24).
 2. **REQ-017**: Indicador de **mejor mes** (mayor reducción respecto del mes anterior) en la nota o tooltip.
 
-### 2.4 Requerimientos No Funcionales
+### 2.4 Cambio solicitado durante la evaluación (P0)
+
+1. **REQ-018**: Cambiar la vista **Cronograma** de barras horizontales a **barras verticales**: una columna por deuda, ordenadas por fecha de finalización, con la altura de la barra representando el tiempo restante hasta esa fecha. Debe verse bien en móvil, tablet y desktop: tamaño de fuente legible, etiquetas rotadas y scroll horizontal solo dentro de la tarjeta cuando no entren las columnas. Para que el scroll interno funcione, el contenedor del layout (`DashboardLayout`) debe permitir encogerse (`min-w-0` en el wrapper y el `<main>`), evitando que un gráfico ancho ensanche toda la página en móvil. Aplica solo a Cronograma; las vistas Saldo total e histórica no cambian.
+
+### 2.5 Requerimientos No Funcionales
 
 - **Rendimiento**: respuesta del endpoint < 50 ms con hasta 500 deudas y 24 meses; cálculo O(24 × n); sin N+1. Máximo 2 consultas SQL por request.
 - **Seguridad**: endpoint bajo `authMiddleware`, igual que el resto de `/api/debts`; sin datos sensibles nuevos.
@@ -309,7 +312,7 @@ pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el 
 - [ ] CA-013: Dada una deuda activa con cuotas pendientes, cuando el usuario paga la última cuota y la marca `finalizada` hoy, entonces los meses anteriores **siguen mostrando esa deuda y su total** y solo el mes actual (y posteriores) deja de sumarla. La serie pasada no cambia tras el cierre.
 - [ ] CA-014: Dada una deuda abierta durante varios meses, cuando el usuario la **elimina** hoy, entonces los meses anteriores **siguen mostrando esa deuda y su total** y solo el mes de eliminación (y posteriores) deja de sumarla. La consulta de historia no filtra `deleted_at`.
 - [ ] CA-015: Una deuda eliminada hace más de 12 meses no aparece en ninguna barra de la ventana actual, pero tampoco rompe totales ni conteos; si su moneda no tiene otra actividad en la ventana, no se ofrece en el selector.
-- [ ] CA-017: La vista Cronograma muestra columnas verticales por deuda, legibles en 390 px (móvil), 768 px (tablet) y desktop; no hay solapamiento de etiquetas ni texto ilegible.
+- [ ] CA-017: La vista Cronograma muestra columnas verticales por deuda, legibles en 390 px (móvil), 768 px (tablet) y desktop; no hay solapamiento de etiquetas ni texto menor a 11 px en ejes; los controles respetan un área táctil mínima de 44 px.
 - [ ] CA-016: Con **todas** las deudas cerradas (sin `pending_count > 0`), el tab Gráfica sigue mostrando el segmented control y la vista "Últimos 12 meses" con su serie histórica; no se aplica el early-return de estado vacío de Cronograma/Saldo.
 - [ ] CA-DARK: Los controles (segmented control, selector de moneda) usan tokens del tema y se verificaron en darkmode; tooltip y textos legibles.
 - [ ] CA-BACK: La vista vive dentro del tab Gráfica; no se crean páginas de detalle ni links "← Título", por lo que no requiere cambios en `BACK_ROUTES`.
@@ -368,6 +371,7 @@ pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el 
 - `migrations/0024_create_debts_and_debt_bills.up.sql`, `migrations/0030_add_bills_debt_bills_dates.up.sql` — modelo.
 - `internal/services/debt.go` — estados y generación de cuotas (`dueDateForInstallment`).
 - SPEC-054 (modelo de deudas), SPEC-081 (fechas), SPEC-100/101/102 (gráficas de deudas).
+- Buenas prácticas de diseño: [impeccable.style](https://impeccable.style) / [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — tipografía legible, áreas táctiles ≥44 px, responsive real y evitar anti-patrones de UI generada.
 - **SPEC-104** (released, merge `ec2e28c`): finalización automática, `last_paid_at`, `pending_amount` y advertencia de formatos de `paid_at`. Es la base de ADR-006; la vista histórica es complementaria y no reemplaza sus tabs.
 - `docs/specs/templates/spec-template.md` — estructura.
 - Decisión del usuario (2026-10-21): tercera vista dentro del tab Gráfica, con Cronograma como vista por defecto; métrica = **cantidad** de deudas abiertas por mes; "pagada" = finalizada o sin cuotas pendientes con al menos un pago; el mes de pago no cuenta; totales en cantidades + saldo pendiente actual de referencia; selector por moneda; ventana de 12 meses incluyendo el actual.
@@ -383,4 +387,5 @@ pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el 
 | 2026-10-21 | opencode | Cambiar la métrica a cantidad de deudas (montos solo como referencia), definir "pagada" como finalizada/sin pendientes con pagos, mes de pago excluido y totales en cantidades (ADR-002/003, REQ-002..009) |
 | 2026-10-21 | opencode | Confirmar Cronograma como vista por defecto del tab Gráfica (REQ-001) |
 | 2026-10-21 | opencode | Cambio solicitado: Cronograma a barras verticales (una columna por deuda, altura = tiempo restante), con requisito de responsive en móvil y tablet (REQ-018, CA-017) |
+| 2026-10-21 | opencode | Responsive móvil/tablet: min-w-0 en el layout para scroll interno, tabs de Deudas con wrap, tipografía de ejes ≥11 px y guía de diseño impeccable |
 | 2026-10-21 | opencode | Inicio de implementación |
