@@ -29,6 +29,20 @@ function monthLabel(t: (k: string) => string, month: string, withYear: boolean) 
   return withYear ? `${name} ${month.slice(0, 4)}` : name
 }
 
+function compactMoney(value: number, symbol: string) {
+  if (value >= 1_000_000) return `${symbol}${(value / 1_000_000).toFixed(1)}M`
+  if (value >= 1_000) return `${symbol}${Math.round(value / 1_000)}k`
+  return `${symbol}${Math.round(value)}`
+}
+
+function niceMax(value: number) {
+  if (value <= 0) return 1
+  const pow = Math.pow(10, Math.floor(Math.log10(value)))
+  const n = value / pow
+  const mult = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10
+  return mult * pow
+}
+
 export default function DebtHistoryChart() {
   const { t } = useI18nStore()
   const formatMoney = useCurrencyFormatStore((s) => s.formatMoney)
@@ -105,10 +119,9 @@ export default function DebtHistoryChart() {
 
   const { series, summary } = selected
   const currentMonth = series[series.length - 1]?.month ?? ''
-  const maxOpen = Math.max(1, ...series.map((p) => p.open_count))
-  const step = Math.max(1, Math.ceil(maxOpen / 4))
-  const yTop = Math.ceil(maxOpen / step) * step
-  const avg = series.reduce((sum, p) => sum + p.open_count, 0) / Math.max(1, series.length)
+  const maxAmount = Math.max(0, ...series.map((p) => p.outstanding_amount))
+  const yTop = niceMax(maxAmount)
+  const avg = series.reduce((sum, p) => sum + p.outstanding_amount, 0) / Math.max(1, series.length)
 
   const W = DESIGN_W
   const H = CHART_H
@@ -122,8 +135,7 @@ export default function DebtHistoryChart() {
   const barW = Math.max(8, slot * 0.58)
   const Y = (v: number) => TOP + plotH - (v / yTop) * plotH
 
-  const ticks: number[] = []
-  for (let v = 0; v <= yTop; v += step) ticks.push(v)
+  const ticks: number[] = [0, 0.25, 0.5, 0.75, 1].map((f) => yTop * f)
 
   const showTip = (e: React.MouseEvent, html: string) => {
     const left = Math.min(Math.max(e.clientX + 14, 8), window.innerWidth - TIP_MAX_W - 8)
@@ -131,24 +143,32 @@ export default function DebtHistoryChart() {
     setTip({ left, top, html })
   }
 
-  const pointTooltip = (month: string, open: number, closed: number) => {
+  const pointTooltip = (month: string, amount: number, open: number, closed: number) => {
     const idx = monthIndex(month)
     const label = `${t(`months.${idx}`)} ${month.slice(0, 4)}`
-    return `<b>${label}</b><br>${t('deudas.history_open_debts')}: <b>${open}</b><br>${t('deudas.history_closed_debts')}: <b>${closed}</b>`
+    return `<b>${label}</b><br>${t('deudas.history_amount')}: <b>${formatMoney(amount, selected.symbol || selected.code)}</b><br>${t('deudas.history_open_debts')}: <b>${open}</b><br>${t('deudas.history_closed_debts')}: <b>${closed}</b>`
   }
 
-  const changeLabel = `${summary.change_count > 0 ? '+' : ''}${summary.change_count}`
-  const changeClass =
-    summary.change_count < 0 ? 'text-success' : summary.change_count > 0 ? 'text-danger' : 'text-text'
+  const changeAmount = summary.change_amount
+  const changeAmountLabel = `${changeAmount > 0 ? '+' : ''}${formatMoney(changeAmount, selected.symbol || selected.code)}`
+  const changeClass = changeAmount < 0 ? 'text-success' : changeAmount > 0 ? 'text-danger' : 'text-text'
   const pctLabel =
-    summary.change_pct == null
+    summary.change_pct_amount == null
       ? '—'
-      : `${summary.change_pct > 0 ? '+' : ''}${summary.change_pct.toFixed(1)}%`
+      : `${summary.change_pct_amount > 0 ? '+' : ''}${summary.change_pct_amount.toFixed(1)}%`
 
   const cards = [
-    { label: t('deudas.history_stat_start'), value: String(summary.start_count) },
-    { label: t('deudas.history_stat_current'), value: String(summary.end_count) },
-    { label: t('deudas.history_stat_change'), value: changeLabel, sub: pctLabel, valueClass: changeClass },
+    {
+      label: t('deudas.history_stat_start'),
+      value: formatMoney(summary.start_amount, selected.symbol || selected.code),
+      sub: `${summary.start_count} ${t('deudas.history_open_debts').toLowerCase()}`,
+    },
+    {
+      label: t('deudas.history_stat_current'),
+      value: formatMoney(summary.end_amount, selected.symbol || selected.code),
+      sub: `${summary.end_count} ${t('deudas.history_open_debts').toLowerCase()}`,
+    },
+    { label: t('deudas.history_stat_change'), value: changeAmountLabel, sub: pctLabel, valueClass: changeClass },
     { label: t('deudas.history_stat_closed'), value: String(summary.closed_count) },
     {
       label: t('deudas.history_stat_pending'),
@@ -192,7 +212,7 @@ export default function DebtHistoryChart() {
               <g key={v}>
                 <line x1={L} x2={L + plotW} y1={Y(v)} y2={Y(v)} stroke={BORDER_COLOR} strokeDasharray="3 4" />
                 <text className="m" x={L - 6} y={Y(v) + 4} fontSize="11" textAnchor="end" fill={TEXT_SECONDARY}>
-                  {v}
+                  {compactMoney(v, selected.symbol || selected.code)}
                 </text>
               </g>
             ))}
@@ -212,7 +232,7 @@ export default function DebtHistoryChart() {
             {series.map((p, i) => {
               const isCurrent = p.month === currentMonth
               const x = L + i * slot + (slot - barW) / 2
-              const y = Y(p.open_count)
+              const y = Y(p.outstanding_amount)
               const h = Math.max(1, Y(0) - y)
               return (
                 <g key={p.month}>
@@ -222,14 +242,14 @@ export default function DebtHistoryChart() {
                     width={barW}
                     height={plotH}
                     fill="transparent"
-                    onMouseMove={(e) => showTip(e, pointTooltip(p.month, p.open_count, p.closed_count))}
+                    onMouseMove={(e) => showTip(e, pointTooltip(p.month, p.outstanding_amount, p.open_count, p.closed_count))}
                     onMouseLeave={() => setTip(null)}
                   />
                   <rect
                     x={x}
-                    y={p.open_count > 0 ? y : Y(0) - 1}
+                    y={p.outstanding_amount > 0 ? y : Y(0) - 1}
                     width={barW}
-                    height={p.open_count > 0 ? h : 1}
+                    height={p.outstanding_amount > 0 ? h : 1}
                     rx={4}
                     fill={ACCENT}
                     opacity={isCurrent ? 1 : 0.35}
@@ -275,6 +295,7 @@ export default function DebtHistoryChart() {
             <thead>
               <tr className="text-left text-text-secondary border-t border-border">
                 <th className="px-4 py-2 font-medium">{t('deudas.history_month')}</th>
+                <th className="px-4 py-2 font-medium text-right">{t('deudas.history_amount')}</th>
                 <th className="px-4 py-2 font-medium text-right">{t('deudas.history_open_debts')}</th>
                 <th className="px-4 py-2 font-medium text-right">{t('deudas.history_closed_debts')}</th>
               </tr>
@@ -283,6 +304,7 @@ export default function DebtHistoryChart() {
               {series.map((p) => (
                 <tr key={p.month} className="border-t border-border">
                   <td className="px-4 py-2">{monthLabel(t, p.month, true)}</td>
+                  <td className="px-4 py-2 text-right">{formatMoney(p.outstanding_amount, selected.symbol || selected.code)}</td>
                   <td className="px-4 py-2 text-right">{p.open_count}</td>
                   <td className="px-4 py-2 text-right">{p.closed_count}</td>
                 </tr>

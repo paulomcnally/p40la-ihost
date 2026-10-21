@@ -37,7 +37,9 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   const formatMoney = useCurrencyFormatStore((s) => s.formatMoney)
   const now = useMemo(() => new Date(), [])
 
-  const [view, setView] = useState<View>('cronograma')
+  // SPEC-106: el tab Gráfica abre en la evolución de los últimos 12 meses.
+  // Cronograma y Saldo total siguen disponibles manualmente.
+  const [view, setView] = useState<View>('historial')
   const [currencyFilter, setCurrencyFilter] = useState<string>('')
   const [tip, setTip] = useState<{ left: number; top: number; html: string } | null>(null)
 
