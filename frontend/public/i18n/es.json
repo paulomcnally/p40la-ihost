@@ -69,7 +69,7 @@
     "chart_stat_free": "Libre de deudas",
     "chart_title_cronograma": "Cuándo termina cada deuda",
     "chart_title_saldo": "Cuánto debes con el tiempo",
-    "chart_note_cronograma": "De la deuda que termina primero a la que termina último. La barra llega hasta su fecha de finalización.",
+    "chart_note_cronograma": "Cada columna es una deuda; la altura de la barra es el tiempo que resta hasta su finalización. Deslizá para ver todas si no entran.",
     "chart_note_saldo": "El saldo baja cada vez que termina una deuda. Cada punto es una deuda saldada.",
     "chart_ends": "Termina:",
     "chart_remains": "Restan:",
