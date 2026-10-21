@@ -119,12 +119,29 @@ func TestDebtHistoryMonthlyCounts(t *testing.T) {
 		t.Errorf("pending current: got %v, want 130", nio.Summary.PendingAmountCurrent)
 	}
 
+	// SPEC-106: monto adeudado reconstruido con las cuotas, no con debts.total.
+	wantAmount := []float64{400, 400, 400, 400, 300, 300, 300, 300, 200, 230, 130, 130}
+	for i, p := range nio.Series {
+		if p.OutstandingAmount != wantAmount[i] {
+			t.Errorf("NIO %s: outstanding=%v, want %v", p.Month, p.OutstandingAmount, wantAmount[i])
+		}
+	}
+	if nio.Summary.StartAmount != 400 || nio.Summary.EndAmount != 130 || nio.Summary.ChangeAmount != -270 {
+		t.Errorf("NIO amounts: got %+v", nio.Summary)
+	}
+	if nio.Summary.ChangePctAmount == nil || *nio.Summary.ChangePctAmount != -67.5 {
+		t.Errorf("change_pct_amount: got %v, want -67.5", nio.Summary.ChangePctAmount)
+	}
+
 	usd := findCurrency(t, history.Currencies, "USD")
 	if usd.Summary.StartCount != 1 || usd.Summary.EndCount != 1 || usd.Summary.ChangeCount != 0 {
 		t.Errorf("USD summary: got %+v", usd.Summary)
 	}
 	if usd.Summary.PendingAmountCurrent != 50 {
 		t.Errorf("USD pending: got %v, want 50", usd.Summary.PendingAmountCurrent)
+	}
+	if usd.Summary.StartAmount != 50 || usd.Summary.EndAmount != 50 {
+		t.Errorf("USD amounts: got %+v", usd.Summary)
 	}
 }
 

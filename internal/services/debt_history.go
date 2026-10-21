@@ -74,6 +74,7 @@ func (s *DebtService) History(ctx context.Context, months int, now time.Time) (*
 				continue
 			}
 			acc.series[i].OpenCount++
+			acc.series[i].OutstandingAmount += outstandingIn(row, key)
 		}
 		if closing != "" && closing >= monthKeys[0] && closing <= currentKey {
 			for i, key := range monthKeys {
@@ -101,6 +102,9 @@ func (s *DebtService) History(ctx context.Context, months int, now time.Time) (*
 
 	for _, code := range codes {
 		acc := byCurrency[code]
+		for i := range acc.series {
+			acc.series[i].OutstandingAmount = math.Round(acc.series[i].OutstandingAmount*100) / 100
+		}
 		summary := models.DebtHistorySummary{
 			StartCount:  acc.series[0].OpenCount,
 			EndCount:    acc.series[len(acc.series)-1].OpenCount,
@@ -113,6 +117,14 @@ func (s *DebtService) History(ctx context.Context, months int, now time.Time) (*
 		if summary.StartCount > 0 {
 			pct := math.Round(float64(summary.ChangeCount)/float64(summary.StartCount)*100*100) / 100
 			summary.ChangePct = &pct
+		}
+
+		summary.StartAmount = acc.series[0].OutstandingAmount
+		summary.EndAmount = acc.series[len(acc.series)-1].OutstandingAmount
+		summary.ChangeAmount = math.Round((summary.EndAmount-summary.StartAmount)*100) / 100
+		if summary.StartAmount > 0 {
+			pctAmount := math.Round(summary.ChangeAmount/summary.StartAmount*100*100) / 100
+			summary.ChangePctAmount = &pctAmount
 		}
 
 		// El saldo pendiente actual es la suma de pending_amount de las deudas
@@ -199,9 +211,33 @@ func derivedEndMonth(start string, installments int) string {
 
 func hasActivity(series []models.DebtHistoryPoint) bool {
 	for _, p := range series {
-		if p.OpenCount > 0 || p.ClosedCount > 0 {
+		if p.OpenCount > 0 || p.ClosedCount > 0 || p.OutstandingAmount > 0 {
 			return true
 		}
 	}
 	return false
+}
+
+// outstandingIn devuelve el monto adeudado de una deuda al cierre del mes
+// indicado (SPEC-106): total de cuotas no eliminadas menos lo pagado hasta ese
+// mes. Si la deuda no tiene cuotas, se usa su total. Clampea a 0.
+func outstandingIn(row storage.DebtHistoryRow, month string) float64 {
+	base := row.BillsTotal
+	if base <= 0 {
+		base = row.Total
+	}
+	if base <= 0 {
+		return 0
+	}
+	var paid float64
+	for paidMonth, amount := range row.PaidByMonth {
+		if paidMonth != "" && paidMonth <= month {
+			paid += amount
+		}
+	}
+	outstanding := base - paid
+	if outstanding < 0 {
+		return 0
+	}
+	return outstanding
 }
