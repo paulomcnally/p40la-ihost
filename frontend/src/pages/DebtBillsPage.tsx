@@ -11,6 +11,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import DebtPayModal from '../components/DebtPayModal'
 import DonutChart from '../components/DonutChart'
 import DueDateBadge from '../components/DueDateBadge'
+import { debtClosedDate, isPaidAhead } from '../utils/debtMonthlyAggregation'
 import type { Debt, DebtBill } from '../types'
 
 type BillFilter = 'all' | 'pending' | 'paid'
@@ -37,8 +38,12 @@ export default function DebtBillsPage() {
     ])
     setDebt(debtData)
     setBills(billList || [])
+    // SPEC-104: en una deuda cerrada, abrir directamente el historial de cuotas pagadas.
+    if (!searchParams.get('status') && debtData && (debtData.pending_count ?? 0) === 0) {
+      setSearchParams({ status: 'paid' }, { replace: true })
+    }
     setLoading(false)
-  }, [id])
+  }, [id, searchParams, setSearchParams])
 
   useEffect(() => {
     load()
@@ -163,6 +168,17 @@ export default function DebtBillsPage() {
         </span>
       </div>
 
+      {debt.status === 'finalizada' && (
+        <div className="mb-4 flex items-center gap-2 rounded-ios bg-success/15 px-4 py-3 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+          <Icon name="check" className="w-4 h-4 shrink-0" />
+          <span>
+            {t('deudas.closed_on')} {debtClosedDate(debt)}
+            {' · '}
+            {t('deudas.total_paid')}: {formatMoney(debt.paid_amount, symbol)}
+          </span>
+        </div>
+      )}
+
       {bills.length > 0 && (
         <div className="flex gap-2 mb-4">
           {(
@@ -207,12 +223,22 @@ export default function DebtBillsPage() {
                   {t('deudas.installment')} #{bill.installment_number}
                 </p>
                 <p className="text-sm text-text-secondary">{bill.due_date}</p>
+                {bill.status === 'paid' && bill.paid_at && (
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    {t('deudas.pay_date')}: {bill.paid_at.slice(0, 10)}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <p className="text-base font-semibold">
                   {formatMoney(bill.amount, currency?.symbol || bill.currency_code)}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {bill.status === 'paid' && isPaidAhead(bill) && (
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary whitespace-nowrap">
+                      {t('deudas.paid_ahead_short')}
+                    </span>
+                  )}
                   {bill.status === 'pending' && <DueDateBadge dueDate={bill.due_date} />}
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                     bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
