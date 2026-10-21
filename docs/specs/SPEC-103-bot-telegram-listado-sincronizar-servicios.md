@@ -314,4 +314,4 @@ Configurala en P40LA → Configuración → Automation.
 | 2026-10-21 | opencode | Creación inicial de la especificación (draft) |
 | 2026-10-21 | opencode | Estado a `in_progress`; inicio de implementación (MVP REQ-001..REQ-012 + REQ-013/REQ-015) |
 | 2026-10-21 | opencode | Fix incidental del test date-dependent `TestWebhookUpsertSoftDeletedNotFoundPropagates` (período fijo 2026/10 → período anterior al mes actual) |
-| 2026-10-21 | opencode | Prueba manual local con bot real: `/sincronizar` listó 2 servicios y ambos botones sincronizaron (delivered=2, failed=0). Release a `main` en commit `PENDING_COMMIT`. |
+| 2026-10-21 | opencode | Prueba manual local con bot real: `/sincronizar` listó 2 servicios y ambos botones sincronizaron (delivered=2, failed=0). Release a `main` en commit `9954f5d`. |
