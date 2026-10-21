@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 102 |
+| **Total de specs** | 103 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 102 🟢 |
+| **Released** | 103 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-103 |
+| **Último ID usado** | SPEC-104 |
 
 ---
 
@@ -123,6 +123,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-101 | Rediseño del tab Gráfica en Deudas: Cronograma y Saldo total (prototipo deudas-grafica.html) | released | 2026-09-30 | opencode |
 | SPEC-102 | Responsividad de los gráficos de Deudas: Gráfica, Análisis y Calendario | released | 2026-09-30 | opencode |
 | SPEC-103 | Bot Telegram: listado de servicios con plugin de sincronización y botones de sincronizar | released | 2026-10-21 | opencode |
+| SPEC-104 | Deudas: separar por pagar del historial, excluir cuotas adelantadas de los totales y finalización automática | released | 2026-10-21 | opencode |
 
 ---
 
@@ -192,4 +193,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-10-21 — SPEC-103 (Bot Telegram: listado de servicios con plugin de sincronización y botones de sincronizar) released.*
+*Última actualización de este tracker: 2026-10-21 — SPEC-104 (Deudas: separar por pagar del historial, excluir cuotas adelantadas de los totales y finalización automática) released.*

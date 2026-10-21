@@ -3,7 +3,7 @@ import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import Select from './Select'
-import { debtEndDate, leftTime } from '../utils/debtMonthlyAggregation'
+import { debtPendingEndDate, leftTime } from '../utils/debtMonthlyAggregation'
 import type { Debt, Currency } from '../types'
 
 type View = 'cronograma' | 'saldo'
@@ -40,16 +40,24 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   const [currencyFilter, setCurrencyFilter] = useState<string>('')
   const [tip, setTip] = useState<{ left: number; top: number; html: string } | null>(null)
 
+  // SPEC-104 REQ-008: solo deudas con saldo pendiente; fin proyectado por la
+  // última cuota pendiente (no por el plan original).
   const items = useMemo(() => {
     return debts
+      .filter((debt) => (debt.pending_count ?? 0) > 0)
       .map((debt) => {
-        const end = debtEndDate(debt)
+        const end = debtPendingEndDate(debt)
         if (!end) return null
         return { debt, endDate: new Date(end.year, end.month - 1, end.day) }
       })
       .filter((x): x is { debt: Debt; endDate: Date } => x !== null)
       .sort((a, b) => a.endDate.getTime() - b.endDate.getTime())
   }, [debts])
+
+  const closedCount = useMemo(
+    () => debts.filter((d) => (d.pending_count ?? 0) === 0).length,
+    [debts]
+  )
 
   const currencyOptions = useMemo(() => {
     const codes = [...new Set(debts.map((d) => d.currency_code).filter((c): c is string => Boolean(c)))]
@@ -63,7 +71,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
     const sums = new Map<string, number>()
     for (const item of items) {
       const code = item.debt.currency_code || ''
-      sums.set(code, (sums.get(code) || 0) + (item.debt.total || 0))
+      sums.set(code, (sums.get(code) || 0) + (item.debt.pending_amount || 0))
     }
     let best = ''
     let bestSum = -1
@@ -88,7 +96,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
   )
 
   const lastEnd = filteredItems.length > 0 ? filteredItems[filteredItems.length - 1].endDate : now
-  const totalOwed = filteredItems.reduce((s, i) => s + (i.debt.total || 0), 0)
+  const totalOwed = filteredItems.reduce((s, i) => s + (i.debt.pending_amount || 0), 0)
   const currencySymbol = currencies.find((c) => c.code === effectiveCurrency)?.symbol || effectiveCurrency
 
   if (items.length === 0) {
@@ -134,7 +142,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
 
   const rowTooltip = (item: { debt: Debt; endDate: Date }) => {
     const sym = currencies.find((c) => c.code === item.debt.currency_code)?.symbol || item.debt.currency_code || ''
-    return `<b>${item.debt.description}</b><br>${formatMoney(item.debt.total, sym)}<br>${t('deudas.chart_ends')} ${fm(item.endDate)}<br>${t('deudas.chart_remains')} ${leftLabel(item.endDate)}`
+    return `<b>${item.debt.description}</b><br>${formatMoney(item.debt.pending_amount, sym)}<br>${t('deudas.chart_ends')} ${fm(item.endDate)}<br>${t('deudas.chart_remains')} ${leftLabel(item.endDate)}`
   }
 
   const pointTooltip = (item: { debt: Debt; endDate: Date }, balanceAfter: number) => {
@@ -193,7 +201,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
                 {truncateLabel(item.debt.description, nameMax)}
               </text>
               <text className="m" x={0} y={y + 30} fontSize="11" fill={TEXT_SECONDARY}>
-                {formatMoney(item.debt.total, sym)}
+                {formatMoney(item.debt.pending_amount, sym)}
               </text>
               <rect x={L} y={y + 8} width={w} height={20} rx={5} fill={BORDER_COLOR} />
               <rect x={L} y={y + 8} width={bw} height={20} rx={5} fill={COL[i % COL.length]} />
@@ -226,7 +234,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
     const pts: [number, number][] = [[t0, bal]]
     for (const item of filteredItems) {
       pts.push([item.endDate.getTime(), bal])
-      bal -= item.debt.total || 0
+      bal -= item.debt.pending_amount || 0
       pts.push([item.endDate.getTime(), bal])
     }
     pts.push([lastEnd.getTime() + 30 * DAY_MS, 0])
@@ -253,7 +261,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
         {(() => {
           let balAfter = totalOwed
           return filteredItems.map((item, i) => {
-            balAfter -= item.debt.total || 0
+            balAfter -= item.debt.pending_amount || 0
             const sym = currencies.find((c) => c.code === item.debt.currency_code)?.symbol || item.debt.currency_code || ''
             return (
               <circle
@@ -290,7 +298,7 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
                 <p className="text-sm font-semibold truncate min-w-0">{item.debt.description}</p>
                 <span className="text-xs text-text-secondary shrink-0">{fm(item.endDate)}</span>
               </div>
-              <p className="text-xs text-text-secondary mb-2">{formatMoney(item.debt.total, sym)}</p>
+              <p className="text-xs text-text-secondary mb-2">{formatMoney(item.debt.pending_amount, sym)}</p>
               <div className="h-2 rounded-full bg-border overflow-hidden">
                 <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COL[i % COL.length] }} />
               </div>
@@ -370,6 +378,11 @@ export default function DebtChart({ debts, currencies }: { debts: Debt[]; curren
         <p className="text-[10px] text-text-secondary mt-2">
           {view === 'cronograma' ? t('deudas.chart_note_cronograma') : t('deudas.chart_note_saldo')}
         </p>
+        {closedCount > 0 && (
+          <p className="text-[10px] text-text-secondary mt-1">
+            {closedCount} {t('deudas.chart_closed_out')}
+          </p>
+        )}
       </div>
 
       {tip && (

@@ -296,6 +296,13 @@ export interface Debt {
   payment_day: number
   start_date: string
   status: DebtStatus
+  pending_count: number
+  pending_amount: number
+  paid_count: number
+  paid_amount: number
+  next_due_date?: string
+  last_due_date?: string
+  last_paid_at?: string
   created_at: string
   updated_at: string
 }
@@ -306,6 +313,7 @@ export interface DebtBill {
   debt_description?: string
   institution_name?: string
   currency_code?: string
+  debt_status?: DebtStatus
   installment_number: number
   due_date: string
   issue_date?: string

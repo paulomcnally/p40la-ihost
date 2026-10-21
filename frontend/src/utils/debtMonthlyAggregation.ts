@@ -1,4 +1,4 @@
-import type { Debt } from '../types'
+import type { Debt, DebtBill } from '../types'
 
 export interface MonthlyBucket {
   year: number
@@ -89,4 +89,41 @@ export function leftTime(end: Date, now: Date): LeftTime {
   if (months < 1) return { years: 0, months: 0, thisMonth: true }
   const years = Math.floor(months / 12)
   return { years, months: months % 12, thisMonth: false }
+}
+
+// --- SPEC-104: por pagar vs historial y cuotas adelantadas ---
+
+// Una deuda está saldada cuando no le quedan cuotas pendientes.
+export function isDebtPaid(debt: Debt): boolean {
+  return (debt.pending_count ?? 0) === 0
+}
+
+// "Por pagar": activa y con al menos una cuota pendiente.
+export function isDebtPayable(debt: Debt): boolean {
+  return debt.status === 'activa' && !isDebtPaid(debt)
+}
+
+// Una cuota está pagada por adelantado cuando se pagó en un mes anterior al
+// de su vencimiento. Se compara por prefijo YYYY-MM porque paid_at convive con
+// varios formatos ("2026-10-09", "2026-10-09 00:00:00 +0000 UTC", etc.).
+export function isPaidAhead(bill: DebtBill): boolean {
+  if (bill.status !== 'paid' || !bill.paid_at) return false
+  const paidMonth = bill.paid_at.slice(0, 7)
+  const dueMonth = bill.due_date.slice(0, 7)
+  if (!/^\d{4}-\d{2}$/.test(paidMonth) || !/^\d{4}-\d{2}$/.test(dueMonth)) return false
+  return paidMonth < dueMonth
+}
+
+// Fecha de cierre de una deuda saldada (YYYY-MM-DD) a partir de last_paid_at.
+export function debtClosedDate(debt: Debt): string {
+  return debt.last_paid_at ? debt.last_paid_at.slice(0, 10) : ''
+}
+
+// Fin proyectado real: última cuota pendiente; si ya no hay, fecha de cierre.
+export function debtPendingEndDate(debt: Debt): { year: number; month: number; day: number } | null {
+  const raw = debt.last_due_date || debtClosedDate(debt)
+  if (!raw) return null
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw.slice(0, 10))
+  if (!match) return null
+  return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) }
 }
