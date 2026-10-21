@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/db"
 	"github.com/paulomcnally/p40la-ihost/internal/models"
@@ -595,20 +596,26 @@ func TestWebhookUpsertSoftDeletedNotFoundPropagates(t *testing.T) {
 	ctx := context.Background()
 	svc := createTestService(t, webhookSvc, serviceSvc)
 
+	// Usar un período anterior al mes actual: ServiceService.Create genera de
+	// forma automática la factura del mes en curso para servicios activos, por
+	// lo que un período fijo como 2026/10 deja de ser "nuevo" según la fecha en
+	// que se ejecutan los tests.
+	year, month := previousPeriod(time.Now())
+
 	// Período nuevo: el UNIQUE no aplica y se crea normalmente.
 	res, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
-		Year: 2026, Month: 10, Amount: 123,
+		Year: year, Month: month, Amount: 123,
 	})
 	if err != nil {
 		t.Fatalf("crear período nuevo: %v", err)
 	}
 	if !res.Created {
-		t.Error("se esperaba created=true para período nuevo")
+		t.Errorf("se esperaba created=true para período nuevo (%d/%02d)", year, month)
 	}
 
 	// Reenviar el período activo: update normal (idempotencia intacta).
 	res2, err := webhookSvc.UpsertBill(ctx, svc, &models.WebhookBillPayload{
-		Year: 2026, Month: 10, Amount: 125,
+		Year: year, Month: month, Amount: 125,
 	})
 	if err != nil {
 		t.Fatalf("actualizar período activo: %v", err)
@@ -619,6 +626,18 @@ func TestWebhookUpsertSoftDeletedNotFoundPropagates(t *testing.T) {
 	if res2.Bill.Amount != 125 {
 		t.Errorf("monto esperado 125, got %f", res2.Bill.Amount)
 	}
+}
+
+// previousPeriod devuelve el año y mes inmediatamente anteriores a now. Se usa
+// en tests para elegir un período que nunca coincide con la factura del mes en
+// curso generada automáticamente por ServiceService.Create.
+func previousPeriod(now time.Time) (year, month int) {
+	year, month = now.Year(), int(now.Month())-1
+	if month == 0 {
+		month = 12
+		year--
+	}
+	return year, month
 }
 
 func TestParseWebhookDates(t *testing.T) {
