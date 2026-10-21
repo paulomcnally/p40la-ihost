@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 105 |
+| **Total de specs** | 106 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 105 🟢 |
+| **Released** | 106 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-106 |
+| **Último ID usado** | SPEC-107 |
 
 ---
 
@@ -126,6 +126,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-104 | Deudas: separar por pagar del historial, excluir cuotas adelantadas de los totales y finalización automática | released | 2026-10-21 | opencode |
 | SPEC-105 | Evolución de deudas en los últimos 12 meses: gráfico comparativo y totales | released | 2026-10-21 | opencode |
 | SPEC-106 | Gráfica de deudas: abrir por defecto en Últimos 12 meses y mostrar monto adeudado por mes | released | 2026-10-21 | opencode |
+| SPEC-107 | Proyección de finalización de deudas: gráfico escalonado con granularidad mensual o anual | released | 2026-10-21 | opencode |
 
 ---
 
@@ -195,4 +196,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-10-21 — SPEC-105 (Evolución de deudas en los últimos 12 meses: gráfico comparativo y totales) released.*
+*Última actualización de este tracker: 2026-10-21 — SPEC-107 (Proyección de finalización de deudas: gráfico escalonado con granularidad mensual o anual) released.*
