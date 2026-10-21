@@ -388,5 +388,5 @@ pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el 
 | 2026-10-21 | opencode | Confirmar Cronograma como vista por defecto del tab Gráfica (REQ-001) |
 | 2026-10-21 | opencode | Cambio solicitado: Cronograma a barras verticales (una columna por deuda, altura = tiempo restante), con requisito de responsive en móvil y tablet (REQ-018, CA-017) |
 | 2026-10-21 | opencode | Responsive móvil/tablet: min-w-0 en el layout para scroll interno, tabs de Deudas con wrap, tipografía de ejes ≥11 px y guía de diseño impeccable |
-| 2026-10-21 | opencode | Criterios de aceptación validados por el usuario ("funciona"). Release a `main`. |
+| 2026-10-21 | opencode | Criterios de aceptación validados por el usuario ("funciona"). Release: merge `00b069a` a `main`. |
 | 2026-10-21 | opencode | Inicio de implementación |
