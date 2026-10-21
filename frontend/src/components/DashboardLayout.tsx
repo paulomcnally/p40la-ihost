@@ -58,7 +58,7 @@ export default function DashboardLayout() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
-      <div className="flex-1 ml-0 lg:ml-60 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 ml-0 lg:ml-60 flex flex-col min-h-screen">
         <header className="h-14 bg-card border-b border-border flex items-center justify-between px-3 sm:px-5 sticky top-0 z-50">
           <div className="flex items-center gap-2">
             {backRoute ? (
@@ -97,7 +97,7 @@ export default function DashboardLayout() {
             </button>
           </div>
         </header>
-        <main className="flex-1 p-3 sm:p-5 overflow-y-auto">
+        <main className="flex-1 min-w-0 p-3 sm:p-5 overflow-y-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>
