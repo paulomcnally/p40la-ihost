@@ -76,6 +76,13 @@ func (s *DebtService) Update(ctx context.Context, debt *models.Debt) (*models.De
 	if debt.ID == 0 {
 		return nil, fmt.Errorf("id de deuda requerido")
 	}
+	existing, err := s.debts.GetByID(ctx, debt.ID)
+	if err != nil {
+		return nil, err
+	}
+	if existing == nil {
+		return nil, nil
+	}
 	if err := s.validate(ctx, debt); err != nil {
 		return nil, err
 	}
@@ -83,15 +90,28 @@ func (s *DebtService) Update(ctx context.Context, debt *models.Debt) (*models.De
 		debt.InstallmentAmount = computeInstallmentAmount(debt.Total, debt.InstallmentsTotal)
 	}
 
+	// SPEC-104 REQ-009a: si se agregan cuotas a una deuda cerrada, vuelve a estar activa.
+	if debt.Status == DebtStatusFinished && debt.InstallmentsTotal > existing.InstallmentsTotal {
+		debt.Status = DebtStatusActive
+	}
+
 	updated, err := s.debts.Update(ctx, debt)
 	if err != nil {
 		return nil, err
 	}
 
+	// SPEC-104 REQ-009b: al reducir el total de cuotas, las sobrantes se eliminan.
+	if debt.InstallmentsTotal < existing.InstallmentsTotal {
+		if err := s.debtBills.SoftDeleteOverflow(ctx, debt.ID, debt.InstallmentsTotal); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := s.ensureDebtBills(ctx, updated); err != nil {
 		return nil, err
 	}
-	return updated, nil
+	// Releer para devolver el resumen de cuotas actualizado (SPEC-104).
+	return s.debts.GetByID(ctx, debt.ID)
 }
 
 // Delete elimina lógicamente una deuda y sus cuotas.
@@ -125,11 +145,19 @@ func (s *DebtService) PayBill(ctx context.Context, id int64, paidAt time.Time, p
 	if bill.Status == "paid" {
 		return nil, fmt.Errorf("la cuota ya está pagada")
 	}
-	return s.debtBills.Pay(ctx, id, paidAt, paymentReference)
+	paid, err := s.debtBills.Pay(ctx, id, paidAt, paymentReference)
+	if err != nil {
+		return nil, err
+	}
+	// SPEC-104 REQ-001: si era la última cuota pendiente, la deuda queda finalizada.
+	if _, err := s.debtBills.FinalizeIfCompleted(ctx, bill.DebtID); err != nil {
+		return nil, err
+	}
+	return paid, nil
 }
 
 // ReconcileDebtBills genera las cuotas faltantes de todas las deudas activas
-// (patrón ReconcileBills de servicios).
+// (patrón ReconcileBills de servicios) y finaliza las que ya están completas.
 func (s *DebtService) ReconcileDebtBills(ctx context.Context) error {
 	debts, err := s.debts.List(ctx)
 	if err != nil {
@@ -141,6 +169,10 @@ func (s *DebtService) ReconcileDebtBills(ctx context.Context) error {
 				return err
 			}
 		}
+	}
+	// SPEC-104 REQ-002: corrige deudas completas que quedaron en 'activa'.
+	if _, err := s.debtBills.FinalizeCompleted(ctx); err != nil {
+		return err
 	}
 	return nil
 }

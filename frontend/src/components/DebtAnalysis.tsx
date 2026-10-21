@@ -7,6 +7,7 @@ import { Icon } from './Icons'
 import LoadingSpinner from './LoadingSpinner'
 import DebtPayModal from './DebtPayModal'
 import Select from './Select'
+import { isPaidAhead } from '../utils/debtMonthlyAggregation'
 import type { DebtBill } from '../types'
 
 const PALETTE = ['#0a84ff', '#ff9f0a', '#30d158', '#ff375f', '#bf5af2', '#64d2ff', '#ffd60a', '#5e5ce6']
@@ -111,12 +112,32 @@ export default function DebtAnalysis() {
       const cur = b.currency_code || 'NIO'
       const entry = byCurrency.get(cur) || { total: 0, paid: 0, pending: 0 }
       entry.total += b.amount
-      if (b.status === 'paid') entry.paid += b.amount
-      else entry.pending += b.amount
+      if (b.status === 'paid') {
+        entry.paid += b.amount
+      } else if ((b.debt_status ?? 'activa') === 'activa') {
+        // SPEC-104 REQ-005: solo cuotas pendientes de deudas activas son "a pagar".
+        entry.pending += b.amount
+      }
       byCurrency.set(cur, entry)
     }
     return byCurrency
   }, [filteredBills])
+
+  const prepaidBills = useMemo(() => filteredBills.filter(isPaidAhead), [filteredBills])
+
+  const prepaidTotals = useMemo(() => {
+    const byCurrency = new Map<string, number>()
+    for (const b of prepaidBills) {
+      const cur = b.currency_code || 'NIO'
+      byCurrency.set(cur, (byCurrency.get(cur) || 0) + b.amount)
+    }
+    return byCurrency
+  }, [prepaidBills])
+
+  const pausedPending = useMemo(
+    () => filteredBills.filter((b) => b.status === 'pending' && (b.debt_status ?? 'activa') !== 'activa').length,
+    [filteredBills]
+  )
 
   const totalAll = useMemo(() => [...totals.values()].reduce((s, e) => s + e.total, 0), [totals])
   const paidAll = useMemo(() => [...totals.values()].reduce((s, e) => s + e.paid, 0), [totals])
@@ -132,7 +153,7 @@ export default function DebtAnalysis() {
       const entry = map.get(key) || { total: 0, paid: 0, pending: 0 }
       entry.total += b.amount
       if (b.status === 'paid') entry.paid += b.amount
-      else entry.pending += b.amount
+      else if ((b.debt_status ?? 'activa') === 'activa') entry.pending += b.amount
       map.set(key, entry)
     }
     return [...map.entries()]
@@ -244,6 +265,39 @@ export default function DebtAnalysis() {
               color="text-amber-500 dark:text-amber-400"
             />
           </div>
+
+          {prepaidBills.length > 0 && (
+            <details className="bg-card rounded-ios shadow-ios p-4 sm:p-5">
+              <summary className="cursor-pointer text-sm font-semibold flex flex-wrap items-center justify-between gap-2 min-h-[44px]">
+                <span>{t('deudas.analysis_paid_ahead')} ({prepaidBills.length})</span>
+                <span className="text-primary">
+                  {[...prepaidTotals.entries()].map(([cur, v]) => `${cur} ${formatMoney(v)}`).join(' · ')}
+                </span>
+              </summary>
+              <p className="text-xs text-text-secondary mt-1 mb-3">{t('deudas.analysis_paid_ahead_hint')}</p>
+              <div className="space-y-2">
+                {prepaidBills.map((b) => (
+                  <div key={b.id} className="flex items-center justify-between gap-3 border border-border rounded-ios-sm p-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{b.debt_description}</p>
+                      <p className="text-xs text-text-secondary">
+                        {t('deudas.installment')} #{b.installment_number} · {t('deudas.due_date')} {b.due_date}
+                        {' · '}
+                        {t('deudas.pay_date')} {(b.paid_at || '').slice(0, 10)}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold shrink-0">
+                      {b.currency_code || 'NIO'} {formatMoney(b.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+
+          {pausedPending > 0 && (
+            <p className="text-xs text-text-secondary">{t('deudas.analysis_paused_hint')}</p>
+          )}
 
           {donutData.length > 0 && (
             <div className="bg-card rounded-ios shadow-ios p-4 sm:p-5">

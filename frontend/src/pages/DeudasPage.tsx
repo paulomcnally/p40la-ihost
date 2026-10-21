@@ -13,10 +13,20 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import DebtCalendar from '../components/DebtCalendar'
 import DebtAnalysis from '../components/DebtAnalysis'
 import DebtChart from '../components/DebtChart'
+import { debtClosedDate, isDebtPaid, isDebtPayable } from '../utils/debtMonthlyAggregation'
 import type { Debt, Institution } from '../types'
 
 type TabKey = 'calendario' | 'deudas' | 'analisis' | 'grafica'
-type DebtFilter = 'all' | 'activa' | 'inactiva' | 'finalizada'
+type DebtView = 'pending' | 'paid' | 'paused' | 'all'
+
+const VIEWS: DebtView[] = ['pending', 'paid', 'paused', 'all']
+
+// Compatibilidad con enlaces viejos que usaban el estado crudo en la URL.
+const LEGACY_VIEWS: Record<string, DebtView> = {
+  activa: 'pending',
+  finalizada: 'paid',
+  inactiva: 'paused',
+}
 
 export default function DeudasPage() {
   const navigate = useNavigate()
@@ -26,7 +36,9 @@ export default function DeudasPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
   const rawFilter = searchParams.get('status')
-  const debtFilter: DebtFilter = rawFilter === 'all' || rawFilter === 'activa' || rawFilter === 'inactiva' || rawFilter === 'finalizada' ? rawFilter : 'activa'
+  const debtView: DebtView = VIEWS.includes(rawFilter as DebtView)
+    ? (rawFilter as DebtView)
+    : LEGACY_VIEWS[rawFilter ?? ''] ?? 'pending'
   const tabTitle = tab === 'calendario' ? t('deudas.tab_calendar') : tab === 'deudas' ? t('deudas.tab_debts') : tab === 'grafica' ? t('deudas.tab_chart') : t('deudas.tab_analysis')
   usePageTitle(tabTitle)
 
@@ -67,7 +79,7 @@ export default function DeudasPage() {
     }, { replace: false })
   }
 
-  const setDebtFilter = (key: DebtFilter) => {
+  const setDebtView = (key: DebtView) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       next.set('status', key)
@@ -75,10 +87,41 @@ export default function DeudasPage() {
     }, { replace: false })
   }
 
+  const counts = useMemo(() => ({
+    pending: debts.filter(isDebtPayable).length,
+    paid: debts.filter(isDebtPaid).length,
+    paused: debts.filter((d) => d.status !== 'activa' && !isDebtPaid(d)).length,
+    all: debts.length,
+  }), [debts])
+
   const filteredDebts = useMemo(() => {
-    if (debtFilter === 'all') return debts
-    return debts.filter((d) => d.status === debtFilter)
-  }, [debts, debtFilter])
+    const sorted = [...debts].sort((a, b) => a.description.localeCompare(b.description))
+    switch (debtView) {
+      case 'pending':
+        return sorted.filter(isDebtPayable)
+      case 'paid':
+        return sorted
+          .filter(isDebtPaid)
+          .sort((a, b) => debtClosedDate(b).localeCompare(debtClosedDate(a)) || a.description.localeCompare(b.description))
+      case 'paused':
+        return sorted.filter((d) => d.status !== 'activa' && !isDebtPaid(d))
+      default:
+        return sorted
+    }
+  }, [debts, debtView])
+
+  // Historial agrupado por año de cierre (SPEC-104 REQ-004).
+  const paidGroups = useMemo(() => {
+    if (debtView !== 'paid') return []
+    const map = new Map<string, Debt[]>()
+    for (const debt of filteredDebts) {
+      const year = debtClosedDate(debt).slice(0, 4) || '—'
+      const group = map.get(year) ?? []
+      group.push(debt)
+      map.set(year, group)
+    }
+    return [...map.entries()]
+  }, [filteredDebts, debtView])
 
   if (loading) return <LoadingSpinner />
 
@@ -121,6 +164,108 @@ export default function DeudasPage() {
   const createOptions = [
     { label: t('deudas.create'), icon: 'plus', onClick: () => navigate('/deudas/new') },
   ]
+
+  const emptyMessage = debtView === 'pending'
+    ? t('deudas.empty_pending')
+    : debtView === 'paid'
+      ? t('deudas.empty_paid')
+      : debtView === 'paused'
+        ? t('deudas.empty_paused')
+        : t('deudas.empty')
+
+  const renderCard = (debt: Debt) => {
+    const currency = currencies.find((c) => c.id === debt.currency_id)
+    const symbol = currency?.symbol || debt.currency_code
+    const closed = isDebtPaid(debt)
+    const closedDate = debtClosedDate(debt)
+    const paidPct = debt.installments_total > 0
+      ? Math.round((debt.paid_count / debt.installments_total) * 100)
+      : 0
+    return (
+      <div
+        key={debt.id}
+        onClick={() => navigate(`/deudas/${debt.id}`)}
+        className={`rounded-ios shadow-ios p-4 relative cursor-pointer hover:shadow-ios-lg transition-shadow ${
+          debt.status === 'activa' ? 'bg-card' : 'bg-gray-100 opacity-70 dark:bg-[#2c2c2e]'
+        }`}
+      >
+        <CardMenu
+          options={[
+            { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/deudas/edit/${debt.id}`) },
+            { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget({ id: debt.id, name: debt.description }) },
+          ]}
+        />
+        <div className="flex items-center justify-between mb-3">
+          <div className={`w-11 h-11 rounded-ios flex items-center justify-center ${
+            closed
+              ? 'bg-success/15 text-emerald-600 dark:text-emerald-400'
+              : debt.status === 'activa'
+                ? 'bg-primary/10 text-primary'
+                : 'bg-gray-200 text-gray-400 dark:bg-[#2c2c2e] dark:text-gray-500'
+          }`}>
+            <Icon name={closed ? 'check' : 'credit'} className="w-6 h-6" />
+          </div>
+        </div>
+        <h3 className="font-semibold text-base truncate flex items-center gap-2">
+          {debt.description}
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400 shrink-0">
+            {`${t('deudas.id')}: ${debt.id}`}
+          </span>
+        </h3>
+        <p className="text-sm text-text-secondary mt-1 truncate">
+          {debt.institution_name}
+          {debt.identifier && ` · ${debt.identifier}`}
+        </p>
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          {debt.status !== 'activa' && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400">
+              {t(`deudas.status_${debt.status}`)}
+            </span>
+          )}
+          {closed && closedDate && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-success/15 text-emerald-700 dark:text-emerald-400">
+              {t('deudas.closed_on')} {closedDate}
+            </span>
+          )}
+        </div>
+
+        {closed ? (
+          <>
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-sm font-semibold">
+                {t('deudas.total_paid')}: {formatMoney(debt.paid_amount, symbol)}
+              </p>
+              <span className="text-xs text-text-secondary">
+                {debt.paid_count} {t('deudas.installments').toLowerCase()}
+              </span>
+            </div>
+            <p className="text-xs text-text-secondary mt-1">
+              {t('deudas.frees_per_month')}: {formatMoney(debt.installment_amount, symbol)}/{t('deudas.month').toLowerCase()}
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                {t('deudas.pending_balance')}: {formatMoney(debt.pending_amount, symbol)}
+              </p>
+              <span className="text-xs text-text-secondary">
+                {debt.paid_count}/{debt.installments_total} {t('deudas.installments').toLowerCase()}
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-border overflow-hidden mt-2">
+              <div className="h-full rounded-full bg-success" style={{ width: `${paidPct}%` }} />
+            </div>
+            <p className="text-xs text-text-secondary mt-1.5 truncate">
+              {debt.next_due_date
+                ? `${t('deudas.next_due')}: ${debt.next_due_date} · ${formatMoney(debt.installment_amount, symbol)}`
+                : `${t('deudas.installment_amount')}: ${formatMoney(debt.installment_amount, symbol)}`}
+            </p>
+          </>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -176,25 +321,18 @@ export default function DeudasPage() {
         </div>
       ) : (
         <>
-          <div className="flex gap-2 mb-4">
-            {(
-              [
-                { key: 'activa', label: t('deudas.filter_active') },
-                { key: 'all', label: t('deudas.filter_all') },
-                { key: 'inactiva', label: t('deudas.filter_inactive') },
-                { key: 'finalizada', label: t('deudas.filter_finished') },
-              ] as { key: DebtFilter; label: string }[]
-            ).map((item) => (
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {VIEWS.map((key) => (
               <button
-                key={item.key}
-                onClick={() => setDebtFilter(item.key)}
+                key={key}
+                onClick={() => setDebtView(key)}
                 className={`px-4 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] ${
-                  debtFilter === item.key
+                  debtView === key
                     ? 'bg-primary text-white'
                     : 'bg-card text-text-secondary hover:bg-border'
                 }`}
               >
-                {item.label}
+                {t(`deudas.view_${key}`)} ({counts[key]})
               </button>
             ))}
           </div>
@@ -202,9 +340,9 @@ export default function DeudasPage() {
           {filteredDebts.length === 0 ? (
             <div className="bg-card rounded-ios shadow-ios p-8 sm:p-12 text-center max-w-md mx-auto">
               <div className="w-16 h-16 mx-auto mb-5 text-primary opacity-80">
-                <Icon name="credit" className="w-full h-full" />
+                <Icon name={debtView === 'paid' ? 'check' : 'credit'} className="w-full h-full" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('deudas.empty')}</h3>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">{emptyMessage}</h3>
               <p className="text-text-secondary mb-6">{t('deudas.subtitle')}</p>
               <button
                 onClick={() => navigate('/deudas/new')}
@@ -214,62 +352,22 @@ export default function DeudasPage() {
                 {t('deudas.create')}
               </button>
             </div>
+          ) : debtView === 'paid' ? (
+            <div className="space-y-6">
+              {paidGroups.map(([year, group]) => (
+                <section key={year}>
+                  <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-2">
+                    {year} · {group.length}
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    {group.map(renderCard)}
+                  </div>
+                </section>
+              ))}
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {filteredDebts.map((debt) => {
-            const currency = currencies.find((c) => c.id === debt.currency_id)
-            return (
-              <div
-                key={debt.id}
-                onClick={() => navigate(`/deudas/${debt.id}`)}
-                className={`rounded-ios shadow-ios p-4 relative cursor-pointer hover:shadow-ios-lg transition-shadow ${
-                  debt.status === 'activa' ? 'bg-card' : 'bg-gray-100 opacity-60 dark:bg-[#2c2c2e]'
-                }`}
-              >
-                <CardMenu
-                  options={[
-                    { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/deudas/edit/${debt.id}`) },
-                    { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget({ id: debt.id, name: debt.description }) },
-                  ]}
-                />
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-11 h-11 rounded-ios flex items-center justify-center ${
-                    debt.status === 'activa' ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-400 dark:bg-[#2c2c2e] dark:text-gray-500'
-                  }`}>
-                    <Icon name="credit" className="w-6 h-6" />
-                  </div>
-                </div>
-                <h3 className="font-semibold text-base truncate flex items-center gap-2">
-                  {debt.description}
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400 shrink-0">
-                    {`${t('deudas.id')}: ${debt.id}`}
-                  </span>
-                </h3>
-                <p className="text-sm text-text-secondary mt-1 truncate">
-                  {debt.institution_name}
-                  {debt.identifier && ` · ${debt.identifier}`}
-                </p>
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  {debt.status !== 'activa' && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-[#2c2c2e] dark:text-gray-400">
-                      {t(`deudas.status_${debt.status}`)}
-                    </span>
-                  )}
-                  <span className="text-xs text-text-secondary">
-                    {debt.installments_total} {t('deudas.installment').toLowerCase()}(s) · día {debt.payment_day}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-sm font-semibold">
-                    {formatMoney(debt.installment_amount, currency?.symbol)}/{t('deudas.installment').toLowerCase()}
-                  </p>
-                  <span className="text-xs text-text-secondary">
-                    {debt.currency_code} {formatMoney(debt.total)}
-                  </span>
-                </div>
-              </div>
-            )
-          })}
+              {filteredDebts.map(renderCard)}
             </div>
           )}
         </>

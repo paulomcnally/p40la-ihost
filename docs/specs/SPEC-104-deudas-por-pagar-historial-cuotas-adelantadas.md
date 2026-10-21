@@ -1,7 +1,7 @@
 ---
 title: "Deudas: separar por pagar del historial, excluir cuotas adelantadas de los totales y finalización automática"
 id: "SPEC-104"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 107
 # Deudas: separar por pagar del historial, excluir cuotas adelantadas de los totales y finalización automática
 
 **ID**: SPEC-104  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -38,7 +38,7 @@ El cambio **no requiere migraciones de esquema**, no agrega dependencias y su co
 4. **REQ-004 — Sección "Pagadas" (historial centralizado).** Un filtro conmutador en el mismo tab Deudas (`Por pagar` · `Pagadas` · `En pausa` · `Todas`) centraliza las deudas sin cuotas pendientes. Las cards de "Pagadas" son de solo lectura visual y muestran: institución, total pagado (suma de cuotas pagadas), cantidad de cuotas, **fecha de cierre** (`MAX(paid_at)`) y, si aplica, el **ahorro mensual liberado** (monto de cuota que dejó de salir). Se agrupan por año de cierre descendente. El detalle (`/deudas/:id`) sigue accesible para auditar cuotas.
 5. **REQ-005 — Regla única de suma mensual.** Todo total de deuda mostrado como "a pagar" (bloque "Necesario del mes" de Análisis, totales por moneda, Calendario y Gráfica) se calcula **solo** con cuotas `pending` de deudas `status = 'activa'`. Quedan excluidas: (a) cuotas `paid`, (b) cuotas pendientes de deudas `inactiva`, (c) deudas `finalizada`. Una cuota pagada por adelantado **no suma** en el mes de su vencimiento.
 6. **REQ-006 — Marca de "pagada por adelantado".** Una cuota se considera adelantada cuando `substr(paid_at,1,7) < substr(due_date,1,7)` (comparación por prefijo `YYYY-MM`, robusta a los formatos heterogéneos de `paid_at` que existen hoy). En el mes de vencimiento se muestra en un bloque colapsable **"Pagadas por adelantado"** con su fecha de pago, y se informa el monto ya cubierto del mes (ej.: "C$4,387.46 ya pagados por adelantado"). No desaparece: se puede auditar, pero no cuenta como necesidad de caja.
-7. **REQ-007 — Resumen por deuda en el listado.** `GET /api/debts` devuelve, por deuda, campos calculados (no persistidos): `pending_count`, `pending_amount`, `paid_count`, `paid_amount`, `next_due_date`, `last_paid_at`. El listado se resuelve en **una sola consulta** con agregados (sin N+1).
+7. **REQ-007 — Resumen por deuda en el listado.** `GET /api/debts` devuelve, por deuda, campos calculados (no persistidos): `pending_count`, `pending_amount`, `paid_count`, `paid_amount`, `next_due_date`, `last_due_date`, `last_paid_at`. El listado se resuelve en **una sola consulta** con agregados (sin N+1).
 8. **REQ-008 — Gráfica basada en saldo real.** El tab Gráfica deja de usar `debt.total` (monto original) para el "Saldo total" y el cronograma: usa `pending_amount` como saldo y `MAX(due_date)` de las cuotas pendientes como fecha de finalización proyectada. Las deudas cerradas no se grafican (o se muestran en una nota "N deudas cerradas, fuera del gráfico").
 9. **REQ-009 — Coherencia al editar cuotas.** (a) Si se aumenta `installments_total` de una deuda `finalizada`, la deuda vuelve a `activa` y se generan las cuotas nuevas (hoy `ensureDebtBills` no hace nada para deudas no activas y la deuda quedaría cerrada con cuotas faltantes). (b) Si se reduce `installments_total`, las cuotas sobrantes (`installment_number > installments_total`) se eliminan lógicamente, para que no impidan el cierre automático ni aparezcan como deuda fantasma.
 10. **REQ-010 — i18n y tema.** Todas las cadenas nuevas en `frontend/public/i18n/es.json` y `en.json` (fuente de verdad). Los controles nuevos usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`); sin colores hardcodeados.
@@ -160,7 +160,7 @@ Se auditó la base de producción del iHost (solo lectura) y el código del mód
   - `DebtBillStorage.SoftDeleteOverflow(ctx, debtID, maxInstallment int) error` (REQ-009b).
 
 #### 4.2.3 `models.Debt` (backend)
-- Campos calculados con `json:",omitempty"` o cero: `PendingCount int`, `PendingAmount float64`, `PaidCount int`, `PaidAmount float64`, `NextDueDate string`, `LastPaidAt string`.
+- Campos calculados (no persistidos): `PendingCount int`, `PendingAmount float64`, `PaidCount int`, `PaidAmount float64`, `NextDueDate string`, `LastDueDate string`, `LastPaidAt string`.
 - No se persisten: no hay migración.
 
 #### 4.2.4 `DeudasPage` (frontend)
@@ -195,7 +195,7 @@ Agregado del listado (una consulta):
 SELECT d.id, ..., 
        COALESCE(s.pending_count, 0), COALESCE(s.pending_amount, 0),
        COALESCE(s.paid_count, 0),    COALESCE(s.paid_amount, 0),
-       COALESCE(s.next_due_date, ''), COALESCE(s.last_paid_at, '')
+       COALESCE(s.next_due_date, ''), COALESCE(s.last_due_date, ''), COALESCE(s.last_paid_at, '')
 FROM debts d
 LEFT JOIN (
   SELECT debt_id,
@@ -204,6 +204,7 @@ LEFT JOIN (
          SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid_count,
          SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS paid_amount,
          MIN(CASE WHEN status = 'pending' THEN due_date END) AS next_due_date,
+         MAX(CASE WHEN status = 'pending' THEN due_date END) AS last_due_date,
          MAX(CASE WHEN status = 'paid' THEN paid_at END) AS last_paid_at
   FROM debt_bills
   WHERE deleted_at IS NULL
@@ -230,6 +231,7 @@ ORDER BY d.description;
   "paid_count": 12,
   "paid_amount": 62221.39,
   "next_due_date": "",
+  "last_due_date": "",
   "last_paid_at": "2026-10-09 00:00:00 +0000 UTC"
 }
 ```
@@ -238,9 +240,9 @@ ORDER BY d.description;
 
 **Response 200**: la cuota pagada (igual que hoy). Efecto colateral documentado: si era la última pendiente, la deuda pasa a `finalizada` (visible en el siguiente `GET /api/debts`).
 
-#### Endpoint: `GET /api/debts/{id}/bills` y `GET /api/debts/bills?year=&month=` (sin cambios de contrato)
+#### Endpoint: `GET /api/debts/{id}/bills` y `GET /api/debts/bills?year=&month=` (extensión aditiva)
 
-El frontend detecta adelanto con `substr(paid_at,1,7) < substr(due_date,1,7)`.
+Cada cuota incluye `debt_status` (estado de la deuda dueña) para que el frontend aplique la regla REQ-005 sin consultas adicionales. Se mantiene `paid_at`, con el que el frontend detecta adelantos (`substr(paid_at,1,7) < substr(due_date,1,7)`).
 
 ### 4.5 Dependencias
 
@@ -259,7 +261,7 @@ El frontend detecta adelanto con `substr(paid_at,1,7) < substr(due_date,1,7)`.
 - [ ] **CA-004**: "Pagadas" lista todas las deudas sin cuotas pendientes, con total pagado y fecha de cierre; sumar sus `paid_amount` por moneda coincide con la suma de cuotas `paid` de esas deudas.
 - [ ] **CA-005**: En Análisis, la cifra "Tenés que pagar" de noviembre 2026 es **USD 2,433.63** y **NIO 0.00** (las 2 cuotas NIO de noviembre ya están pagadas por adelantado); no incluye cuotas `paid`.
 - [ ] **CA-006**: Las cuotas NIO de nov/dic/ene aparecen en su mes bajo "Pagadas por adelantado" con fecha 2026-10-09 y no incrementan el total a pagar (0 pendiente).
-- [ ] **CA-007**: `GET /api/debts` devuelve `pending_count`, `pending_amount`, `paid_count`, `paid_amount`, `next_due_date` y `last_paid_at` coherentes para las 11 deudas; la consulta SQL es única (sin N+1).
+- [ ] **CA-007**: `GET /api/debts` devuelve `pending_count`, `pending_amount`, `paid_count`, `paid_amount`, `next_due_date`, `last_due_date` y `last_paid_at` coherentes para las 11 deudas; la consulta SQL es única (sin N+1).
 - [ ] **CA-008**: La Gráfica "Saldo total" muestra USD 197,794.40 como saldo agregado (suma de `pending_amount`) y no grafica las 3 deudas cerradas; la fecha de fin de cada deuda corresponde a su última cuota pendiente.
 - [ ] **CA-009**: Aumentar `installments_total` de una deuda finalizada la devuelve a `activa` y genera las cuotas nuevas; reducirlo elimina lógicamente las cuotas sobrantes y permite que la deuda se cierre.
 - [ ] **CA-010**: Una deuda `inactiva` con cuotas pendientes se muestra en "En pausa" y no suma en ningún total mensual; los totales del bot de Telegram (`/deudas_pendientes`) coinciden con la regla de REQ-005.
@@ -336,3 +338,5 @@ El frontend detecta adelanto con `substr(paid_at,1,7) < substr(due_date,1,7)`.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial de la especificación (draft) a partir de la auditoría de producción y del pedido del usuario |
+| 2026-10-21 | opencode | Estado `in_progress`. Se agrega `last_due_date` al resumen por deuda: la Gráfica necesita la última cuota pendiente para proyectar el fin real |
+| 2026-10-21 | opencode | MVP implementado (REQ-001 a REQ-010). Se agrega `debt_status` a las cuotas para que Análisis y Calendario puedan excluir de las sumas las deudas no activas. Validado contra una copia de la DB de producción: las 3 deudas completas se finalizan solas y noviembre queda en USD 2,433.63 / NIO 0.00. Pendientes: P1 (REQ-011 a REQ-014) y P2 (REQ-015, REQ-016) |

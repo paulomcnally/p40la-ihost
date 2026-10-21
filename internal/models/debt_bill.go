@@ -10,6 +10,7 @@ type DebtBill struct {
 	DebtDescription   string     `json:"debt_description,omitempty"`
 	InstitutionName   string     `json:"institution_name,omitempty"`
 	CurrencyCode      string     `json:"currency_code,omitempty"`
+	DebtStatus        string     `json:"debt_status,omitempty"`
 	InstallmentNumber int        `json:"installment_number"`
 	DueDate           string     `json:"due_date"`
 	IssueDate         *string    `json:"issue_date,omitempty"`
