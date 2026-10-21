@@ -1,7 +1,7 @@
 ---
 title: "Evolución de deudas en los últimos 12 meses: gráfico comparativo y totales"
 id: "SPEC-105"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 108
 # Evolución de deudas en los últimos 12 meses: gráfico comparativo y totales
 
 **ID**: SPEC-105  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -380,3 +380,4 @@ pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el 
 | 2026-10-21 | opencode | Incorporar SPEC-104 (ya en `main`): finalización automática, `last_paid_at`, comparación `YYYY-MM` de `paid_at`, early-return de `DebtChart` y ADR-006 |
 | 2026-10-21 | opencode | Cambiar la métrica a cantidad de deudas (montos solo como referencia), definir "pagada" como finalizada/sin pendientes con pagos, mes de pago excluido y totales en cantidades (ADR-002/003, REQ-002..009) |
 | 2026-10-21 | opencode | Confirmar Cronograma como vista por defecto del tab Gráfica (REQ-001) |
+| 2026-10-21 | opencode | Inicio de implementación |
