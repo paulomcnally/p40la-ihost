@@ -45,6 +45,10 @@ type TelegramBotService struct {
 	// en memoria por chat_id con TTL. Protegidas por txMu.
 	txMu      sync.Mutex
 	txSession map[int64]*budgetTxSession
+
+	// Guard de sincronizaciones en curso por service_id (SPEC-103 ADR-004).
+	syncMu       sync.Mutex
+	syncInFlight map[int64]struct{}
 }
 
 // NewTelegramBotService crea el servicio. Requiere arrancarlo con Start().
@@ -73,6 +77,7 @@ func NewTelegramBotService(
 		transactions:   transactions,
 		reloadCh:       make(chan struct{}, 1),
 		txSession:      make(map[int64]*budgetTxSession),
+		syncInFlight:   make(map[int64]struct{}),
 	}
 }
 
@@ -170,10 +175,13 @@ func (s *TelegramBotService) runBot(ctx context.Context, cfg *appmodels.Telegram
 	b.RegisterHandler(bot.HandlerTypeMessageText, "servicios_pendientes", bot.MatchTypeCommand, s.handleServiciosPendientes)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "deudas_pendientes", bot.MatchTypeCommand, s.handleDeudasPendientes)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "sincronizar_servicio", bot.MatchTypeCommand, s.handleSincronizarServicio)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "sincronizar", bot.MatchTypeCommand, s.handleSincronizarServicios)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "start", bot.MatchTypeCommand, s.handleStart)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "budget_transaction", bot.MatchTypeCommand, s.handleBudgetTransaction)
 	// Botones inline de la conversación /budget_transaction (SPEC-097, ADR-003).
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "bt:", bot.MatchTypePrefix, s.handleBudgetCallback)
+	// Botones inline de sincronización de servicios (SPEC-103).
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, syncCallbackPrefix, bot.MatchTypePrefix, s.handleSyncCallback)
 
 	s.registerCommands(ctx, b)
 
@@ -195,6 +203,7 @@ func (s *TelegramBotService) registerCommands(ctx context.Context, b *bot.Bot) {
 			{Command: "start", Description: "Bienvenida y comandos disponibles"},
 			{Command: "servicios_pendientes", Description: "Servicios con facturas pendientes"},
 			{Command: "deudas_pendientes", Description: "Deudas con cuotas pendientes"},
+			{Command: "sincronizar", Description: "Listar servicios con plugin y sincronizarlos con botones"},
 			{Command: "sincronizar_servicio", Description: "Sincronizar un servicio con su ID (ej: /sincronizar_servicio 1)"},
 			{Command: "budget_transaction", Description: "Registrar una transacción del presupuesto"},
 		},
@@ -298,7 +307,7 @@ func (s *TelegramBotService) handleStart(ctx context.Context, b *bot.Bot, update
 	if !s.checkAuthorized(ctx, b, update) {
 		return
 	}
-	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura) y sincronización manual.\n\nComandos:\n  `/servicios_pendientes` — servicios con facturas pendientes\n  `/deudas_pendientes` — deudas con cuotas pendientes\n  `/sincronizar_servicio <id>` — sincroniza un servicio con su ID (ej: `/sincronizar_servicio 1`)\n  `/budget_transaction` — registra una transacción del presupuesto (guía paso a paso)\n\nEl ID de cada servicio y deuda se muestra en las listas de la app (badge `ID: N`).\n\nAdemás, si activás las alertas por Telegram en P40LA (Configuración → Alertas), este bot te envía los avisos automáticos directamente.")
+	s.reply(ctx, b, update, "🤖 *p40la-ihost Bot*\n\nConsulta la base de datos del iHost (solo lectura) y sincronización manual.\n\nComandos:\n  `/servicios_pendientes` — servicios con facturas pendientes\n  `/deudas_pendientes` — deudas con cuotas pendientes\n  `/sincronizar` — lista los servicios con plugin de sincronización y muestra un botón para sincronizar cada uno\n  `/sincronizar_servicio <id>` — sincroniza un servicio con su ID (ej: `/sincronizar_servicio 1`)\n  `/budget_transaction` — registra una transacción del presupuesto (guía paso a paso)\n\nEl ID de cada servicio y deuda se muestra en las listas de la app (badge `ID: N`).\n\nAdemás, si activás las alertas por Telegram en P40LA (Configuración → Alertas), este bot te envía los avisos automáticos directamente.")
 }
 
 func (s *TelegramBotService) handleDefault(ctx context.Context, b *bot.Bot, update *tgmodels.Update) {
@@ -310,7 +319,7 @@ func (s *TelegramBotService) handleDefault(ctx context.Context, b *bot.Bot, upda
 	if s.budgetHandleText(ctx, b, update) {
 		return
 	}
-	s.reply(ctx, b, update, "Comando no reconocido. Usa `/servicios_pendientes`, `/deudas_pendientes`, `/sincronizar_servicio <id>` o `/budget_transaction`.")
+	s.reply(ctx, b, update, "Comando no reconocido. Usa `/servicios_pendientes`, `/deudas_pendientes`, `/sincronizar`, `/sincronizar_servicio <id>` o `/budget_transaction`.")
 }
 
 // handleSincronizarServicio ejecuta la sincronización manual de un servicio
