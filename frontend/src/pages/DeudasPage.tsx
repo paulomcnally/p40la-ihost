@@ -274,7 +274,7 @@ export default function DeudasPage() {
         <CreateMenu options={createOptions} />
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         {(
           [
             { key: 'analisis', label: t('deudas.tab_analysis'), icon: 'chart' },

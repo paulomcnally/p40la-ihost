@@ -69,7 +69,7 @@
     "chart_stat_free": "Debt-free",
     "chart_title_cronograma": "When each debt ends",
     "chart_title_saldo": "How much you owe over time",
-    "chart_note_cronograma": "From the debt that ends first to the one that ends last. The bar reaches its end date.",
+    "chart_note_cronograma": "Each column is a debt; the bar height is the time remaining until it ends. Scroll to see them all if they don't fit.",
     "chart_note_saldo": "The balance drops each time a debt ends. Each dot is a settled debt.",
     "chart_ends": "Ends:",
     "chart_remains": "Left:",

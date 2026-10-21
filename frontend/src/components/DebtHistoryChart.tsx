@@ -182,7 +182,8 @@ export default function DebtHistoryChart() {
         <div className="overflow-x-auto">
           <svg
             viewBox={`0 0 ${W} ${H}`}
-            className="block w-full min-w-[360px]"
+            className="block w-full"
+            style={{ minWidth: `${Math.max(360, series.length * 44)}px` }}
             preserveAspectRatio="xMidYMid meet"
             role="img"
             aria-label={t('deudas.chart_title_history')}
@@ -190,7 +191,7 @@ export default function DebtHistoryChart() {
             {ticks.map((v) => (
               <g key={v}>
                 <line x1={L} x2={L + plotW} y1={Y(v)} y2={Y(v)} stroke={BORDER_COLOR} strokeDasharray="3 4" />
-                <text className="m" x={L - 6} y={Y(v) + 4} fontSize="10" textAnchor="end" fill={TEXT_SECONDARY}>
+                <text className="m" x={L - 6} y={Y(v) + 4} fontSize="11" textAnchor="end" fill={TEXT_SECONDARY}>
                   {v}
                 </text>
               </g>
@@ -238,7 +239,7 @@ export default function DebtHistoryChart() {
                     className="m"
                     x={x + barW / 2}
                     y={H - 18}
-                    fontSize="10"
+                    fontSize="11"
                     textAnchor="middle"
                     fill={isCurrent ? TEXT_COLOR : TEXT_SECONDARY}
                   >
@@ -249,7 +250,7 @@ export default function DebtHistoryChart() {
                       className="m"
                       x={x + barW / 2}
                       y={H - 6}
-                      fontSize="9"
+                      fontSize="11"
                       textAnchor="middle"
                       fill={TEXT_SECONDARY}
                     >
@@ -262,7 +263,7 @@ export default function DebtHistoryChart() {
           </svg>
         </div>
 
-        <p className="text-[10px] text-text-secondary mt-2">{t('deudas.chart_note_history')}</p>
+        <p className="text-xs text-text-secondary mt-2">{t('deudas.chart_note_history')}</p>
       </div>
 
       <details className="bg-card rounded-ios shadow-ios">
