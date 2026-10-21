@@ -256,4 +256,4 @@ Sin cambios. Se mantiene el contrato de SPEC-105 §4.4:
 | 2026-10-21 | opencode | Cambio solicitado por el usuario: barras de monto adeudado por mes, manteniendo cantidad en tooltip/tabla/tarjetas (REQ-009..REQ-014, ADR-003) |
 | 2026-10-21 | opencode | Implementados montos históricos en backend/frontend; verificado con la copia de producción (USD 236.362→197.794, NIO 62.221→0) |
 | 2026-10-21 | opencode | Pruebas manuales del usuario satisfactorias («listo funciona»); criterios de aceptación validados. Estado: pending_release |
-| 2026-10-21 | opencode | Release completo: merge a `main`, issue cerrado y worktree eliminado |
+| 2026-10-21 | opencode | Release completo: merge `490002a` a `main`, issue cerrado y worktree eliminado |
