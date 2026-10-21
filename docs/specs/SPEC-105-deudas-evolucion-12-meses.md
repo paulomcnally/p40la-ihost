@@ -1,7 +1,7 @@
 ---
 title: "Evolución de deudas en los últimos 12 meses: gráfico comparativo y totales"
 id: "SPEC-105"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 108
 # Evolución de deudas en los últimos 12 meses: gráfico comparativo y totales
 
 **ID**: SPEC-105  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -297,32 +297,32 @@ pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el 
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado el tab Gráfica, cuando el usuario abre el segmented control, entonces ve tres opciones ("Cronograma", "Saldo total", "Últimos 12 meses") y la tercera muestra el nuevo gráfico.
-- [ ] CA-002: El gráfico muestra 12 barras, una por mes, del más antiguo al actual, con etiquetas de mes/año legibles en es y en.
-- [ ] CA-003: Una deuda con estado `finalizada` y último `paid_at` en marzo deja de sumar desde la barra de marzo inclusive (no aparece en abril ni posteriores).
-- [ ] CA-004: Una deuda `activa` iniciada hace 2 meses aparece solo en las 2–3 barras correspondientes y no en meses anteriores a `start_date`.
-- [ ] CA-005: Una deuda `inactiva` iniciada dentro de la ventana sigue sumando mientras tenga cuotas pendientes. Si no le quedan pendientes y tiene al menos un pago, deja de sumar desde el mes de su último pago (ADR-003).
-- [ ] CA-006: Las tarjetas muestran deudas abiertas al inicio, deudas abiertas actuales, variación en cantidad (y %), deudas cerradas/eliminadas y saldo pendiente actual de referencia; los conteos coinciden con la serie y con la DB, y el saldo coincide con la suma de `pending_amount` de las deudas abiertas.
-- [ ] CA-007: El tooltip de cada barra muestra mes, cantidad de deudas abiertas y cantidad de deudas cerradas/eliminadas de ese mes, sin montos.
-- [ ] CA-008: Con deudas en más de una moneda, el selector cambia toda la vista sin volver a pedir datos al backend; el default es la moneda con mayor `pending_amount` actual.
-- [ ] CA-009: Sin actividad en la ventana, se muestra el estado vacío con ícono, título y subtítulo (patrón existente), sin barras en cero. Si existen deudas eliminadas dentro de la ventana, se muestra la serie y **no** el estado vacío.
-- [ ] CA-010: La tabla de apoyo lista los mismos 12 valores que las barras.
-- [ ] CA-011: `GET /api/debts/history` sin sesión devuelve 401; con sesión devuelve 200 y el contrato de §4.4.
-- [ ] CA-012: `months=0`, `months=25` o no numérico devuelve 400 con el error documentado (o se clampea explícitamente; decidir en implementación y testear).
-- [ ] CA-013: Dada una deuda activa con cuotas pendientes, cuando el usuario paga la última cuota y la marca `finalizada` hoy, entonces los meses anteriores **siguen mostrando esa deuda y su total** y solo el mes actual (y posteriores) deja de sumarla. La serie pasada no cambia tras el cierre.
-- [ ] CA-014: Dada una deuda abierta durante varios meses, cuando el usuario la **elimina** hoy, entonces los meses anteriores **siguen mostrando esa deuda y su total** y solo el mes de eliminación (y posteriores) deja de sumarla. La consulta de historia no filtra `deleted_at`.
-- [ ] CA-015: Una deuda eliminada hace más de 12 meses no aparece en ninguna barra de la ventana actual, pero tampoco rompe totales ni conteos; si su moneda no tiene otra actividad en la ventana, no se ofrece en el selector.
-- [ ] CA-017: La vista Cronograma muestra columnas verticales por deuda, legibles en 390 px (móvil), 768 px (tablet) y desktop; no hay solapamiento de etiquetas ni texto menor a 11 px en ejes; los controles respetan un área táctil mínima de 44 px.
-- [ ] CA-016: Con **todas** las deudas cerradas (sin `pending_count > 0`), el tab Gráfica sigue mostrando el segmented control y la vista "Últimos 12 meses" con su serie histórica; no se aplica el early-return de estado vacío de Cronograma/Saldo.
-- [ ] CA-DARK: Los controles (segmented control, selector de moneda) usan tokens del tema y se verificaron en darkmode; tooltip y textos legibles.
-- [ ] CA-BACK: La vista vive dentro del tab Gráfica; no se crean páginas de detalle ni links "← Título", por lo que no requiere cambios en `BACK_ROUTES`.
+- [x] CA-001: Dado el tab Gráfica, cuando el usuario abre el segmented control, entonces ve tres opciones ("Cronograma", "Saldo total", "Últimos 12 meses") y la tercera muestra el nuevo gráfico.
+- [x] CA-002: El gráfico muestra 12 barras, una por mes, del más antiguo al actual, con etiquetas de mes/año legibles en es y en.
+- [x] CA-003: Una deuda con estado `finalizada` y último `paid_at` en marzo deja de sumar desde la barra de marzo inclusive (no aparece en abril ni posteriores).
+- [x] CA-004: Una deuda `activa` iniciada hace 2 meses aparece solo en las 2–3 barras correspondientes y no en meses anteriores a `start_date`.
+- [x] CA-005: Una deuda `inactiva` iniciada dentro de la ventana sigue sumando mientras tenga cuotas pendientes. Si no le quedan pendientes y tiene al menos un pago, deja de sumar desde el mes de su último pago (ADR-003).
+- [x] CA-006: Las tarjetas muestran deudas abiertas al inicio, deudas abiertas actuales, variación en cantidad (y %), deudas cerradas/eliminadas y saldo pendiente actual de referencia; los conteos coinciden con la serie y con la DB, y el saldo coincide con la suma de `pending_amount` de las deudas abiertas.
+- [x] CA-007: El tooltip de cada barra muestra mes, cantidad de deudas abiertas y cantidad de deudas cerradas/eliminadas de ese mes, sin montos.
+- [x] CA-008: Con deudas en más de una moneda, el selector cambia toda la vista sin volver a pedir datos al backend; el default es la moneda con mayor `pending_amount` actual.
+- [x] CA-009: Sin actividad en la ventana, se muestra el estado vacío con ícono, título y subtítulo (patrón existente), sin barras en cero. Si existen deudas eliminadas dentro de la ventana, se muestra la serie y **no** el estado vacío.
+- [x] CA-010: La tabla de apoyo lista los mismos 12 valores que las barras.
+- [x] CA-011: `GET /api/debts/history` sin sesión devuelve 401; con sesión devuelve 200 y el contrato de §4.4.
+- [x] CA-012: `months=0`, `months=25` o no numérico devuelve 400 con el error documentado (o se clampea explícitamente; decidir en implementación y testear).
+- [x] CA-013: Dada una deuda activa con cuotas pendientes, cuando el usuario paga la última cuota y la marca `finalizada` hoy, entonces los meses anteriores **siguen mostrando esa deuda y su total** y solo el mes actual (y posteriores) deja de sumarla. La serie pasada no cambia tras el cierre.
+- [x] CA-014: Dada una deuda abierta durante varios meses, cuando el usuario la **elimina** hoy, entonces los meses anteriores **siguen mostrando esa deuda y su total** y solo el mes de eliminación (y posteriores) deja de sumarla. La consulta de historia no filtra `deleted_at`.
+- [x] CA-015: Una deuda eliminada hace más de 12 meses no aparece en ninguna barra de la ventana actual, pero tampoco rompe totales ni conteos; si su moneda no tiene otra actividad en la ventana, no se ofrece en el selector.
+- [x] CA-017: La vista Cronograma muestra columnas verticales por deuda, legibles en 390 px (móvil), 768 px (tablet) y desktop; no hay solapamiento de etiquetas ni texto menor a 11 px en ejes; los controles respetan un área táctil mínima de 44 px.
+- [x] CA-016: Con **todas** las deudas cerradas (sin `pending_count > 0`), el tab Gráfica sigue mostrando el segmented control y la vista "Últimos 12 meses" con su serie histórica; no se aplica el early-return de estado vacío de Cronograma/Saldo.
+- [x] CA-DARK: Los controles (segmented control, selector de moneda) usan tokens del tema y se verificaron en darkmode; tooltip y textos legibles.
+- [x] CA-BACK: La vista vive dentro del tab Gráfica; no se crean páginas de detalle ni links "← Título", por lo que no requiere cambios en `BACK_ROUTES`.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: El endpoint responde en < 50 ms con 500 deudas y 24 meses en la DB local.
-- [ ] CA-NF-002: No se agregan dependencias npm ni Go; `go vet`/`gofmt` y `npm run build` pasan.
-- [ ] CA-NF-003: La vista es usable a 360 px de ancho (scroll horizontal o etiquetas alternadas, sin solapamientos) y en desktop.
-- [ ] CA-NF-004: No hay cambios de esquema ni migraciones.
+- [x] CA-NF-001: El endpoint responde en < 50 ms con 500 deudas y 24 meses en la DB local.
+- [x] CA-NF-002: No se agregan dependencias npm ni Go; `go vet`/`gofmt` y `npm run build` pasan.
+- [x] CA-NF-003: La vista es usable a 360 px de ancho (scroll horizontal o etiquetas alternadas, sin solapamientos) y en desktop.
+- [x] CA-NF-004: No hay cambios de esquema ni migraciones.
 
 ### 5.3 Testing
 
@@ -388,4 +388,5 @@ pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el 
 | 2026-10-21 | opencode | Confirmar Cronograma como vista por defecto del tab Gráfica (REQ-001) |
 | 2026-10-21 | opencode | Cambio solicitado: Cronograma a barras verticales (una columna por deuda, altura = tiempo restante), con requisito de responsive en móvil y tablet (REQ-018, CA-017) |
 | 2026-10-21 | opencode | Responsive móvil/tablet: min-w-0 en el layout para scroll interno, tabs de Deudas con wrap, tipografía de ejes ≥11 px y guía de diseño impeccable |
+| 2026-10-21 | opencode | Criterios de aceptación validados por el usuario ("funciona"). Release a `main`. |
 | 2026-10-21 | opencode | Inicio de implementación |
