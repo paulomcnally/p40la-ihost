@@ -22,7 +22,7 @@ github_issue: 108
 
 La sección **Deudas** permite hoy ver la deuda del mes (Análisis), el calendario de cuotas, el listado de deudas y una pestaña **Gráfica** con dos vistas proyectadas al futuro ("Cronograma" y "Saldo total"). No existe, sin embargo, una vista **histórica** que responda a la pregunta más básica de seguimiento financiero: *¿mi deuda total está bajando o subiendo mes a mes?*
 
-Esta spec agrega una **tercera vista "Últimos 12 meses"** dentro del tab Gráfica (`?tab=grafica`), con un gráfico de barras simple (un valor por mes) y un bloque de **números totales** al pie: deuda al inicio del período, deuda actual, variación absoluta y porcentual, y cantidad de deudas cerradas en el período. La métrica elegida por el usuario es **el total de deudas abiertas al cierre de cada mes**, no la suma de cuotas: una deuda cuenta desde su fecha de inicio y **deja de contar desde el mes en que se cierra, finaliza o elimina**, para que el gráfico no arrastre deudas ya pagadas ni pierda la historia de las que se borraron.
+Esta spec agrega una **tercera vista "Últimos 12 meses"** dentro del tab Gráfica (`?tab=grafica`), con un gráfico de barras simple y un bloque de **números totales** al pie: deudas abiertas al inicio del período, deudas abiertas actuales, variación en cantidad, deudas cerradas en el período y saldo pendiente actual como referencia. La métrica elegida por el usuario es la **cantidad de deudas abiertas al cierre de cada mes**, no el dinero: una deuda cuenta desde su fecha de inicio y **deja de contar desde el mes en que se paga/cierra o se elimina**, para que el gráfico no arrastre deudas ya pagadas ni pierda la historia de las que se borraron. Los montos se evitan como métrica principal porque la mora, los intereses y los ajustes pueden cambiarlos.
 
 El cálculo se hace en el backend con una consulta agregada liviana (una fila por deuda más el último pago registrado) y se expone en un endpoint autenticado nuevo; el frontend solo dibuja SVG y formatea. No hay cambios de esquema, no se agregan dependencias npm y no se hacen llamadas N+1.
 
@@ -35,31 +35,35 @@ El cálculo se hace en el backend con una consulta agregada liviana (una fila po
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
 
 1. **REQ-001**: Agregar una **tercera vista "Últimos 12 meses"** al segmented control del tab Gráfica de Deudas, junto a "Cronograma" y "Saldo total", sin modificar el contenido ni el comportamiento de esas dos vistas ni de los demás tabs (Análisis, Calendario, Deudas). La vista debe poder abrirse **aunque todas las deudas estén cerradas**: el early-return actual de `DebtChart` basado en `items.length === 0` (deudas con `pending_count > 0`) debe volverse condicional a las vistas Cronograma/Saldo, no aplicar a la vista histórica.
-2. **REQ-002**: La vista muestra un **gráfico de barras verticales** con **12 puntos mensuales**, del mes más antiguo al mes actual (incluido). Cada barra representa el **total de deudas abiertas al cierre de ese mes** en la moneda seleccionada.
-3. **REQ-003**: Una deuda **cuenta como abierta** en un mes si su `start_date` es anterior o igual al cierre de ese mes y **no estaba cerrada** a esa fecha. Se considera cerrada cuando: (a) la deuda está `finalizada` y su fecha de cierre (REQ-004) ya ocurrió, o (b) la deuda fue **eliminada lógicamente** (`deleted_at` no nulo) y la fecha de eliminación ya ocurrió. Las deudas cerradas o eliminadas dejan de contar **desde el mes de su cierre/eliminación inclusive**, pero **nunca desaparecen retroactivamente**: siguen sumando en todos los meses anteriores.
+2. **REQ-002**: La vista muestra un **gráfico de barras verticales** con **12 puntos mensuales**, del mes más antiguo al mes actual (incluido). Cada barra representa la **cantidad de deudas abiertas al cierre de ese mes** en la moneda seleccionada. La altura de la barra es un conteo entero, no un monto.
+3. **REQ-003**: Una deuda **cuenta como abierta** en un mes `m` si su `start_date` es anterior o igual al cierre de `m` y **no estaba cerrada** a esa fecha. Se considera cerrada cuando:
+   - (a) fue **eliminada lógicamente** (`deleted_at` no nulo) y la eliminación ocurrió en `m` o antes;
+   - (b) está `finalizada` y su fecha de cierre (REQ-004) ocurrió en `m` o antes;
+   - (c) **no le quedan cuotas pendientes y tiene al menos una cuota pagada** (`pending_count = 0` y `paid_count > 0`), aunque su estado siga siendo `activa` o `inactiva`, y su fecha de cierre (REQ-004) ocurrió en `m` o antes. Esto cubre deudas completas que quedaron con estado desactualizado (SPEC-104 solo finaliza automáticamente las `activa`).
+   Las deudas cerradas o eliminadas dejan de contar **desde el mes de su cierre/eliminación inclusive**, pero **nunca desaparecen retroactivamente**: siguen sumando en todos los meses anteriores.
 4. **REQ-004**: La **fecha de cierre** se determina así:
    - Si `deleted_at` no es NULL (deuda eliminada): `closing_date = deleted_at`, sin importar el estado.
-   - Si no, para una deuda `finalizada`: (a) `last_paid_at` (que SPEC-104 ya calcula como `MAX(paid_at)` de cuotas no eliminadas); (b) `updated_at` de la deuda; (c) fecha de vencimiento de la última cuota derivada de `start_date + installments_total`.
-   - Si la deuda está `activa` o `inactiva` y no fue eliminada, no tiene fecha de cierre y sigue contando hasta el mes actual.
+   - Si no, para una deuda cerrada por (b) o (c) de REQ-003: (a) `last_paid_at` (que SPEC-104 ya calcula como `MAX(paid_at)` de cuotas no eliminadas); (b) `updated_at` de la deuda; (c) fecha de vencimiento de la última cuota derivada de `start_date + installments_total`.
+   - Si la deuda está abierta (tiene cuotas pendientes, o no tiene cuotas pagadas ni pendientes) y no fue eliminada, no tiene fecha de cierre y sigue contando hasta el mes actual.
    Las fechas de pago y de eliminación se comparan por **prefijo `YYYY-MM`** (`substr(...,1,7)`), por los tres formatos históricos de `paid_at`. Se documenta en tooltip/nota que es una reconstrucción (ver ADR-001 y ADR-006).
 5. **REQ-005**: La serie es **histórica e inmutable hacia atrás**: si una deuda se paga/finaliza hoy, **sigue contando en todos los meses anteriores a su fecha de cierre** y deja de contar solo desde el mes de cierre inclusive. Pagar o cerrar una deuda hoy **nunca** debe borrar ni alterar las barras pasadas.
-6. **REQ-006**: Mientras una deuda no esté `finalizada`, cuenta por su **monto total** aunque tenga cuotas parcialmente pagadas (métrica elegida: total de deudas abiertas, no saldo amortizado). El gráfico baja cuando la deuda se cierra, no cuota a cuota.
+6. **REQ-006**: La **métrica principal es la cantidad de deudas**, no el dinero. Los montos no definen las barras ni los totales principales, porque la mora, los intereses o los ajustes pueden cambiar el valor de una deuda con el tiempo.
 7. **REQ-007**: Mostrar **números totales** debajo o encima del gráfico, en tarjetas:
-   - **Deuda al inicio del período**: total al cierre del mes más antiguo de la ventana.
-   - **Deuda actual**: total al cierre del mes en curso.
-   - **Variación**: diferencia absoluta (`actual − inicio`) y porcentual, con signo y color semántico (verde si bajó, rojo si subió, neutro si no cambió).
-   - **Deudas cerradas**: cantidad de deudas finalizadas dentro de la ventana de 12 meses.
-8. **REQ-008**: **Tooltip por barra** con: nombre del mes y año, total de deudas abiertas, cantidad de deudas abiertas al cierre y cantidad de deudas cerradas o eliminadas en ese mes. En móvil, el tooltip se posiciona clampeado al viewport (mismo patrón que `DebtChart`).
-9. **REQ-009**: **Selector de moneda** (solo si hay más de una moneda entre las deudas). El default es la moneda con mayor total de deudas abiertas en el mes actual. Todo el gráfico, los totales y los conteos corresponden a la moneda seleccionada.
+   - **Deudas abiertas al inicio**: cantidad al cierre del mes más antiguo de la ventana.
+   - **Deudas abiertas actuales**: cantidad al cierre del mes en curso.
+   - **Variación**: diferencia de cantidad (`actual − inicio`) y porcentual, con signo y color semántico (verde si bajó, rojo si subió, neutro si no cambió).
+   - **Deudas cerradas en el período**: cantidad de deudas cerradas o eliminadas dentro de la ventana.
+   - **Saldo pendiente actual (referencia)**: suma de `pending_amount` de las deudas abiertas en el mes actual, en la moneda seleccionada, con nota de que es un dato de referencia y puede variar por mora/intereses.
+8. **REQ-008**: **Tooltip por barra** con: nombre del mes y año, cantidad de deudas abiertas al cierre y cantidad de deudas cerradas o eliminadas en ese mes. En móvil, el tooltip se posiciona clampeado al viewport (mismo patrón que `DebtChart`).
+9. **REQ-009**: **Selector de moneda** (solo si hay más de una moneda con actividad). El default es la moneda con mayor `pending_amount` actual (mismo criterio que SPEC-104). El gráfico, los totales y el saldo de referencia corresponden a la moneda seleccionada.
 10. **REQ-010**: **Estado vacío** con el patrón existente (card centrada, ícono, título y subtítulo) cuando el endpoint devuelve `currencies: []` (sin actividad en la ventana) o cuando la moneda seleccionada no tiene puntos. El estado vacío se basa en los datos de historia, **no** en el listado de deudas no eliminadas: si todas las deudas se eliminaron dentro de la ventana, la vista debe mostrar su serie.
-11. **REQ-011**: Endpoint autenticado **`GET /api/debts/history?months=12`** que devuelve la serie mensual y los totales para todas las monedas en una sola respuesta (ver §4.4), evitando N+1 y refetch al cambiar de moneda.
-
+11. **REQ-011**: Endpoint autenticado **`GET /api/debts/history?months=12`** que devuelve la serie mensual de conteos, los totales y el saldo pendiente actual de referencia para todas las monedas en una sola respuesta (ver §4.4), evitando N+1 y refetch al cambiar de moneda.
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
-1. **REQ-012**: **Tabla de datos mensuales** colapsable/de apoyo (debajo del gráfico) con columnas: mes, total abierto, deudas abiertas, deudas cerradas/eliminadas. Sirve como respaldo numérico accesible y para lectores de pantalla.
-2. **REQ-013**: Eje Y con 4–5 líneas de grilla y etiquetas abreviadas (`k` para miles, `M` para millones) usando el formato de moneda del store; eje X con etiquetas de mes corto en el idioma activo (`months.N`), mostrando todos los meses en desktop y alternando en móvil si el ancho es insuficiente.
+1. **REQ-012**: **Tabla de datos mensuales** colapsable/de apoyo (debajo del gráfico) con columnas: mes, deudas abiertas y deudas cerradas/eliminadas. Sirve como respaldo numérico accesible y para lectores de pantalla.
+2. **REQ-013**: Eje Y con 4–5 líneas de grilla y **etiquetas enteras de cantidad** (sin abreviaturas monetarias); eje X con etiquetas de mes corto en el idioma activo (`months.N`), mostrando todos los meses en desktop y alternando en móvil si el ancho es insuficiente.
 3. **REQ-014**: Resaltar visualmente la barra del **mes actual** (color primario pleno) frente a los meses anteriores (primario con menor opacidad), y marcar con línea punteada el nivel del **promedio del período**.
-4. **REQ-015**: Nota explicativa bajo el gráfico: qué se cuenta, qué significa "cerrada" y que las cifras son una reconstrucción a partir del estado actual y de las fechas de pago.
+4. **REQ-015**: Nota explicativa bajo el gráfico: qué se cuenta, qué significa "cerrada" (finalizada, sin cuotas pendientes con pagos, o eliminada), que las cifras son una reconstrucción a partir del estado actual y de las fechas de pago, y que el saldo pendiente mostrado es solo de referencia y puede variar por mora o intereses.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -103,21 +107,21 @@ El cálculo se hace en el backend con una consulta agregada liviana (una fila po
 **ADR-001**: Reconstruir la fecha de cierre a partir de la eliminación, los pagos y `updated_at`
 - **Contexto**: no hay historial de cambios de estado. Para saber en qué mes dejó de contar una deuda finalizada o eliminada hace falta una fecha de cierre, y las deudas eliminadas no deben borrar su pasado.
 - **Decisión**: si `deleted_at` no es NULL, `closing_date = deleted_at` (prioridad absoluta, incluso si estaba `activa`). Si no, para `finalizada`: `last_paid_at` (calculado por SPEC-104); si es NULL, `updated_at`; si tampoco fuera válido, el vencimiento de la última cuota (`start_date + installments_total`). La deuda deja de contar si el mes de `closing_date` es menor o igual al mes evaluado. La consulta de historia **incluye** deudas con `deleted_at` no nulo.
-- **Consecuencias**: historia completa sin migraciones: eliminar una deuda hoy conserva sus barras de todos los meses anteriores y solo la excluye desde el mes de borrado. Si el usuario finaliza una deuda sin registrar el pago de la última cuota, la fecha de cierre será la de la edición (`updated_at`), que puede ser posterior al pago real. Se documenta en la nota de la vista. Si el usuario paga todas las cuotas pero **no** marca la deuda como `finalizada` ni la elimina, la deuda sigue contando (ver ADR-003 y riesgo asociado).
+- **Consecuencias**: historia completa sin migraciones: eliminar una deuda hoy conserva sus barras de todos los meses anteriores y solo la excluye desde el mes de borrado. Si el usuario finaliza una deuda sin registrar el pago de la última cuota, la fecha de cierre será la de la edición (`updated_at`), que puede ser posterior al pago real. Se documenta en la nota de la vista. Si el usuario paga todas las cuotas pero **no** marca la deuda como `finalizada`, la deuda igual deja de contar por REQ-003(c), usando `last_paid_at` como cierre (ver ADR-003).
 
-**ADR-002**: La métrica es el total de deudas abiertas al cierre de cada mes
-- **Contexto**: el usuario eligió explícitamente esta métrica frente al saldo pendiente por cuotas, priorizando simplicidad y foco en estados.
-- **Decisión**: cada deuda aporta su `total` completo mientras esté abierta; el gráfico baja de golpe cuando se cierra una deuda. No se descuentan pagos parciales.
-- **Consecuencias**: serie simple y estable, fácil de explicar. No muestra amortización intra-deuda; eso ya lo cubre la vista "Saldo total" (proyección) y el tab Análisis (cuotas del mes).
+**ADR-002**: La métrica es la cantidad de deudas abiertas al cierre de cada mes
+- **Contexto**: el usuario descartó los montos como métrica principal porque la mora, los intereses y los ajustes cambian el valor de una deuda con el tiempo; un gráfico de dinero puede mostrar subas o bajas que no reflejan la realidad del compromiso.
+- **Decisión**: cada barra cuenta **deudas**, no pesos. El gráfico baja cuando una deuda pasa a pagada/cerrada y sube cuando se registra una deuda nueva. El monto pendiente actual se muestra solo como dato de referencia en una tarjeta, no como serie.
+- **Consecuencias**: serie simple, estable y comparable entre monedas. No muestra el peso financiero de cada deuda; eso queda cubierto por el "Saldo total" de la Gráfica (SPEC-104) y el tab Análisis.
 
-**ADR-003**: `inactiva` cuenta como abierta
-- **Contexto**: `inactiva` no genera cuotas nuevas pero la deuda sigue existiendo; `finalizada` es el único estado que implica deuda saldada.
-- **Decisión**: solo `finalizada` (con fecha de cierre) deja de contar. `activa` e `inactiva` suman mientras hayan comenzado.
-- **Consecuencias**: una deuda pausada sigue reflejándose, que es lo correcto desde el punto de vista del pasivo. Riesgo: deudas canceladas que el usuario deje en `inactiva` inflarán la serie; mitigado por la nota y porque el flujo esperado es marcar `finalizada`.
+**ADR-003**: "Pagada" = finalizada o sin cuotas pendientes con al menos un pago
+- **Contexto**: SPEC-104 finaliza automáticamente solo las deudas `activa`. Una deuda `inactiva` con todas sus cuotas pagadas puede quedar con estado desactualizado y no cerrarse nunca.
+- **Decisión**: para la historia, una deuda está cerrada si `status = 'finalizada'`, si fue eliminada (`deleted_at`) o si no tiene cuotas pendientes y tiene al menos una cuota pagada (`pending_count = 0 AND paid_count > 0`). En los tres casos se usa la fecha de cierre de REQ-004. Una deuda sin cuotas pagadas ni pendientes no se considera cerrada.
+- **Consecuencias**: la serie refleja la realidad de pago aunque el estado esté mal. `inactiva` con cuotas pendientes sigue contando como abierta (sigue siendo deuda). Riesgo: deudas canceladas sin pagos que el usuario deje `inactiva` seguirán contando; mitigado con la nota y el flujo esperado de `finalizada`/eliminación.
 
 **ADR-004**: Serie por moneda, no suma cruzada
 - **Contexto**: las deudas tienen `currency_id` y sumar monedas distintas produce números sin significado.
-- **Decisión**: el endpoint devuelve una serie y totales por moneda; la UI muestra un selector (si hay más de una) y usa como default la moneda con mayor total abierto actual.
+- **Decisión**: el endpoint devuelve una serie y totales por moneda; la UI muestra un selector (si hay más de una) y usa como default la moneda con mayor `pending_amount` actual.
 - **Consecuencias**: consistente con `DebtChart` (SPEC-101 REQ-010). El usuario debe cambiar de moneda para ver el resto.
 
 **ADR-005**: Endpoint devuelve todas las monedas en una respuesta
@@ -128,7 +132,7 @@ El cálculo se hace en el backend con una consulta agregada liviana (una fila po
 **ADR-006**: Reutilizar la semántica y los agregados de SPEC-104
 - **Contexto**: SPEC-104 ya está en `main` y define la finalización automática, el cierre derivado de `MAX(paid_at)` y los campos `last_paid_at`/`pending_amount` en `GET /api/debts`.
 - **Decisión**: la historia usa esa misma semántica: `last_paid_at` como fuente primaria de cierre, comparación por prefijo `YYYY-MM` por los formatos heterogéneos de `paid_at`, y `debtJoins`/agregados existentes como patrón de consulta. No se duplica lógica de cierre en el frontend ni se agregan columnas.
-- **Consecuencias**: una deuda completada se cierra sola y deja de sumar sin intervención manual; la historia es consistente con "Pagadas" y con la Gráfica actual. La métrica de la serie sigue siendo el `total` original de deudas abiertas (decisión del usuario, ADR-002), por lo que el valor del mes actual puede diferir de `pending_amount`; se explica en la nota y en el tooltip.
+- **Consecuencias**: una deuda completada se cierra sola y deja de sumar sin intervención manual; la historia es consistente con "Pagadas" y con la Gráfica actual. La serie cuenta deudas (ADR-002), por lo que es inmune a cambios de monto por mora; `pending_amount` se usa solo para el saldo de referencia y para el default de moneda.
 
 ## 4. Diseño Técnico
 
@@ -227,11 +231,12 @@ abierta(m) = mes(start_date) <= m AND NOT (mes(closing_date) <= m)
 closing_date (comparada por prefijo YYYY-MM):
   - deleted_at, si la deuda fue eliminada (prioridad absoluta)
   - last_paid_at > updated_at > última cuota, si status = 'finalizada'
-  - sin cierre, si está activa/inactiva y no fue eliminada
+    o si (pending_count = 0 AND paid_count > 0)
+  - sin cierre, en cualquier otro caso
 
-total_moneda(m) = Σ total de deudas abiertas(m) de esa moneda
-open_count(m)   = cantidad de deudas abiertas(m)
-closed_count(m) = cantidad de deudas (finalizadas o eliminadas) con closing_date dentro de m
+open_count(m)   = cantidad de deudas abiertas(m) de la moneda
+closed_count(m) = cantidad de deudas cerradas/eliminadas con closing_date dentro de m
+pending_amount_current(moneda) = Σ pending_amount de las deudas abiertas en el mes actual
 ```
 
 ### 4.4 APIs / Contratos
@@ -250,17 +255,17 @@ closed_count(m) = cantidad de deudas (finalizadas o eliminadas) con closing_date
       "code": "NIO",
       "symbol": "C$",
       "series": [
-        { "month": "2025-11", "total": 185000, "open_count": 5, "closed_count": 0 },
-        { "month": "2025-12", "total": 185000, "open_count": 5, "closed_count": 0 },
-        { "month": "2026-01", "total": 150000, "open_count": 4, "closed_count": 1 }
+        { "month": "2025-11", "open_count": 5, "closed_count": 0 },
+        { "month": "2025-12", "open_count": 5, "closed_count": 0 },
+        { "month": "2026-01", "open_count": 4, "closed_count": 1 }
       ],
       "summary": {
-        "start_total": 185000,
-        "end_total": 98000,
-        "change": -87000,
-        "change_pct": -47.03,
+        "start_count": 5,
+        "end_count": 2,
+        "change_count": -3,
+        "change_pct": -60.0,
         "closed_count": 3,
-        "end_open_count": 2
+        "pending_amount_current": 98000
       }
     }
   ]
@@ -268,10 +273,10 @@ closed_count(m) = cantidad de deudas (finalizadas o eliminadas) con closing_date
 ```
 
 - `series` siempre tiene exactamente `months` elementos, del más antiguo al actual, con `month` en formato `YYYY-MM`.
-- `change_pct` es `null` si `start_total` es 0.
+- `change_pct` es `null` si `start_count` es 0.
 - `currencies` incluye toda moneda con **actividad en la ventana**: al menos un mes con `open_count > 0` o `closed_count > 0` (esto incluye deudas eliminadas dentro de la ventana). Si una moneda solo tiene deudas eliminadas antes del inicio de la ventana, no se incluye. Si no hay monedas con actividad, `currencies: []`.
-- `closed_count` cuenta deudas finalizadas **o eliminadas** cuyo cierre cayó en el mes; `end_open_count` cuenta solo las que siguen abiertas al cierre del mes actual.
-- `total` se redondea a 2 decimales.
+- `closed_count` cuenta deudas cerradas (finalizadas, sin pendientes con pagos, o eliminadas) cuyo cierre cayó en el mes; `end_count` es la cantidad de deudas abiertas al cierre del mes actual.
+- `pending_amount_current` se redondea a 2 decimales y es solo de referencia (puede variar por mora/intereses); no define las barras.
 
 **Response Error**:
 ```json
@@ -292,10 +297,10 @@ closed_count(m) = cantidad de deudas (finalizadas o eliminadas) con closing_date
 - [ ] CA-002: El gráfico muestra 12 barras, una por mes, del más antiguo al actual, con etiquetas de mes/año legibles en es y en.
 - [ ] CA-003: Una deuda con estado `finalizada` y último `paid_at` en marzo deja de sumar desde la barra de marzo inclusive (no aparece en abril ni posteriores).
 - [ ] CA-004: Una deuda `activa` iniciada hace 2 meses aparece solo en las 2–3 barras correspondientes y no en meses anteriores a `start_date`.
-- [ ] CA-005: Una deuda `inactiva` iniciada dentro de la ventana sigue sumando (ADR-003).
-- [ ] CA-006: Las tarjetas muestran deuda al inicio, deuda actual, variación (monto y %) y cantidad de deudas cerradas/eliminadas; los valores coinciden con la serie y con la DB.
-- [ ] CA-007: El tooltip de cada barra muestra mes, total, deudas abiertas y deudas cerradas/eliminadas de ese mes.
-- [ ] CA-008: Con deudas en más de una moneda, el selector cambia toda la vista sin volver a pedir datos al backend; el default es la moneda de mayor deuda actual.
+- [ ] CA-005: Una deuda `inactiva` iniciada dentro de la ventana sigue sumando mientras tenga cuotas pendientes. Si no le quedan pendientes y tiene al menos un pago, deja de sumar desde el mes de su último pago (ADR-003).
+- [ ] CA-006: Las tarjetas muestran deudas abiertas al inicio, deudas abiertas actuales, variación en cantidad (y %), deudas cerradas/eliminadas y saldo pendiente actual de referencia; los conteos coinciden con la serie y con la DB, y el saldo coincide con la suma de `pending_amount` de las deudas abiertas.
+- [ ] CA-007: El tooltip de cada barra muestra mes, cantidad de deudas abiertas y cantidad de deudas cerradas/eliminadas de ese mes, sin montos.
+- [ ] CA-008: Con deudas en más de una moneda, el selector cambia toda la vista sin volver a pedir datos al backend; el default es la moneda con mayor `pending_amount` actual.
 - [ ] CA-009: Sin actividad en la ventana, se muestra el estado vacío con ícono, título y subtítulo (patrón existente), sin barras en cero. Si existen deudas eliminadas dentro de la ventana, se muestra la serie y **no** el estado vacío.
 - [ ] CA-010: La tabla de apoyo lista los mismos 12 valores que las barras.
 - [ ] CA-011: `GET /api/debts/history` sin sesión devuelve 401; con sesión devuelve 200 y el contrato de §4.4.
@@ -316,7 +321,7 @@ closed_count(m) = cantidad de deudas (finalizadas o eliminadas) con closing_date
 
 ### 5.3 Testing
 
-- **Unit tests (Go)**: lógica pura de cálculo con `now` fijo; casos: deuda finalizada con `paid_at` dentro y fuera de la ventana, deuda sin `paid_at` (fallback `updated_at`), deuda iniciada a mitad de ventana, deuda finalizada antes de la ventana, `inactiva`, múltiples monedas, `start_total = 0`, `months` variable, y los 3 formatos de `paid_at` (`YYYY-MM-DD HH:MM:SS`, `YYYY-MM-DD`, `YYYY-MM-DD HH:MM:SS +0000 UTC`). **Casos clave de historia**: (a) deuda abierta en los 12 meses que se finaliza con `paid_at = hoy`; los 11 meses anteriores conservan su total y solo el mes actual la excluye (CA-013); (b) deuda abierta durante la ventana que se elimina hoy (`deleted_at = hoy`); los meses anteriores conservan su total y el mes de eliminación no la cuenta (CA-014); (c) deuda eliminada antes de la ventana, excluida de todas las barras (CA-015).
+- **Unit tests (Go)**: lógica pura de cálculo con `now` fijo; casos: deuda finalizada con `paid_at` dentro y fuera de la ventana, deuda sin `paid_at` (fallback `updated_at`), deuda iniciada a mitad de ventana, deuda finalizada antes de la ventana, `inactiva` con y sin cuotas pendientes, deuda con `pending_count = 0` y `paid_count > 0` pero estado desactualizado, múltiples monedas, `start_count = 0`, `months` variable, y los 3 formatos de `paid_at`. **Casos clave de historia**: (a) deuda abierta en los 12 meses que se finaliza con `paid_at = hoy`; los 11 meses anteriores la cuentan y solo el mes actual no (CA-013); (b) deuda abierta durante la ventana que se elimina hoy (`deleted_at = hoy`); los meses anteriores la cuentan y el mes de eliminación no (CA-014); (c) deuda eliminada antes de la ventana, excluida de todas las barras (CA-015); (d) deuda inactiva con todas las cuotas pagadas: se cierra por REQ-003(c) en el mes de `last_paid_at`.
 - **Integration tests (Go)**: handler con DB de test (`/tmp/test-app.db`), contrato JSON, 401 sin sesión, meses fuera de rango.
 - **Frontend**: `npm run build` sin errores de TypeScript; verificación manual de las 3 vistas, cambio de moneda, tooltip, darkmode y responsive (360/768/1280).
 - **Datos reales**: probar contra la DB local con al menos una deuda finalizada, una activa y una eliminada; contrastar los totales con consultas SQL manuales.
@@ -350,6 +355,7 @@ closed_count(m) = cantidad de deudas (finalizadas o eliminadas) con closing_date
 | Barra del mes actual incompleta (mes en curso) se lee como "bajó" | Alta | Bajo | Etiquetar el mes actual como "en curso" en tooltip/nota; comparar cierre de mes |
 | Mezcla de monedas | Alta | Alto | Serie y totales por moneda (ADR-004); nunca sumar códigos distintos |
 | Serie poco informativa si no hay deudas cerradas en el período (línea plana) | Media | Bajo | Mostrar igualmente totales y variación; el promedio y la tabla aportan contexto |
+| El saldo pendiente de referencia cambia por mora/intereses y no coincide con la serie | Media | Bajo | Etiquetarlo explícitamente como "referencia" y no usarlo para las barras ni para la variación |
 | Etiquetas de meses superpuestas en móvil | Media | Bajo | `viewBox` responsive + etiquetas alternadas / scroll horizontal (patrón SPEC-102) |
 | Consulta con subquery por deuda se vuelve lenta con muchas deudas | Baja | Bajo | Índice existente `idx_debt_bills_debt_id`; medir con 500 deudas |
 
@@ -362,7 +368,7 @@ closed_count(m) = cantidad de deudas (finalizadas o eliminadas) con closing_date
 - SPEC-054 (modelo de deudas), SPEC-081 (fechas), SPEC-100/101/102 (gráficas de deudas).
 - **SPEC-104** (released, merge `ec2e28c`): finalización automática, `last_paid_at`, `pending_amount` y advertencia de formatos de `paid_at`. Es la base de ADR-006; la vista histórica es complementaria y no reemplaza sus tabs.
 - `docs/specs/templates/spec-template.md` — estructura.
-- Decisión del usuario (2026-10-21): tercera vista dentro del tab Gráfica; métrica = total de deudas abiertas por mes.
+- Decisión del usuario (2026-10-21): tercera vista dentro del tab Gráfica; métrica = **cantidad** de deudas abiertas por mes; "pagada" = finalizada o sin cuotas pendientes con al menos un pago; el mes de pago no cuenta; totales en cantidades + saldo pendiente actual de referencia; selector por moneda; ventana de 12 meses incluyendo el actual.
 
 ## 9. Historial de Cambios
 
@@ -372,3 +378,4 @@ closed_count(m) = cantidad de deudas (finalizadas o eliminadas) con closing_date
 | 2026-10-21 | opencode | Aclarar invariante histórico: pagar/finalizar hoy no borra los meses anteriores (REQ-005, CA-013) y que una deuda no finalizada cuenta por su total |
 | 2026-10-21 | opencode | Incluir deudas eliminadas lógicamente en la historia, usando `deleted_at` como fecha de cierre (REQ-003/REQ-004, CA-014/CA-015) |
 | 2026-10-21 | opencode | Incorporar SPEC-104 (ya en `main`): finalización automática, `last_paid_at`, comparación `YYYY-MM` de `paid_at`, early-return de `DebtChart` y ADR-006 |
+| 2026-10-21 | opencode | Cambiar la métrica a cantidad de deudas (montos solo como referencia), definir "pagada" como finalizada/sin pendientes con pagos, mes de pago excluido y totales en cantidades (ADR-002/003, REQ-002..009) |
