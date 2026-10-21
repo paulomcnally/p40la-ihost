@@ -341,4 +341,4 @@ ProjectionPoint {
 | 2026-10-21 | opencode | Creación inicial de la especificación. Requerimiento del usuario: proyección de finalización de deudas en gráfico escalonado, mensual si el horizonte es ≤ 12 meses y anual si es mayor, con validación previa sobre un clon de la DB de producción. |
 | 2026-10-21 | opencode | Inicio de implementación (`in_progress`): cuarta vista "Proyección", gráfico escalonado y granularidad adaptativa. |
 | 2026-10-21 | opencode | Implementación completa (`pending_release`): nuevo `DebtProjectionChart`, i18n ES/EN y verificación con clon de producción (modo anual 2026–2043 y modo mensual sintético). Pendiente confirmación manual. |
-| 2026-10-21 | opencode | Pruebas manuales del usuario satisfactorias. Release aprobado (`released`). |
+| 2026-10-21 | opencode | Pruebas manuales del usuario satisfactorias. Release aprobado (`released`). Commit de release: `0b8ea72`. |
