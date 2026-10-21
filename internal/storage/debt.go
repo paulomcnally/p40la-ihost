@@ -151,6 +151,8 @@ type DebtHistoryRow struct {
 	PendingCount      int
 	PaidCount         int
 	PendingAmount     float64
+	BillsTotal        float64
+	PaidByMonth       map[string]float64
 }
 
 // ListForHistory devuelve todas las deudas, incluidas las eliminadas
@@ -161,7 +163,8 @@ func (s *DebtStorage) ListForHistory(ctx context.Context) ([]DebtHistoryRow, err
 		SELECT d.id, d.currency_id, COALESCE(c.code, ''), COALESCE(c.symbol, ''),
 		       d.total, d.start_date, d.installments_total, d.status, d.updated_at, d.deleted_at,
 		       COALESCE(s.last_paid_at, ''), COALESCE(s.pending_count, 0),
-		       COALESCE(s.paid_count, 0), COALESCE(s.pending_amount, 0)
+		       COALESCE(s.paid_count, 0), COALESCE(s.pending_amount, 0),
+		       COALESCE(s.bills_total, 0)
 		FROM debts d
 		LEFT JOIN currencies c ON c.id = d.currency_id
 		LEFT JOIN (
@@ -169,7 +172,8 @@ func (s *DebtStorage) ListForHistory(ctx context.Context) ([]DebtHistoryRow, err
 			       MAX(CASE WHEN status = 'paid' THEN paid_at END) AS last_paid_at,
 			       SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_count,
 			       SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid_count,
-			       SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS pending_amount
+			       SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS pending_amount,
+			       SUM(amount) AS bills_total
 			FROM debt_bills
 			WHERE deleted_at IS NULL
 			GROUP BY debt_id
@@ -179,7 +183,6 @@ func (s *DebtStorage) ListForHistory(ctx context.Context) ([]DebtHistoryRow, err
 	if err != nil {
 		return nil, fmt.Errorf("listar deudas para historia: %w", err)
 	}
-	defer rows.Close()
 
 	var result []DebtHistoryRow
 	for rows.Next() {
@@ -187,12 +190,49 @@ func (s *DebtStorage) ListForHistory(ctx context.Context) ([]DebtHistoryRow, err
 		if err := rows.Scan(&row.ID, &row.CurrencyID, &row.CurrencyCode, &row.CurrencySymbol,
 			&row.Total, &row.StartDate, &row.InstallmentsTotal, &row.Status,
 			&row.UpdatedAt, &row.DeletedAt, &row.LastPaidAt, &row.PendingCount,
-			&row.PaidCount, &row.PendingAmount); err != nil {
+			&row.PaidCount, &row.PendingAmount, &row.BillsTotal); err != nil {
+			rows.Close()
 			return nil, fmt.Errorf("escanear deuda para historia: %w", err)
 		}
 		result = append(result, row)
 	}
 	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	// SPEC-106: pagos agrupados por deuda y mes para reconstruir el monto
+	// adeudado al cierre de cada mes. Se mantiene en 2 consultas por request.
+	paidRows, err := s.db.QueryContext(ctx, `
+		SELECT debt_id, substr(paid_at, 1, 7) AS paid_month, SUM(amount)
+		FROM debt_bills
+		WHERE status = 'paid' AND deleted_at IS NULL
+		  AND paid_at IS NOT NULL AND length(paid_at) >= 7
+		GROUP BY debt_id, substr(paid_at, 1, 7)
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("listar pagos para historia: %w", err)
+	}
+	defer paidRows.Close()
+
+	indexByID := make(map[int64]int, len(result))
+	for i := range result {
+		result[i].PaidByMonth = make(map[string]float64)
+		indexByID[result[i].ID] = i
+	}
+	for paidRows.Next() {
+		var debtID int64
+		var month string
+		var amount float64
+		if err := paidRows.Scan(&debtID, &month, &amount); err != nil {
+			return nil, fmt.Errorf("escanear pago para historia: %w", err)
+		}
+		if i, ok := indexByID[debtID]; ok {
+			result[i].PaidByMonth[month] = amount
+		}
+	}
+	if err := paidRows.Err(); err != nil {
 		return nil, err
 	}
 	return result, nil

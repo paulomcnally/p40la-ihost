@@ -330,6 +330,7 @@ export interface DebtHistoryPoint {
   month: string
   open_count: number
   closed_count: number
+  outstanding_amount: number
 }
 
 export interface DebtHistorySummary {
@@ -339,6 +340,10 @@ export interface DebtHistorySummary {
   change_pct: number | null
   closed_count: number
   pending_amount_current: number
+  start_amount: number
+  end_amount: number
+  change_amount: number
+  change_pct_amount: number | null
 }
 
 export interface DebtHistoryCurrency {
