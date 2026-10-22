@@ -22,8 +22,8 @@ github_issue: 13
 
 El sistema de analizadores de p40la-ihost necesita un nuevo analizador para facturas de **Claro Nicaragua** (Empresa Nicaragüense de Telecomunicaciones, S.A.). Se identificaron **2 formatos distintos** de factura que el analizador debe soportar:
 
-1. **Internet Residencial** (formato "A"): Facturas de servicios fijos (TV, Turbonett Fijo). Número de factura con prefijo `A` (ej: `A0061376765`). Incluye campos como número de contrato, ciclo, mes facturado.
-2. **Internet Móvil** (formato "FAC"): Facturas de telefonía móvil. Número de factura con prefijo `FAC` (ej: `FAC0257566732026`). Incluye campos como teléfono titular, número de contrato móvil.
+1. **Internet Residencial** (formato "A"): Facturas de servicios fijos (TV, Turbonett Fijo). Número de factura con prefijo `A` (ej: `A0000000000`). Incluye campos como número de contrato, ciclo, mes facturado.
+2. **Internet Móvil** (formato "FAC"): Facturas de telefonía móvil. Número de factura con prefijo `FAC` (ej: `FAC0000000000000`). Incluye campos como teléfono titular, número de contrato móvil.
 
 Ambos formatos comparten estructura visual similar (header rojo con logo Claro, tablas con headers rojos, sección de productos, footer con info de pago) pero difieren en campos específicos y formato de período.
 
@@ -36,7 +36,7 @@ Ambos formatos comparten estructura visual similar (header rojo con logo Claro, 
 1. **REQ-001**: Implementar analizador `claro` que detecte automáticamente si la factura es formato residencial o móvil basándose en el prefijo del número de factura (`A` = residencial, `FAC` = móvil).
 
 2. **REQ-002**: Extraer los siguientes campos de **ambos formatos**:
-   - `invoice_number`: No. de factura (ej: `A0061376765` o `FAC0257566732026`)
+   - `invoice_number`: No. de factura (ej: `A0000000000` o `FAC0000000000000`)
    - `amount`: Total a pagar (campo `TOTAL A PAGAR` en tabla roja, ej: `C$7,089.20`)
    - `year`: Año del período facturado (extraído de `MES FACTURADO` o `PERÍODO FACTURADO`)
    - `month`: Mes del período facturado (1-12)
@@ -67,9 +67,9 @@ Ambos formatos comparten estructura visual similar (header rojo con logo Claro, 
 
 ### 3.1 Contexto investigado
 
-**Formato Internet Residencial** (factura `A0061376765`):
+**Formato Internet Residencial** (factura `A0000000000`):
 - Header: "EMPRESA NICARAGÜENSE DE TELECOMUNICACIONES, S.A." + logo Claro rojo
-- No. de factura: `A0061376765` (prefijo `A` + dígitos)
+- No. de factura: `A0000000000` (prefijo `A` + dígitos)
 - Datos cliente: nombre, cédula, ID cliente, número de contrato, cupón número
 - Tabla 1 (headers rojos): PERÍODO FACTURADO | FECHA DE EMISIÓN | CICLO | MES FACTURADO | FECHA LÍMITE DE PAGO
   - Período: `06/JUL/2026 - 05/AGO/2026`
@@ -80,10 +80,10 @@ Ambos formatos comparten estructura visual similar (header rojo con logo Claro, 
 - Sección productos: lista de servicios con montos
 - Total Factura (footer): `C$ 1,821.60`
 
-**Formato Internet Móvil** (factura `FAC0257566732026`):
+**Formato Internet Móvil** (factura `FAC0000000000000`):
 - Header: mismo header rojo con logo Claro
-- No. de factura: `FAC0257566732026` (prefijo `FAC` + dígitos)
-- Datos cliente: nombre, cédula, dirección, ID cliente, total de servicios, **TELÉFONO TITULAR NO.** (ej: `8412-6107`)
+- No. de factura: `FAC0000000000000` (prefijo `FAC` + dígitos)
+- Datos cliente: nombre, cédula, dirección, ID cliente, total de servicios, **TELÉFONO TITULAR NO.** (ej: `5550-0100`)
 - Tabla 1 (headers rojos): PERÍODO FACTURADO | FECHA DE EMISIÓN | FECHA LÍMITE DE PAGO | FECHA DE ACREDITACIÓN
   - Período: `21/Jun/2026 - 20/Jul/2026`
   - Fecha límite: `17/08/2026`
@@ -97,7 +97,7 @@ Ambos formatos comparten estructura visual similar (header rojo con logo Claro, 
 |-------|-------------|-------|
 | Prefijo factura | `A` | `FAC` |
 | Mes facturado | Columna dedicada (`AGO/2026`) | No existe, extraer de período |
-| Teléfono titular | No existe | Campo dedicado (`8412-6107`) |
+| Teléfono titular | No existe | Campo dedicado (`5550-0100`) |
 | Número de contrato | Existe | Existe (móvil) |
 | Formato período | `06/JUL/2026 - 05/AGO/2026` | `21/Jun/2026 - 20/Jul/2026` |
 | Columnas tabla totales | 7 columnas | 7 columnas (diferentes labels) |
@@ -160,7 +160,7 @@ No cambia. Se usa `ExtractedBill` existente:
 ```
 ExtractedBill:
 - amount: float64 (Total a pagar, sin símbolo C$)
-- invoice_number: string (ej: "A0061376765")
+- invoice_number: string (ej: "A0000000000")
 - year: int (ej: 2026)
 - month: int (ej: 8 para agosto)
 - due_date: *time.Time (fecha límite de pago)
@@ -281,7 +281,7 @@ var monthMap = map[string]int{
 
 ## 8. Notas y Referencias
 
-- Facturas proporcionadas por el usuario: 2 formatos (residencial A0061376765, móvil FAC0257566732026)
+- Facturas proporcionadas por el usuario: 2 formatos (residencial A0000000000, móvil FAC0000000000000)
 - pdfcpu docs: https://pdfcpu.io/
 - Moneda: Córdobas nicaragüenses (C$)
 - Empresa: Empresa Nicaragüense de Telecomunicaciones, S.A. (Claro Nicaragua)

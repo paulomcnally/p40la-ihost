@@ -24,7 +24,7 @@ type TelegramBotService struct {
 	bills          *storage.BillStorage
 	debtBills      *storage.DebtBillStorage
 	serviceStorage *storage.ServiceStorage
-	automation     *AutomationClient
+	automation     AutomationSyncer
 
 	// Dependencias del módulo de presupuesto para /budget_transaction
 	// (SPEC-097). Solo lectura de catálogos + creación validada de transacciones.
@@ -59,7 +59,7 @@ func NewTelegramBotService(
 	bills *storage.BillStorage,
 	debtBills *storage.DebtBillStorage,
 	serviceStorage *storage.ServiceStorage,
-	automation *AutomationClient,
+	automation AutomationSyncer,
 	budgetGroups *CategoryGroupService,
 	accounts *AccountService,
 	currencies *CurrencyService,

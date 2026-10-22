@@ -26,17 +26,6 @@ func (s *TelegramBotService) handleSincronizarServicios(ctx context.Context, b *
 		return
 	}
 
-	configured, err := s.settings.IsAutomationConfigured(ctx)
-	if err != nil {
-		slog.Error("telegram_bot: /sincronizar — leer config automation", "error", err)
-		s.reply(ctx, b, update, "⚠️ Error al verificar la configuración de Automation.")
-		return
-	}
-	if !configured {
-		s.reply(ctx, b, update, "⚠️ Automation no está configurada.\nConfigurala en P40LA → Configuración → Automation.")
-		return
-	}
-
 	services, err := s.syncableServices(ctx)
 	if err != nil {
 		slog.Error("telegram_bot: /sincronizar — error de storage", "error", err)

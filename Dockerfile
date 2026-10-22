@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # Stage 1: Build frontend (React + Vite + Tailwind)
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
@@ -9,11 +11,19 @@ COPY frontend/ .
 RUN npm run build
 
 # Stage 2: Build backend (Go)
-FROM golang:1.24-alpine AS backend-builder
+FROM golang:1.26-alpine AS backend-builder
+RUN apk add --no-cache git
 WORKDIR /app
+ENV GOPRIVATE=github.com/paulomcnally/*
 
 COPY go.mod go.sum ./
-RUN go mod download
+# El módulo de plugins es privado. El token se pasa como secreto de BuildKit y
+# solo vive en el entorno de este RUN; nunca queda en la imagen final.
+RUN --mount=type=secret,id=gh_token \
+    GIT_CONFIG_COUNT=1 \
+    GIT_CONFIG_KEY_0="url.https://x-access-token:$(cat /run/secrets/gh_token)@github.com/.insteadOf" \
+    GIT_CONFIG_VALUE_0="https://github.com/" \
+    go mod download
 
 COPY . .
 

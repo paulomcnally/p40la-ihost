@@ -98,6 +98,7 @@ func main() {
 	assignmentStorage := storage.NewAssignmentStorage(database)
 	budgetTransactionStorage := storage.NewTransactionStorage(database)
 	transferStorage := storage.NewTransferStorage(database)
+	automationStorage := storage.NewAutomationStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -125,7 +126,13 @@ func main() {
 	salaryPaymentService := services.NewSalaryPaymentService(salaryPaymentStorage, monthClosingStorage)
 	monthClosingService := services.NewMonthClosingService(monthClosingStorage)
 	childSupportConfigService := services.NewChildSupportConfigService(childSupportConfigStorage, childStorage, pensionCategoryStorage)
-	automationClient := services.NewAutomationClient(systemSettingsService)
+	webhookService := services.NewWebhookService(systemSettingsStorage, systemSettingsService, serviceStorage, billStorage)
+	webhookService.SetBillHistoryStorage(billHistoryStorage)
+	automationService := services.NewAutomationService(automationStorage)
+	automationService.SetSyncDependencies(serviceStorage, webhookService, systemSettingsService, services.NewAutomationPluginRegistry())
+	if err := automationService.SyncPluginCatalog(context.Background()); err != nil {
+		slog.Error("sincronizar catálogo de plugins de automation", "error", err)
+	}
 	// Servicios del módulo de presupuesto (SPEC-093). Se crean antes del bot de
 	// Telegram porque /budget_transaction (SPEC-097) los inyecta.
 	categoryGroupService := services.NewCategoryGroupService(categoryGroupStorage, categoryStorage)
@@ -138,12 +145,10 @@ func main() {
 	billService.SetBillBudgetLinker(budgetBillLinkService)
 	categoryService.SetServiceStorage(serviceStorage)
 	categoryService.SetBillStorage(billStorage)
-	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage, debtBillStorage, serviceStorage, automationClient, categoryGroupService, accountService, currencyService, budgetTransactionService)
+	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage, debtBillStorage, serviceStorage, automationService, categoryGroupService, accountService, currencyService, budgetTransactionService)
 	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage, telegramBotService)
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
 	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
-	webhookService := services.NewWebhookService(systemSettingsStorage, systemSettingsService, serviceStorage, billStorage)
-	webhookService.SetBillHistoryStorage(billHistoryStorage)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
@@ -166,6 +171,10 @@ func main() {
 	debtDueScheduler.Start()
 	defer debtDueScheduler.Stop()
 
+	automationScheduler := services.NewAutomationScheduler(automationService, systemSettingsService)
+	automationScheduler.Start()
+	defer automationScheduler.Stop()
+
 	telegramBotService.Start()
 	defer telegramBotService.Stop()
 
@@ -183,7 +192,7 @@ func main() {
 	)
 	currencyHandlers := api.NewCurrencyHandlers(currencyService)
 	homeHandlers := api.NewHomeHandlers(homeService)
-	serviceHandlers := api.NewServiceHandlers(serviceService, homeService, institutionStorage, automationClient)
+	serviceHandlers := api.NewServiceHandlers(serviceService, homeService, institutionStorage, automationService)
 	billHandlers := api.NewBillHandlers(billService)
 	institutionHandlers := api.NewInstitutionHandlers(institutionService, documentService)
 	documentHandlers := api.NewDocumentHandlers(documentService)
@@ -203,8 +212,9 @@ func main() {
 	debtHandlers := api.NewDebtHandlers(debtService)
 	webhookHandlers := api.NewWebhookHandlers(webhookService, serviceService)
 	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService, transferService)
+	automationHandlers := api.NewAutomationHandlers(automationService, authService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers, budgetHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers, budgetHandlers, automationHandlers)
 
 	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
 	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {

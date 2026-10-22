@@ -35,6 +35,11 @@ Cuando el usuario dice "cerrá/terminá/dá por terminada la SPEC-XXX", se ejecu
 - **Inputs SIEMPRE con tokens del tema, jamás colores hardcodeados.** Todo `input`/`select`/`textarea` DEBE usar `bg-card` (fondo) y `text-text`/`text-text-secondary` (texto/placeholder). Nunca `bg-white`, `dark:bg-[#2c2c2e]` ni `text-black`. El color global de los form controls lo fija `frontend/src/index.css`; no duplicarlo por formulario. **Todo formulario nuevo debe verificarse en darkmode** (texto y placeholders legibles) antes de considerarse completo. Ver SPEC-060.
 - **Páginas de detalle: flecha atrás en el header, jamás links "← Título" en el contenido.** Si una página tiene una lista padre (detalle, crear o editar), el header muestra una flecha atrás en móvil en vez de la hamburguesa. Registrar la ruta en el mapa `BACK_ROUTES` de `frontend/src/components/DashboardLayout.tsx`. Nunca crear links de retorno dentro del contenido. Ver SPEC-063.
 - **Validar prerequisitos en backend Y frontend.** Si una entidad depende de otra (ej: servicios → instituciones), validar en ambos lados y redirigir al formulario de la dependencia si no existe.
+- **Validar SIEMPRE contra una copia de la DB de producción cuando el resultado depende de datos reales.** Migraciones, importaciones, matching de datos, reportes y cualquier prueba cuyo resultado cambie según el contenido de la DB se ejecutan sobre un backup de producción (`.backup` vía SSH y descarga a `/tmp`), **nunca** sobre `data/app.db` local: la DB local está desactualizada y produce conclusiones falsas (precedente SPEC-109: `Tigo` apareció como institución nueva porque la DB local no la tenía). La DB local solo se usa para tests unitarios con fixtures sintéticos. Nunca se escribe en producción: siempre sobre la copia.
+- **PROHIBIDO commitear datos privados o secretos. Sin excepciones.** Se considera dato privado: nombres y apellidos, teléfonos, emails personales, direcciones, cédulas/DNI, RUC personal, números de cuenta/medidor/contrato, números de factura reales, facturas o PDFs reales, chat IDs de Telegram, IPs/MACs domésticas y cualquier dato financiero. Se considera secreto: contraseñas, hashes, tokens (Telegram/APIs), API keys, cookies, session secrets, credenciales SSH, webhook UUIDs/keys y claves privadas. Aplica a código, tests, fixtures, specs, docs, README, issues, PRs, mensajes de commit, logs y capturas.
+- **Usar SIEMPRE datos sintéticos** en ejemplos y tests: `demo-account-001`, `demo@example.com`, `+1 555 0100`, `Proveedor Demo`, `F000000000000001`, `demo-api-key`. Está prohibido usar datos reales "porque son de prueba".
+- **Las copias de producción viven solo en `/tmp`** y se borran al terminar. Nunca se commitean DBs, `-wal`, `-shm`, backups, PDFs ni exports de producción. Antes de commitear, revisar `git diff --cached` y escanear el diff buscando PII/secretos.
+- **Si se commitea un secreto o dato privado es un incidente**: rotar el secreto, eliminarlo del árbol y de la historia (no alcanza con un commit posterior), documentar el incidente y avisar al usuario.
 - **Crear usuarios de prueba directamente en la DB cuando se necesite autenticar.** El agente tiene permiso y obligación de crear usuarios vía SQLite para poder probar endpoints protegidos. Ejecutar `./scripts/create-test-user.sh`: crea/actualiza el usuario (default `test@test.com` / `test1234`), hace login y deja las cookies en `/tmp/cookies.txt`. Personalizable con `EMAIL`, `PASSWORD`, `DB_PATH` y `PORT`. Usar luego: `curl -s -b /tmp/cookies.txt http://localhost:8088/api/...`
 - **La fuente de verdad del i18n es `frontend/public/i18n/`, NO `public/i18n/`.** El build de Vite (`npm run build` en `frontend/`) usa `emptyOutDir: true` sobre `public/`: borra TODO su contenido y lo regenera desde `frontend/public/` (copia `i18n/`, `index.html`, assets). Por lo tanto:
   - Cualquier cambio de traducción se edita SIEMPRE en `frontend/public/i18n/{es,en}.json`.
@@ -183,6 +188,7 @@ La app corre como add-on Docker en un **SONOFF iHost**. La DB SQLite vive en el 
 ### Pruebas locales obligatorias
 
 - **Todo cambio significativo debe probarse en local** (tests, build, ejecución básica) antes de intentar commits o push.
+- **Si el resultado depende de datos reales, la prueba se corre contra una copia de la DB de producción**, no contra `data/app.db` local. Ver "Reglas críticas".
 - **No se realiza commit** de código que no compile, que falle los tests o que no haya sido validado en el entorno de desarrollo local.
 - Antes de solicitar confirmación para merge/push, el agente debe verificar que la aplicación levanta correctamente con la base de datos SQLite y que los criterios de aceptación del spec pasan en local.
 
@@ -270,6 +276,8 @@ Antes de marcar una spec como `pending_release`:
 - [ ] Se hizo code review
 - [ ] No hay deuda técnica crítica sin documentar
 - [ ] Se verificó que funciona en entornos con recursos limitados (iHost)
+- [ ] Si el comportamiento depende de datos, se validó contra una copia de la DB de producción (nunca contra la DB local)
+- [ ] `git diff --cached` revisado: sin PII, secretos, DBs, PDFs ni exports de producción
 
 ---
 

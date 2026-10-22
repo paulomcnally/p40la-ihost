@@ -138,6 +138,8 @@ Cuando el usuario menciona que una spec cambió de estado:
 
 ### 4. Reglas de documentación
 
+- **Sin datos privados**: las specs NUNCA incluyen PII, secretos, DBs, PDFs ni exports de producción. Los ejemplos usan datos sintéticos (`demo-account-001`, `demo@example.com`, `demo-api-key`). Ver `docs/project-rules.md` §8.
+
 Cada archivo de spec DEBE incluir:
 
 - **Frontmatter** con: title, id, status, author, created, updated, github_issue
