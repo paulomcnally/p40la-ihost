@@ -36,6 +36,7 @@ type Handler struct {
 	debt                *DebtHandlers
 	webhooks            *WebhookHandlers
 	budget              *BudgetHandlers
+	automation          *AutomationHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -66,6 +67,7 @@ func NewHandler(
 	debt *DebtHandlers,
 	webhooks *WebhookHandlers,
 	budget *BudgetHandlers,
+	automation *AutomationHandlers,
 ) *Handler {
 	return &Handler{
 		auth:                auth,
@@ -94,6 +96,7 @@ func NewHandler(
 		debt:                debt,
 		webhooks:            webhooks,
 		budget:              budget,
+		automation:          automation,
 	}
 }
 

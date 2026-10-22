@@ -5,3 +5,16 @@
 
 frontend/node_modules/
 frontend/dist/
+
+# Datos privados: nunca commitear DBs, backups, PDFs ni exports de producción
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.pdf
+
+# Secretos de build y exports de producción (nunca commitear)
+.gh_token
+.env
+p40la-export-*.json

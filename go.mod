@@ -1,18 +1,19 @@
 module github.com/paulomcnally/p40la-ihost
 
-go 1.24.1
+go 1.26.0
 
 require (
+	github.com/go-telegram/bot v1.27.0
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
+	github.com/paulomcnally/p40la-ihost-automation-plugins v1.1.0
 	golang.org/x/crypto v0.26.0
 	modernc.org/sqlite v1.32.0
 )
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-telegram/bot v1.27.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect

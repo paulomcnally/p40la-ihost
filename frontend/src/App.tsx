@@ -21,7 +21,6 @@ import SettingsEmailAlertsPage from './pages/SettingsEmailAlertsPage'
 import SettingsVoiceMonkeyPage from './pages/SettingsVoiceMonkeyPage'
 import SettingsTelegramBotPage from './pages/SettingsTelegramBotPage'
 import SettingsWebhooksPage from './pages/SettingsWebhooksPage'
-import SettingsAutomationPage from './pages/SettingsAutomationPage'
 import SettingsCurrenciesPage from './pages/SettingsCurrenciesPage'
 import SettingsCurrencyFormatPage from './pages/SettingsCurrencyFormatPage'
 import SettingsEmailAppearancePage from './pages/SettingsEmailAppearancePage'
@@ -30,6 +29,10 @@ import InstitutionFormPage from './pages/InstitutionFormPage'
 import AutosPage from './pages/AutosPage'
 import AutoFormPage from './pages/AutoFormPage'
 import AutoShowPage from './pages/AutoShowPage'
+import AutomationPage from './pages/AutomationPage'
+import AutomationFormPage from './pages/AutomationFormPage'
+import AutomationDetailPage from './pages/AutomationDetailPage'
+import AutomationPluginsPage from './pages/AutomationPluginsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import NotificationFormPage from './pages/NotificationFormPage'
 import HijosPage from './pages/HijosPage'
@@ -96,6 +99,11 @@ function App() {
                   <Route path="services/new" element={<ServiceFormPage />} />
                   <Route path="services/edit/:id" element={<ServiceFormPage />} />
                   <Route path="services/bills/:serviceId" element={<BillsPage />} />
+                  <Route path="automation" element={<AutomationPage />} />
+                  <Route path="automation/new" element={<AutomationFormPage />} />
+                  <Route path="automation/edit/:id" element={<AutomationFormPage />} />
+                  <Route path="automation/plugins" element={<AutomationPluginsPage />} />
+                  <Route path="automation/:id" element={<AutomationDetailPage />} />
                   <Route path="bills/new" element={<BillFormPage />} />
                   <Route path="bills/edit/:id" element={<BillFormPage />} />
                   <Route path="settings" element={<SettingsPage />} />
@@ -108,7 +116,6 @@ function App() {
                   <Route path="settings/alertas/voz" element={<SettingsVoiceMonkeyPage />} />
                   <Route path="settings/telegram-bot" element={<SettingsTelegramBotPage />} />
                   <Route path="settings/webhooks" element={<SettingsWebhooksPage />} />
-                  <Route path="settings/automation" element={<SettingsAutomationPage />} />
                   <Route path="settings/monedas" element={<SettingsCurrenciesPage />} />
                   <Route path="settings/formato-moneda" element={<SettingsCurrencyFormatPage />} />
                   <Route path="settings/email-appearance" element={<SettingsEmailAppearancePage />} />

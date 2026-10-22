@@ -293,18 +293,6 @@ export default function ServiceFormPage() {
             />
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">{t('services.automation_account')}</label>
-          <input
-            type="number"
-            min="1"
-            value={formData.automation_account_id}
-            onChange={(e) => handleChange('automation_account_id', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-            placeholder={t('services.automation_account_placeholder')}
-          />
-          <p className="text-xs text-text-secondary mt-1">{t('services.automation_account_hint')}</p>
-        </div>
         <div className="flex items-center gap-3">
           <label className="relative inline-flex items-center cursor-pointer">
             <input

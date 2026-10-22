@@ -286,3 +286,13 @@ func validatePassword(password string) error {
 	}
 	return nil
 }
+
+// ValidatePassword verifica la contraseña de un usuario sin crear sesión.
+// Se usa para acciones sensibles (revelar credenciales de automation).
+func (s *AuthService) ValidatePassword(ctx context.Context, email, password string) bool {
+	user, err := s.users.GetByEmail(ctx, email)
+	if err != nil || user == nil {
+		return false
+	}
+	return bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) == nil
+}
