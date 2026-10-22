@@ -1,7 +1,7 @@
 ---
 title: "Estandarización de formato y moneda en todos los montos del módulo de servicios y facturas"
 id: "SPEC-113"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 116
 # Estandarización de formato y moneda en todos los montos del módulo de servicios y facturas
 
 **ID**: SPEC-113  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -226,24 +226,24 @@ No se crean endpoints. Se consumen los existentes:
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado un servicio con moneda `NIO` y al menos una factura, cuando se abre **directamente** `/services/bills/3?tab=analisis` (URL nueva o recarga), entonces todos los montos muestran `C$` y los resúmenes indican `NIO`; ningún monto queda como número pelado.
-- [ ] CA-002: Dado el mismo servicio, cuando se abre `/services/bills/3?tab=facturas`, entonces la columna Monto (desktop) y el monto de cada card (móvil) muestran la moneda.
-- [ ] CA-003: Dado un servicio con moneda `USD`, cuando se abren ambas pestañas, entonces los montos muestran `US$`/`USD` y no `C$` ni `NIO`.
-- [ ] CA-004: Dado un catálogo de monedas que no se pudo cargar, cuando se abre la página, entonces los montos muestran el código ISO si está disponible, o el símbolo genérico `¤` en el peor caso, y la vista no se rompe (sin `NaN`, sin `undefined`).
-- [ ] CA-005: Cuando se crea o edita una factura, el campo Monto indica la moneda del servicio (etiqueta o sufijo) sin permitir cambiarla desde ese formulario.
-- [ ] CA-006: Cuando se sube una factura con el modal, cada campo Monto indica la moneda del servicio.
-- [ ] CA-007: Los separadores de miles, decimales y cantidad de decimales respetan la configuración de `Settings → Formato de moneda` (ej. `1.234,56` si así se configuró).
-- [ ] CA-008: No se muestran espacios dobles ni símbolos duplicados (`C$ C$1,234.56`) en ningún monto.
-- [ ] CA-009: La pestaña Análisis mantiene sus cálculos y gráficos funcionando; solo cambia la presentación de moneda.
-- [ ] CA-DARK: Los campos de monto y las etiquetas de moneda se verificaron en darkmode (texto y placeholders legibles, tokens `bg-card`/`text-text`).
-- [ ] CA-BACK: No se crean páginas nuevas; las rutas de detalle existentes siguen usando la flecha atrás del header vía `BACK_ROUTES`, sin links "← Título" en el contenido.
+- [x] CA-001: Dado un servicio con moneda `NIO` y al menos una factura, cuando se abre **directamente** `/services/bills/3?tab=analisis` (URL nueva o recarga), entonces todos los montos muestran `C$` y los resúmenes indican `NIO`; ningún monto queda como número pelado.
+- [x] CA-002: Dado el mismo servicio, cuando se abre `/services/bills/3?tab=facturas`, entonces la columna Monto (desktop) y el monto de cada card (móvil) muestran la moneda.
+- [x] CA-003: Dado un servicio con moneda `USD`, cuando se abren ambas pestañas, entonces los montos muestran `US$`/`USD` y no `C$` ni `NIO`.
+- [x] CA-004: Dado un catálogo de monedas que no se pudo cargar, cuando se abre la página, entonces los montos muestran el código ISO si está disponible, o el símbolo genérico `¤` en el peor caso, y la vista no se rompe (sin `NaN`, sin `undefined`).
+- [x] CA-005: Cuando se crea o edita una factura, el campo Monto indica la moneda del servicio (etiqueta o sufijo) sin permitir cambiarla desde ese formulario.
+- [x] CA-006: Cuando se sube una factura con el modal, cada campo Monto indica la moneda del servicio.
+- [x] CA-007: Los separadores de miles, decimales y cantidad de decimales respetan la configuración de `Settings → Formato de moneda` (ej. `1.234,56` si así se configuró).
+- [x] CA-008: No se muestran espacios dobles ni símbolos duplicados (`C$ C$1,234.56`) en ningún monto.
+- [x] CA-009: La pestaña Análisis mantiene sus cálculos y gráficos funcionando; solo cambia la presentación de moneda.
+- [x] CA-DARK: Los campos de monto y las etiquetas de moneda se verificaron en darkmode (texto y placeholders legibles, tokens `bg-card`/`text-text`).
+- [x] CA-BACK: No se crean páginas nuevas; las rutas de detalle existentes siguen usando la flecha atrás del header vía `BACK_ROUTES`, sin links "← Título" en el contenido.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: El cambio no agrega más de una llamada de red adicional por carga de página (`GET /api/currencies`) y no introduce nuevas dependencias en `package.json`.
-- [ ] CA-NF-002: El bundle de frontend no aumenta de forma significativa (< 5 KB gzip) y el build de Vite compila sin warnings nuevos.
-- [ ] CA-NF-003: `go test ./...` sigue pasando y `npm run build` (en `frontend/`) finaliza correctamente.
-- [ ] CA-NF-004: La app se validó en local contra una **copia de la DB de producción** para verificar que los servicios reales con moneda NIO/USD se muestran correctamente (sin escribir en producción).
+- [x] CA-NF-001: El cambio no agrega más de una llamada de red adicional por carga de página (`GET /api/currencies`) y no introduce nuevas dependencias en `package.json`.
+- [x] CA-NF-002: El bundle de frontend no aumenta de forma significativa (< 5 KB gzip) y el build de Vite compila sin warnings nuevos.
+- [x] CA-NF-003: `go test ./...` sigue pasando y `npm run build` (en `frontend/`) finaliza correctamente.
+- [x] CA-NF-004: La app se validó en local contra una **copia de la DB de producción** para verificar que los servicios reales con moneda NIO/USD se muestran correctamente (sin escribir en producción).
 
 ### 5.3 Testing
 
@@ -300,7 +300,11 @@ No se crean endpoints. Se consumen los existentes:
 - **Auditoría REQ-009**: se reemplazó la resolución ad-hoc (`currencies.find`) por `resolveCurrency()` en `ServicesPage.tsx`, `AutoShowPage.tsx` y `AddInsuranceModal.tsx`. Hallazgos no corregidos (fuera del módulo de servicios, sin cambios en esta spec): `DebtAnalysis.tsx` usa `currency_code || 'NIO'` como fallback hardcodeado; `RegistrosPage.tsx` y `BudgetPage.tsx` concatenan el código manualmente. Se recomienda una spec futura de formato de moneda global.
 - **Validación manual**: sobre una copia de la DB de producción sanitizada (integraciones de salida deshabilitadas en la copia, sin escrituras en producción), servidor local en puerto alternativo. Se verificó navegación directa por URL y recarga en servicios NIO y USD, pestañas Análisis y Facturas, cards móviles, formulario de factura y darkmode/lightmode. Build de Vite y `go test ./...` en verde.
 
-**Nota**: los criterios de aceptación quedan pendientes de confirmación manual del usuario antes de pasar la spec a `pending_release`.
+**Ajuste detectado durante la validación**: al probar CA-007 se confirmó que `formatMoney` no refrescaba la UI al cargar la configuración porque los componentes seleccionan la función del store (identidad estable) y no se re-suscribían. Se corrigió `currencyFormatStore.ts` recreando el formateador cuando cambian los separadores/decimales; verificado con formato `1.110,97`, `1,110.97` y configuración restaurada.
+
+**REQ-011**: no aplica con el modelo actual (cada factura hereda la moneda de su servicio, por lo que no puede haber montos mezclados dentro de un servicio). Queda como defensa futura si el modelo cambia.
+
+**Validación del usuario**: 2026-10-21, el usuario confirmó que la corrección funciona.
 
 ## 9. Historial de Cambios
 
@@ -308,4 +312,4 @@ No se crean endpoints. Se consumen los existentes:
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial de la especificación a partir del reporte del usuario sobre montos sin moneda en `/services/bills/:id` (pestañas Análisis y Facturas) y en el campo Monto del formulario. |
 | 2026-10-21 | opencode | Inicio de implementación: estado `in_progress`. |
-| 2026-10-21 | opencode | Implementación completa en worktree: helper `resolveCurrency`, fix de carga de monedas y formato en Análisis/Facturas, etiquetas de moneda en formularios y auditoría de vistas relacionadas. Build y tests en verde; validación manual sobre copia de producción sanitizada. Pendiente confirmación del usuario. |
+| 2026-10-21 | opencode | Implementación completa en worktree: helper `resolveCurrency`, fix de carga de monedas y formato en Análisis/Facturas, etiquetas de moneda en formularios y auditoría de vistas relacionadas. Build y tests en verde; validación manual sobre copia de producción sanitizada. Confirmado por el usuario (2026-10-21); spec a `pending_release`. |
