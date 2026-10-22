@@ -4,8 +4,9 @@
   "version": "0.5.0",
   "type": "module",
   "scripts": {
+    "check:ui": "node scripts/check-ui-rules.cjs",
     "dev": "vite",
-    "build": "node scripts/sync-i18n.cjs && tsc -b && vite build",
+    "build": "node scripts/check-ui-rules.cjs && node scripts/sync-i18n.cjs && tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
