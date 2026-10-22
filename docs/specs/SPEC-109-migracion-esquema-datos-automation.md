@@ -187,14 +187,19 @@ Implementado y verificado en local:
 | `migrations/0039_merge_automation.up.sql` / `.down.sql` | ✅ |
 | `cmd/import-automation` (`--from`, `--data-dir`, `--migrations`, `--institution-map`, `--dry-run`, `--verify`) | ✅ |
 | Tests unitarios (idempotencia, stubs, huérfanos, dry-run, tablas faltantes, match de instituciones) | ✅ |
-| E2E sobre copias reales de las DB | ✅ 5 proveedores (3 reutilizados, 2 creados), 5 cuentas, 5 plugins, 28 facturas, 100 logs |
-| Mapeo `apps` → `institutions` | ✅ Claro/Disnorte Dissur/ASSA reutilizados; Tigo/ENACAL creados y reportados |
+| E2E sobre copia de la **DB de producción** (target) | ✅ 5 proveedores (4 reutilizados, 1 mapeado, **0 creados**), 5 cuentas, 5 plugins, 28 facturas, 100 logs |
+| Mapeo `apps` → `institutions` con datos de producción | ✅ `Claro Nicaragua`, `Tigo`, `Enacal`, `ASSA` reutilizados; `DISNORTE-DISSUR Nicaragua` → `Unión Fenosa` por mapa |
+| `webhook_api_key` de producción preservada | ✅ |
 | Segunda corrida (idempotencia) | ✅ 0 insertadas, 0 duplicadas |
 | `webhook_api_key` de p40la preservada | ✅ |
 | `integrity_check` / `foreign_key_check` | ✅ `ok` / sin filas |
 | Arranque del server con la migración aplicada | ✅ `/health` = `{"status":"ok"}` |
 
 `go build ./...` y `go test ./...` pasan. La migración `.down.sql` revierte las tablas nuevas sin tocar las de p40la.
+
+**Nota de origen de datos**: la DB de `p40la-ihost-automation` de producción vive en su propio volumen y no está montada en el add-on SSH, por lo que el origen del E2E es la copia local de automation. El destino (instituciones, servicios, settings) sí es una copia de producción. Para un E2E 100% productivo hay que montar el volumen `p40la-ihost-automation-data` en el add-on SSH o exportar esa DB.
+
+**Regla de proyecto incorporada**: toda validación que dependa de datos reales se corre contra una copia de producción (AGENTS.md "Reglas críticas" y `docs/project-rules.md` §6.1).
 
 ## 5. Criterios de Aceptación
 
@@ -219,8 +224,8 @@ Implementado y verificado en local:
 ### 5.3 Testing
 
 - **Unit tests**: import idempotente, preservación de IDs, no pisar `webhook_api_key`, detección de huérfanos.
-- **Integration tests**: sobre copias reales de ambas DB (fixtures), `integrity_check` y `foreign_key_check`.
-- **E2E**: runbook completo en el iHost con contenedores detenidos (ventana de mantenimiento).
+- **Integration tests**: sobre copia de la DB de producción (backup `.backup`), `integrity_check` y `foreign_key_check`. Nunca contra `data/app.db` local.
+- **E2E**: runbook completo en el iHost con contenedores detenidos (ventana de mantenimiento). La validación previa se corre sobre una copia de producción sin escribir en ella.
 - **Performance**: tiempo de import y tamaño final de `app.db`.
 
 ## 6. Plan de Implementación
