@@ -205,7 +205,7 @@ func main() {
 	debtHandlers := api.NewDebtHandlers(debtService)
 	webhookHandlers := api.NewWebhookHandlers(webhookService, serviceService)
 	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService, transferService)
-	automationHandlers := api.NewAutomationHandlers(automationService)
+	automationHandlers := api.NewAutomationHandlers(automationService, authService)
 
 	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers, budgetHandlers, automationHandlers)
 
