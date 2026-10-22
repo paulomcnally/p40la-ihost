@@ -33,7 +33,7 @@ A diferencia de una factura de servicio, este documento es un **comprobante de p
 1. **REQ-001**: Crear `internal/analyzers/all/assa_seguro_auto.go` con el `AssaSeguroAutoAnalyzer` (ID `assa_seguro_auto`, Name `ASSA - Seguro Auto`)
 2. **REQ-002**: Crear `internal/analyzers/all/assa_seguro_auto_test.go` con los tests del analyzer
 3. **REQ-003**: Anclar la detección del documento a `ASSA, Compañía de Seguros` (regex `reAssaAnchor`)
-4. **REQ-004**: Extraer número de recibo con formato `No. <letra>[<dígito>] <número>` donde el dígito de la serie es opcional (ej: `No. H3 116495` → `H3116495` y `No. H 254818` → `H254818`), sin confundirse con la autorización DGI
+4. **REQ-004**: Extraer número de recibo con formato `No. <letra>[<dígito>] <número>` donde el dígito de la serie es opcional (ej: `No. H3 000000` → `H3000000` y `No. H 000000` → `H000000`), sin confundirse con la autorización DGI
 5. **REQ-005**: Extraer monto total en córdobas (C$) anclado a la etiqueta `Recibido:` (ej: `2,468.11`)
 6. **REQ-006**: Extraer mes/año de pago desde la fecha del recibo (formato `DD-MMM-YY`, ej: `30-JUN-26` → mes 6, año 2026)
 7. **REQ-007**: Dejar `DueDate` en `nil` (es recibo, no factura con vencimiento)
@@ -44,7 +44,7 @@ A diferencia de una factura de servicio, este documento es un **comprobante de p
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
 1. **REQ-011**: Confirmar que el analyzer se detecta correctamente al subir un PDF de ASSA
-2. **REQ-013**: Soportar recibos cuya serie de talonario es una sola letra sin dígito (`No. H 254818`), además del formato con dígito (`No. H3 116495`) — corrección de bug real reportado
+2. **REQ-013**: Soportar recibos cuya serie de talonario es una sola letra sin dígito (`No. H 000000`), además del formato con dígito (`No. H3 000000`) — corrección de bug real reportado
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -65,7 +65,7 @@ A diferencia de una factura de servicio, este documento es un **comprobante de p
 - Sigue exactamente el patrón de `DisnorteDissurAnalyzer`: ancla de detección (`reAssaAnchor`), extracción con regex, validación de campos obligatorios y error descriptivo.
 - El documento es un **recibo oficial de caja** (comprobante de pago), no una factura. Por lo tanto no aplica `DueDate`.
 - Los helpers `parseAmount` y `parseMonth` ya están definidos en `claro.go` dentro del mismo paquete `all`, por lo que son accesibles directamente.
-- El texto real del recibo (reimpresión No. H3 116495) se incluye en el test como `assaRealText`. Es un caso realista: las celdas del PDF quedan concatenadas sin separador (ej: `TARRecibido: 2,468.11Total`), por lo que los regex se anclan en etiquetas.
+- El texto real del recibo (reimpresión No. H3 000000) se incluye en el test como `assaRealText`. Es un caso realista: las celdas del PDF quedan concatenadas sin separador (ej: `TARRecibido: 2,468.11Total`), por lo que los regex se anclan en etiquetas.
 - El regex del número de recibo (`[A-Z]\d` seguido de espacio y 4+ dígitos) evita confundirse con la autorización DGI (`No. ASFC 01/0105/12/2021/1.`) que no sigue ese patrón.
 
 ### 3.2 Opciones evaluadas
@@ -141,12 +141,12 @@ Sin cambios en APIs. El analyzer se registra automáticamente y se invoca con el
 - [ ] CA-001: `internal/analyzers/all/assa_seguro_auto.go` y `assa_seguro_auto_test.go` existen
 - [ ] CA-002: `go test ./internal/analyzers/all/` pasa sin errores
 - [ ] CA-003: `analyzers.List()` incluye `"assa_seguro_auto"` como ID y `"ASSA - Seguro Auto"` como nombre
-- [ ] CA-004: Con el texto real del recibo (`assaRealText`), se extrae invoice `H3116495`, amount `2468.11`, year `2026`, month `6`
+- [ ] CA-004: Con el texto real del recibo (`assaRealText`), se extrae invoice `H3000000`, amount `2468.11`, year `2026`, month `6`
 - [ ] CA-005: `DueDate` es `nil` en el resultado
-- [ ] CA-006: `RawData` incluye `poliza=02B128265`, `cliente=1079011`, `reling=5233844`, `tipo_cambio=36.6243`
+- [ ] CA-006: `RawData` incluye `poliza=00X000000`, `cliente=1079011`, `reling=5233844`, `tipo_cambio=36.6243`
 - [ ] CA-007: PDFs de otras empresas no se detectan como ASSA (el ancla no matchea)
 - [ ] CA-008: El regex de número de recibo no matchea la autorización DGI (`No. ASFC ...`)
-- [ ] CA-009: Con el texto real de serie sin dígito (`assaRealTextSerieSinDigito`), se extrae invoice `H254818`, amount `202.16`, year `2025`, month `10` (regresión)
+- [ ] CA-009: Con el texto real de serie sin dígito (`assaRealTextSerieSinDigito`), se extrae invoice `H000000`, amount `202.16`, year `2025`, month `10` (regresión)
 
 ### 5.2 No funcionales
 
@@ -186,7 +186,7 @@ Sin cambios en APIs. El analyzer se registra automáticamente y se invoca con el
 - Código fuente y tests provistos por el usuario en la conversación
 - Analyzer existente similar: `internal/analyzers/all/claro.go` y `internal/analyzers/all/disnorte_dissur.go`
 - Librería PDF: `github.com/ledongthuc/pdf`
-- Documento analizado: Recibo Oficial de Caja de ASSA (reimpresión No. H3 116495), prima de auto póliza `02B128265`
+- Documento analizado: Recibo Oficial de Caja de ASSA (reimpresión No. H3 000000), prima de auto póliza `00X000000`
 
 ## 9. Historial de Cambios
 
@@ -194,6 +194,6 @@ Sin cambios en APIs. El analyzer se registra automáticamente y se invoca con el
 |-------|-------|-------------|
 | 2026-08-16 | paulomcnally | Creación inicial de la especificación |
 | 2026-08-16 | paulomcnally | Cambio de estado a in_progress (inicio de desarrollo) |
-| 2026-08-16 | paulomcnally | Fix bug real: soporte de serie de talonario sin dígito (`No. H 254818`) con dígito opcional en `reAssaInvoice` + test de regresión `TestParseAssaSeguroAuto_SerieSinDigito` |
+| 2026-08-16 | paulomcnally | Fix bug real: soporte de serie de talonario sin dígito (`No. H 000000`) con dígito opcional en `reAssaInvoice` + test de regresión `TestParseAssaSeguroAuto_SerieSinDigito` |
 | 2026-08-16 | paulomcnally | Cambio de estado a pending_release (pruebas manuales del usuario satisfactorias) |
 | 2026-08-16 | paulomcnally | Release: merge de feature/SPEC-040 a main (commit fa04da7) y push. Estado a released |

@@ -8,37 +8,37 @@ import (
 )
 
 const residentialText = `EMPRESA NICARAGÜENSE DE TELECOMUNICACIONES, S.A.
-No. de factura: A0061376765
-NOMBRE: PAULO ANTONIO MCNALLY ZAMBRANA
-CÉDULA: 0012801880001H
-ID CLIENTE: 2457168
-NÚMERO DE CONTRATO: 2371975
+No. de factura: A0000000000
+NOMBRE: CLIENTE DEMO EJEMPLO
+CÉDULA: 0000000000000X
+ID CLIENTE: 0000000
+NÚMERO DE CONTRATO: 0000000
 PERÍODO FACTURADO FECHA DE EMISIÓN CICLO MES FACTURADO FECHA LÍMITE DE PAGO
 06/JUL/2026 - 05/AGO/2026 07/AGO/2026 56 AGO/2026 04/SEP/2026
 TOTAL FACTURA COMPRAS A PLAZOS TOTAL MES OTROS CARGOS SALDO PENDIENTE VALOR RECLAMO TOTAL A PAGAR
-C$1,821.60 C$1,723.00 C$3,544.60 C$0.00 C$3,544.60 C$0.00 C$7,089.20
+C$100.00 C$200.00 C$300.00 C$0.00 C$300.00 C$0.00 C$999.99
 PRODUCTOS Y SERVICIOS FACTURADOS DE ESTE MES
-5831162-CLARO TV C$ 329.62
-5831160-TURBONETT FIJO C$ 1,254.38
-IVA FACTURADO C$ 237.60
-Total Factura C$ 1,821.60`
+5831162-CLARO TV C$ 10.00
+5831160-TURBONETT FIJO C$ 20.00
+IVA FACTURADO C$ 5.00
+Total Factura C$ 100.00`
 
 const mobileText = `EMPRESA NICARAGÜENSE DE TELECOMUNICACIONES, S.A.
-No. de factura: FAC0257566732026
-NOMBRE: PAULO ANTONIO MCNALLY ZAMBRANA
-CÉDULA: 0012801880001H
+No. de factura: FAC0000000000000
+NOMBRE: CLIENTE DEMO EJEMPLO
+CÉDULA: 0000000000000X
 ID CLIENTE: 7075990
-TELÉFONO TITULAR NO.: 8412-6107
+TELÉFONO TITULAR NO.: 5550-0100
 PERÍODO FACTURADO FECHA DE EMISIÓN FECHA LÍMITE DE PAGO FECHA DE ACREDITACIÓN
 21/Jun/2026 - 20/Jul/2026 22/07/2026 17/08/2026 21/07/2026
 TOTAL FACTURA VENTA EN PLAZOS TOTAL MES SALDO A FAVOR SALDO PENDIENTE AJUSTE TOTAL A PAGAR
-C$841.93 C$134.04 C$975.97 C$0.00 C$0.00 C$0.00 C$975.97
+C$111.11 C$222.22 C$888.88 C$0.00 C$0.00 C$0.00 C$888.88
 PRODUCTOS Y SERVICIOS FACTURADOS DE ESTE MES
-Cargo basico mensual C$ 338.77
-Cargo mensual C$ 36.62
-Renta mensual por Datos GPRS C$ 356.72
-IVA FACTURADO C$ 109.82
-Total Factura C$ 841.93`
+Cargo basico mensual C$ 10.00
+Cargo mensual C$ 2.00
+Renta mensual por Datos GPRS C$ 20.00
+IVA FACTURADO C$ 5.00
+Total Factura C$ 111.11`
 
 func TestClaroAnalyzer_Info(t *testing.T) {
 	a := &ClaroAnalyzer{}
@@ -93,10 +93,10 @@ func TestParseAmount(t *testing.T) {
 		input string
 		want  float64
 	}{
-		{"C$7,089.20", 7089.20},
-		{"C$975.97", 975.97},
-		{"C$1,821.60", 1821.60},
-		{"C$841.93", 841.93},
+		{"C$999.99", 999.99},
+		{"C$888.88", 888.88},
+		{"C$100.00", 100.00},
+		{"C$111.11", 111.11},
 		{"100.00", 100.00},
 	}
 	for _, tt := range tests {
@@ -116,11 +116,11 @@ func TestParseResidential(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parseResidential error: %v", err)
 	}
-	if result.InvoiceNumber != "A0061376765" {
-		t.Errorf("InvoiceNumber = %q, want %q", result.InvoiceNumber, "A0061376765")
+	if result.InvoiceNumber != "A0000000000" {
+		t.Errorf("InvoiceNumber = %q, want %q", result.InvoiceNumber, "A0000000000")
 	}
-	if result.Amount != 7089.20 {
-		t.Errorf("Amount = %f, want %f", result.Amount, 7089.20)
+	if result.Amount != 999.99 {
+		t.Errorf("Amount = %f, want %f", result.Amount, 999.99)
 	}
 	if result.Year != 2026 {
 		t.Errorf("Year = %d, want %d", result.Year, 2026)
@@ -140,11 +140,11 @@ func TestParseMobile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parseMobile error: %v", err)
 	}
-	if result.InvoiceNumber != "FAC0257566732026" {
-		t.Errorf("InvoiceNumber = %q, want %q", result.InvoiceNumber, "FAC0257566732026")
+	if result.InvoiceNumber != "FAC0000000000000" {
+		t.Errorf("InvoiceNumber = %q, want %q", result.InvoiceNumber, "FAC0000000000000")
 	}
-	if result.Amount != 975.97 {
-		t.Errorf("Amount = %f, want %f", result.Amount, 975.97)
+	if result.Amount != 888.88 {
+		t.Errorf("Amount = %f, want %f", result.Amount, 888.88)
 	}
 	if result.Year != 2026 {
 		t.Errorf("Year = %d, want %d", result.Year, 2026)
