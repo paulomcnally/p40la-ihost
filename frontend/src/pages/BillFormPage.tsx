@@ -8,6 +8,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import Select from '../components/Select'
 import type { Bill, Service } from '../types'
+import { resolveCurrency, UNKNOWN_CURRENCY_SYMBOL } from '../utils/currency'
 
 export default function BillFormPage() {
   const navigate = useNavigate()
@@ -16,7 +17,7 @@ export default function BillFormPage() {
   const serviceId = searchParams.get('service')
   const { t } = useI18nStore()
   const { showToast } = useToast()
-  const { currencies } = useAppStore()
+  const { currencies, loadCurrencies } = useAppStore()
   const isEdit = !!id
   const [service, setService] = useState<Service | null>(null)
   const [formData, setFormData] = useState({
@@ -34,6 +35,10 @@ export default function BillFormPage() {
       api.services.get(Number(serviceId)).then(setService)
     }
   }, [serviceId])
+
+  useEffect(() => {
+    loadCurrencies().catch(() => undefined)
+  }, [loadCurrencies])
 
   useEffect(() => {
     if (isEdit) {
@@ -91,6 +96,11 @@ export default function BillFormPage() {
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
   const isYearly = service?.frequency === 'yearly'
+  const currency = resolveCurrency(currencies, { id: service?.currency_id })
+  const currencyLabel = currency.symbol
+    ? currency.code ? `${currency.symbol} · ${currency.code}` : currency.symbol
+    : currency.code
+  const amountLabel = `${t('bills.amount')} (${currencyLabel || UNKNOWN_CURRENCY_SYMBOL})`
 
   return (
     <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-4 sm:p-6">
@@ -126,7 +136,7 @@ export default function BillFormPage() {
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">{t('bills.amount')}</label>
+          <label className="block text-sm font-medium mb-1">{amountLabel}</label>
           <input
             type="number"
             step="0.01"

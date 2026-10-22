@@ -7,6 +7,8 @@ import { Icon } from './Icons'
 import LoadingSpinner from './LoadingSpinner'
 import Select from './Select'
 import type { Bill } from '../types'
+import type { ResolvedCurrency } from '../utils/currency'
+import { UNKNOWN_CURRENCY_SYMBOL } from '../utils/currency'
 
 const INCREASE_COLOR = '#ff3b30'
 const DECREASE_COLOR = '#30d158'
@@ -43,10 +45,13 @@ function formatPct(pct: number | null): string {
   return `${sign}${pct.toFixed(1)}%`
 }
 
-export default function BillAnalysis({ serviceId, currencySymbol }: { serviceId: number; currencySymbol?: string }) {
+export default function BillAnalysis({ serviceId, currency }: { serviceId: number; currency: ResolvedCurrency }) {
   const navigate = useNavigate()
   const { t } = useI18nStore()
   const formatMoney = useCurrencyFormatStore((s) => s.formatMoney)
+  const currencyLabel = currency.symbol || currency.code || UNKNOWN_CURRENCY_SYMBOL
+  const money = (value: number) => formatMoney(value, currencyLabel)
+  const withCode = (label: string) => (currency.code ? `${label} (${currency.code})` : label)
 
   const [bills, setBills] = useState<Bill[]>([])
   const [loading, setLoading] = useState(true)
@@ -210,14 +215,14 @@ export default function BillAnalysis({ serviceId, currencySymbol }: { serviceId:
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <SummaryCard label={t('bills.analysis_total')} value={`${currencySymbol || ''} ${formatMoney(summary.total)}`} color="text-text" />
-        <SummaryCard label={t('bills.analysis_paid')} value={`${currencySymbol || ''} ${formatMoney(summary.paid)}`} color="text-emerald-600 dark:text-emerald-400" />
-        <SummaryCard label={t('bills.analysis_pending')} value={`${currencySymbol || ''} ${formatMoney(summary.pending)}`} color="text-amber-500 dark:text-amber-400" />
+        <SummaryCard label={withCode(t('bills.analysis_total'))} value={money(summary.total)} color="text-text" />
+        <SummaryCard label={withCode(t('bills.analysis_paid'))} value={money(summary.paid)} color="text-emerald-600 dark:text-emerald-400" />
+        <SummaryCard label={withCode(t('bills.analysis_pending'))} value={money(summary.pending)} color="text-amber-500 dark:text-amber-400" />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <MiniStat label={t('bills.analysis_bills_count')} value={String(summary.count)} />
-        <MiniStat label={t('bills.analysis_average')} value={`${currencySymbol || ''} ${formatMoney(summary.average)}`} />
+        <MiniStat label={withCode(t('bills.analysis_average'))} value={money(summary.average)} />
         <MiniStat label={t('bills.analysis_periods')} value={String(periods.length)} />
         <MiniStat label={t('bills.analysis_last_change')} value={changes.length > 0 ? formatPct(changes[changes.length - 1].pct) : '—'} />
       </div>
@@ -230,7 +235,7 @@ export default function BillAnalysis({ serviceId, currencySymbol }: { serviceId:
         <EvolutionChart
           periods={periods}
           changeKeys={latestChangeByKey}
-          currencySymbol={currencySymbol || ''}
+          currencySymbol={currencyLabel}
           formatMoney={formatMoney}
           emptyLabel={t('bills.analysis_no_changes')}
         />
@@ -255,13 +260,13 @@ export default function BillAnalysis({ serviceId, currencySymbol }: { serviceId:
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{c.label}</p>
                     <p className="text-xs text-text-secondary truncate">
-                      {c.previousLabel}: {currencySymbol} {formatMoney(c.previousAmount)}
+                      {c.previousLabel}: {money(c.previousAmount)}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold">{currencySymbol} {formatMoney(c.amount)}</p>
+                    <p className="text-sm font-semibold">{money(c.amount)}</p>
                     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${bg} ${color}`}>
-                      {up ? '↑' : '↓'} {currencySymbol} {formatMoney(Math.abs(c.delta))} · {formatPct(c.pct)}
+                      {up ? '↑' : '↓'} {money(Math.abs(c.delta))} · {formatPct(c.pct)}
                     </span>
                   </div>
                 </button>
@@ -276,7 +281,7 @@ export default function BillAnalysis({ serviceId, currencySymbol }: { serviceId:
           <h3 className="font-semibold">{t('bills.analysis_by_period')}</h3>
           <p className="text-xs text-text-secondary">{t('bills.analysis_by_period_subtitle')}</p>
         </div>
-        <BarChart periods={periods} currencySymbol={currencySymbol || ''} formatMoney={formatMoney} />
+        <BarChart periods={periods} currencySymbol={currencyLabel} formatMoney={formatMoney} />
       </div>
 
       {(summary.biggestIncrease || summary.biggestDecrease) && (
@@ -286,7 +291,7 @@ export default function BillAnalysis({ serviceId, currencySymbol }: { serviceId:
             periodLabel={summary.biggestIncrease?.label || '—'}
             amount={summary.biggestIncrease ? summary.biggestIncrease.delta : 0}
             pct={summary.biggestIncrease?.pct ?? null}
-            currencySymbol={currencySymbol || ''}
+            currencySymbol={currencyLabel}
             formatMoney={formatMoney}
             up
           />
@@ -295,7 +300,7 @@ export default function BillAnalysis({ serviceId, currencySymbol }: { serviceId:
             periodLabel={summary.biggestDecrease?.label || '—'}
             amount={summary.biggestDecrease ? Math.abs(summary.biggestDecrease.delta) : 0}
             pct={summary.biggestDecrease?.pct ?? null}
-            currencySymbol={currencySymbol || ''}
+            currencySymbol={currencyLabel}
             formatMoney={formatMoney}
             up={false}
           />
@@ -346,7 +351,7 @@ function StatChange({
       <p className="text-text-secondary text-xs font-medium uppercase tracking-wide">{label}</p>
       <p className="text-sm mt-1 truncate">{periodLabel}</p>
       <p className={`text-lg font-bold mt-0.5 ${color}`}>
-        {up ? '↑' : '↓'} {currencySymbol} {formatMoney(amount)}
+        {up ? '↑' : '↓'} {formatMoney(amount, currencySymbol)}
         <span className="text-sm font-normal text-text-secondary"> ({formatPct(pct)})</span>
       </p>
     </div>
@@ -455,7 +460,7 @@ function BarChart({
             <div
               className={`w-full rounded-t-ios-sm transition-all ${isMax ? 'bg-primary' : 'bg-primary/40'}`}
               style={{ height: `${height}%` }}
-              title={`${p.label}: ${currencySymbol} ${formatMoney(p.amount)}`}
+              title={`${p.label}: ${formatMoney(p.amount, currencySymbol)}`}
             />
             <span className="text-[10px] text-text-secondary mt-1 whitespace-nowrap">{p.short}</span>
           </div>

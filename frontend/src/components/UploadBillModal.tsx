@@ -2,11 +2,15 @@ import { useState, useRef, useEffect } from 'react'
 import { api } from '../api'
 import { Icon } from './Icons'
 import { useToast } from './Toast'
+import { useI18nStore } from '../stores/i18nStore'
+import { UNKNOWN_CURRENCY_SYMBOL } from '../utils/currency'
 
 interface UploadBillModalProps {
   isOpen: boolean
   serviceId: number
   frequency: 'monthly' | 'yearly'
+  currencySymbol?: string
+  currencyCode?: string
   onClose: () => void
   onSaved: () => void
 }
@@ -45,8 +49,13 @@ function validateFile(file: File): string | null {
   return null
 }
 
-export default function UploadBillModal({ isOpen, serviceId, frequency, onClose, onSaved }: UploadBillModalProps) {
+export default function UploadBillModal({ isOpen, serviceId, frequency, currencySymbol, currencyCode, onClose, onSaved }: UploadBillModalProps) {
   const { showToast } = useToast()
+  const { t } = useI18nStore()
+  const currencyLabel = currencySymbol
+    ? currencyCode ? `${currencySymbol} · ${currencyCode}` : currencySymbol
+    : currencyCode
+  const amountLabel = `${t('bills.amount')} (${currencyLabel || UNKNOWN_CURRENCY_SYMBOL})`
   const [state, setState] = useState<ModalState>('select')
   const [files, setFiles] = useState<PendingFile[]>([])
   const [progress, setProgress] = useState(0)
@@ -338,7 +347,7 @@ export default function UploadBillModal({ isOpen, serviceId, frequency, onClose,
                           )}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Monto</label>
+                          <label className="block text-sm font-medium mb-1">{amountLabel}</label>
                           <input
                             type="number"
                             step="0.01"

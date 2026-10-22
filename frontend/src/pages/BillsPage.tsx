@@ -19,6 +19,7 @@ import DueDateBadge from '../components/DueDateBadge'
 import AddPolicyModal from '../components/AddPolicyModal'
 import RenewServiceModal from '../components/RenewServiceModal'
 import type { Bill, Service, ServiceAuto } from '../types'
+import { resolveCurrency, UNKNOWN_CURRENCY_SYMBOL } from '../utils/currency'
 
 type TabKey = 'analisis' | 'facturas' | 'polizas'
 
@@ -31,7 +32,7 @@ export default function BillsPage() {
   const navigate = useNavigate()
   const { serviceId } = useParams()
   const { t } = useI18nStore()
-  const { currencies } = useAppStore()
+  const { currencies, loadCurrencies } = useAppStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = (searchParams.get('tab') as TabKey | null) ?? 'analisis'
@@ -61,11 +62,12 @@ export default function BillsPage() {
     const [svc, billList] = await Promise.all([
       api.services.get(Number(serviceId)),
       api.bills.list(Number(serviceId)),
+      loadCurrencies().catch(() => undefined),
     ])
     setService(svc)
     setBills(billList || [])
     setLoading(false)
-  }, [serviceId])
+  }, [serviceId, loadCurrencies])
 
   useEffect(() => {
     load()
@@ -113,7 +115,9 @@ export default function BillsPage() {
 
   if (!service) return <div className="text-center py-8 text-text-secondary">Loading...</div>
 
-  const currency = currencies.find(c => c.id === service.currency_id)
+  const currency = resolveCurrency(currencies, { id: service.currency_id })
+  const currencyLabel = currency.symbol || currency.code || UNKNOWN_CURRENCY_SYMBOL
+  const money = (amount: number) => formatMoney(amount, currencyLabel)
 
   const setTab = (key: TabKey) => {
     setSearchParams({ tab: key }, { replace: false })
@@ -161,7 +165,7 @@ export default function BillsPage() {
       </div>
 
       {tab === 'analisis' ? (
-        <BillAnalysis serviceId={Number(serviceId)} currencySymbol={currency?.symbol} />
+        <BillAnalysis serviceId={Number(serviceId)} currency={currency} />
       ) : tab === 'polizas' ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -264,7 +268,7 @@ export default function BillsPage() {
                     {bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])} {bill.year}
                   </span>
                 </div>
-                <p className="text-xl font-semibold mb-2">{formatMoney(bill.amount, currency?.symbol)}</p>
+                <p className="text-xl font-semibold mb-2">{money(bill.amount)}</p>
                 <div className="flex items-center justify-between text-sm text-text-secondary">
                   <div className="flex items-center gap-4">
                     {bill.invoice_number && <span>#{bill.invoice_number}</span>}
@@ -306,7 +310,7 @@ export default function BillsPage() {
                   <tr key={bill.id} className="border-b border-border last:border-b-0 hover:bg-bg/50">
                     <td className="px-4 py-3 text-sm">{bill.year}</td>
                     <td className="px-4 py-3 text-sm">{bill.month === 0 ? t('bills.annual') : t(`months.${bill.month}`, MONTHS[bill.month])}</td>
-                    <td className="px-4 py-3 text-sm font-medium">{formatMoney(bill.amount, currency?.symbol)}</td>
+                    <td className="px-4 py-3 text-sm font-medium">{money(bill.amount)}</td>
                     <td className="px-4 py-3 text-sm">{bill.invoice_number || '-'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -353,6 +357,7 @@ export default function BillsPage() {
       {historyTarget && (
         <BillHistoryModal
           bill={historyTarget}
+          currency={currency}
           onClose={() => setHistoryTarget(null)}
         />
       )}
@@ -360,6 +365,8 @@ export default function BillsPage() {
         isOpen={uploadOpen}
         serviceId={Number(serviceId)}
         frequency={service.frequency}
+        currencySymbol={currency.symbol}
+        currencyCode={currency.code}
         onClose={() => setUploadOpen(false)}
         onSaved={load}
       />
@@ -367,7 +374,7 @@ export default function BillsPage() {
         <WebhookModal service={service} onClose={() => setWebhookOpen(false)} />
       )}
       {renewOpen && service && (
-        <RenewServiceModal service={service} onSaved={() => { setRenewOpen(false); load() }} onCancel={() => setRenewOpen(false)} />
+        <RenewServiceModal service={service} currency={currency} onSaved={() => { setRenewOpen(false); load() }} onCancel={() => setRenewOpen(false)} />
       )}
       {addPolicyOpen && service && (
         <AddPolicyModal serviceId={service.id} onSaved={handlePolicySaved} onCancel={() => setAddPolicyOpen(false)} />
