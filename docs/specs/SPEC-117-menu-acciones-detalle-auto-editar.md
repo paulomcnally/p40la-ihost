@@ -1,7 +1,7 @@
 ---
 title: "Menú de acciones (3 puntos) en el detalle del auto con opción Editar"
 id: "SPEC-117"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 120
 # Menú de acciones (3 puntos) en el detalle del auto con opción Editar
 
 **ID**: SPEC-117  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -248,3 +248,5 @@ Sin cambios. Se reutilizan los endpoints existentes consumidos por `AutoShowPage
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial de la especificación a partir del pedido del usuario. Alcance confirmado: solo opción "Editar auto" en el menú de 3 puntos del detalle. |
+| 2026-10-21 | opencode | Estado a `in_progress`: inicio de implementación en el worktree `p40la-ihost-spec-117` (rama `feature/SPEC-117`). |
+| 2026-10-21 | opencode | Implementado en `AutoShowPage`: `CardMenu` con "Editar auto" (`autos.edit`) en la card resumen, `relative` + `pr-8` para evitar solapamiento. Build de frontend OK. E2E con Playwright: 14/14 checks (ES/EN, dark/light, 320 px, navegación, precarga, guardado y persistencia). Pendiente validación manual del usuario. |
