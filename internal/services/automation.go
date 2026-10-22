@@ -147,6 +147,7 @@ type AutomationAccountInput struct {
 	ScheduleFrequency string
 	ScheduleInterval  *int
 	ScheduleDays      *string
+	ServiceID         *int64
 }
 
 // AutomationWebhookInput son los campos de webhook/schedule de una cuenta.
@@ -214,7 +215,38 @@ func (s *AutomationService) validateAccountRefs(ctx context.Context, in Automati
 			return fmt.Errorf("el plugin %q no existe", *in.PluginName)
 		}
 	}
+	if in.ServiceID != nil && *in.ServiceID > 0 {
+		if s.serviceStorage == nil {
+			return errors.New("vínculo de servicio no configurado")
+		}
+		service, err := s.serviceStorage.GetByID(ctx, *in.ServiceID)
+		if err != nil {
+			return err
+		}
+		if service == nil {
+			return fmt.Errorf("el servicio %d no existe", *in.ServiceID)
+		}
+	}
 	return nil
+}
+
+// applyServiceLink escribe el vínculo cuenta → servicio en
+// services.automation_account_id (SPEC-110 REQ-018). serviceID nil preserva el
+// vínculo actual; 0 lo elimina; > 0 mueve el vínculo al servicio indicado.
+func (s *AutomationService) applyServiceLink(ctx context.Context, accountID int64, serviceID *int64) error {
+	if serviceID == nil {
+		return nil
+	}
+	if s.serviceStorage == nil {
+		return errors.New("vínculo de servicio no configurado")
+	}
+	if *serviceID == 0 {
+		return s.serviceStorage.ClearAutomationAccount(ctx, accountID)
+	}
+	if err := s.serviceStorage.ClearAutomationAccount(ctx, accountID); err != nil {
+		return err
+	}
+	return s.serviceStorage.SetAutomationAccount(ctx, *serviceID, accountID)
 }
 
 // CreateAccount crea una cuenta validando institución y plugin.
@@ -246,6 +278,9 @@ func (s *AutomationService) CreateAccount(ctx context.Context, in AutomationAcco
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return nil, ErrAutomationAccountExists
 		}
+		return nil, err
+	}
+	if err := s.applyServiceLink(ctx, created.ID, in.ServiceID); err != nil {
 		return nil, err
 	}
 	return created, nil
@@ -283,6 +318,9 @@ func (s *AutomationService) UpdateAccount(ctx context.Context, id int64, in Auto
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return nil, ErrAutomationAccountExists
 		}
+		return nil, err
+	}
+	if err := s.applyServiceLink(ctx, updated.ID, in.ServiceID); err != nil {
 		return nil, err
 	}
 	return updated, nil
