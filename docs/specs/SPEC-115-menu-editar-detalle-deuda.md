@@ -1,7 +1,7 @@
 ---
 title: "Menú de acciones Editar en el detalle de deuda y estandarización de la etiqueta Editar"
 id: "SPEC-115"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 118
 # Menú de acciones Editar en el detalle de deuda y estandarización de la etiqueta Editar
 
 **ID**: SPEC-115  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -167,21 +167,21 @@ Sin cambios. Se reutiliza `GET /api/debts/:id` que ya consume `DebtFormPage`.
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado `/deudas/1?status=pending`, cuando carga la página, entonces el header muestra el botón de 3 puntos a la derecha del título.
-- [ ] CA-002: Dado el menú abierto, cuando el usuario hace clic en **Editar**, entonces navega a `/deudas/edit/1` y el formulario muestra los datos actuales de la deuda.
-- [ ] CA-003: Dado `/deudas/1?status=paid` o `?status=all` (y también una deuda cerrada), cuando se abre el menú, entonces la opción Editar está disponible.
-- [ ] CA-004: Dado el detalle de servicio `/services/bills/:id`, cuando se abre el menú, entonces la opción de edición se rotula **Editar** (es) / **Edit** (en), no "Editar servicio".
-- [ ] CA-005: `docs/project-rules.md` y `AGENTS.md` documentan que la acción de edición se rotula **Editar** (no "Editar <entidad>" ni "Editar <página>").
-- [ ] CA-006: El tooltip/aria-label del menú del detalle de deuda es **Acciones**, no "Crear"; las demás páginas conservan "Crear".
-- [ ] CA-007: `frontend/public/i18n/{es,en}.json` contiene `app.actions` y, tras `npm run build`, `curl -s http://localhost:8088/i18n/es.json` sirve la clave.
-- [ ] CA-DARK: El menú existente usa tokens del tema (`bg-card`, `border-border`, `text-text`); se verifica legibilidad en darkmode.
-- [ ] CA-BACK: No se crean páginas nuevas; el retorno del formulario de deuda sigue con la flecha atrás del header registrada en `BACK_ROUTES`.
+- [x] CA-001: Dado `/deudas/1?status=pending`, cuando carga la página, entonces el header muestra el botón de 3 puntos a la derecha del título.
+- [x] CA-002: Dado el menú abierto, cuando el usuario hace clic en **Editar**, entonces navega a `/deudas/edit/1` y el formulario muestra los datos actuales de la deuda.
+- [x] CA-003: Dado `/deudas/1?status=paid` o `?status=all` (y también una deuda cerrada), cuando se abre el menú, entonces la opción Editar está disponible.
+- [x] CA-004: Dado el detalle de servicio `/services/bills/:id`, cuando se abre el menú, entonces la opción de edición se rotula **Editar** (es) / **Edit** (en), no "Editar servicio".
+- [x] CA-005: `docs/project-rules.md` y `AGENTS.md` documentan que la acción de edición se rotula **Editar** (no "Editar <entidad>" ni "Editar <página>").
+- [x] CA-006: El tooltip/aria-label del menú del detalle de deuda es **Acciones**, no "Crear"; las demás páginas conservan "Crear".
+- [x] CA-007: `frontend/public/i18n/{es,en}.json` contiene `app.actions` y, tras `npm run build`, `curl -s http://localhost:8088/i18n/es.json` sirve la clave.
+- [x] CA-DARK: El menú existente usa tokens del tema (`bg-card`, `border-border`, `text-text`); se verifica legibilidad en darkmode.
+- [x] CA-BACK: No se crean páginas nuevas; el retorno del formulario de deuda sigue con la flecha atrás del header registrada en `BACK_ROUTES`.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: `npm run build` en `frontend/` finaliza sin errores nuevos.
-- [ ] CA-NF-002: Sin cambios de backend, DB ni dependencias; el binario Go no cambia.
-- [ ] CA-NF-003: El menú abre/cierra con clic fuera y se cierra al elegir una opción, igual que antes.
+- [x] CA-NF-001: `npm run build` en `frontend/` finaliza sin errores nuevos.
+- [x] CA-NF-002: Sin cambios de backend, DB ni dependencias; el binario Go no cambia.
+- [x] CA-NF-003: El menú abre/cierra con clic fuera y se cierra al elegir una opción, igual que antes.
 
 ### 5.3 Testing
 
@@ -225,6 +225,10 @@ Sin cambios. Se reutiliza `GET /api/debts/:id` que ya consume `DebtFormPage`.
 - `AGENTS.md`: reglas de UI y flujo de specs.
 - `frontend/src/components/CreateMenu.tsx`, `frontend/src/pages/DebtBillsPage.tsx`, `frontend/src/pages/BillsPage.tsx`.
 
+**Validación del usuario**: 2026-10-21, el usuario confirmó que las pruebas manuales fueron satisfactorias (menú Editar en el detalle de deuda y etiqueta Editar en el detalle de servicio).
+
+**Release**: mergeado a `main` en el commit `7f198cd` (2026-10-21), sobre la versión 0.5.0. Build de frontend incluido en el merge (sin cambios de backend ni DB).
+
 ## 9. Historial de Cambios
 
 | Fecha | Autor | Descripción |
@@ -232,3 +236,4 @@ Sin cambios. Se reutiliza `GET /api/debts/:id` que ya consume `DebtFormPage`.
 | 2026-10-21 | opencode | Creación inicial de la especificación |
 | 2026-10-21 | opencode | Estado a `in_progress`. Implementado: prop `title` en `CreateMenu`, menú Editar en el header de `DebtBillsPage`, etiqueta `app.edit` en el menú de `BillsPage`, clave `app.actions` (es/en) y estándar documentado en `docs/project-rules.md` §4.5 y `AGENTS.md`. Build de frontend OK. |
 | 2026-10-21 | opencode | Validación local en puerto 8097: `/health` OK, `/i18n/es.json` sirve `app.actions`, bundle con `app.edit` y `/deudas/edit/`, `GET /api/debts/1` OK. Pendiente prueba manual del usuario (8099 está ocupado por un server del checkout principal). |
+| 2026-10-21 | opencode | Confirmación del usuario y release: merge a `main` (`7f198cd`), tracker actualizado, label `spec/released` e issue cerrado. |
