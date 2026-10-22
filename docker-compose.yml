@@ -1,13 +1,16 @@
 services:
   p40la-ihost:
-    build: .
+    build:
+      context: .
+      secrets:
+        - gh_token
     image: paulomcnally/p40la-ihost:latest
     container_name: p40la-ihost
     restart: unless-stopped
     ports:
       - "8088:8088"
     volumes:
-      - p40la-ihost-data:/app/data
+      - p40la:/app/data
     environment:
       - PORT=8088
       - DATA_DIR=/app/data
@@ -15,4 +18,11 @@ services:
       - VERSION=0.4.52
 
 volumes:
-  p40la-ihost-data:
+  p40la:
+    external: true
+
+# Token con lectura del repo privado de plugins. Crear el archivo .gh_token
+# con: gh auth token > .gh_token (nunca commitearlo).
+secrets:
+  gh_token:
+    file: .gh_token

@@ -101,6 +101,7 @@ func (s *importSummary) print(dryRun bool) {
 
 type options struct {
 	sourcePath         string
+	sourceJSONPath     string
 	dataDir            string
 	migrationsDir      string
 	institutionMapPath string
@@ -110,19 +111,14 @@ type options struct {
 
 func main() {
 	var opts options
-	flag.StringVar(&opts.sourcePath, "from", "", "ruta de la copia de la DB de automation (obligatorio)")
+	flag.StringVar(&opts.sourcePath, "from", "", "ruta de la copia de la DB de automation")
+	flag.StringVar(&opts.sourceJSONPath, "from-json", "", "ruta del export JSON de p40la-ihost-automation (alternativa a --from)")
 	flag.StringVar(&opts.dataDir, "data-dir", defaultDataDir(), "directorio de datos de p40la (default: DATA_DIR o ./data)")
 	flag.StringVar(&opts.migrationsDir, "migrations", "./migrations", "directorio de migraciones de p40la")
 	flag.StringVar(&opts.institutionMapPath, "institution-map", "", "JSON opcional para mapear app → institución (nombre o ID)")
 	flag.BoolVar(&opts.dryRun, "dry-run", false, "validar y reportar sin escribir datos")
 	flag.BoolVar(&opts.verify, "verify", false, "comparar conteos origen/destino al finalizar")
 	flag.Parse()
-
-	if strings.TrimSpace(opts.sourcePath) == "" {
-		fmt.Fprintln(os.Stderr, "error: --from es obligatorio")
-		flag.Usage()
-		os.Exit(1)
-	}
 
 	if err := runImport(context.Background(), opts); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -138,6 +134,22 @@ func defaultDataDir() string {
 }
 
 func runImport(ctx context.Context, opts options) error {
+	hasDB := strings.TrimSpace(opts.sourcePath) != ""
+	hasJSON := strings.TrimSpace(opts.sourceJSONPath) != ""
+	if hasDB == hasJSON {
+		return errors.New("usar exactamente uno de --from o --from-json")
+	}
+
+	if hasJSON {
+		dbPath, cleanup, err := materializeJSONSource(opts.sourceJSONPath)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+		opts.sourcePath = dbPath
+		fmt.Println("origen: export JSON materializado en SQLite temporal")
+	}
+
 	src, err := openSource(opts.sourcePath)
 	if err != nil {
 		return err
