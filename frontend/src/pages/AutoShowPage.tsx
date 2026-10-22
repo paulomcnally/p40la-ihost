@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useAppStore } from '../stores/appStore'
@@ -16,6 +16,7 @@ import { autoSubtitle } from '../utils/auto'
 
 export default function AutoShowPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { t } = useI18nStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { currencies, loadCurrencies } = useAppStore()
@@ -71,8 +72,13 @@ export default function AutoShowPage() {
 
   return (
     <div>
-      <div className="bg-card rounded-ios shadow-ios p-4 sm:p-6 mb-6">
-        <div className="flex items-start gap-4">
+      <div className="relative bg-card rounded-ios shadow-ios p-4 sm:p-6 mb-6">
+        <CardMenu
+          options={[
+            { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/autos/edit/${auto.id}`) },
+          ]}
+        />
+        <div className="flex items-start gap-4 pr-8">
           <div className="w-14 h-14 rounded-ios bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
             <Icon name={auto.icon} className="w-8 h-8" />
           </div>
