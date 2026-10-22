@@ -126,6 +126,7 @@ type automationAccountRequest struct {
 	ScheduleFrequency string  `json:"schedule_frequency"`
 	ScheduleInterval  *int    `json:"schedule_interval"`
 	ScheduleDays      *string `json:"schedule_days"`
+	ServiceID         *int64  `json:"service_id"`
 }
 
 type automationWebhookRequest struct {
@@ -279,6 +280,7 @@ func accountInput(req automationAccountRequest) services.AutomationAccountInput 
 		ScheduleFrequency: req.ScheduleFrequency,
 		ScheduleInterval:  req.ScheduleInterval,
 		ScheduleDays:      req.ScheduleDays,
+		ServiceID:         req.ServiceID,
 	}
 }
 

@@ -12,6 +12,7 @@ import type {
   AutomationCredentialField,
   AutomationPlugin,
   Institution,
+  Service,
 } from '../types'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0]
@@ -22,6 +23,7 @@ interface FormState {
   institution_id: number
   identifier: string
   label: string
+  service_id: number
   plugin_name: string
   webhook_url: string
   schedule_enabled: boolean
@@ -34,6 +36,7 @@ const emptyForm: FormState = {
   institution_id: 0,
   identifier: '',
   label: '',
+  service_id: 0,
   plugin_name: '',
   webhook_url: '',
   schedule_enabled: false,
@@ -59,6 +62,7 @@ export default function AutomationFormPage() {
   const [schema, setSchema] = useState<AutomationCredentialField[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [plugins, setPlugins] = useState<AutomationPlugin[]>([])
+  const [services, setServices] = useState<Service[]>([])
   const [weeklyDays, setWeeklyDays] = useState<number[]>([1])
   const [monthlyDay, setMonthlyDay] = useState(15)
   const [loading, setLoading] = useState(true)
@@ -85,20 +89,24 @@ export default function AutomationFormPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const [inst, plug] = await Promise.all([
+        const [inst, plug, serviceList] = await Promise.all([
           api.institutions.list(),
           api.automation.plugins(),
+          api.services.list(),
         ])
         setInstitutions(inst || [])
         setPlugins(plug || [])
+        setServices(serviceList || [])
 
         if (isEdit) {
           const account = await api.automation.get(Number(id))
           if (account) {
+            const linked = (serviceList || []).find((svc) => svc.automation_account_id === account.id)
             setForm({
               institution_id: account.institution_id,
               identifier: account.identifier,
               label: account.label || '',
+              service_id: linked ? linked.id : 0,
               plugin_name: account.plugin_name || '',
               webhook_url: account.webhook_url || '',
               schedule_enabled: account.schedule_enabled,
@@ -214,6 +222,7 @@ export default function AutomationFormPage() {
         identifier: form.identifier.trim(),
         label: form.label.trim(),
         plugin_name: form.plugin_name,
+        service_id: form.service_id || 0,
         webhook_url: form.webhook_url.trim() || undefined,
         schedule_enabled: form.schedule_enabled,
         schedule_time: form.schedule_enabled ? form.schedule_time : undefined,
@@ -299,6 +308,34 @@ export default function AutomationFormPage() {
                   searchable
                 />
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('automation.service')}</label>
+              {services.length === 0 ? (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-text-secondary">
+                  <span>{t('automation.no_services')}</span>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/services/new')}
+                    className="text-primary font-medium hover:underline text-left"
+                  >
+                    {t('automation.no_services_action')}
+                  </button>
+                </div>
+              ) : (
+                <Select
+                  options={[
+                    { value: 0, label: t('automation.no_service') },
+                    ...services.map((svc) => ({ value: svc.id, label: `${svc.name} · ${svc.institution}` })),
+                  ]}
+                  value={form.service_id}
+                  onChange={(value) => update('service_id', Number(value))}
+                  placeholder={t('automation.service')}
+                  searchable
+                />
+              )}
+              <p className="text-xs text-text-secondary mt-1">{t('automation.service_hint')}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

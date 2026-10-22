@@ -577,6 +577,7 @@ export interface AutomationAccountInput {
   institution_id: number
   identifier: string
   label?: string
+  service_id?: number
   credentials?: string
   plugin_name?: string
   webhook_url?: string
