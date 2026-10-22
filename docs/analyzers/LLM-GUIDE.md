@@ -219,7 +219,7 @@ Cuando el usuario te muestre una imagen/PDF de factura, busca estos elementos:
 
 | Campo | Que buscar | Ejemplo comun |
 |-------|-----------|---------------|
-| Numero de factura | "No. de factura", "Factura No.", "Invoice #" | `A0061376765`, `FAC0257566732026` |
+| Numero de factura | "No. de factura", "Factura No.", "Invoice #" | `A0000000000`, `FAC0000000000000` |
 | Monto total | "Total a pagar", "Total facturado", "Amount due" | `C$7,089.20`, `$1,234.56` |
 | Periodo | "Periodo facturado", "Mes facturado", "Billing period" | `06/JUL/2026 - 05/AGO/2026` |
 | Fecha de vencimiento | "Fecha limite de pago", "Due date" | `04/SEP/2026` |

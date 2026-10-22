@@ -34,8 +34,8 @@ func (a *AssaSeguroAutoAnalyzer) Info() analyzers.AnalyzerInfo {
 var reAssaAnchor = regexp.MustCompile(`(?i)ASSA,?\s*Compañía\s*de\s*Seguros`)
 
 // reAssaInvoice captura el número de recibo. Existen dos variantes según la
-// serie del talonario: "No. H3 116495" -> ("H3", "116495") y también
-// "No. H 254818" -> ("H", "254818"), por lo que el dígito de la serie es
+// serie del talonario: "No. H3 000000" -> ("H3", "116495") y también
+// "No. H 000000" -> ("H", "254818"), por lo que el dígito de la serie es
 // opcional. El formato letra(+dígito opcional) seguido de espacio y un
 // número de 4+ dígitos evita confundirse con el otro "No." del documento
 // ("Autorización DGI No. ASFC 01/0105/12/2021/1."), que no sigue ese patrón

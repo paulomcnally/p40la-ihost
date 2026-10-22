@@ -263,3 +263,4 @@ Implementado y verificado en local:
 | 2026-10-21 | opencode | Implementación: migración `0039`, `cmd/import-automation`, tests y E2E sobre copias (28 facturas / 100 logs, idempotente, `integrity_check` ok, server arranca). |
 | 2026-10-21 | opencode | `automation_apps` se unifica con `institutions`: `automation_accounts.institution_id`, matching por nombre normalizado y `--institution-map` para diferencias de nombre. |
 | 2026-10-21 | opencode | Implementación completa y validada contra copia de producción (target). Queda pendiente la validación final con export de automation de producción, que se cargará antes del release. Estado: pending_release. |
+| 2026-10-21 | opencode | Reglas estrictas de datos privados (AGENTS.md, project-rules §8) y sanitización de fixtures/specs con PII real (nombres, cédula, teléfonos, facturas y claves). |
