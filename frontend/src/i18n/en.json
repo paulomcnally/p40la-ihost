@@ -940,6 +940,13 @@
     "invalid_day": "Choose a day between 1 and 28.",
     "invalid_weekday": "Choose at least one day.",
     "reveal_error": "Could not reveal credentials.",
-    "schedule_disabled": "Disabled"
+    "schedule_disabled": "Disabled",
+    "tab_info": "Information",
+    "tab_plugin": "Plugin",
+    "tab_schedule": "Frequency",
+    "identifier_required": "Enter the identifier.",
+    "required_hint": "Complete the required fields to save.",
+    "no_credentials": "This plugin requires no credentials.",
+    "select_plugin_first": "Select a plugin to configure its credentials."
   }
 }
