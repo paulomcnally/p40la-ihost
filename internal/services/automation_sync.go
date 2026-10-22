@@ -21,7 +21,6 @@ var (
 	ErrAutomationNoPlugin         = errors.New("la cuenta no tiene plugin asociado")
 	ErrAutomationNotLinked        = errors.New("la cuenta no tiene servicio vinculado")
 	ErrAutomationAmbiguousService = errors.New("la cuenta tiene más de un servicio vinculado")
-	ErrAutomationWebhooksDisabled = errors.New("los webhooks están deshabilitados")
 )
 
 // AutomationSyncer es el contrato que consumen los endpoints de sync y el bot.
@@ -122,14 +121,6 @@ func (s *AutomationService) SyncAccount(ctx context.Context, accountID int64) (d
 	}
 	if s.webhook == nil || s.serviceStorage == nil || s.plugins == nil {
 		return 0, 0, errors.New("sync de automation no configurado")
-	}
-
-	enabled, err := s.webhook.IsEnabled(ctx)
-	if err != nil {
-		return 0, 0, err
-	}
-	if !enabled {
-		return 0, 1, ErrAutomationWebhooksDisabled
 	}
 
 	service, err := s.resolveServiceForAccount(ctx, account)
