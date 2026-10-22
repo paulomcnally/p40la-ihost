@@ -20,7 +20,7 @@ github_issue: 112
 
 ## 1. Resumen Ejecutivo
 
-Primera de cuatro specs de la unificación definida en SPEC-108. Esta spec **solo crea el esquema y migra los datos** de `p40la-ihost-automation` a la DB de `p40la-ihost`, sin tocar rutas, UI ni el scheduler. Al terminar, `app.db` contiene las tablas `automation_*` con las apps, cuentas, plugins, facturas y logs de webhook, y `services.automation_account_id` queda listo para validarse contra `automation_accounts`.
+Primera de cuatro specs de la unificación definida en SPEC-108. Esta spec **solo crea el esquema y migra los datos** de `p40la-ihost-automation` a la DB de `p40la-ihost`, sin tocar rutas, UI ni el scheduler. Al terminar, `app.db` contiene las tablas `automation_*` con las cuentas, plugins, facturas y logs de webhook, los proveedores (`apps`) reutilizan la tabla existente `institutions`, y `services.automation_account_id` queda listo para validarse contra `automation_accounts`.
 
 El prototipo de SPEC-108 ya se ejecutó con éxito sobre copias: 5 apps, 5 cuentas, 5 plugins, 28 facturas y 100 logs migrados, `integrity_check` y `foreign_key_check` limpios. El hallazgo principal es que **el import debe hacerse con un comando offline** que lea una copia de la DB de automation (no con `ATTACH` hardcodeado en una migración) y que el backup debe usar `sqlite3 .backup`, porque copiar solo `app.db` pierde el contenido del `-wal` (en la prueba se perdieron 6 facturas y 52 logs).
 
@@ -30,9 +30,9 @@ El prototipo de SPEC-108 ya se ejecutó con éxito sobre copias: 5 apps, 5 cuent
 
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
 
-1. **REQ-001**: Migración `0039_merge_automation.up.sql` que crea `automation_apps`, `automation_plugins`, `automation_accounts`, `automation_bills` y `automation_webhook_logs`, con las columnas, constraints y FKs internas (`automation_*` entre sí) del modelo de SPEC-108.
+1. **REQ-001**: Migración `0039_merge_automation.up.sql` que crea `automation_plugins`, `automation_accounts`, `automation_bills` y `automation_webhook_logs`, con las columnas, constraints y FKs internas del modelo de SPEC-108. `automation_accounts.institution_id` referencia `institutions(id)`.
 2. **REQ-002**: Índice `idx_services_automation_account_id` sobre `services(automation_account_id)` para el selector y los joins.
-3. **REQ-003**: Comando offline `cmd/import-automation` que importa desde una copia de la DB de automation (`--from /ruta/automation.db`) a la DB destino (`DATA_DIR/app.db`), preservando IDs de apps, cuentas, plugins, facturas y logs.
+3. **REQ-003**: Comando offline `cmd/import-automation` que importa desde una copia de la DB de automation (`--from /ruta/automation.db`) a la DB destino (`DATA_DIR/app.db`), preservando IDs de cuentas, plugins, facturas y logs, y mapeando cada `app` a una institución.
 4. **REQ-004**: El import no debe pisar `system_settings.webhook_api_key` de p40la; solo migra `webhook_enabled` y `language` si no existen o actualiza `webhook_enabled`.
 5. **REQ-005**: El import debe ser **idempotente**: correrse dos veces no duplica filas ni cambia IDs (usar `INSERT ... ON CONFLICT`/verificación de existencia).
 6. **REQ-006**: El comando debe soportar `--dry-run` (valida y reporta sin escribir) y mostrar un resumen: filas leídas/insertadas/omitidas por tabla.
@@ -49,6 +49,8 @@ El prototipo de SPEC-108 ya se ejecutó con éxito sobre copias: 5 apps, 5 cuent
 
 1. **REQ-012**: Comando `--verify` que compara conteos origen/destino por tabla y devuelve un diff legible.
 2. **REQ-013**: Si una cuenta referencia un `plugin_name` que no existe en `plugins`, el import crea un stub (`version='desconocida'`, `source='import'`, `status='active'`) y lo reporta, para no romper la FK ni bloquear la migración.
+3. **REQ-014**: Los proveedores (`apps`) **no se migran como tabla**: se resuelven contra `institutions` por nombre exacto y, si no existe, por nombre normalizado (minúsculas, sin acentos, sin sufijo " Nicaragua", separadores unificados). Si no hay match, se crea la institución con `category_id = NULL` y se reporta.
+4. **REQ-015**: Flag `--institution-map <archivo.json>` para resolver manualmente los casos en que el nombre difiere (ej: `{"DISNORTE-DISSUR Nicaragua": "Unión Fenosa"}`). El valor puede ser el nombre o el ID de la institución; si el ID/nombre no existe, el import falla con un mensaje claro.
 
 ### 2.4 Requerimientos No Funcionales
 
@@ -67,6 +69,7 @@ El prototipo de SPEC-108 ya se ejecutó con éxito sobre copias: 5 apps, 5 cuent
 - p40la: `app.db` con `schema_migrations` (`0001`–`0038`), migraciones propias y `system_settings` KV.
 - El prototipo con `ATTACH` funcionó, pero **no es apto para producción**: la ruta de la DB origen no existe dentro del contenedor de p40la y `ATTACH` en una migración acopla una ruta externa.
 - El `-wal` de automation (881 KB en la copia local) contenía 6 facturas y 52 logs; una copia plana los perdió.
+- **`institutions`** en p40la tiene `name TEXT NOT NULL UNIQUE` y ya contiene proveedores (`Claro Nicaragua`, `Tigo`, `Enacal`, `ASSA`, `Unión Fenosa`). Los `apps` de automation son el mismo concepto; los nombres no siempre coinciden (`ENACAL Nicaragua` vs `Enacal`, `DISNORTE-DISSUR Nicaragua` vs `Unión Fenosa`), por eso el match usa normalización y un mapa de override.
 
 ### 3.2 Opciones evaluadas
 
@@ -76,6 +79,8 @@ El prototipo de SPEC-108 ya se ejecutó con éxito sobre copias: 5 apps, 5 cuent
 | Comando offline `cmd/import-automation` (Go) | Testeable, idempotente, `--dry-run`, resumen y validaciones; no depende de rutas dentro de migraciones | Requiere un paso operativo extra | ✅ Seleccionada |
 | Volcar datos a CSV y cargarlos | Independiente del driver | Más pasos manuales, pierde tipos/escapes JSON, propenso a error | ❌ Rechazada |
 | Copiar el archivo de DB de automation como DB separada | Cero migración | Mantiene dos DB y no cumple el objetivo de SPEC-108 | ❌ Rechazada |
+| Crear `automation_apps` y dejar `institutions` aparte | Migración directa, sin matching | Duplica el catálogo de proveedores; obliga a mantener dos listas y a mapear cuentas ↔ instituciones después | ❌ Rechazada |
+| Reutilizar `institutions` para los `apps` | Un solo catálogo de proveedores; el selector muestra institución + cuenta | Requiere normalizar nombres y resolver diferencias (`Unión Fenosa`) | ✅ Seleccionada |
 
 ### 3.3 Decisiones arquitectónicas (ADRs)
 
@@ -93,6 +98,11 @@ El prototipo de SPEC-108 ya se ejecutó con éxito sobre copias: 5 apps, 5 cuent
 - **Contexto**: automation usa su key para autenticar el POST al webhook de p40la; al unificar, la entrega pasa a ser en proceso y esa key deja de usarse para ese fin.
 - **Decisión**: conservar la key de p40la y migrar solo `webhook_enabled`/`language`.
 - **Consecuencias**: los clientes externos que ya usan la key de p40la siguen funcionando; no se rompe nada.
+
+**ADR-004**: `apps` se unifica con `institutions`; no se crea `automation_apps`.
+- **Contexto**: `institutions` ya es el catálogo de proveedores de p40la y tiene nombre único; `apps` es el mismo concepto con otro nombre.
+- **Decisión**: `automation_accounts.institution_id` referencia `institutions(id)`. Para cada app se busca institución por nombre exacto, luego por nombre normalizado; si no hay match se crea (`category_id = NULL`) y se reporta. Un mapa JSON opcional (`--institution-map`) resuelve diferencias conocidas.
+- **Consecuencias**: Positivo: un solo catálogo, menos duplicación y el selector puede agrupar por institución. Negativo: puede crear instituciones nuevas por nombres distintos; se listan en el resumen para revisión manual.
 
 ## 4. Diseño Técnico
 
@@ -118,14 +128,14 @@ El prototipo de SPEC-108 ya se ejecutó con éxito sobre copias: 5 apps, 5 cuent
 - **Dependencias**: ninguna.
 
 #### 4.2.2 `cmd/import-automation`
-- **Responsabilidad**: importar datos desde la copia de automation.
-- **Interfaz**: `--from <archivo>`, `--data-dir <dir>` (default `DATA_DIR`), `--dry-run`, `--verify`.
+- **Responsabilidad**: importar datos desde la copia de automation y resolver `apps` → `institutions`.
+- **Interfaz**: `--from <archivo>`, `--data-dir <dir>` (default `DATA_DIR`), `--migrations <dir>`, `--institution-map <archivo.json>`, `--dry-run`, `--verify`.
 - **Ubicación**: `cmd/import-automation/main.go` + tests.
 - **Dependencias**: `internal/db`, `modernc.org/sqlite`.
 
 ### 4.3 Modelo de datos
 
-Idéntico al de SPEC-108 §4.3: `automation_apps`, `automation_accounts`, `automation_plugins`, `automation_bills`, `automation_webhook_logs`; FKs internas con `ON DELETE CASCADE`; `automation_accounts.plugin_name` referencia `automation_plugins(name)`.
+Idéntico al de SPEC-108 §4.3: `automation_accounts` (con `institution_id` → `institutions`), `automation_plugins`, `automation_bills`, `automation_webhook_logs`; FKs internas con `ON DELETE CASCADE`; `automation_accounts.plugin_name` referencia `automation_plugins(name)`. No existe `automation_apps`.
 
 ### 4.4 APIs / Contratos
 
@@ -138,7 +148,7 @@ import-automation --from /app/data/automation-import.db [--dry-run] [--verify]
 Salida esperada:
 
 ```
-apps: leídas=5 insertadas=5 omitidas=0
+instituciones: apps=5 reutilizadas=4 creadas=1 mapeadas=1
 accounts: leídas=5 insertadas=5 omitidas=0
 plugins: leídas=5 insertadas=5 omitidas=0
 bills: leídas=28 insertadas=28 omitidas=0
@@ -147,6 +157,15 @@ settings: webhook_enabled actualizado, language omitido (ya existe)
 huérfanos: services.automation_account_id -> []
 integrity_check: ok
 foreign_key_check: ok
+```
+
+Ejemplo de mapa de override (REQ-015):
+
+```json
+{
+  "DISNORTE-DISSUR Nicaragua": "Unión Fenosa",
+  "ENACAL Nicaragua": 5
+}
 ```
 
 ### 4.5 Procedimiento operativo (runbook)
@@ -166,9 +185,10 @@ Implementado y verificado en local:
 | Artefacto | Estado |
 |---|---|
 | `migrations/0039_merge_automation.up.sql` / `.down.sql` | ✅ |
-| `cmd/import-automation` (`--from`, `--data-dir`, `--migrations`, `--dry-run`, `--verify`) | ✅ |
-| Tests unitarios (idempotencia, stubs, huérfanos, dry-run, tablas faltantes) | ✅ |
-| E2E sobre copias reales de las DB | ✅ 5 apps, 5 cuentas, 5 plugins, 28 facturas, 100 logs |
+| `cmd/import-automation` (`--from`, `--data-dir`, `--migrations`, `--institution-map`, `--dry-run`, `--verify`) | ✅ |
+| Tests unitarios (idempotencia, stubs, huérfanos, dry-run, tablas faltantes, match de instituciones) | ✅ |
+| E2E sobre copias reales de las DB | ✅ 5 proveedores (3 reutilizados, 2 creados), 5 cuentas, 5 plugins, 28 facturas, 100 logs |
+| Mapeo `apps` → `institutions` | ✅ Claro/Disnorte Dissur/ASSA reutilizados; Tigo/ENACAL creados y reportados |
 | Segunda corrida (idempotencia) | ✅ 0 insertadas, 0 duplicadas |
 | `webhook_api_key` de p40la preservada | ✅ |
 | `integrity_check` / `foreign_key_check` | ✅ `ok` / sin filas |
@@ -180,8 +200,9 @@ Implementado y verificado en local:
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: `0039` crea las 5 tablas `automation_*` y el índice, sin tocar tablas existentes.
-- [ ] CA-002: El import preserva IDs y copia exactamente los conteos de apps, cuentas, plugins, facturas y logs.
+- [ ] CA-001: `0039` crea las 4 tablas `automation_*` y el índice, reutiliza `institutions` y no toca tablas existentes.
+- [ ] CA-002: El import preserva IDs y copia exactamente los conteos de cuentas, plugins, facturas y logs; cada app queda asociada a una institución (existente o creada).
+- [ ] CA-009: El matching reutiliza `Enacal`/`ASSA`/`Claro Nicaragua`/`Tigo` normalizando el sufijo " Nicaragua" y el mapa de override resuelve `DISNORTE-DISSUR Nicaragua` → `Unión Fenosa`.
 - [ ] CA-003: Correr el import dos veces no duplica filas (idempotencia).
 - [ ] CA-004: `webhook_api_key` de p40la queda intacta; `webhook_enabled`/`language` migrados.
 - [ ] CA-005: `PRAGMA integrity_check` = `ok` y `foreign_key_check` sin filas.
@@ -235,3 +256,4 @@ Implementado y verificado en local:
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial: esquema `automation_*` + comando de import offline, derivado de SPEC-108. |
 | 2026-10-21 | opencode | Implementación: migración `0039`, `cmd/import-automation`, tests y E2E sobre copias (28 facturas / 100 logs, idempotente, `integrity_check` ok, server arranca). |
+| 2026-10-21 | opencode | `automation_apps` se unifica con `institutions`: `automation_accounts.institution_id`, matching por nombre normalizado y `--institution-map` para diferencias de nombre. |

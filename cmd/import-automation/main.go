@@ -7,12 +7,14 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	_ "modernc.org/sqlite"
@@ -26,12 +28,23 @@ type tableCount struct {
 	Inserted int64
 }
 
+// institutionStats resume la resolución de apps → institutions.
+type institutionStats struct {
+	Apps         int64
+	Reused       int64
+	Created      int64
+	Mapped       int64
+	CreatedNames []string
+	MappedNames  []string
+}
+
 // importSummary es el resultado de una corrida (real o dry-run).
 type importSummary struct {
-	Tables   map[string]*tableCount
-	Orphans  []int64
-	Stubs    []string
-	Warnings []string
+	Tables       map[string]*tableCount
+	Institutions institutionStats
+	Orphans      []int64
+	Stubs        []string
+	Warnings     []string
 }
 
 func newSummary() *importSummary {
@@ -63,6 +76,16 @@ func (s *importSummary) print(dryRun bool) {
 		c := s.Tables[name]
 		fmt.Printf("%s: leídas=%d insertadas=%d omitidas=%d\n", name, c.Read, c.Inserted, c.Read-c.Inserted)
 	}
+	if s.Institutions.Apps > 0 {
+		fmt.Printf("instituciones: apps=%d reutilizadas=%d creadas=%d mapeadas=%d\n",
+			s.Institutions.Apps, s.Institutions.Reused, s.Institutions.Created, s.Institutions.Mapped)
+	}
+	for _, name := range s.Institutions.CreatedNames {
+		fmt.Printf("aviso: institución creada desde app (revisar duplicados): %s\n", name)
+	}
+	for _, name := range s.Institutions.MappedNames {
+		fmt.Printf("aviso: app mapeada por --institution-map: %s\n", name)
+	}
 	for _, stub := range s.Stubs {
 		fmt.Printf("aviso: plugin ausente en origen, stub creado: %s\n", stub)
 	}
@@ -77,11 +100,12 @@ func (s *importSummary) print(dryRun bool) {
 }
 
 type options struct {
-	sourcePath    string
-	dataDir       string
-	migrationsDir string
-	dryRun        bool
-	verify        bool
+	sourcePath         string
+	dataDir            string
+	migrationsDir      string
+	institutionMapPath string
+	dryRun             bool
+	verify             bool
 }
 
 func main() {
@@ -89,6 +113,7 @@ func main() {
 	flag.StringVar(&opts.sourcePath, "from", "", "ruta de la copia de la DB de automation (obligatorio)")
 	flag.StringVar(&opts.dataDir, "data-dir", defaultDataDir(), "directorio de datos de p40la (default: DATA_DIR o ./data)")
 	flag.StringVar(&opts.migrationsDir, "migrations", "./migrations", "directorio de migraciones de p40la")
+	flag.StringVar(&opts.institutionMapPath, "institution-map", "", "JSON opcional para mapear app → institución (nombre o ID)")
 	flag.BoolVar(&opts.dryRun, "dry-run", false, "validar y reportar sin escribir datos")
 	flag.BoolVar(&opts.verify, "verify", false, "comparar conteos origen/destino al finalizar")
 	flag.Parse()
@@ -134,13 +159,18 @@ func runImport(ctx context.Context, opts options) error {
 		return nil
 	}
 
+	overrides, err := loadInstitutionMap(opts.institutionMapPath)
+	if err != nil {
+		return err
+	}
+
 	dst, err := db.OpenDB(targetPath, opts.migrationsDir)
 	if err != nil {
 		return fmt.Errorf("abrir DB destino: %w", err)
 	}
 	defer dst.Close()
 
-	if err := importAll(ctx, src, dst, summary); err != nil {
+	if err := importAll(ctx, src, dst, overrides, summary); err != nil {
 		return err
 	}
 	if err := collectOrphans(ctx, dst, summary); err != nil {
@@ -218,6 +248,7 @@ func dryRun(ctx context.Context, src *sql.DB, targetPath string, summary *import
 		}
 		summary.count(table).Read = n
 	}
+	summary.Institutions.Apps = summary.count("apps").Read
 
 	dst, err := sql.Open("sqlite", "file:"+targetPath+"?mode=ro")
 	if err != nil {
@@ -235,7 +266,7 @@ func dryRun(ctx context.Context, src *sql.DB, targetPath string, summary *import
 	return nil
 }
 
-func importAll(ctx context.Context, src, dst *sql.DB, summary *importSummary) error {
+func importAll(ctx context.Context, src, dst *sql.DB, overrides map[string]string, summary *importSummary) error {
 	tx, err := dst.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("iniciar transacción: %w", err)
@@ -245,10 +276,11 @@ func importAll(ctx context.Context, src, dst *sql.DB, summary *importSummary) er
 	if err := importPlugins(ctx, tx, src, summary); err != nil {
 		return err
 	}
-	if err := importApps(ctx, tx, src, summary); err != nil {
+	appToInstitution, err := importInstitutions(ctx, tx, src, overrides, summary)
+	if err != nil {
 		return err
 	}
-	if err := importAccounts(ctx, tx, src, summary); err != nil {
+	if err := importAccounts(ctx, tx, src, appToInstitution, summary); err != nil {
 		return err
 	}
 	if err := importBills(ctx, tx, src, summary); err != nil {
@@ -294,35 +326,166 @@ func importPlugins(ctx context.Context, tx *sql.Tx, src *sql.DB, summary *import
 	return rows.Err()
 }
 
-func importApps(ctx context.Context, tx *sql.Tx, src *sql.DB, summary *importSummary) error {
-	rows, err := src.QueryContext(ctx,
-		"SELECT id, name, COALESCE(CAST(created_at AS TEXT),''), COALESCE(CAST(updated_at AS TEXT),'') FROM apps ORDER BY id")
+// importInstitutions resuelve cada app de automation contra la tabla
+// institutions existente (SPEC-109 REQ-014/REQ-015) y devuelve el mapa
+// app_id → institution_id que usa importAccounts.
+func importInstitutions(ctx context.Context, tx *sql.Tx, src *sql.DB, overrides map[string]string, summary *importSummary) (map[int64]int64, error) {
+	apps, err := readApps(ctx, src)
 	if err != nil {
-		return fmt.Errorf("leer apps: %w", err)
+		return nil, err
+	}
+
+	byID, exact, normalized, err := loadInstitutions(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	appToInstitution := make(map[int64]int64, len(apps))
+
+	for _, app := range apps {
+		summary.Institutions.Apps++
+
+		if override, ok := overrides[app.Name]; ok {
+			institutionID, err := resolveOverride(override, byID, exact, normalized)
+			if err != nil {
+				return nil, fmt.Errorf("institution-map para %q: %w", app.Name, err)
+			}
+			appToInstitution[app.ID] = institutionID
+			summary.Institutions.Mapped++
+			summary.Institutions.MappedNames = append(summary.Institutions.MappedNames,
+				fmt.Sprintf("%s → %s", app.Name, byID[institutionID]))
+			continue
+		}
+
+		if id, ok := exact[app.Name]; ok {
+			appToInstitution[app.ID] = id
+			summary.Institutions.Reused++
+			continue
+		}
+		if id, ok := normalized[normalizeInstitutionName(app.Name)]; ok {
+			appToInstitution[app.ID] = id
+			summary.Institutions.Reused++
+			continue
+		}
+
+		res, err := tx.ExecContext(ctx, "INSERT INTO institutions (name) VALUES (?)", app.Name)
+		if err != nil {
+			return nil, fmt.Errorf("crear institución %q: %w", app.Name, err)
+		}
+		id, err := res.LastInsertId()
+		if err != nil {
+			return nil, fmt.Errorf("id de institución %q: %w", app.Name, err)
+		}
+		byID[id] = app.Name
+		exact[app.Name] = id
+		normalized[normalizeInstitutionName(app.Name)] = id
+		appToInstitution[app.ID] = id
+		summary.Institutions.Created++
+		summary.Institutions.CreatedNames = append(summary.Institutions.CreatedNames, app.Name)
+	}
+
+	return appToInstitution, nil
+}
+
+type automationApp struct {
+	ID   int64
+	Name string
+}
+
+func readApps(ctx context.Context, src *sql.DB) ([]automationApp, error) {
+	rows, err := src.QueryContext(ctx, "SELECT id, name FROM apps ORDER BY id")
+	if err != nil {
+		return nil, fmt.Errorf("leer apps: %w", err)
 	}
 	defer rows.Close()
 
-	count := summary.count("apps")
+	var apps []automationApp
 	for rows.Next() {
-		var id int64
-		var name, created, updated string
-		if err := rows.Scan(&id, &name, &created, &updated); err != nil {
-			return fmt.Errorf("scan app: %w", err)
+		var app automationApp
+		if err := rows.Scan(&app.ID, &app.Name); err != nil {
+			return nil, fmt.Errorf("scan app: %w", err)
 		}
-		count.Read++
-		res, err := tx.ExecContext(ctx,
-			`INSERT OR IGNORE INTO automation_apps (id,name,created_at,updated_at)
-			 VALUES (?,?,COALESCE(NULLIF(?,''),CURRENT_TIMESTAMP),COALESCE(NULLIF(?,''),CURRENT_TIMESTAMP))`,
-			id, name, created, updated)
-		if err != nil {
-			return fmt.Errorf("insertar app %s: %w", name, err)
-		}
-		count.Inserted += mustAffected(res)
+		apps = append(apps, app)
 	}
-	return rows.Err()
+	return apps, rows.Err()
 }
 
-func importAccounts(ctx context.Context, tx *sql.Tx, src *sql.DB, summary *importSummary) error {
+func loadInstitutions(ctx context.Context, tx *sql.Tx) (byID map[int64]string, exact, normalized map[string]int64, err error) {
+	byID = make(map[int64]string)
+	exact = make(map[string]int64)
+	normalized = make(map[string]int64)
+
+	rows, err := tx.QueryContext(ctx, "SELECT id, name FROM institutions")
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("leer instituciones: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		var name string
+		if err := rows.Scan(&id, &name); err != nil {
+			return nil, nil, nil, fmt.Errorf("scan institución: %w", err)
+		}
+		byID[id] = name
+		exact[name] = id
+		key := normalizeInstitutionName(name)
+		if _, exists := normalized[key]; !exists {
+			normalized[key] = id
+		}
+	}
+	return byID, exact, normalized, rows.Err()
+}
+
+// resolveOverride resuelve el valor del mapa (ID o nombre) contra las
+// instituciones existentes. Si no existe, falla (REQ-015): el operador debe
+// mapear a una institución real, no crear duplicados silenciosos.
+func resolveOverride(value string, byID map[int64]string, exact, normalized map[string]int64) (int64, error) {
+	if id, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64); err == nil {
+		if _, ok := byID[id]; !ok {
+			return 0, fmt.Errorf("no existe la institución con ID %d", id)
+		}
+		return id, nil
+	}
+	if id, ok := exact[value]; ok {
+		return id, nil
+	}
+	if id, ok := normalized[normalizeInstitutionName(value)]; ok {
+		return id, nil
+	}
+	return 0, fmt.Errorf("no existe la institución %q (creála en p40la o corregí el mapa)", value)
+}
+
+var accentReplacer = strings.NewReplacer(
+	"á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ü", "u", "ñ", "n",
+	"Á", "a", "É", "e", "Í", "i", "Ó", "o", "Ú", "u", "Ü", "u", "Ñ", "n",
+)
+
+// normalizeInstitutionName unifica mayúsculas, acentos, separadores y el
+// sufijo "Nicaragua" para comparar apps de automation con institutions.
+func normalizeInstitutionName(name string) string {
+	name = accentReplacer.Replace(strings.TrimSpace(strings.ToLower(name)))
+	name = strings.NewReplacer("-", " ", "_", " ", ".", " ", ",", " ").Replace(name)
+	name = strings.Join(strings.Fields(name), " ")
+	name = strings.TrimSuffix(name, " de nicaragua")
+	name = strings.TrimSuffix(name, " nicaragua")
+	return strings.TrimSpace(name)
+}
+
+func loadInstitutionMap(path string) (map[string]string, error) {
+	if strings.TrimSpace(path) == "" {
+		return nil, nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("leer institution-map: %w", err)
+	}
+	var overrides map[string]string
+	if err := json.Unmarshal(data, &overrides); err != nil {
+		return nil, fmt.Errorf("parsear institution-map: %w", err)
+	}
+	return overrides, nil
+}
+
+func importAccounts(ctx context.Context, tx *sql.Tx, src *sql.DB, appToInstitution map[int64]int64, summary *importSummary) error {
 	// Stubs para plugin_name referenciados por cuentas pero ausentes del catálogo.
 	known := map[string]bool{}
 	pluginRows, err := src.QueryContext(ctx, "SELECT name FROM plugins")
@@ -395,16 +558,20 @@ func importAccounts(ctx context.Context, tx *sql.Tx, src *sql.DB, summary *impor
 			&frequency, &scheduleInterval, &scheduleDays); err != nil {
 			return fmt.Errorf("scan cuenta: %w", err)
 		}
+		institutionID, ok := appToInstitution[appID]
+		if !ok {
+			return fmt.Errorf("cuenta %d referencia app %d sin institución resuelta", id, appID)
+		}
 		count.Read++
 		res, err := tx.ExecContext(ctx, `
 			INSERT OR IGNORE INTO automation_accounts
-			  (id,app_id,identifier,label,credentials,created_at,updated_at,plugin_name,
+			  (id,institution_id,identifier,label,credentials,created_at,updated_at,plugin_name,
 			   webhook_url,schedule_time,schedule_enabled,last_run_at,schedule_frequency,
 			   schedule_interval,schedule_days)
 			VALUES (?,?,?,NULLIF(?,''),?,COALESCE(NULLIF(?,''),CURRENT_TIMESTAMP),
 			        COALESCE(NULLIF(?,''),CURRENT_TIMESTAMP),NULLIF(?,''),NULLIF(?,''),
 			        NULLIF(?,''),?,NULLIF(?,''),?,?,NULLIF(?,''))`,
-			id, appID, identifier, label, creds, created, updated, pluginName,
+			id, institutionID, identifier, label, creds, created, updated, pluginName,
 			webhookURL, scheduleTime, scheduleEnabled, lastRun, frequency,
 			nullInt(scheduleInterval), scheduleDays)
 		if err != nil {
@@ -554,7 +721,6 @@ func checkIntegrity(ctx context.Context, dst *sql.DB) error {
 
 func verifyCounts(ctx context.Context, src, dst *sql.DB, summary *importSummary) error {
 	pairs := map[string]string{
-		"automation_apps":         "apps",
 		"automation_accounts":     "accounts",
 		"automation_bills":        "bills",
 		"automation_webhook_logs": "webhook_logs",
@@ -600,6 +766,19 @@ func verifyCounts(ctx context.Context, src, dst *sql.DB, summary *importSummary)
 		return err
 	}
 	fmt.Printf("verify: automation_plugins=%d ok (%d stubs)\n", verified, len(summary.Stubs))
+
+	// Toda cuenta debe apuntar a una institución existente.
+	var orphanAccounts int64
+	if err := dst.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM automation_accounts a
+		LEFT JOIN institutions i ON i.id = a.institution_id
+		WHERE i.id IS NULL`).Scan(&orphanAccounts); err != nil {
+		return fmt.Errorf("verify: cuentas sin institución: %w", err)
+	}
+	if orphanAccounts != 0 {
+		return fmt.Errorf("verify: %d cuentas sin institución", orphanAccounts)
+	}
+	fmt.Println("verify: automation_accounts.institution_id ok")
 	return nil
 }
 
