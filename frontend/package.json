@@ -1,7 +1,7 @@
 {
   "name": "p40la-ihost-frontend",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "scripts": {
     "check:ui": "node scripts/check-ui-rules.cjs",
