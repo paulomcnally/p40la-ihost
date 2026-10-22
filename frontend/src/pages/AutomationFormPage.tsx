@@ -258,7 +258,7 @@ export default function AutomationFormPage() {
           ))}
         </div>
 
-        <div className="min-h-[420px] sm:min-h-[360px]">
+        <div className="min-h-[480px] sm:min-h-[360px]">
         {activeTab === 'info' && (
           <div className="space-y-5">
             <div>
