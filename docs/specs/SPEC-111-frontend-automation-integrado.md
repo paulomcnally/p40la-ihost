@@ -49,6 +49,8 @@ Consideraciones de UI obligatorias:
 11. **REQ-011**: Formularios y modales verificados en darkmode (texto/placeholders legibles) y en móvil.
 12. **REQ-018**: La UI de automation **no muestra** el campo `webhook_url` (ni en alta/edición ni en detalle). El valor existente se preserva internamente al editar como fallback de transición; no se elimina la columna, el fallback del backend ni el endpoint externo `POST /webhooks/{uuid}` del servicio.
 13. **REQ-019**: Las acciones de la página de detalle de cuenta (editar, revelar credenciales, consultar ahora y eliminar) se agrupan en el menú de 3 puntos (`CardMenu`) del patrón de UI existente, no como botones sueltos en el header.
+14. **REQ-020**: El formulario de alta/edición de cuentas se segmenta en 3 tabs: **Información**, **Plugin** y **Frecuencia**. Solo se muestra la sección activa; guardar/cancelar quedan siempre disponibles y, si la validación falla, se abre la tab del campo inválido.
+15. **REQ-021**: **Guardar** permanece deshabilitado mientras falten campos requeridos (institución, identificador, plugin, credenciales requeridas en alta y programación válida si está habilitada). Las tabs con error muestran un punto rojo y un texto de ayuda junto al botón.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -217,6 +219,8 @@ Sin cambios de runtime ni de DB. El build de Vite sigue generando estáticos; no
 - [ ] **CA-013**: La app corre en local sobre una copia de producción y el flujo completo (listar, crear, editar, vincular servicio, consultar facturas) funciona con datos reales.
 - [ ] **CA-014**: El formulario y el detalle de cuenta no muestran `webhook_url`; al editar una cuenta existente el valor se conserva en la DB (fallback) y no se borra.
 - [ ] **CA-015**: El detalle de cuenta usa un `CardMenu` de 3 puntos con Editar, Revelar credenciales, Consultar ahora y Eliminar; no hay botones sueltos para esas acciones.
+- [ ] **CA-016**: El formulario de cuenta muestra 3 tabs (Información, Plugin, Frecuencia); cada tab contiene solo sus campos, la validación salta a la tab del error y Guardar/Cancelar siguen accesibles.
+- [ ] **CA-017**: Con campos requeridos vacíos o una programación inválida, el botón Guardar está deshabilitado; las tabs afectadas muestran un punto rojo y el texto de ayuda.
 
 ---
 
@@ -257,3 +261,5 @@ Dependencias: SPEC-110 (backend) debe estar mergeada en esta rama. No hay depend
 | 2026-10-21 | opencode | Implementación completa: tipos y cliente API, listado, formulario con credenciales dinámicas y programación, detalle con facturas/logs/reveal/sync/delete, catálogo de plugins, selector en `ServiceFormPage` y retiro de la configuración legacy. `npm run build` pasa. E2E sobre copia de producción con el export real de automation: 6 cuentas, 80 facturas, 838 logs, 5 plugins; el selector devuelve 6 opciones. Pendiente revisión visual/darkmode del usuario. |
 | 2026-10-21 | opencode | Cambio iterativo solicitado por el usuario: se retira `webhook_url` de la UI de automation (formulario y detalle). Se conserva el valor en la DB al editar como fallback de transición; el endpoint externo del servicio no se toca. |
 | 2026-10-21 | opencode | Cambio iterativo: las acciones del detalle (editar, revelar credenciales, consultar ahora, eliminar) pasan al `CardMenu` de 3 puntos, siguiendo el patrón de UI del proyecto. |
+| 2026-10-21 | opencode | Cambio iterativo: el formulario de cuenta se segmenta en tabs Información / Plugin / Frecuencia, mostrando solo la sección activa. |
+| 2026-10-21 | opencode | Cambio iterativo: Guardar se deshabilita mientras falten campos requeridos; tabs con error marcadas y texto de ayuda. |
