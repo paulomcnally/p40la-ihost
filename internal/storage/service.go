@@ -257,3 +257,16 @@ func scanServices(rows *sql.Rows) ([]models.Service, error) {
 	}
 	return services, nil
 }
+
+// ListByAutomationAccountID devuelve los servicios activos vinculados a una
+// cuenta de automation (SPEC-110).
+func (s *ServiceStorage) ListByAutomationAccountID(ctx context.Context, accountID int64) ([]models.Service, error) {
+	rows, err := s.db.QueryContext(ctx,
+		"SELECT "+serviceColumns+" FROM services WHERE automation_account_id = ? AND deleted_at IS NULL ORDER BY id",
+		accountID)
+	if err != nil {
+		return nil, fmt.Errorf("listar servicios por cuenta de automation: %w", err)
+	}
+	defer rows.Close()
+	return scanServices(rows)
+}

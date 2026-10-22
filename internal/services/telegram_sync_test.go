@@ -309,7 +309,10 @@ func TestSincronizarServiciosCommandWithoutServices(t *testing.T) {
 	}
 }
 
-func TestSincronizarServiciosCommandWithoutAutomationConfig(t *testing.T) {
+func TestSincronizarServiciosCommandIgnoresLegacyConfig(t *testing.T) {
+	// SPEC-110: el backend unificado ya no depende de automation_base_url ni
+	// automation_api_key; /sincronizar debe listar los servicios aunque esas
+	// claves legacy estén vacías.
 	env := newSyncTestEnv(t)
 	accountID := int64(7)
 	env.createService(t, "Internet Sync", &accountID)
@@ -319,14 +322,14 @@ func TestSincronizarServiciosCommandWithoutAutomationConfig(t *testing.T) {
 	b.ProcessUpdate(context.Background(), sincronizarUpdate("/sincronizar"))
 
 	messages, _, _ := api.snapshot()
-	if len(messages) != 1 {
-		t.Fatalf("mensajes = %d, want 1: %+v", len(messages), messages)
+	if len(messages) != 2 {
+		t.Fatalf("mensajes = %d, want 2: %+v", len(messages), messages)
 	}
-	if !strings.Contains(messages[0].Text, "Automation no está configurada") {
-		t.Errorf("mensaje inesperado: %q", messages[0].Text)
+	if data := keyboardButtonData(t, messages[0].ReplyMarkup); data != "sync:1" {
+		t.Errorf("callback_data = %q, want sync:1", data)
 	}
-	if messages[0].ReplyMarkup != "" {
-		t.Errorf("no debe enviar botones sin automation configurada: %q", messages[0].ReplyMarkup)
+	if !strings.Contains(messages[1].Text, "1 servicio") {
+		t.Errorf("resumen inesperado: %q", messages[1].Text)
 	}
 }
 

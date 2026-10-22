@@ -331,3 +331,97 @@ func nullIntPtr(v *int) any {
 	}
 	return *v
 }
+
+// UpsertPlugin sincroniza el catálogo de plugins compilados.
+func (s *AutomationStorage) UpsertPlugin(ctx context.Context, name, version, source, description, status string) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO automation_plugins (name, version, source, description, status)
+		VALUES (?,?,?,?,?)
+		ON CONFLICT(name) DO UPDATE SET
+		  version = excluded.version, source = excluded.source,
+		  description = excluded.description, status = excluded.status,
+		  updated_at = CURRENT_TIMESTAMP`,
+		name, version, source, description, status)
+	if err != nil {
+		return fmt.Errorf("upsert plugin %s: %w", name, err)
+	}
+	return nil
+}
+
+// GetPlugin devuelve un plugin del catálogo.
+func (s *AutomationStorage) GetPlugin(ctx context.Context, name string) (*models.AutomationPlugin, error) {
+	var p models.AutomationPlugin
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, name, version, source, COALESCE(description,''), status, created_at, updated_at
+		FROM automation_plugins WHERE name = ?`, name).
+		Scan(&p.ID, &p.Name, &p.Version, &p.Source, &p.Description, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("obtener plugin %s: %w", name, err)
+	}
+	return &p, nil
+}
+
+// CreateBill persiste el resultado de una consulta de plugin.
+func (s *AutomationStorage) CreateBill(ctx context.Context, bill *models.AutomationBill) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO automation_bills
+		  (account_id, plugin_name, plugin_version, source, status, error, raw)
+		VALUES (?,?,?,?,?,NULLIF(?,''),?)`,
+		bill.AccountID, bill.PluginName, bill.PluginVersion, bill.Source,
+		bill.Status, nullStringPtr(bill.Error), bill.Raw)
+	if err != nil {
+		return fmt.Errorf("registrar factura de automation: %w", err)
+	}
+	return nil
+}
+
+// ListEnabledAccounts devuelve las cuentas con scheduler habilitado.
+func (s *AutomationStorage) ListEnabledAccounts(ctx context.Context) ([]models.AutomationAccount, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT `+automationAccountColumns+`
+		FROM automation_accounts a
+		LEFT JOIN institutions i ON i.id = a.institution_id
+		WHERE a.schedule_enabled = 1
+		ORDER BY a.id`)
+	if err != nil {
+		return nil, fmt.Errorf("listar cuentas habilitadas: %w", err)
+	}
+	defer rows.Close()
+
+	var accounts []models.AutomationAccount
+	for rows.Next() {
+		account, err := scanAutomationAccount(rows)
+		if err != nil {
+			return nil, err
+		}
+		accounts = append(accounts, *account)
+	}
+	return accounts, rows.Err()
+}
+
+// SetLastRun actualiza last_run_at de una cuenta.
+func (s *AutomationStorage) SetLastRun(ctx context.Context, accountID int64) error {
+	_, err := s.db.ExecContext(ctx,
+		"UPDATE automation_accounts SET last_run_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+		accountID)
+	if err != nil {
+		return fmt.Errorf("actualizar last_run_at: %w", err)
+	}
+	return nil
+}
+
+// CreateWebhookLog registra una entrega (interna o externa) de una cuenta.
+func (s *AutomationStorage) CreateWebhookLog(ctx context.Context, log *models.AutomationWebhookLog) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO automation_webhook_logs
+		  (account_id, webhook_url, status, payload, response, http_status)
+		VALUES (?,?,?,?,?,?)`,
+		log.AccountID, log.WebhookURL, log.Status, log.Payload, log.Response, nullIntPtr(log.HTTPStatus))
+	if err != nil {
+		return fmt.Errorf("registrar log de webhook: %w", err)
+	}
+	return nil
+}
