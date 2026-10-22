@@ -51,8 +51,8 @@ Consideraciones de UI obligatorias:
 13. **REQ-019**: Las acciones de la página de detalle de cuenta (editar, revelar credenciales, consultar ahora y eliminar) se agrupan en el menú de 3 puntos (`CardMenu`) del patrón de UI existente, no como botones sueltos en el header.
 14. **REQ-020**: El formulario de alta/edición de cuentas se segmenta en 3 tabs: **Información**, **Plugin** y **Frecuencia**. Solo se muestra la sección activa; guardar/cancelar quedan siempre disponibles y, si la validación falla, se abre la tab del campo inválido.
 15. **REQ-021**: **Guardar** permanece deshabilitado mientras falten campos requeridos (institución, identificador, plugin y credenciales requeridas en alta). Las tabs con error muestran un punto rojo y un texto de ayuda junto al botón.
-16. **REQ-022**: La tab **Frecuencia** es completamente opcional: no cuenta para la validación de guardado ni muestra punto de error. El checkbox se reemplaza por un switch accesible (`role="switch"`, `aria-checked`, teclado y foco visible), con título/subtítulo muted y un texto de consulta manual cuando está apagado. Al encenderse, los campos aparecen con una transición de 150–200 ms que respeta `prefers-reduced-motion`.
-17. **REQ-023**: El pie de ayuda solo aparece si faltan campos requeridos y los nombra; cada nombre es un enlace que abre su tab. El contenedor de las tabs mantiene una altura mínima para que Guardar/Cancelar no salten al cambiar de tab o frecuencia.
+16. **REQ-022**: La tab **Frecuencia** es completamente opcional: no cuenta para la validación de guardado ni muestra punto de error. El checkbox se reemplaza por un switch accesible (`role="switch"`, `aria-checked`, teclado y foco visible), con título/subtítulo muted y un texto de consulta manual cuando está apagado. Al encenderse, los campos aparecen con una transición de 150–200 ms que respeta `prefers-reduced-motion`. El selector de frecuencia usa el componente `Select` existente, nunca un `<select>` nativo del sistema operativo.
+17. **REQ-023**: El pie de ayuda solo aparece si faltan campos requeridos y los nombra; cada nombre es un enlace que abre su tab. No se usa una altura mínima fija: la transición del grid acompaña el cambio de altura y en móvil el contenedor crece de forma natural.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -223,8 +223,8 @@ Sin cambios de runtime ni de DB. El build de Vite sigue generando estáticos; no
 - [ ] **CA-015**: El detalle de cuenta usa un `CardMenu` de 3 puntos con Editar, Revelar credenciales, Consultar ahora y Eliminar; no hay botones sueltos para esas acciones.
 - [ ] **CA-016**: El formulario de cuenta muestra 3 tabs (Información, Plugin, Frecuencia); cada tab contiene solo sus campos, la validación salta a la tab del error y Guardar/Cancelar siguen accesibles.
 - [ ] **CA-017**: Con campos requeridos vacíos, el botón Guardar está deshabilitado; las tabs afectadas muestran un punto rojo.
-- [ ] **CA-018**: Se puede guardar con la tab Frecuencia sin tocar; el switch es accesible y los campos aparecen/desaparecen con transición reducible.
-- [ ] **CA-019**: El pie muestra “Falta: …” solo con requeridos faltantes, cada uno abre su tab, y el contenedor mantiene altura estable.
+- [ ] **CA-018**: Se puede guardar con la tab Frecuencia sin tocar; el switch es accesible, la frecuencia usa `Select` (no el dropdown nativo) y los campos aparecen/desaparecen con transición reducible.
+- [ ] **CA-019**: El pie muestra “Falta: …” solo con requeridos faltantes y cada uno abre su tab; sin altura mínima fija, el contenedor acompaña el contenido (incluido móvil).
 
 ---
 
@@ -268,3 +268,4 @@ Dependencias: SPEC-110 (backend) debe estar mergeada en esta rama. No hay depend
 | 2026-10-21 | opencode | Cambio iterativo: el formulario de cuenta se segmenta en tabs Información / Plugin / Frecuencia, mostrando solo la sección activa. |
 | 2026-10-21 | opencode | Cambio iterativo: Guardar se deshabilita mientras falten campos requeridos; tabs con error marcadas y texto de ayuda. |
 | 2026-10-21 | opencode | Cambio iterativo: Frecuencia pasa a ser 100% opcional (switch accesible, sin punto de error ni bloqueo de guardado); pie con requeridos faltantes enlazados a su tab y altura mínima estable. |
+| 2026-10-21 | opencode | Corrección: el selector de frecuencia usa el componente `Select` del repo (no el `<select>` nativo) y se elimina la altura mínima fija para no afectar el layout móvil; la transición del grid acompaña el cambio de altura. |
