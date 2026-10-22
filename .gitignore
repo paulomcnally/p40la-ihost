@@ -13,3 +13,8 @@ frontend/dist/
 *.sqlite
 *.sqlite3
 *.pdf
+
+# Secretos de build y exports de producción (nunca commitear)
+.gh_token
+.env
+p40la-export-*.json
