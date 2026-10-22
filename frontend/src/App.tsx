@@ -26,6 +26,7 @@ import SettingsCurrencyFormatPage from './pages/SettingsCurrencyFormatPage'
 import SettingsEmailAppearancePage from './pages/SettingsEmailAppearancePage'
 import InstitutionsPage from './pages/InstitutionsPage'
 import InstitutionFormPage from './pages/InstitutionFormPage'
+import InstitutionShowPage from './pages/InstitutionShowPage'
 import AutosPage from './pages/AutosPage'
 import AutoFormPage from './pages/AutoFormPage'
 import AutoShowPage from './pages/AutoShowPage'
@@ -122,6 +123,7 @@ function App() {
                   <Route path="institutions" element={<InstitutionsPage />} />
                   <Route path="institutions/new" element={<InstitutionFormPage />} />
                   <Route path="institutions/edit/:id" element={<InstitutionFormPage />} />
+                  <Route path="institutions/:id" element={<InstitutionShowPage />} />
                   <Route path="autos" element={<AutosPage />} />
                   <Route path="autos/new" element={<AutoFormPage />} />
                   <Route path="autos/edit/:id" element={<AutoFormPage />} />

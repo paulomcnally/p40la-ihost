@@ -17,6 +17,7 @@ const BACK_ROUTES: { pattern: RegExp; to: string }[] = [
   { pattern: /^\/autos\/(new|edit\/\d+)$/, to: '/autos' },
   { pattern: /^\/home\/(new|edit\/\d+)$/, to: '/home' },
   { pattern: /^\/institutions\/(new|edit\/\d+)$/, to: '/institutions' },
+  { pattern: /^\/institutions\/\d+$/, to: '/institutions' },
   { pattern: /^\/pension\/hijos\/(new|edit\/\d+)$/, to: '/pension/hijos' },
   { pattern: /^\/pension\/categorias\/(new|edit\/\d+)$/, to: '/pension/categorias' },
   { pattern: /^\/pension\/salarios\/(new|edit\/\d+)$/, to: '/pension/salarios' },
