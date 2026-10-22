@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 111 |
+| **Total de specs** | 112 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 111 🟢 |
+| **Released** | 112 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-112 |
+| **Último ID usado** | SPEC-114 |
 
 ---
 
@@ -132,6 +132,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-110 | Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo) | released | 2026-10-21 | opencode |
 | SPEC-111 | Unificación automation (3/4): frontend integrado y selector de cuentas | released | 2026-10-21 | opencode |
 | SPEC-112 | Unificación automation (4/4): despliegue único e importación del export JSON | released | 2026-10-21 | opencode |
+| SPEC-114 | Opción Editar servicio en el menú de acciones del detalle de servicio | released | 2026-10-21 | opencode |
 
 ---
 
