@@ -1,7 +1,7 @@
 ---
 title: "Opción Editar servicio en el menú de acciones del detalle de servicio"
 id: "SPEC-114"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 117
 # Opción Editar servicio en el menú de acciones del detalle de servicio
 
 **ID**: SPEC-114  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -149,20 +149,20 @@ Sin cambios. Se reutilizan los endpoints existentes de servicios (`GET /api/serv
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado el detalle `/services/bills/6?tab=analisis`, cuando el usuario abre el menú de 3 puntos del header, entonces la primera opción visible es "Editar servicio".
-- [ ] CA-002: Dado el menú abierto en el detalle, cuando el usuario hace clic en "Editar servicio", entonces navega a `/services/edit/6` y el formulario muestra los datos actuales del servicio.
-- [ ] CA-003: Dado el formulario abierto desde el detalle, cuando el usuario guarda cambios, entonces se guardan y la app vuelve a `/services` (comportamiento existente), y al reabrir el detalle se ven los datos actualizados.
-- [ ] CA-004: Dado el detalle en tabs `facturas` y `polizas`, cuando se abre el menú, entonces la opción "Editar servicio" también aparece primera.
-- [ ] CA-005: El orden restante del menú se mantiene: Subir factura, Nueva factura, Renovar, Webhook.
-- [ ] CA-006: En idioma inglés la opción se muestra como "Edit service"; no hay textos hardcodeados nuevos.
-- [ ] CA-007: El menú mantiene su comportamiento de cierre al seleccionar una opción y al hacer clic fuera.
-- [ ] CA-DARK: No aplica (no se crean formularios/modales; el formulario reutilizado ya cumple con los tokens del tema).
-- [ ] CA-BACK: No aplica (no se crean páginas nuevas; `/services/edit/:id` ya está registrada en `BACK_ROUTES`).
+- [x] CA-001: Dado el detalle `/services/bills/6?tab=analisis`, cuando el usuario abre el menú de 3 puntos del header, entonces la primera opción visible es "Editar servicio".
+- [x] CA-002: Dado el menú abierto en el detalle, cuando el usuario hace clic en "Editar servicio", entonces navega a `/services/edit/6` y el formulario muestra los datos actuales del servicio.
+- [x] CA-003: Dado el formulario abierto desde el detalle, cuando el usuario guarda cambios, entonces se guardan y la app vuelve a `/services` (comportamiento existente), y al reabrir el detalle se ven los datos actualizados.
+- [x] CA-004: Dado el detalle en tabs `facturas` y `polizas`, cuando se abre el menú, entonces la opción "Editar servicio" también aparece primera.
+- [x] CA-005: El orden restante del menú se mantiene: Subir factura, Nueva factura, Renovar, Webhook.
+- [x] CA-006: En idioma inglés la opción se muestra como "Edit service"; no hay textos hardcodeados nuevos.
+- [x] CA-007: El menú mantiene su comportamiento de cierre al seleccionar una opción y al hacer clic fuera.
+- [x] CA-DARK: No aplica (no se crean formularios/modales; el formulario reutilizado ya cumple con los tokens del tema).
+- [x] CA-BACK: No aplica (no se crean páginas nuevas; `/services/edit/:id` ya está registrada en `BACK_ROUTES`).
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: `npm run build` en `frontend/` compila sin errores ni warnings nuevos.
-- [ ] CA-NF-002: No se agregan dependencias ni cambios de backend/DB (verificable con `git diff --stat`).
+- [x] CA-NF-001: `npm run build` en `frontend/` compila sin errores ni warnings nuevos.
+- [x] CA-NF-002: No se agregan dependencias ni cambios de backend/DB (verificable con `git diff --stat`).
 
 ### 5.3 Testing
 
@@ -207,3 +207,5 @@ Sin cambios. Se reutilizan los endpoints existentes de servicios (`GET /api/serv
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial de la especificación a partir del pedido del usuario |
 | 2026-10-21 | opencode | Estado a `in_progress`; opción "Editar servicio" agregada al `CreateMenu` de `BillsPage` |
+| 2026-10-21 | opencode | Implementación verificada: build OK y pruebas E2E con Playwright (ES/EN, tabs `analisis`/`facturas`, navegación a `/services/edit/:id`, guardado). Commits `87ad17c` y `5fd8fd2` |
+| 2026-10-21 | opencode | Release: merge de `feature/SPEC-114` a `main`, issue #117 cerrado con label `spec/released` |
