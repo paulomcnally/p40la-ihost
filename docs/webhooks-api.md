@@ -26,7 +26,7 @@ Este documento describe la **API de webhooks** que p40la-ihost expone para que u
 
 | Concepto | Descripción |
 |----------|-------------|
-| **`{uuid}`** | Identificador único por servicio. Cada servicio tiene un UUID (ej: `fd281ed1-e0b2-4c9c-8dab-d7080f28adf4`). Identifica **a qué servicio** pertenece la factura. |
+| **`{uuid}`** | Identificador único por servicio. Cada servicio tiene un UUID (ej: `00000000-0000-4000-8000-000000000000`). Identifica **a qué servicio** pertenece la factura. |
 | **`X-Webhook-Key`** | Header con la **api_key global** (la misma para todos los webhooks). Autentica que el emisor está autorizado. |
 | **Feature toggle** | En Configuración → Webhooks hay un toggle maestro. Si está OFF, el endpoint responde `403` y no procesa nada. |
 
@@ -150,11 +150,13 @@ El endpoint hace un **upsert** sobre el par `(service_id, year, month)`:
 
 ## 7. Ejemplos
 
+> ⚠️ Los ejemplos usan valores ficticios. Nunca commitees tu `api_key` ni el `uuid` real de un servicio.
+
 ### 7.1 Crear una factura pendiente
 
 ```bash
-curl -X POST http://ihost.local:8088/webhooks/fd281ed1-e0b2-4c9c-8dab-d7080f28adf4 \
-  -H "X-Webhook-Key: 7381d6dc90a8a9ad421c2e751521a1553ebe10951c7dab491574376d653076bf" \
+curl -X POST http://ihost.local:8088/webhooks/00000000-0000-4000-8000-000000000000 \
+  -H "X-Webhook-Key: TU_API_KEY_AQUI" \
   -H "Content-Type: application/json" \
   -d '{
     "year": 2026,
@@ -169,8 +171,8 @@ curl -X POST http://ihost.local:8088/webhooks/fd281ed1-e0b2-4c9c-8dab-d7080f28ad
 ### 7.2 Marcar una factura como pagada
 
 ```bash
-curl -X POST http://ihost.local:8088/webhooks/fd281ed1-e0b2-4c9c-8dab-d7080f28adf4 \
-  -H "X-Webhook-Key: 7381d6dc90a8a9ad421c2e751521a1553ebe10951c7dab491574376d653076bf" \
+curl -X POST http://ihost.local:8088/webhooks/00000000-0000-4000-8000-000000000000 \
+  -H "X-Webhook-Key: TU_API_KEY_AQUI" \
   -H "Content-Type: application/json" \
   -d '{
     "year": 2026,
@@ -188,8 +190,8 @@ curl -X POST http://ihost.local:8088/webhooks/fd281ed1-e0b2-4c9c-8dab-d7080f28ad
 ```python
 import requests
 
-WEBHOOK_URL = "http://ihost.local:8088/webhooks/fd281ed1-e0b2-4c9c-8dab-d7080f28adf4"
-API_KEY = "7381d6dc90a8a9ad421c2e751521a1553ebe10951c7dab491574376d653076bf"
+WEBHOOK_URL = "http://ihost.local:8088/webhooks/00000000-0000-4000-8000-000000000000"
+API_KEY = "TU_API_KEY_AQUI"
 
 payload = {
     "year": 2026,

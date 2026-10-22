@@ -104,9 +104,9 @@ func newSource(t *testing.T) (*sql.DB, string) {
 			(3,'DISNORTE-DISSUR Nicaragua');
 		INSERT INTO accounts (id,app_id,identifier,label,credentials,plugin_name,webhook_url,schedule_time,schedule_enabled,schedule_frequency)
 			VALUES
-			(10,1,'84126107','Casa','{"user":"x"}','claro.nicaragua','http://p40la/webhooks/abc','07:00',1,'daily'),
-			(11,2,'889758','Oficina','{"user":"y"}','plugin.ausente','http://p40la/webhooks/def','08:00',0,'weekly'),
-			(12,3,'3458586','Norte','{"user":"z"}','claro.nicaragua','http://p40la/webhooks/ghi','09:00',1,'monthly');
+			(10,1,'demo-account-001','Casa','{"user":"x"}','claro.nicaragua','http://p40la/webhooks/abc','07:00',1,'daily'),
+			(11,2,'demo-account-002','Oficina','{"user":"y"}','plugin.ausente','http://p40la/webhooks/def','08:00',0,'weekly'),
+			(12,3,'demo-account-003','Norte','{"user":"z"}','claro.nicaragua','http://p40la/webhooks/ghi','09:00',1,'monthly');
 		INSERT INTO bills (id,account_id,plugin_name,plugin_version,source,status,raw)
 			VALUES (100,10,'claro.nicaragua','1.0.0','plugin','ok','{"amount":10}'),
 			       (101,11,'plugin.ausente','1.0.0','plugin','ok','{"amount":20}');
@@ -225,7 +225,7 @@ func TestImportPreservesDataAndIsIdempotent(t *testing.T) {
 	if err := dst.QueryRow("SELECT identifier FROM automation_accounts WHERE id=10").Scan(&identifier); err != nil {
 		t.Fatal(err)
 	}
-	if identifier != "84126107" {
+	if identifier != "demo-account-001" {
 		t.Errorf("identifier de cuenta 10 = %q", identifier)
 	}
 }

@@ -172,7 +172,7 @@ Opcional (REQ-004), migración numerada:
   "year": 2026,
   "month": 8,
   "amount": 975.97,
-  "invoice_number": "FAC0259424672026",
+  "invoice_number": "FAC0000000000000",
   "status": "pending"
 }
 ```
