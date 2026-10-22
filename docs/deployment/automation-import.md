@@ -61,6 +61,8 @@ Tablas destino (creadas por la migración `0039_merge_automation`):
 
 ### 3.1 Detener el contenedor y respaldar
 
+Detener el add-on `p40la-ihost` desde la UI del iHost **antes** de tocar la DB (no hay Docker CLI en el iHost). Confirmar que el proceso terminó y que no haya `app.db-wal` activo.
+
 ```bash
 # En el iHost (SSH add-on, puerto 2222)
 sudo sqlite3 /app/data/app.db ".backup '/app/data/backups/$(date +%Y%m%d-%H%M)-pre-automation/app.db'"
