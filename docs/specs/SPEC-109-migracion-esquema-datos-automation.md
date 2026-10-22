@@ -1,7 +1,7 @@
 ---
 title: "Unificación automation (1/4): migración de esquema y datos a tablas automation_* en app.db"
 id: "SPEC-109"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 112
 # Unificación automation (1/4): migración de esquema y datos a tablas automation_* en app.db
 
 **ID**: SPEC-109  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -48,6 +48,7 @@ El prototipo de SPEC-108 ya se ejecutó con éxito sobre copias: 5 apps, 5 cuent
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
 1. **REQ-012**: Comando `--verify` que compara conteos origen/destino por tabla y devuelve un diff legible.
+2. **REQ-013**: Si una cuenta referencia un `plugin_name` que no existe en `plugins`, el import crea un stub (`version='desconocida'`, `source='import'`, `status='active'`) y lo reporta, para no romper la FK ni bloquear la migración.
 
 ### 2.4 Requerimientos No Funcionales
 
@@ -158,6 +159,23 @@ foreign_key_check: ok
 6. Verificar conteos e `integrity_check`; arrancar `p40la-ihost`.
 7. Rollback: restaurar el backup de p40la y volver a arrancar la versión anterior.
 
+### 4.6 Estado de implementación (2026-10-21)
+
+Implementado y verificado en local:
+
+| Artefacto | Estado |
+|---|---|
+| `migrations/0039_merge_automation.up.sql` / `.down.sql` | ✅ |
+| `cmd/import-automation` (`--from`, `--data-dir`, `--migrations`, `--dry-run`, `--verify`) | ✅ |
+| Tests unitarios (idempotencia, stubs, huérfanos, dry-run, tablas faltantes) | ✅ |
+| E2E sobre copias reales de las DB | ✅ 5 apps, 5 cuentas, 5 plugins, 28 facturas, 100 logs |
+| Segunda corrida (idempotencia) | ✅ 0 insertadas, 0 duplicadas |
+| `webhook_api_key` de p40la preservada | ✅ |
+| `integrity_check` / `foreign_key_check` | ✅ `ok` / sin filas |
+| Arranque del server con la migración aplicada | ✅ `/health` = `{"status":"ok"}` |
+
+`go build ./...` y `go test ./...` pasan. La migración `.down.sql` revierte las tablas nuevas sin tocar las de p40la.
+
 ## 5. Criterios de Aceptación
 
 ### 5.1 Funcionales
@@ -216,3 +234,4 @@ foreign_key_check: ok
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial: esquema `automation_*` + comando de import offline, derivado de SPEC-108. |
+| 2026-10-21 | opencode | Implementación: migración `0039`, `cmd/import-automation`, tests y E2E sobre copias (28 facturas / 100 logs, idempotente, `integrity_check` ok, server arranca). |
