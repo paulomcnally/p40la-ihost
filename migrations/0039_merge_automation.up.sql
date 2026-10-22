@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS automation_plugins (
 
 CREATE TABLE IF NOT EXISTS automation_accounts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    app_id INTEGER NOT NULL REFERENCES automation_apps(id) ON DELETE CASCADE,
+    institution_id INTEGER NOT NULL REFERENCES institutions(id),
     identifier TEXT NOT NULL,
     label TEXT,
     credentials TEXT NOT NULL,
@@ -37,10 +37,10 @@ CREATE TABLE IF NOT EXISTS automation_accounts (
     schedule_frequency TEXT NOT NULL DEFAULT 'daily',
     schedule_interval INTEGER,
     schedule_days TEXT,
-    UNIQUE(app_id, identifier)
+    UNIQUE(institution_id, identifier)
 );
 
-CREATE INDEX IF NOT EXISTS idx_automation_accounts_app_id ON automation_accounts(app_id);
+CREATE INDEX IF NOT EXISTS idx_automation_accounts_institution_id ON automation_accounts(institution_id);
 
 CREATE TABLE IF NOT EXISTS automation_bills (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

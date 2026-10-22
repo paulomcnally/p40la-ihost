@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -21,7 +22,9 @@ func execScript(t *testing.T, database *sql.DB, script string) {
 }
 
 // newSource crea una DB de automation mínima con las tablas que lee el import.
-func newSource(t *testing.T) *sql.DB {
+// Tres apps: una que coincide exacto, una que coincide normalizada y una que
+// requiere mapa de override.
+func newSource(t *testing.T) (*sql.DB, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "automation.db")
 	src, err := sql.Open("sqlite", "file:"+path)
@@ -95,11 +98,15 @@ func newSource(t *testing.T) *sql.DB {
 
 		INSERT INTO plugins (id,name,version,source,description,status) VALUES
 			(1,'claro.nicaragua','1.0.0','builtin','Claro','active');
-		INSERT INTO apps (id,name) VALUES (1,'Claro Nicaragua');
+		INSERT INTO apps (id,name) VALUES
+			(1,'Claro Nicaragua'),
+			(2,'ENACAL Nicaragua'),
+			(3,'DISNORTE-DISSUR Nicaragua');
 		INSERT INTO accounts (id,app_id,identifier,label,credentials,plugin_name,webhook_url,schedule_time,schedule_enabled,schedule_frequency)
 			VALUES
 			(10,1,'84126107','Casa','{"user":"x"}','claro.nicaragua','http://p40la/webhooks/abc','07:00',1,'daily'),
-			(11,1,'999','Oficina','{"user":"y"}','plugin.ausente','http://p40la/webhooks/def','08:00',0,'weekly');
+			(11,2,'889758','Oficina','{"user":"y"}','plugin.ausente','http://p40la/webhooks/def','08:00',0,'weekly'),
+			(12,3,'3458586','Norte','{"user":"z"}','claro.nicaragua','http://p40la/webhooks/ghi','09:00',1,'monthly');
 		INSERT INTO bills (id,account_id,plugin_name,plugin_version,source,status,raw)
 			VALUES (100,10,'claro.nicaragua','1.0.0','plugin','ok','{"amount":10}'),
 			       (101,11,'plugin.ausente','1.0.0','plugin','ok','{"amount":20}');
@@ -111,9 +118,11 @@ func newSource(t *testing.T) *sql.DB {
 			('webhook_enabled','true'),
 			('language','es');
 	`)
-	return src
+	return src, path
 }
 
+// newTargetDir crea la DB destino y presiembra instituciones que ya existen en
+// p40la con nombres distintos a los apps.
 func newTargetDir(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -121,20 +130,19 @@ func newTargetDir(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("crear target: %v", err)
 	}
-	// La key de p40la no debe ser pisada por el import.
-	if _, err := target.Exec(
-		"INSERT INTO system_settings (key,value) VALUES ('webhook_api_key','KEY_P40LA')"); err != nil {
-		t.Fatalf("insertar key p40la: %v", err)
-	}
+	execScript(t, target, `
+		INSERT INTO institutions (name) VALUES ('Enacal'), ('Unión Fenosa');
+		INSERT INTO system_settings (key,value) VALUES ('webhook_api_key','KEY_P40LA');
+	`)
 	target.Close()
 	return dir
 }
 
 func TestImportPreservesDataAndIsIdempotent(t *testing.T) {
-	src := newSource(t)
+	src, sourcePath := newSource(t)
 	dir := newTargetDir(t)
 
-	opts := options{sourcePath: sourcePath(t, src), dataDir: dir, migrationsDir: migrationsDir, verify: true}
+	opts := options{sourcePath: sourcePath, dataDir: dir, migrationsDir: migrationsDir, verify: true}
 	if err := runImport(context.Background(), opts); err != nil {
 		t.Fatalf("primer import: %v", err)
 	}
@@ -147,16 +155,17 @@ func TestImportPreservesDataAndIsIdempotent(t *testing.T) {
 		t.Fatalf("abrir target: %v", err)
 	}
 	defer dst.Close()
+	_ = src
 
 	checks := []struct {
 		query string
 		want  int64
 	}{
-		{"SELECT COUNT(*) FROM automation_apps", 1},
+		{"SELECT COUNT(*) FROM automation_accounts", 3},
 		{"SELECT COUNT(*) FROM automation_plugins", 2}, // 1 real + 1 stub
-		{"SELECT COUNT(*) FROM automation_accounts", 2},
 		{"SELECT COUNT(*) FROM automation_bills", 2},
 		{"SELECT COUNT(*) FROM automation_webhook_logs", 2},
+		{"SELECT COUNT(*) FROM institutions", 4}, // Enacal + Unión Fenosa + Claro + DISNORTE
 	}
 	for _, c := range checks {
 		var got int64
@@ -165,6 +174,21 @@ func TestImportPreservesDataAndIsIdempotent(t *testing.T) {
 		}
 		if got != c.want {
 			t.Errorf("%q = %d, esperado %d", c.query, got, c.want)
+		}
+	}
+
+	// Los nombres se resuelven por match exacto, normalizado o creación.
+	wantInstitutions := map[int64]string{10: "Claro Nicaragua", 11: "Enacal", 12: "DISNORTE-DISSUR Nicaragua"}
+	for accountID, want := range wantInstitutions {
+		var got string
+		if err := dst.QueryRow(`
+			SELECT i.name FROM automation_accounts a
+			JOIN institutions i ON i.id = a.institution_id
+			WHERE a.id = ?`, accountID).Scan(&got); err != nil {
+			t.Fatalf("cuenta %d: %v", accountID, err)
+		}
+		if got != want {
+			t.Errorf("cuenta %d → institución %q, esperado %q", accountID, got, want)
 		}
 	}
 
@@ -197,7 +221,6 @@ func TestImportPreservesDataAndIsIdempotent(t *testing.T) {
 		t.Errorf("stub de plugin ausente = %d, esperado 1", stub)
 	}
 
-	// Verifica que los IDs se preserven (services.automation_account_id apunta a ellos).
 	var identifier string
 	if err := dst.QueryRow("SELECT identifier FROM automation_accounts WHERE id=10").Scan(&identifier); err != nil {
 		t.Fatal(err)
@@ -207,16 +230,75 @@ func TestImportPreservesDataAndIsIdempotent(t *testing.T) {
 	}
 }
 
+func TestInstitutionMapOverride(t *testing.T) {
+	_, sourcePath := newSource(t)
+	dir := newTargetDir(t)
+
+	mapPath := filepath.Join(t.TempDir(), "map.json")
+	if err := os.WriteFile(mapPath,
+		[]byte(`{"DISNORTE-DISSUR Nicaragua":"Unión Fenosa"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	opts := options{
+		sourcePath:         sourcePath,
+		dataDir:            dir,
+		migrationsDir:      migrationsDir,
+		institutionMapPath: mapPath,
+		verify:             true,
+	}
+	if err := runImport(context.Background(), opts); err != nil {
+		t.Fatalf("import con mapa: %v", err)
+	}
+
+	dst, err := sql.Open("sqlite", "file:"+filepath.Join(dir, "app.db")+"?mode=ro")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dst.Close()
+
+	var name string
+	if err := dst.QueryRow(`
+		SELECT i.name FROM automation_accounts a
+		JOIN institutions i ON i.id = a.institution_id
+		WHERE a.id = 12`).Scan(&name); err != nil {
+		t.Fatal(err)
+	}
+	if name != "Unión Fenosa" {
+		t.Errorf("cuenta 12 → %q, esperado Unión Fenosa", name)
+	}
+
+	var total int64
+	if err := dst.QueryRow("SELECT COUNT(*) FROM institutions").Scan(&total); err != nil {
+		t.Fatal(err)
+	}
+	if total != 3 { // Enacal + Unión Fenosa + Claro Nicaragua
+		t.Errorf("instituciones = %d, esperado 3", total)
+	}
+}
+
+func TestNormalizeInstitutionName(t *testing.T) {
+	cases := map[string]string{
+		"ENACAL Nicaragua":          "enacal",
+		"Enacal":                    "enacal",
+		"DISNORTE-DISSUR Nicaragua": "disnorte dissur",
+		"Unión Fenosa":              "union fenosa",
+		"  Claro   Nicaragua ":      "claro",
+	}
+	for input, want := range cases {
+		if got := normalizeInstitutionName(input); got != want {
+			t.Errorf("normalize(%q) = %q, esperado %q", input, got, want)
+		}
+	}
+}
+
 func TestDryRunWritesNothing(t *testing.T) {
-	src := newSource(t)
+	_, sourcePath := newSource(t)
 	dir := t.TempDir()
 
-	opts := options{sourcePath: sourcePath(t, src), dataDir: dir, migrationsDir: migrationsDir, dryRun: true}
+	opts := options{sourcePath: sourcePath, dataDir: dir, migrationsDir: migrationsDir, dryRun: true}
 	if err := runImport(context.Background(), opts); err != nil {
 		t.Fatalf("dry-run: %v", err)
-	}
-	if _, err := filepath.Glob(filepath.Join(dir, "app.db*")); err != nil {
-		t.Fatal(err)
 	}
 	if matches, _ := filepath.Glob(filepath.Join(dir, "app.db*")); len(matches) != 0 {
 		t.Errorf("dry-run creó archivos: %v", matches)
@@ -259,14 +341,4 @@ func TestCollectOrphans(t *testing.T) {
 	if len(summary.Orphans) != 1 || summary.Orphans[0] != 999 {
 		t.Errorf("huérfanos = %v, esperado [999]", summary.Orphans)
 	}
-}
-
-// sourcePath materializa el *sql.DB de test en una ruta concreta.
-func sourcePath(t *testing.T, source *sql.DB) string {
-	t.Helper()
-	var path string
-	if err := source.QueryRow("PRAGMA database_list").Scan(new(int), new(string), &path); err != nil {
-		t.Fatalf("obtener ruta de source: %v", err)
-	}
-	return path
 }
