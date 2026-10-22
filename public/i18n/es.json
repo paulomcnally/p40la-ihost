@@ -894,8 +894,6 @@
     "reveal_desc": "Ingresá tu contraseña para ver las credenciales guardadas.",
     "password": "Contraseña",
     "password_placeholder": "Tu contraseña",
-    "webhook": "Webhook",
-    "webhook_desc": "Opcional. Se usa como respaldo si el servicio no está vinculado por selector.",
     "schedule": "Programación",
     "schedule_enabled": "Consulta automática",
     "time": "Hora",

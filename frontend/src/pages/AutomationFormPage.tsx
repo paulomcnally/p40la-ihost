@@ -48,6 +48,8 @@ export default function AutomationFormPage() {
   const { showToast } = useToast()
   usePageTitle(isEdit ? t('automation.edit') : t('automation.create'))
 
+  // `webhook_url` ya no se edita en la UI de automation: se conserva el valor
+  // existente al editar como fallback de transición (SPEC-111 REQ-018).
   const [form, setForm] = useState<FormState>(emptyForm)
   const [credentials, setCredentials] = useState<Record<string, string>>({})
   const [schema, setSchema] = useState<AutomationCredentialField[]>([])
@@ -137,10 +139,6 @@ export default function AutomationFormPage() {
     }
     if (!form.plugin_name) {
       showToast(t('automation.plugin_required'), 'error')
-      return false
-    }
-    if (form.webhook_url.trim() && !/^https?:\/\//i.test(form.webhook_url.trim())) {
-      showToast(t('automation.invalid_url'), 'error')
       return false
     }
     if (form.schedule_enabled) {
@@ -317,19 +315,6 @@ export default function AutomationFormPage() {
             ))}
           </div>
         )}
-
-        <div>
-          <label className="block text-sm font-medium mb-1">{t('automation.webhook')}</label>
-          <input
-            type="url"
-            value={form.webhook_url}
-            onChange={(e) => update('webhook_url', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
-            placeholder="https://demo.example.com/webhooks/00000000-0000-4000-8000-000000000000"
-            autoComplete="off"
-          />
-          <p className="text-xs text-text-secondary mt-1">{t('automation.webhook_desc')}</p>
-        </div>
 
         <div className="border border-border rounded-ios p-4 space-y-4">
           <label className="flex items-center justify-between gap-3 cursor-pointer">
