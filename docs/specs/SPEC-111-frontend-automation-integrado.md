@@ -47,6 +47,7 @@ Consideraciones de UI obligatorias:
 9. **REQ-009**: Todas las cadenas visibles nuevas en `frontend/public/i18n/es.json` y `frontend/public/i18n/en.json` (fuente de verdad). Sin texto hardcodeado salvo nombres propios de plugins/proveedores.
 10. **REQ-010**: Manejo de errores y estados: loading con `LoadingSpinner`, listas vacías, 409 al borrar una cuenta en uso (mensaje claro), 400/502 al consultar facturas, y toasts de éxito/error.
 11. **REQ-011**: Formularios y modales verificados en darkmode (texto/placeholders legibles) y en móvil.
+12. **REQ-018**: La UI de automation **no muestra** el campo `webhook_url` (ni en alta/edición ni en detalle). El valor existente se preserva internamente al editar como fallback de transición; no se elimina la columna, el fallback del backend ni el endpoint externo `POST /webhooks/{uuid}` del servicio.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -171,13 +172,11 @@ Campos:
 - **Etiqueta** (texto, opcional).
 - **Plugin** (`Select` del catálogo, requerido). Al cambiar, recargar schema y limpiar credenciales.
 - **Credenciales** (dinámicas): `text`/`password` según schema; requeridas si `required` y no existe valor previo.
-- **Webhook URL** (texto, opcional; validar `http(s)` en cliente).
 - **Programación**: switch habilitado, hora (`input type="time"`), frecuencia (`daily`, `every_n_days`, `weekly`, `monthly`), intervalo (solo `every_n_days`), días (semanal: checkboxes lun–dom; mensual: número 1–28).
 - En edición: credenciales secretas vacías = conservar; texto de ayuda.
 
 Validaciones cliente:
 - institución y plugin requeridos; identificador no vacío.
-- URL con `http://` o `https://` si se completa.
 - hora `HH:MM` si la programación está habilitada.
 - intervalo ≥ 1; día mensual 1–28; al menos un día si es semanal.
 
@@ -215,6 +214,7 @@ Sin cambios de runtime ni de DB. El build de Vite sigue generando estáticos; no
 - [ ] **CA-011**: Todos los inputs usan tokens del tema y se verificaron en darkmode (texto y placeholders legibles).
 - [ ] **CA-012**: `npm run build` pasa sin errores de TypeScript y las claves i18n se sirven desde `public/i18n` tras el build.
 - [ ] **CA-013**: La app corre en local sobre una copia de producción y el flujo completo (listar, crear, editar, vincular servicio, consultar facturas) funciona con datos reales.
+- [ ] **CA-014**: El formulario y el detalle de cuenta no muestran `webhook_url`; al editar una cuenta existente el valor se conserva en la DB (fallback) y no se borra.
 
 ---
 
@@ -253,3 +253,4 @@ Dependencias: SPEC-110 (backend) debe estar mergeada en esta rama. No hay depend
 |---|---|---|
 | 2026-10-21 | opencode | Creación de la spec e inicio de implementación (issue #114). |
 | 2026-10-21 | opencode | Implementación completa: tipos y cliente API, listado, formulario con credenciales dinámicas y programación, detalle con facturas/logs/reveal/sync/delete, catálogo de plugins, selector en `ServiceFormPage` y retiro de la configuración legacy. `npm run build` pasa. E2E sobre copia de producción con el export real de automation: 6 cuentas, 80 facturas, 838 logs, 5 plugins; el selector devuelve 6 opciones. Pendiente revisión visual/darkmode del usuario. |
+| 2026-10-21 | opencode | Cambio iterativo solicitado por el usuario: se retira `webhook_url` de la UI de automation (formulario y detalle). Se conserva el valor en la DB al editar como fallback de transición; el endpoint externo del servicio no se toca. |
