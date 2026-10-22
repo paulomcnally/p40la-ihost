@@ -1,7 +1,7 @@
 ---
 title: "Autos: campos opcionales y color predefinido"
 id: "SPEC-118"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 121
 # Autos: campos opcionales y color predefinido
 
 **ID**: SPEC-118  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -328,27 +328,27 @@ Sin cambios de rutas, middleware ni códigos de error existentes.
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado el formulario de alta, cuando se completa solo año, marca, modelo y color, entonces el auto se crea con `motor`, `chasis`, `vin` y `placa` vacíos y la UI no bloquea el submit.
-- [ ] CA-002: Dado un auto existente con datos en los cuatro campos, cuando se edita y se vacían, entonces se persisten como `''` y el detalle no muestra filas vacías.
-- [ ] CA-003: Dado el formulario, cuando se abre el color, entonces muestra exactamente las 16 opciones de la tabla 4.3 traducidas al idioma activo, usando el dropdown custom `Select` (no el `<select>` nativo del sistema operativo) con buscador con autofocus.
-- [ ] CA-012: Dado el buscador del color, cuando se escribe "marron" o "MARRÓN", entonces filtra las opciones a "Marrón" (búsqueda sin acentos ni mayúsculas).
-- [ ] CA-011: `frontend/scripts/check-ui-rules.cjs` pasa sin offenders y el build falla si se agrega un `<select>` nativo.
-- [ ] CA-004: Dado un request `POST /api/autos` con `color: "blanco"` o cualquier valor fuera de la paleta, entonces responde `400 invalid_request` con "el color no es válido".
-- [ ] CA-005: Dado un request con `color: "WHITE"`, entonces se guarda `white` (normalización a minúsculas y trim).
-- [ ] CA-006: Dado un request sin `brand` o sin `model` o sin `year`, entonces responde `400` con el mensaje de campo requerido correspondiente.
-- [ ] CA-007: Dado el listado y el detalle, cuando un auto tiene placa vacía, entonces no aparecen separadores `·` colgantes ni celdas vacías; el color se muestra traducido.
-- [ ] CA-008: Dada una alerta de Telegram/email de un auto sin placa, entonces el mensaje se genera sin "— " huérfano y con `—` en la celda del email.
-- [ ] CA-009: Dada la migración `0040` aplicada sobre una copia de la DB de producción, entonces "Blanco"→`white`, "GRIS"→`gray`, "Marrón"→`brown`, códigos ya canónicos intactos y valores desconocidos→`''`.
-- [ ] CA-010: Dada la migración aplicada dos veces, entonces el segundo pase no cambia ningún valor (idempotencia).
-- [ ] CA-DARK: El formulario usa tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó legibilidad de texto y placeholder del `select` en darkmode.
-- [ ] CA-BACK: La spec no crea páginas nuevas; los formularios existentes ya usan la flecha atrás del header vía `BACK_ROUTES`. No se agregan links "← Título".
+- [x] CA-001: Dado el formulario de alta, cuando se completa solo año, marca, modelo y color, entonces el auto se crea con `motor`, `chasis`, `vin` y `placa` vacíos y la UI no bloquea el submit.
+- [x] CA-002: Dado un auto existente con datos en los cuatro campos, cuando se edita y se vacían, entonces se persisten como `''` y el detalle no muestra filas vacías.
+- [x] CA-003: Dado el formulario, cuando se abre el color, entonces muestra exactamente las 16 opciones de la tabla 4.3 traducidas al idioma activo, usando el dropdown custom `Select` (no el `<select>` nativo del sistema operativo) con buscador con autofocus.
+- [x] CA-012: Dado el buscador del color, cuando se escribe "marron" o "MARRÓN", entonces filtra las opciones a "Marrón" (búsqueda sin acentos ni mayúsculas).
+- [x] CA-011: `frontend/scripts/check-ui-rules.cjs` pasa sin offenders y el build falla si se agrega un `<select>` nativo.
+- [x] CA-004: Dado un request `POST /api/autos` con `color: "blanco"` o cualquier valor fuera de la paleta, entonces responde `400 invalid_request` con "el color no es válido".
+- [x] CA-005: Dado un request con `color: "WHITE"`, entonces se guarda `white` (normalización a minúsculas y trim).
+- [x] CA-006: Dado un request sin `brand` o sin `model` o sin `year`, entonces responde `400` con el mensaje de campo requerido correspondiente.
+- [x] CA-007: Dado el listado y el detalle, cuando un auto tiene placa vacía, entonces no aparecen separadores `·` colgantes ni celdas vacías; el color se muestra traducido.
+- [x] CA-008: Dada una alerta de Telegram/email de un auto sin placa, entonces el mensaje se genera sin "— " huérfano y con `—` en la celda del email.
+- [x] CA-009: Dada la migración `0040` aplicada sobre una copia de la DB de producción, entonces "Blanco"→`white`, "GRIS"→`gray`, "Marrón"→`brown`, códigos ya canónicos intactos y valores desconocidos→`''`.
+- [x] CA-010: Dada la migración aplicada dos veces, entonces el segundo pase no cambia ningún valor (idempotencia).
+- [x] CA-DARK: El formulario usa tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó legibilidad de texto y placeholder del `select` en darkmode.
+- [x] CA-BACK: La spec no crea páginas nuevas; los formularios existentes ya usan la flecha atrás del header vía `BACK_ROUTES`. No se agregan links "← Título".
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: `go test ./...` pasa, incluido el nuevo test de migración y los tests de servicio de auto.
-- [ ] CA-NF-002: `cd frontend && npm run build` compila sin errores de TypeScript y las claves i18n nuevas se sirven desde `frontend/public/i18n/`.
-- [ ] CA-NF-003: La migración se aplica en menos de 100 ms sobre la copia de producción y no altera filas fuera de `autos.color`.
-- [ ] CA-NF-004: No se agregan dependencias a `go.mod` ni a `frontend/package.json`.
+- [x] CA-NF-001: `go test ./...` pasa, incluido el nuevo test de migración y los tests de servicio de auto.
+- [x] CA-NF-002: `cd frontend && npm run build` compila sin errores de TypeScript y las claves i18n nuevas se sirven desde `frontend/public/i18n/`.
+- [x] CA-NF-003: La migración se aplica en menos de 100 ms sobre la copia de producción y no altera filas fuera de `autos.color`.
+- [x] CA-NF-004: No se agregan dependencias a `go.mod` ni a `frontend/package.json`.
 
 ### 5.3 Testing
 
@@ -424,3 +424,4 @@ Sin cambios de rutas, middleware ni códigos de error existentes.
 | 2026-10-21 | opencode | Implementación completa: migración 0040, validación de color en backend, formulario con `select` i18n, helpers de display, fallback de alertas y tests. Validada contra copia de producción. |
 | 2026-10-21 | opencode | Corrección: el selector de color usa el componente custom `Select` (no `<select>` nativo del OS), se migra el último select nativo y se agrega guardrail de build + reglas en AGENTS/project-rules/skill. |
 | 2026-10-21 | opencode | El `Select` de color incorpora buscador con autofocus, filtrado sin mayúsculas ni acentos y textos i18n (`app.search`, `app.no_results`). |
+| 2026-10-21 | opencode | Release: merge `877196a` de `feature/SPEC-118` a `main`, label `spec/released`, issue #121 cerrado y worktree limpiado. |
