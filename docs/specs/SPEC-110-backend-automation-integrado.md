@@ -218,3 +218,4 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial: backend integrado de automation (rutas, plugins, scheduler y sync directo). |
 | 2026-10-21 | opencode | Fase 1 implementada: modelos, storage con join a `institutions`, servicios y endpoints de lectura (`/api/automation/accounts`, `?for=service`, plugins, facturas, logs) con tests y validación contra copia de producción. |
+| 2026-10-21 | opencode | Fase 2 implementada: CRUD de cuentas con validación de institución/plugin y unicidad, revelado de credenciales con contraseña, webhook/schedule por cuenta y bloqueo de borrado si hay servicios vinculados. E2E contra copia de producción (201/200/401/409/400). |

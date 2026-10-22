@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/paulomcnally/p40la-ihost/internal/db"
+	"github.com/paulomcnally/p40la-ihost/internal/models"
 )
 
 func newAutomationTestDB(t *testing.T) *AutomationStorage {
@@ -91,5 +92,52 @@ func TestAutomationStoragePlugins(t *testing.T) {
 	}
 	if len(plugins) != 1 || plugins[0].Name != "tigo.nicaragua" {
 		t.Errorf("plugins = %+v", plugins)
+	}
+}
+
+func TestAutomationStorageAccountCRUD(t *testing.T) {
+	st := newAutomationTestDB(t)
+	ctx := context.Background()
+
+	plugin := "tigo.nicaragua"
+	webhook := "http://demo.local/webhooks/demo"
+	schedule := "07:30"
+	account := &models.AutomationAccount{
+		InstitutionID:     1,
+		Identifier:        "demo-account-010",
+		Label:             "Demo",
+		PluginName:        &plugin,
+		WebhookURL:        &webhook,
+		ScheduleTime:      &schedule,
+		ScheduleEnabled:   true,
+		ScheduleFrequency: "daily",
+	}
+	created, err := st.CreateAccount(ctx, account, `{"user":"demo"}`)
+	if err != nil {
+		t.Fatalf("CreateAccount: %v", err)
+	}
+	if created.ID == 0 || created.InstitutionName != "Tigo" {
+		t.Fatalf("cuenta creada inesperada: %+v", created)
+	}
+
+	created.Label = "Demo actualizada"
+	updated, err := st.UpdateAccount(ctx, created, "")
+	if err != nil {
+		t.Fatalf("UpdateAccount: %v", err)
+	}
+	if updated.Label != "Demo actualizada" {
+		t.Errorf("label = %q", updated.Label)
+	}
+	credentials, err := st.CredentialsForAccount(ctx, created.ID)
+	if err != nil || credentials != `{"user":"demo"}` {
+		t.Errorf("credentials = %q, err = %v", credentials, err)
+	}
+
+	if _, err := st.CreateAccount(ctx, account, "{}"); err == nil {
+		t.Error("se esperaba error por identificador duplicado")
+	}
+
+	if err := st.DeleteAccount(ctx, created.ID); err != nil {
+		t.Fatalf("DeleteAccount: %v", err)
 	}
 }
