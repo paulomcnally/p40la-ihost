@@ -1,7 +1,7 @@
 ---
 title: "Unificación automation (1/4): migración de esquema y datos a tablas automation_* en app.db"
 id: "SPEC-109"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 112
 # Unificación automation (1/4): migración de esquema y datos a tablas automation_* en app.db
 
 **ID**: SPEC-109  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -262,3 +262,4 @@ Implementado y verificado en local:
 | 2026-10-21 | opencode | Creación inicial: esquema `automation_*` + comando de import offline, derivado de SPEC-108. |
 | 2026-10-21 | opencode | Implementación: migración `0039`, `cmd/import-automation`, tests y E2E sobre copias (28 facturas / 100 logs, idempotente, `integrity_check` ok, server arranca). |
 | 2026-10-21 | opencode | `automation_apps` se unifica con `institutions`: `automation_accounts.institution_id`, matching por nombre normalizado y `--institution-map` para diferencias de nombre. |
+| 2026-10-21 | opencode | Implementación completa y validada contra copia de producción (target). Queda pendiente la validación final con export de automation de producción, que se cargará antes del release. Estado: pending_release. |
