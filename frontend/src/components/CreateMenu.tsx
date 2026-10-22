@@ -7,7 +7,7 @@ export interface CreateMenuOption {
   onClick: () => void
 }
 
-export default function CreateMenu({ options }: { options: CreateMenuOption[] }) {
+export default function CreateMenu({ options, title = 'Crear' }: { options: CreateMenuOption[]; title?: string }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -26,7 +26,7 @@ export default function CreateMenu({ options }: { options: CreateMenuOption[] })
       <button
         onClick={() => setOpen(!open)}
         className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-bg transition-colors"
-        title="Crear"
+        title={title}
       >
         <Icon name="more" className="w-5 h-5" />
       </button>
