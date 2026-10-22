@@ -258,7 +258,6 @@ export default function AutomationFormPage() {
           ))}
         </div>
 
-        <div className="min-h-[480px] sm:min-h-[360px]">
         {activeTab === 'info' && (
           <div className="space-y-5">
             <div>
@@ -420,16 +419,17 @@ export default function AutomationFormPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">{t('automation.frequency')}</label>
-                      <select
+                      <Select
+                        options={[
+                          { value: 'daily', label: t('automation.frequency_daily') },
+                          { value: 'every_n_days', label: t('automation.frequency_days') },
+                          { value: 'weekly', label: t('automation.frequency_weekly') },
+                          { value: 'monthly', label: t('automation.frequency_monthly') },
+                        ]}
                         value={form.schedule_frequency}
-                        onChange={(e) => update('schedule_frequency', e.target.value)}
-                        className="w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
-                      >
-                        <option value="daily">{t('automation.frequency_daily')}</option>
-                        <option value="every_n_days">{t('automation.frequency_days')}</option>
-                        <option value="weekly">{t('automation.frequency_weekly')}</option>
-                        <option value="monthly">{t('automation.frequency_monthly')}</option>
-                      </select>
+                        onChange={(value) => update('schedule_frequency', String(value))}
+                        placeholder={t('automation.frequency')}
+                      />
                     </div>
                   </div>
 
@@ -492,7 +492,6 @@ export default function AutomationFormPage() {
           </div>
         )}
 
-        </div>
 
         <div className="pt-4 border-t border-border">
           <div className="flex justify-end gap-3">
