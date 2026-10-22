@@ -16,7 +16,8 @@
     "confirm": "¿Estás seguro?",
     "search": "Buscar",
     "filter": "Filtrar",
-    "back": "Volver"
+    "back": "Volver",
+    "actions": "Acciones"
   },
   "menu": {
     "home": "Casa",

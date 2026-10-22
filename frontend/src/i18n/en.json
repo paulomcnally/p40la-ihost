@@ -16,7 +16,8 @@
     "confirm": "Are you sure?",
     "search": "Search",
     "filter": "Filter",
-    "back": "Back"
+    "back": "Back",
+    "actions": "Actions"
   },
   "menu": {
     "home": "Home",

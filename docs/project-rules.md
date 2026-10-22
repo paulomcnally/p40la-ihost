@@ -106,6 +106,13 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - En páginas de listado raíz (`/home`, `/services`, `/deudas`, `/autos`, `/settings`, etc.) el header sigue mostrando la hamburguesa en móvil: no agregar flecha atrás.
 - Si se omite esta regla en una spec con páginas de detalle, la spec no pasa a `pending_release`.
 
+### 4.5 Etiqueta de acciones de edición (obligatorio)
+
+- **Toda acción de edición se rotula "Editar"**, sin importar la entidad ni la página: menús de 3 puntos, dropdowns, headers y botones usan la clave i18n genérica `app.edit` (`Editar` en `es`, `Edit` en `en`).
+- **Prohibido** rotular acciones como "Editar servicio", "Editar deuda", "Editar casa" o "Editar [página]". Esas etiquetas confunden la acción con el título de la página y rompen la consistencia entre módulos.
+- Los **títulos de formularios** sí pueden ser descriptivos ("Editar servicio", "Editar deuda") usando su clave específica; la regla aplica solo a etiquetas de acciones.
+- Precedente: SPEC-114 usó "Editar servicio" en el menú del detalle de servicio; SPEC-115 lo corrige a "Editar" y documenta el estándar.
+
 ---
 
 ## 5. Convenciones de Código Go
