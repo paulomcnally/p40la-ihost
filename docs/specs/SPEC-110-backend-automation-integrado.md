@@ -1,7 +1,7 @@
 ---
 title: "Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo)"
 id: "SPEC-110"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 113
 # Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo)
 
 **ID**: SPEC-110  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -49,6 +49,7 @@ Al terminar, la app principal podrá listar cuentas de automation por instituci�
 9. **REQ-009**: Migrar las claves `automation_base_url` y `automation_api_key` a obsoletas: se dejan de leer y se documenta su eliminación del frontend en SPEC-111.
 10. **REQ-010**: Tests unitarios de storage y servicios, y de integración del sync con un plugin de prueba. La validación con datos reales se corre contra una copia de la DB de producción (regla de AGENTS.md).
 11. **REQ-017**: El módulo privado de plugins requiere Go 1.26. Actualizar `go.mod` (`go 1.26.0`) y el Dockerfile a `golang:1.26-alpine`; el runtime del iHost no cambia (binario estático).
+11b. **REQ-018**: Los endpoints de alta/edición de cuenta aceptan `service_id`: un ID > 0 vincula esa cuenta al servicio (limpiando vínculos previos de la misma cuenta), `0` desvincula y el campo ausente no modifica nada. La relación sigue viviendo en `services.automation_account_id`; no hay migración de esquema y el sync existente no cambia.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -109,6 +110,11 @@ Al terminar, la app principal podrá listar cuentas de automation por instituci�
 - **Contexto**: durante la transición, el p40la viejo puede seguir llamando a automation.
 - **Decisión**: mantener el endpoint en el proyecto viejo hasta SPEC-112; el nuevo backend de p40la no lo necesita.
 - **Consecuencias**: convivencia breve sin romper el sync actual.
+
+**ADR-006**: El vínculo cuenta → servicio se administra desde automation.
+- **Contexto**: el usuario agrega primero el servicio y luego la automatización; el selector en el formulario de servicio invierte ese flujo.
+- **Decisión**: la UI de automation elige el servicio y el backend escribe `services.automation_account_id` a partir de `service_id`. No se agrega una columna nueva.
+- **Consecuencias**: el formulario de servicio deja de ofrecer el selector (solo preserva el valor existente al editar); la relación sigue siendo una cuenta → un servicio y el sync no cambia.
 
 **ADR-005**: El sync interno no usa webhooks HTTP.
 - **Contexto**: al estar todo en el mismo proceso, el POST a `/webhooks/{uuid}` es un salto innecesario; además `automation_webhook_logs` ya existe para la historia.
@@ -178,6 +184,7 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 - [ ] CA-006: `POST /api/services/{id}/sync` funciona sin `automation_base_url`/`automation_api_key`.
 - [ ] CA-007: `/sincronizar` y `/sincronizar_servicio` usan el servicio directo.
 - [ ] CA-008: No se loguean credenciales ni claves.
+- [ ] CA-009: `service_id` en create/update vincula/desvincula el servicio correctamente (0 desvincula, ausente preserva) y el detalle muestra el vínculo resultante.
 - [ ] CA-DARK: (aplica a SPEC-111; acá no hay UI nueva).
 
 ### 5.2 No funcionales
@@ -226,3 +233,5 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 | 2026-10-21 | opencode | Fase 1 implementada: modelos, storage con join a `institutions`, servicios y endpoints de lectura (`/api/automation/accounts`, `?for=service`, plugins, facturas, logs) con tests y validación contra copia de producción. |
 | 2026-10-21 | opencode | Fase 2 implementada: CRUD de cuentas con validación de institución/plugin y unicidad, revelado de credenciales con contraseña, webhook/schedule por cuenta y bloqueo de borrado si hay servicios vinculados. E2E contra copia de producción (201/200/401/409/400). |
 | 2026-10-21 | opencode | Fase 3 implementada: registry del módulo privado de plugins (repo aparte), catálogo de plugins, fetch y persistencia de facturas, sync directo a `WebhookService.UpsertBill` (sin webhook HTTP interno), scheduler en proceso y bot/endpoint de sync usando `AutomationSyncer`. Go 1.26 y Dockerfile actualizados por requisito del módulo. E2E: 5 plugins registrados y scheduler iniciado sobre copia de producción. Se agregaron `GET /api/automation/plugins/{name}/schema` y `POST /api/automation/accounts/{id}/bills:fetch`. |
+| 2026-10-21 | opencode | Backend completo y validado: CRUD, plugins, sync directo, scheduler, bot y endpoints auxiliares. `go test ./...` y build OK. Pasa a pending_release a la espera del release conjunto 109–112. |
+| 2026-10-21 | opencode | Cambio iterativo: create/update de cuenta aceptan `service_id` para vincular/desvincular el servicio desde automation, sin cambiar el esquema ni el sync. |
