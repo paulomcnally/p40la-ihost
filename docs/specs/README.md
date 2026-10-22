@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 114 |
+| **Total de specs** | 116 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 114 🟢 |
+| **Released** | 116 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-115 |
+| **Último ID usado** | SPEC-117 |
 
 ---
 
@@ -135,6 +135,8 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-113 | Estandarización de formato y moneda en todos los montos del módulo de servicios y facturas | released | 2026-10-21 | opencode |
 | SPEC-114 | Opción Editar servicio en el menú de acciones del detalle de servicio | released | 2026-10-21 | opencode |
 | SPEC-115 | Menú de acciones Editar en el detalle de deuda y estandarización de la etiqueta Editar | released | 2026-10-21 | opencode |
+| SPEC-116 | Instituciones: página de vista y formulario con tabs Información y Analizadores | released | 2026-10-21 | opencode |
+| SPEC-117 | Menú de acciones (3 puntos) en el detalle del auto con opción Editar | released | 2026-10-21 | opencode |
 
 ---
 
@@ -204,4 +206,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-10-21 — SPEC-115 released (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
+*Última actualización de este tracker: 2026-10-21 — SPEC-116 released (página de vista y tabs de instituciones); SPEC-117 released (menú Editar en el detalle del auto); SPEC-115 released (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
