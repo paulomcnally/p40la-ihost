@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react'
 import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
 import type { Service, ServiceCycle } from '../types'
+import type { ResolvedCurrency } from '../utils/currency'
+import { UNKNOWN_CURRENCY_SYMBOL } from '../utils/currency'
 
 interface RenewServiceModalProps {
   service: Service
+  currency?: ResolvedCurrency
   onSaved: () => void
   onCancel: () => void
 }
@@ -28,7 +31,7 @@ function addYears(dateStr: string, years: number): string {
   return fmtDate(d)
 }
 
-export default function RenewServiceModal({ service, onSaved, onCancel }: RenewServiceModalProps) {
+export default function RenewServiceModal({ service, currency, onSaved, onCancel }: RenewServiceModalProps) {
   const { t } = useI18nStore()
   const [cycles, setCycles] = useState<ServiceCycle[]>([])
   const [startDate, setStartDate] = useState('')
@@ -52,6 +55,10 @@ export default function RenewServiceModal({ service, onSaved, onCancel }: RenewS
   }, [service.end_date, endDate])
 
   const currentCycle = cycles.length > 0 ? cycles[cycles.length - 1] : null
+  const currencyLabel = currency?.symbol
+    ? currency.code ? `${currency.symbol} · ${currency.code}` : currency.symbol
+    : currency?.code
+  const amountLabel = `${t('bills.renew_amount')} (${currencyLabel || UNKNOWN_CURRENCY_SYMBOL})`
   const currentPeriod =
     currentCycle?.start_date && currentCycle?.end_date
       ? `${currentCycle.start_date} → ${currentCycle.end_date}`
@@ -117,7 +124,7 @@ export default function RenewServiceModal({ service, onSaved, onCancel }: RenewS
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">{t('bills.renew_amount')}</label>
+              <label className="block text-sm font-medium mb-1">{amountLabel}</label>
               <input
                 type="number"
                 value={amount}
