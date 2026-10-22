@@ -90,7 +90,7 @@ Esta spec es una **evaluación técnica y de decisión** (no implementa código)
 | `settings` | — | KV de automation (`webhook_api_key`, `webhook_enabled`, `language`) | 🟡 Convive con `system_settings`; unificar en `system_settings` |
 | `bills` | facturas de servicios | facturas obtenidas del proveedor | 🔴 Mismo nombre, semántica distinta → renombrar a `automation_bills` |
 | `plugins` | — | catálogo de plugins | 🟢 Sin colisión si se mantiene nombre |
-| `apps` / `accounts` | — | apps y cuentas de proveedores | 🟢 Sin colisión, pero conviene prefijo `automation_` |
+| `apps` / `accounts` | `institutions` | apps y cuentas de proveedores | 🟡 `apps` **se unifica con `institutions`** (mismo concepto); `accounts` → `automation_accounts` |
 | `webhook_logs` | — | logs de entrega | 🟢 Sin colisión |
 | `schema_migrations` | `0001`–`0038` | `0001`–`0006` | 🔴 Numeración duplicada → renumerar/renombrar al migrar |
 
@@ -113,10 +113,10 @@ Esta spec es una **evaluación técnica y de decisión** (no implementa código)
 - **Decisión**: absorber los paquetes de automation (`apps`, `accounts`, `plugins`, `bills`, `webhook`, `scheduler`) dentro de `p40la-ihost`, con prefijo `automation_` en tablas nuevas y rutas `/automation/*` en el backend y el frontend.
 - **Consecuencias**: Positivo: un solo despliegue, una sola sesión, menos RAM, dropdown natural contra la tabla de cuentas. Negativo: migración de datos y de UI, y el build pasa a depender del módulo privado de plugins.
 
-**ADR-002**: Las tablas de automation se renombran con prefijo `automation_` para evitar colisiones.
-- **Contexto**: `bills`, `users` y `settings` ya existen en `p40la-ihost` con otro significado.
-- **Decisión**: `apps` → `automation_apps`, `accounts` → `automation_accounts`, `plugins` → `automation_plugins`, `bills` → `automation_bills`, `webhook_logs` → `automation_webhook_logs`; `settings` de automation se fusiona en `system_settings`; `users` de automation se descarta (se usa el login de p40la).
-- **Consecuencias**: migración explícita tabla por tabla; las consultas de automation cambian de nombre, pero el resto de p40la no se toca.
+**ADR-002**: `apps` se unifica con `institutions`; el resto de tablas de automation usa prefijo `automation_`.
+- **Contexto**: `bills`, `users` y `settings` ya existen en `p40la-ihost` con otro significado; `apps` es un catálogo de proveedores que duplica `institutions`.
+- **Decisión**: `apps` **no se migra como tabla**: cada app se resuelve contra `institutions` (match por nombre exacto y luego por nombre normalizado, con mapa de override para casos como `DISNORTE-DISSUR Nicaragua` ↔ `Unión Fenosa`). `accounts` → `automation_accounts` con `institution_id` (FK `institutions`), `plugins` → `automation_plugins`, `bills` → `automation_bills`, `webhook_logs` → `automation_webhook_logs`; `settings` de automation se fusiona en `system_settings`; `users` de automation se descarta (se usa el login de p40la).
+- **Consecuencias**: un solo catálogo de proveedores; el selector de cuenta muestra institución + cuenta. Riesgo de duplicados por nombres distintos, mitigado con normalización + mapa de override y reporte de instituciones creadas.
 
 **ADR-003**: El vínculo servicio ↔ cuenta se valida contra la tabla real, no es un número tipeado.
 - **Contexto**: `services.automation_account_id` es un entero libre (SPEC-092) que el usuario debe conocer de memoria.
@@ -129,37 +129,6 @@ Esta spec es una **evaluación técnica y de decisión** (no implementa código)
 - **Consecuencias**: menos procesos; hay que cuidar que la ejecución no bloquee el arranque ni se solape con el scheduler de facturación.
 
 ## 4. Diseño Técnico
-
-### 4.6 Prototipo de migración (resultado)
-
-Se ejecutó la migración propuesta sobre **copias** de las dos DB (nunca sobre producción):
-
-| Paso | Resultado |
-|---|---|
-| Backup con `sqlite3 .backup` de `p40la` y `automation` | ✅ |
-| Creación de `automation_apps`, `automation_plugins`, `automation_accounts`, `automation_bills`, `automation_webhook_logs` | ✅ |
-| Copia de datos preservando IDs | ✅ 5 apps, 5 cuentas, 5 plugins, 28 facturas, 100 logs |
-| Migración de settings (`webhook_enabled`, `language`) sin pisar `webhook_api_key` de p40la | ✅ |
-| `PRAGMA integrity_check` | `ok` |
-| `PRAGMA foreign_key_check` | sin errores |
-| Consulta del selector (app + identificador + plugin) | ✅ 5 opciones con etiqueta legible |
-| Servicio con ID inválido (`999`) | Se degrada a "Sin cuenta"; **requiere validación en backend** |
-
-**Hallazgo crítico del prototipo**: copiar solo `app.db` pierde el contenido del `-wal`. En la primera prueba la DB de automation tenía 6 facturas y 52 logs sin checkpointear; el backup plano los perdió. Toda migración y backup DEBE usar `sqlite3 .backup` (o copiar `app.db` + `app.db-wal` + `app.db-shm` con los procesos detenidos). Esto se incorpora como paso obligatorio del plan.
-
-### 4.7 Estrategia de entrega en varias specs
-
-Para no hacer un cambio gigantesco, la unificación se parte en specs secuenciales. **SPEC-108 queda como spec paraguas** (evaluación y plan) y las implementaciones se crean al iniciar cada fase, cada una en su worktree:
-
-| Spec propuesta | Alcance | Depende de |
-|---|---|---|
-| **SPEC-109** | **Esquema y datos**: migración `0039+` con tablas `automation_*`, copia de datos, settings, índice de `services.automation_account_id`, script de verificación y rollback. Sin UI ni rutas nuevas. | SPEC-108 |
-| **SPEC-110** | **Backend unificado**: mover `apps/accounts/plugins/bills/webhook` a `internal/automation`, rutas `/api/automation/*` con la sesión de p40la, scheduler en proceso y eliminación gradual de `AutomationClient` / `automation_base_url` / `automation_api_key`. | SPEC-109 |
-| **SPEC-111** | **Frontend unificado**: páginas de automation dentro de la SPA, selector de cuentas en `ServiceFormPage`, retiro del campo numérico, `BACK_ROUTES` y darkmode. | SPEC-110 |
-| **SPEC-112** | **Despliegue único y retiro**: Dockerfile único con plugins privados, multi-arch, puerto 8088, volumen `p40la`, apagado del contenedor `p40la-ihost-automation` y archivo del repo viejo. | SPEC-110/111 |
-
-Cada spec de implementación se crea en su propio worktree y se libera por separado. La DB vieja de automation se conserva como respaldo hasta completar SPEC-112.
-
 
 ### 4.1 Diagrama de arquitectura (estado objetivo)
 
@@ -196,8 +165,8 @@ Cada spec de implementación se crea en su propio worktree y se libera por separ
 - **Ubicación propuesta**: `internal/automation/{api,services,storage,models}`.
 
 #### 4.2.2 Frontend
-- **Responsabilidad**: mover las pantallas de automation (Apps, detalle de cuenta/facturas, Plugins, Settings de webhooks) a la SPA de p40la.
-- **Interfaz**: rutas `/automation`, `/automation/apps/:appId`, `/automation/apps/:appId/accounts/:accountId/bills`, `/automation/plugins`.
+- **Responsabilidad**: mover las pantallas de automation (cuentas por institución, detalle de cuenta/facturas, Plugins, Settings de webhooks) a la SPA de p40la.
+- **Interfaz**: rutas `/automation`, `/automation/accounts`, `/automation/accounts/:accountId/bills`, `/automation/plugins`.
 - **Notas**: registrar las rutas de detalle en `BACK_ROUTES` (SPEC-063). Inputs con tokens del tema y verificación en darkmode.
 
 #### 4.2.3 Scheduler
@@ -207,26 +176,27 @@ Cada spec de implementación se crea en su propio worktree y se libera por separ
 
 #### 4.2.4 Selector de cuenta en Servicio
 - **Responsabilidad**: reemplazar el campo `automation_account_id` numérico por un `<select>`.
-- **Interfaz**: opciones `{id, label}` donde el label combina app + identificador de cuenta + plugin.
+- **Interfaz**: opciones `{id, label}` donde el label combina institución + identificador de cuenta + plugin.
 - **Validación**: backend verifica que la cuenta exista antes de guardar.
 
 ### 4.3 Modelo de datos (estado objetivo)
 
 ```
-automation_apps
-- id, name, created_at, updated_at
+institutions (existente: id, name UNIQUE, category_id)
 
 automation_accounts
-- id, app_id (FK automation_apps), identifier, label, credentials (JSON), plugin_name, created_at, updated_at
+- id, institution_id (FK institutions), identifier, label, credentials (JSON),
+  plugin_name, webhook_url, schedule_*, last_run_at, created_at, updated_at
 
 automation_plugins
 - id, name, version, source, status, created_at, updated_at
 
 automation_bills
-- id, account_id (FK automation_accounts), period, amount, due_date, raw (JSON), created_at
+- id, account_id (FK automation_accounts), plugin_name, plugin_version, source,
+  status, error, raw (JSON), fetched_at, created_at
 
 automation_webhook_logs
-- id, account_id, status, http_status, payload, response, created_at
+- id, account_id, webhook_url, status, payload, response, ran_at, http_status
 
 services
 - automation_account_id -> FK automation_accounts(id) NULL  (mismo nombre, semántica nueva)
@@ -236,8 +206,8 @@ Los settings de automation (`webhook_api_key`, `webhook_enabled`, `language`) se
 
 ### 4.4 APIs / Contratos
 
-- `GET /api/automation/accounts?for=service` → `[{id, label, app_name, plugin_name}]` para poblar el selector.
-- `GET /api/automation/apps`, `GET /api/automation/apps/{id}/accounts`, `GET /api/automation/accounts/{id}/bills`.
+- `GET /api/automation/accounts?for=service` → `[{id, label, institution_name, plugin_name}]` para poblar el selector.
+- `GET /api/automation/accounts`, `GET /api/automation/accounts/{id}/bills`; las cuentas se agrupan por institución (no hay endpoint de apps).
 - `GET/PUT /api/automation/settings` (webhooks) usando la sesión de p40la.
 - Se **eliminan** `GET/PUT /api/settings/webhook` de automation y el endpoint `webhook:run` (ya no hay llamada server-to-server).
 - Se mantiene `POST /webhooks/{uuid}` de p40la para clientes externos (SPEC-069).
@@ -246,6 +216,36 @@ Los settings de automation (`webhook_api_key`, `webhook_enabled`, `language`) se
 
 - **Internas**: `internal/api`, `internal/services`, `internal/storage`, `internal/models`, `cmd/server`, `frontend/src`, `migrations/`.
 - **Externas**: `github.com/paulomcnally/p40la-ihost-automation-plugins` (privado), `modernc.org/sqlite`, `golang.org/x/crypto`, `go-telegram/bot` (ya presente). Sin dependencias nuevas.
+
+### 4.6 Prototipo de migración (resultado)
+
+Se ejecutó la migración propuesta sobre **copias** de las dos DB (nunca sobre producción):
+
+| Paso | Resultado |
+|---|---|
+| Backup con `sqlite3 .backup` de `p40la` y `automation` | ✅ |
+| Creación de `automation_plugins`, `automation_accounts`, `automation_bills`, `automation_webhook_logs` (sin `automation_apps`: se reutiliza `institutions`) | ✅ |
+| Copia de datos preservando IDs | ✅ 5 proveedores, 5 cuentas, 5 plugins, 28 facturas, 100 logs |
+| Migración de settings (`webhook_enabled`, `language`) sin pisar `webhook_api_key` de p40la | ✅ |
+| `PRAGMA integrity_check` | `ok` |
+| `PRAGMA foreign_key_check` | sin errores |
+| Consulta del selector (institución + identificador + plugin) | ✅ 5 opciones con etiqueta legible |
+| Servicio con ID inválido (`999`) | Se degrada a "Sin cuenta"; **requiere validación en backend** |
+
+**Hallazgo crítico del prototipo**: copiar solo `app.db` pierde el contenido del `-wal`. En la primera prueba la DB de automation tenía 6 facturas y 52 logs sin checkpointear; el backup plano los perdió. Toda migración y backup DEBE usar `sqlite3 .backup` (o copiar `app.db` + `app.db-wal` + `app.db-shm` con los procesos detenidos). Esto se incorpora como paso obligatorio del plan.
+
+### 4.7 Estrategia de entrega en varias specs
+
+Para no hacer un cambio gigantesco, la unificación se parte en specs secuenciales. **SPEC-108 queda como spec paraguas** (evaluación y plan) y las implementaciones se crean al iniciar cada fase, cada una en su worktree:
+
+| Spec propuesta | Alcance | Depende de |
+|---|---|---|
+| **SPEC-109** | **Esquema y datos**: migración `0039+` con tablas `automation_*`, reutilización de `institutions` para los proveedores, copia de datos, settings, índice de `services.automation_account_id`, script de verificación y rollback. Sin UI ni rutas nuevas. | SPEC-108 |
+| **SPEC-110** | **Backend unificado**: mover `accounts/plugins/bills/webhook` a `internal/automation`, rutas `/api/automation/*` con la sesión de p40la, scheduler en proceso y eliminación gradual de `AutomationClient` / `automation_base_url` / `automation_api_key`. | SPEC-109 |
+| **SPEC-111** | **Frontend unificado**: páginas de automation dentro de la SPA, selector de cuentas en `ServiceFormPage`, retiro del campo numérico, `BACK_ROUTES` y darkmode. | SPEC-110 |
+| **SPEC-112** | **Despliegue único y retiro**: Dockerfile único con plugins privados, multi-arch, puerto 8088, volumen `p40la`, apagado del contenedor `p40la-ihost-automation` y archivo del repo viejo. | SPEC-110/111 |
+
+Cada spec de implementación se crea en su propio worktree y se libera por separado. La DB vieja de automation se conserva como respaldo hasta completar SPEC-112.
 
 ## 5. Criterios de Aceptación
 
@@ -303,6 +303,7 @@ Los settings de automation (`webhook_api_key`, `webhook_enabled`, `language`) se
 | Scheduler único bloquea el arranque o se solapa | Media | Medio | Reutilizar el patrón de schedulers de p40la; ejecutar jobs en goroutines con timeout |
 | Crecimiento de `automation_webhook_logs` | Media | Bajo | Retención/rotación por antigüedad o tamaño (REQ-015) |
 | Divergencia de specs entre los dos repos | Alta | Bajo | Esta spec absorbe el seguimiento; el repo viejo queda congelado |
+| Nombres de proveedor distintos entre `apps` e `institutions` (`Unión Fenosa` vs `DISNORTE-DISSUR Nicaragua`) | Alta | Medio | Normalización de nombres + mapa de override + reporte de instituciones creadas para revisión manual |
 
 ## 8. Notas y Referencias
 
@@ -321,3 +322,4 @@ Los settings de automation (`webhook_api_key`, `webhook_enabled`, `language`) se
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial: evaluación de unificación de `p40la-ihost-automation` dentro de `p40la-ihost` para eliminar el ID manual de cuenta y las dos DB. |
 | 2026-10-21 | opencode | Prototipo de migración ejecutado sobre copias: tablas `automation_*`, 28 facturas y 100 logs preservados, `integrity_check` ok. Se documentó la pérdida de datos si se copia la DB sin el `-wal` y se definió la entrega en SPEC-109…SPEC-112. |
+| 2026-10-21 | opencode | `automation_apps` se unifica con `institutions`: `automation_accounts.institution_id`, matching por nombre normalizado y mapa de override para proveedores con nombres distintos. |
