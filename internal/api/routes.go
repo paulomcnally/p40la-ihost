@@ -102,10 +102,12 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("DELETE /api/automation/accounts/{id}", authMiddleware(http.HandlerFunc(handler.automation.DeleteAccount)))
 	mux.Handle("POST /api/automation/accounts/{id}/credentials:reveal", authMiddleware(http.HandlerFunc(handler.automation.RevealCredentials)))
 	mux.Handle("GET /api/automation/accounts/{id}/bills", authMiddleware(http.HandlerFunc(handler.automation.ListBills)))
+	mux.Handle("POST /api/automation/accounts/{id}/bills:fetch", authMiddleware(http.HandlerFunc(handler.automation.FetchBills)))
 	mux.Handle("GET /api/automation/accounts/{id}/webhook", authMiddleware(http.HandlerFunc(handler.automation.GetAccountWebhook)))
 	mux.Handle("PUT /api/automation/accounts/{id}/webhook", authMiddleware(http.HandlerFunc(handler.automation.UpdateAccountWebhook)))
 	mux.Handle("GET /api/automation/accounts/{id}/webhook/logs", authMiddleware(http.HandlerFunc(handler.automation.ListWebhookLogs)))
 	mux.Handle("GET /api/automation/plugins", authMiddleware(http.HandlerFunc(handler.automation.ListPlugins)))
+	mux.Handle("GET /api/automation/plugins/{name}/schema", authMiddleware(http.HandlerFunc(handler.automation.GetPluginSchema)))
 
 	// APIs de instituciones
 	mux.Handle("GET /api/institutions", authMiddleware(http.HandlerFunc(handler.institution.ListInstitutions)))
