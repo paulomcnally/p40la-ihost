@@ -1,7 +1,7 @@
 ---
 title: "Despliegue único de automation y plan de importación del export JSON"
 id: "SPEC-112"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 115
 # Despliegue único de automation y plan de importación del export JSON
 
 **ID**: SPEC-112  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -266,3 +266,4 @@ Dependencias: SPEC-109 (importador), SPEC-110/111 (app unificada). Sin dependenc
 |---|---|---|
 | 2026-10-21 | opencode | Creación de la spec e inicio de implementación (issue #115). |
 | 2026-10-21 | opencode | Implementado `--from-json` (materialización a SQLite temporal, validación de app/format_version/tablas, limpieza, tests sintéticos). Validado con el export real sobre copia de producción: 6 cuentas, 80 facturas, 838 logs, 5 plugins, 4 instituciones reutilizadas + 1 mapeada, 0 creadas, `integrity_check` y `--verify` OK. Dockerfile con secreto `gh_token`, compose con volumen externo `p40la`, workflow con `P40LA_PLUGINS_TOKEN` y runbook `docs/deployment/automation-import.md`. `docker compose config` OK; el build de imagen no se pudo ejecutar por timeout de DNS contra `registry-1.docker.io`. |
+| 2026-10-21 | opencode | Release aprobado por el usuario. Import validado con el export real sobre copia de producción. Código mergeado a `main`; publicación de la imagen 0.5.0 pendiente de configurar `P40LA_PLUGINS_TOKEN` en GitHub Actions. Estado: released. |

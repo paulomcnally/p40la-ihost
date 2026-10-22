@@ -1,7 +1,7 @@
 ---
 title: "Frontend unificado de automation y selector de cuentas"
 id: "SPEC-111"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 114
 # Frontend unificado de automation y selector de cuentas
 
 **ID**: SPEC-111  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -275,3 +275,4 @@ Dependencias: SPEC-110 (backend) debe estar mergeada en esta rama. No hay depend
 | 2026-10-21 | opencode | Corrección: el selector de frecuencia usa el componente `Select` del repo (no el `<select>` nativo) y se elimina la altura mínima fija para no afectar el layout móvil; la transición del grid acompaña el cambio de altura. |
 | 2026-10-21 | opencode | Cambio iterativo: la tab activa del formulario se refleja en `?tab=` (info/plugin/frequency) para links compartibles, tanto en alta como en edición. |
 | 2026-10-21 | opencode | Cambio iterativo: el servicio destino se elige desde la cuenta de automation (`service_id`); se retira el selector del formulario de servicio, preservando el vínculo existente al editar. |
+| 2026-10-21 | opencode | Pruebas manuales del usuario satisfactorias («Lo veo bien, estamos listos»). Release aprobado; merge de `feature/SPEC-112` a `main`. Estado: released. |
