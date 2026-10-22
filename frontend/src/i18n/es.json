@@ -946,8 +946,10 @@
     "tab_plugin": "Plugin",
     "tab_schedule": "Frecuencia",
     "identifier_required": "Ingresá el identificador.",
-    "required_hint": "Completá los campos requeridos para guardar.",
     "no_credentials": "Este plugin no requiere credenciales.",
-    "select_plugin_first": "Elegí un plugin para configurar sus credenciales."
+    "select_plugin_first": "Elegí un plugin para configurar sus credenciales.",
+    "schedule_optional_desc": "Opcional · Consulta esta cuenta de forma periódica.",
+    "schedule_manual_hint": "Podés consultar esta cuenta manualmente cuando quieras.",
+    "missing_prefix": "Falta:"
   }
 }
