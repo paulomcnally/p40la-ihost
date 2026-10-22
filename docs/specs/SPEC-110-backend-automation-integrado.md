@@ -1,7 +1,7 @@
 ---
 title: "Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo)"
 id: "SPEC-110"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 113
 # Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo)
 
 **ID**: SPEC-110  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -238,3 +238,4 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 | 2026-10-21 | opencode | Backend completo y validado: CRUD, plugins, sync directo, scheduler, bot y endpoints auxiliares. `go test ./...` y build OK. Pasa a pending_release a la espera del release conjunto 109–112. |
 | 2026-10-21 | opencode | Cambio iterativo: create/update de cuenta aceptan `service_id` para vincular/desvincular el servicio desde automation, sin cambiar el esquema ni el sync. |
 | 2026-10-21 | opencode | Corrección: el sync interno deja de depender de `webhook_enabled`; la flag solo gatea el endpoint externo. |
+| 2026-10-21 | opencode | Backend validado y aprobado por el usuario. Release aprobado; merge de `feature/SPEC-112` a `main`. Estado: released. |

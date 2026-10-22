@@ -1,7 +1,7 @@
 ---
 title: "Unificación automation (1/4): migración de esquema y datos a tablas automation_* en app.db"
 id: "SPEC-109"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 112
 # Unificación automation (1/4): migración de esquema y datos a tablas automation_* en app.db
 
 **ID**: SPEC-109  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -264,3 +264,4 @@ Implementado y verificado en local:
 | 2026-10-21 | opencode | `automation_apps` se unifica con `institutions`: `automation_accounts.institution_id`, matching por nombre normalizado y `--institution-map` para diferencias de nombre. |
 | 2026-10-21 | opencode | Implementación completa y validada contra copia de producción (target). Queda pendiente la validación final con export de automation de producción, que se cargará antes del release. Estado: pending_release. |
 | 2026-10-21 | opencode | Reglas estrictas de datos privados (AGENTS.md, project-rules §8) y sanitización de fixtures/specs con PII real (nombres, cédula, teléfonos, facturas y claves). |
+| 2026-10-21 | opencode | Validación final con el export real de producción completada. Pruebas del usuario satisfactorias. Release aprobado; merge de `feature/SPEC-112` a `main`. Estado: released. |
