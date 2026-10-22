@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 113 |
-| **En draft** | 0 🟡 |
+| **Total de specs** | 114 |
+| **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 113 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-114 |
+| **Último ID usado** | SPEC-117 |
 
 ---
 
@@ -134,6 +134,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-112 | Unificación automation (4/4): despliegue único e importación del export JSON | released | 2026-10-21 | opencode |
 | SPEC-113 | Estandarización de formato y moneda en todos los montos del módulo de servicios y facturas | released | 2026-10-21 | opencode |
 | SPEC-114 | Opción Editar servicio en el menú de acciones del detalle de servicio | released | 2026-10-21 | opencode |
+| SPEC-117 | Menú de acciones (3 puntos) en el detalle del auto con opción Editar | draft | 2026-10-21 | opencode |
 
 ---
 
@@ -203,4 +204,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-10-21 — SPEC-108 a SPEC-114 released (automation, estandarización de moneda y edición de servicio).*
+*Última actualización de este tracker: 2026-10-21 — SPEC-117 creada en draft (menú Editar en el detalle del auto); SPEC-108 a SPEC-114 released (automation, estandarización de moneda y edición de servicio).*
