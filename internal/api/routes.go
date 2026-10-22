@@ -94,6 +94,13 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("POST /api/services/{service_id}/bills/upload", authMiddleware(http.HandlerFunc(handler.document.UploadAndAnalyze)))
 	mux.Handle("POST /api/services/{service_id}/bills/from-extracted", authMiddleware(http.HandlerFunc(handler.document.CreateBillFromExtracted)))
 
+	// APIs de automation unificada (SPEC-110)
+	mux.Handle("GET /api/automation/accounts", authMiddleware(http.HandlerFunc(handler.automation.ListAccounts)))
+	mux.Handle("GET /api/automation/accounts/{id}", authMiddleware(http.HandlerFunc(handler.automation.GetAccount)))
+	mux.Handle("GET /api/automation/accounts/{id}/bills", authMiddleware(http.HandlerFunc(handler.automation.ListBills)))
+	mux.Handle("GET /api/automation/accounts/{id}/webhook/logs", authMiddleware(http.HandlerFunc(handler.automation.ListWebhookLogs)))
+	mux.Handle("GET /api/automation/plugins", authMiddleware(http.HandlerFunc(handler.automation.ListPlugins)))
+
 	// APIs de instituciones
 	mux.Handle("GET /api/institutions", authMiddleware(http.HandlerFunc(handler.institution.ListInstitutions)))
 	mux.Handle("GET /api/institutions/{id}", authMiddleware(http.HandlerFunc(handler.institution.GetInstitution)))
