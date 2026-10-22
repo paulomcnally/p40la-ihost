@@ -98,6 +98,7 @@ func main() {
 	assignmentStorage := storage.NewAssignmentStorage(database)
 	budgetTransactionStorage := storage.NewTransactionStorage(database)
 	transferStorage := storage.NewTransferStorage(database)
+	automationStorage := storage.NewAutomationStorage(database)
 
 	authService := services.NewAuthService(userStorage, settingsStorage, cfg)
 	appSettingsService := services.NewAppSettingsService(settingsStorage)
@@ -126,6 +127,7 @@ func main() {
 	monthClosingService := services.NewMonthClosingService(monthClosingStorage)
 	childSupportConfigService := services.NewChildSupportConfigService(childSupportConfigStorage, childStorage, pensionCategoryStorage)
 	automationClient := services.NewAutomationClient(systemSettingsService)
+	automationService := services.NewAutomationService(automationStorage)
 	// Servicios del módulo de presupuesto (SPEC-093). Se crean antes del bot de
 	// Telegram porque /budget_transaction (SPEC-097) los inyecta.
 	categoryGroupService := services.NewCategoryGroupService(categoryGroupStorage, categoryStorage)
@@ -203,8 +205,9 @@ func main() {
 	debtHandlers := api.NewDebtHandlers(debtService)
 	webhookHandlers := api.NewWebhookHandlers(webhookService, serviceService)
 	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService, transferService)
+	automationHandlers := api.NewAutomationHandlers(automationService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers, budgetHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers, budgetHandlers, automationHandlers)
 
 	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
 	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {

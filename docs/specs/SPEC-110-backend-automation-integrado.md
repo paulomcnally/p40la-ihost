@@ -1,7 +1,7 @@
 ---
 title: "Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo)"
 id: "SPEC-110"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 113
 # Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo)
 
 **ID**: SPEC-110  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -217,3 +217,4 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial: backend integrado de automation (rutas, plugins, scheduler y sync directo). |
+| 2026-10-21 | opencode | Fase 1 implementada: modelos, storage con join a `institutions`, servicios y endpoints de lectura (`/api/automation/accounts`, `?for=service`, plugins, facturas, logs) con tests y validación contra copia de producción. |
