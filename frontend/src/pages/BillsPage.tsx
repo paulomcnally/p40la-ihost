@@ -131,7 +131,7 @@ export default function BillsPage() {
           <p className="text-sm text-text-secondary">{t('bills.subtitle')}</p>
         </div>
         <CreateMenu options={[
-          { label: t('services.edit'), icon: 'edit', onClick: () => navigate(`/services/edit/${serviceId}`) },
+          { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/services/edit/${serviceId}`) },
           { label: 'Subir factura', icon: 'upload', onClick: () => setUploadOpen(true) },
           { label: t('bills.create'), icon: 'plus', onClick: () => navigate(`/bills/new?service=${serviceId}`) },
           { label: t('bills.renew'), icon: 'refresh', onClick: () => setRenewOpen(true) },
