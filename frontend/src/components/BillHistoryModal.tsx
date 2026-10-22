@@ -5,9 +5,12 @@ import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import LoadingSpinner from './LoadingSpinner'
 import type { Bill, BillHistoryEntry } from '../types'
+import type { ResolvedCurrency } from '../utils/currency'
+import { UNKNOWN_CURRENCY_SYMBOL } from '../utils/currency'
 
 interface BillHistoryModalProps {
   bill: Bill
+  currency?: ResolvedCurrency
   onClose: () => void
 }
 
@@ -27,7 +30,7 @@ function formatValue(value: unknown): string {
   return String(value)
 }
 
-export default function BillHistoryModal({ bill, onClose }: BillHistoryModalProps) {
+export default function BillHistoryModal({ bill, currency, onClose }: BillHistoryModalProps) {
   const { t } = useI18nStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [history, setHistory] = useState<BillHistoryEntry[] | null>(null)
@@ -50,7 +53,7 @@ export default function BillHistoryModal({ bill, onClose }: BillHistoryModalProp
   const formatFieldValue = (field: string, value: unknown): string => {
     if (field === 'amount') {
       const num = Number(value)
-      if (!Number.isNaN(num)) return formatMoney(num)
+      if (!Number.isNaN(num)) return formatMoney(num, currency?.symbol || currency?.code || UNKNOWN_CURRENCY_SYMBOL)
     }
     return formatValue(value)
   }

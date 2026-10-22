@@ -13,6 +13,7 @@ import HousePickerModal from '../components/HousePickerModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import WebhookModal from '../components/WebhookModal'
 import { useToast } from '../components/Toast'
+import { resolveCurrency } from '../utils/currency'
 import { formatRelativeTime } from '../utils/relativeTime'
 import type { Service } from '../types'
 
@@ -132,7 +133,7 @@ export default function ServicesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {services.map((svc) => {
-            const currency = currencies.find(c => c.id === svc.currency_id)
+            const currency = resolveCurrency(currencies, { id: svc.currency_id })
             const home = homes.find(h => h.id === svc.home_id)
             const isExpired = svc.is_recurring && svc.end_date && new Date(svc.end_date) < new Date()
             return (
@@ -196,7 +197,7 @@ export default function ServicesPage() {
                 </div>
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-xs text-text-secondary">
-                    {formatMoney(svc.suggested_amount, currency?.symbol)} · {t(`frequency.${svc.frequency}`)}
+                    {formatMoney(svc.suggested_amount, currency.symbol || currency.code)} · {t(`frequency.${svc.frequency}`)}
                   </p>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                     svc.latest_bill_status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' :
