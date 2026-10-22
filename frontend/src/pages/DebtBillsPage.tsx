@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
@@ -7,6 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
+import CreateMenu from '../components/CreateMenu'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtPayModal from '../components/DebtPayModal'
 import DonutChart from '../components/DonutChart'
@@ -18,6 +19,7 @@ type BillFilter = 'all' | 'pending' | 'paid'
 
 export default function DebtBillsPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { t } = useI18nStore()
   const { currencies } = useAppStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
@@ -115,6 +117,12 @@ export default function DebtBillsPage() {
             {debt.identifier && ` · ${debt.identifier}`} · {t(`deudas.status_${debt.status}`)}
           </p>
         </div>
+        <CreateMenu
+          title={t('app.actions')}
+          options={[
+            { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/deudas/edit/${debt.id}`) },
+          ]}
+        />
       </div>
 
       <div className="bg-card rounded-ios shadow-ios p-4 sm:p-5 mb-4">
