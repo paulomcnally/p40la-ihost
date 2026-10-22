@@ -50,6 +50,7 @@ Al terminar, la app principal podrá listar cuentas de automation por instituci�
 10. **REQ-010**: Tests unitarios de storage y servicios, y de integración del sync con un plugin de prueba. La validación con datos reales se corre contra una copia de la DB de producción (regla de AGENTS.md).
 11. **REQ-017**: El módulo privado de plugins requiere Go 1.26. Actualizar `go.mod` (`go 1.26.0`) y el Dockerfile a `golang:1.26-alpine`; el runtime del iHost no cambia (binario estático).
 11b. **REQ-018**: Los endpoints de alta/edición de cuenta aceptan `service_id`: un ID > 0 vincula esa cuenta al servicio (limpiando vínculos previos de la misma cuenta), `0` desvincula y el campo ausente no modifica nada. La relación sigue viviendo en `services.automation_account_id`; no hay migración de esquema y el sync existente no cambia.
+11c. **REQ-019**: El sync interno (manual, bot y scheduler) **no depende de `webhook_enabled`** ni de la API key de webhooks. Esa flag solo sigue gateando el endpoint externo `POST /webhooks/{uuid}`. Un sync debe funcionar con la feature de webhooks deshabilitada.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -185,6 +186,7 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 - [ ] CA-007: `/sincronizar` y `/sincronizar_servicio` usan el servicio directo.
 - [ ] CA-008: No se loguean credenciales ni claves.
 - [ ] CA-009: `service_id` en create/update vincula/desvincula el servicio correctamente (0 desvincula, ausente preserva) y el detalle muestra el vínculo resultante.
+- [ ] CA-010: Con `webhook_enabled=0`, el sync interno sigue entregando facturas; el endpoint externo sigue respondiendo 403.
 - [ ] CA-DARK: (aplica a SPEC-111; acá no hay UI nueva).
 
 ### 5.2 No funcionales
@@ -235,3 +237,4 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 | 2026-10-21 | opencode | Fase 3 implementada: registry del módulo privado de plugins (repo aparte), catálogo de plugins, fetch y persistencia de facturas, sync directo a `WebhookService.UpsertBill` (sin webhook HTTP interno), scheduler en proceso y bot/endpoint de sync usando `AutomationSyncer`. Go 1.26 y Dockerfile actualizados por requisito del módulo. E2E: 5 plugins registrados y scheduler iniciado sobre copia de producción. Se agregaron `GET /api/automation/plugins/{name}/schema` y `POST /api/automation/accounts/{id}/bills:fetch`. |
 | 2026-10-21 | opencode | Backend completo y validado: CRUD, plugins, sync directo, scheduler, bot y endpoints auxiliares. `go test ./...` y build OK. Pasa a pending_release a la espera del release conjunto 109–112. |
 | 2026-10-21 | opencode | Cambio iterativo: create/update de cuenta aceptan `service_id` para vincular/desvincular el servicio desde automation, sin cambiar el esquema ni el sync. |
+| 2026-10-21 | opencode | Corrección: el sync interno deja de depender de `webhook_enabled`; la flag solo gatea el endpoint externo. |
