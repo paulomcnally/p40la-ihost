@@ -5,6 +5,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
+import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type {
@@ -113,30 +114,24 @@ export default function AutomationDetailPage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <div className="bg-card rounded-ios shadow-ios p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-lg sm:text-xl font-bold truncate">{account.label || account.identifier}</h2>
-            <p className="text-sm text-text-secondary mt-1">
-              {account.institution_name || `#${account.institution_id}`} · {account.identifier}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => navigate(`/automation/edit/${account.id}`)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-ios-sm border border-border hover:bg-bg transition-colors min-h-[44px] text-sm"
-            >
-              <Icon name="edit" className="w-4 h-4" />
-              {t('app.edit')}
-            </button>
-            <button
-              onClick={() => setDeleteOpen(true)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-ios-sm border border-danger/30 text-danger hover:bg-danger/10 transition-colors min-h-[44px] text-sm"
-            >
-              <Icon name="delete" className="w-4 h-4" />
-              {t('app.delete')}
-            </button>
-          </div>
+      <div className="relative bg-card rounded-ios shadow-ios p-4 sm:p-6">
+        <CardMenu
+          options={[
+            { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/automation/edit/${account.id}`) },
+            { label: t('automation.reveal'), icon: 'key', onClick: () => setRevealOpen(true) },
+            {
+              label: fetching ? t('automation.fetching') : t('automation.fetch'),
+              icon: 'refresh',
+              onClick: handleFetch,
+            },
+            { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteOpen(true) },
+          ]}
+        />
+        <div className="min-w-0 pr-12">
+          <h2 className="text-lg sm:text-xl font-bold truncate">{account.label || account.identifier}</h2>
+          <p className="text-sm text-text-secondary mt-1">
+            {account.institution_name || `#${account.institution_id}`} · {account.identifier}
+          </p>
         </div>
 
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mt-5 text-sm">
@@ -154,23 +149,6 @@ export default function AutomationDetailPage() {
           </div>
         </dl>
 
-        <div className="flex flex-wrap gap-2 mt-5 pt-4 border-t border-border">
-          <button
-            onClick={() => setRevealOpen(true)}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-ios-sm border border-border hover:bg-bg transition-colors min-h-[44px] text-sm"
-          >
-            <Icon name="key" className="w-4 h-4" />
-            {t('automation.reveal')}
-          </button>
-          <button
-            onClick={handleFetch}
-            disabled={fetching}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-ios-sm bg-primary text-white font-medium hover:opacity-90 transition-opacity min-h-[44px] text-sm disabled:opacity-50"
-          >
-            <Icon name={fetching ? 'refresh' : 'download'} className={`w-4 h-4 ${fetching ? 'animate-spin' : ''}`} />
-            {fetching ? t('automation.fetching') : t('automation.fetch')}
-          </button>
-        </div>
       </div>
 
       <section className="bg-card rounded-ios shadow-ios p-4 sm:p-6">
