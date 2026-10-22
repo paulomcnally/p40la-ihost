@@ -53,6 +53,7 @@ Consideraciones de UI obligatorias:
 15. **REQ-021**: **Guardar** permanece deshabilitado mientras falten campos requeridos (institución, identificador, plugin y credenciales requeridas en alta). Las tabs con error muestran un punto rojo y un texto de ayuda junto al botón.
 16. **REQ-022**: La tab **Frecuencia** es completamente opcional: no cuenta para la validación de guardado ni muestra punto de error. El checkbox se reemplaza por un switch accesible (`role="switch"`, `aria-checked`, teclado y foco visible), con título/subtítulo muted y un texto de consulta manual cuando está apagado. Al encenderse, los campos aparecen con una transición de 150–200 ms que respeta `prefers-reduced-motion`. El selector de frecuencia usa el componente `Select` existente, nunca un `<select>` nativo del sistema operativo.
 17. **REQ-023**: El pie de ayuda solo aparece si faltan campos requeridos y los nombra; cada nombre es un enlace que abre su tab. No se usa una altura mínima fija: la transición del grid acompaña el cambio de altura y en móvil el contenedor crece de forma natural.
+18. **REQ-024**: La tab activa del formulario de alta/edición se refleja en la URL como `?tab=info|plugin|frequency` (default `info`). Cambiar de tab actualiza la URL con `replace`, y abrir un link con `?tab=...` (o recargar) restaura esa tab. Los enlaces del pie de requeridos también actualizan la URL.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -225,6 +226,7 @@ Sin cambios de runtime ni de DB. El build de Vite sigue generando estáticos; no
 - [ ] **CA-017**: Con campos requeridos vacíos, el botón Guardar está deshabilitado; las tabs afectadas muestran un punto rojo.
 - [ ] **CA-018**: Se puede guardar con la tab Frecuencia sin tocar; el switch es accesible, la frecuencia usa `Select` (no el dropdown nativo) y los campos aparecen/desaparecen con transición reducible.
 - [ ] **CA-019**: El pie muestra “Falta: …” solo con requeridos faltantes y cada uno abre su tab; sin altura mínima fija, el contenedor acompaña el contenido (incluido móvil).
+- [ ] **CA-020**: `/automation/new?tab=plugin`, `/automation/edit/:id?tab=frequency`, etc. abren la tab indicada; al cambiar de tab la URL se actualiza y el link es compartible/recargable.
 
 ---
 
@@ -269,3 +271,4 @@ Dependencias: SPEC-110 (backend) debe estar mergeada en esta rama. No hay depend
 | 2026-10-21 | opencode | Cambio iterativo: Guardar se deshabilita mientras falten campos requeridos; tabs con error marcadas y texto de ayuda. |
 | 2026-10-21 | opencode | Cambio iterativo: Frecuencia pasa a ser 100% opcional (switch accesible, sin punto de error ni bloqueo de guardado); pie con requeridos faltantes enlazados a su tab y altura mínima estable. |
 | 2026-10-21 | opencode | Corrección: el selector de frecuencia usa el componente `Select` del repo (no el `<select>` nativo) y se elimina la altura mínima fija para no afectar el layout móvil; la transición del grid acompaña el cambio de altura. |
+| 2026-10-21 | opencode | Cambio iterativo: la tab activa del formulario se refleja en `?tab=` (info/plugin/frequency) para links compartibles, tanto en alta como en edición. |
