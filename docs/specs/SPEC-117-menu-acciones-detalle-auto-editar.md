@@ -1,7 +1,7 @@
 ---
 title: "Menú de acciones (3 puntos) en el detalle del auto con opción Editar"
 id: "SPEC-117"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 120
 # Menú de acciones (3 puntos) en el detalle del auto con opción Editar
 
 **ID**: SPEC-117  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -190,22 +190,22 @@ Sin cambios. Se reutilizan los endpoints existentes consumidos por `AutoShowPage
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado el detalle `/autos/:id` con un auto existente, cuando carga la página, entonces se ve el botón de 3 puntos en la esquina superior derecha de la card resumen.
-- [ ] CA-002: Dado el botón de 3 puntos, cuando el usuario lo pulsa, entonces se abre un dropdown con la opción **"Editar"** (ES) / **"Edit"** (EN), conforme a SPEC-115.
-- [ ] CA-003: Dado el menú abierto, cuando el usuario hace clic en "Editar", entonces navega a `/autos/edit/:id` y el formulario muestra los datos actuales del auto.
-- [ ] CA-004: Dado el formulario abierto desde el detalle, cuando el usuario modifica un campo y guarda, entonces el cambio se persiste y la app vuelve a `/autos` (comportamiento existente); al reabrir el detalle se ven los datos actualizados.
-- [ ] CA-005: Dado el detalle, cuando el usuario abre el menú de un seguro, entonces las opciones "Editar" y "Eliminar" del seguro siguen funcionando igual que antes.
-- [ ] CA-006: Dado el menú abierto, cuando el usuario hace clic fuera o selecciona una opción, entonces el menú se cierra.
-- [ ] CA-007: En viewports de 320 px, 375 px, 768 px y desktop, el botón de 3 puntos y su dropdown no se superponen con el ícono del auto, el título ni los datos del vehículo.
-- [ ] CA-008: El menú no contiene opciones distintas de "Editar" en esta entrega.
-- [ ] CA-DARK: El menú y el formulario reutilizado se verificaron en darkmode: fondo, borde y texto legibles; los inputs usan los tokens del tema (`bg-card`, `text-text`, `text-text-secondary`).
-- [ ] CA-BACK: La página de detalle mantiene la flecha atrás del header (`/autos/:id` → `/autos`) y no se agregaron links "← Título" dentro del contenido. `/autos/edit/:id` ya está registrada en `BACK_ROUTES`.
+- [x] CA-001: Dado el detalle `/autos/:id` con un auto existente, cuando carga la página, entonces se ve el botón de 3 puntos en la esquina superior derecha de la card resumen.
+- [x] CA-002: Dado el botón de 3 puntos, cuando el usuario lo pulsa, entonces se abre un dropdown con la opción **"Editar"** (ES) / **"Edit"** (EN), conforme a SPEC-115.
+- [x] CA-003: Dado el menú abierto, cuando el usuario hace clic en "Editar", entonces navega a `/autos/edit/:id` y el formulario muestra los datos actuales del auto.
+- [x] CA-004: Dado el formulario abierto desde el detalle, cuando el usuario modifica un campo y guarda, entonces el cambio se persiste y la app vuelve a `/autos` (comportamiento existente); al reabrir el detalle se ven los datos actualizados.
+- [x] CA-005: Dado el detalle, cuando el usuario abre el menú de un seguro, entonces las opciones "Editar" y "Eliminar" del seguro siguen funcionando igual que antes.
+- [x] CA-006: Dado el menú abierto, cuando el usuario hace clic fuera o selecciona una opción, entonces el menú se cierra.
+- [x] CA-007: En viewports de 320 px, 375 px, 768 px y desktop, el botón de 3 puntos y su dropdown no se superponen con el ícono del auto, el título ni los datos del vehículo.
+- [x] CA-008: El menú no contiene opciones distintas de "Editar" en esta entrega.
+- [x] CA-DARK: El menú y el formulario reutilizado se verificaron en darkmode: fondo, borde y texto legibles; los inputs usan los tokens del tema (`bg-card`, `text-text`, `text-text-secondary`).
+- [x] CA-BACK: La página de detalle mantiene la flecha atrás del header (`/autos/:id` → `/autos`) y no se agregaron links "← Título" dentro del contenido. `/autos/edit/:id` ya está registrada en `BACK_ROUTES`.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: `npm run build` en `frontend/` compila sin errores ni warnings nuevos.
-- [ ] CA-NF-002: No se agregan dependencias ni cambios de backend/DB (verificable con `git diff --stat`).
-- [ ] CA-NF-003: No hay requests adicionales al abrir el menú (solo navegación al formulario).
+- [x] CA-NF-001: `npm run build` en `frontend/` compila sin errores ni warnings nuevos.
+- [x] CA-NF-002: No se agregan dependencias ni cambios de backend/DB (verificable con `git diff --stat`).
+- [x] CA-NF-003: No hay requests adicionales al abrir el menú (solo navegación al formulario).
 
 ### 5.3 Testing
 
@@ -255,3 +255,4 @@ Sin cambios. Se reutilizan los endpoints existentes consumidos por `AutoShowPage
 | 2026-10-21 | opencode | Corrección solicitada por el usuario: la opción del menú pasa de "Editar auto" (`autos.edit`) a **"Editar"** (`app.edit`) para cumplir SPEC-115 y `docs/project-rules.md` §4.5. Se actualizó la spec antes de modificar el código. |
 | 2026-10-21 | opencode | Corrección verificada: build de frontend OK y E2E 14/14 con "Editar"/"Edit"; también verificado en `/autos/3` sobre el server local 8099. |
 | 2026-10-21 | opencode | Rama sincronizada con `main` (merge de SPEC-115) para incorporar el estándar de etiqueta documentado en `AGENTS.md` y `docs/project-rules.md` §4.5. Build final `index-DbyWfNvt.js`; verificación en 8099 con "Editar". |
+| 2026-10-21 | opencode | Release: merge `a8de067` de `feature/SPEC-117` a `main`, label `spec/released` e issue #120 cerrado. |
