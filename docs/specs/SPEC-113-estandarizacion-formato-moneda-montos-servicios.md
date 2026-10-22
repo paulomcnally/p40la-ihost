@@ -1,7 +1,7 @@
 ---
 title: "Estandarización de formato y moneda en todos los montos del módulo de servicios y facturas"
 id: "SPEC-113"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 116
 # Estandarización de formato y moneda en todos los montos del módulo de servicios y facturas
 
 **ID**: SPEC-113  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -306,10 +306,13 @@ No se crean endpoints. Se consumen los existentes:
 
 **Validación del usuario**: 2026-10-21, el usuario confirmó que la corrección funciona.
 
+**Release**: mergeado a `main` en el commit `e1c86d0` (2026-10-21), sobre la versión 0.5.0. Build de frontend regenerado sobre `main` tras el merge para conservar los cambios de SPEC-114.
+
 ## 9. Historial de Cambios
 
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial de la especificación a partir del reporte del usuario sobre montos sin moneda en `/services/bills/:id` (pestañas Análisis y Facturas) y en el campo Monto del formulario. |
 | 2026-10-21 | opencode | Inicio de implementación: estado `in_progress`. |
-| 2026-10-21 | opencode | Implementación completa en worktree: helper `resolveCurrency`, fix de carga de monedas y formato en Análisis/Facturas, etiquetas de moneda en formularios y auditoría de vistas relacionadas. Build y tests en verde; validación manual sobre copia de producción sanitizada. Confirmado por el usuario (2026-10-21); spec a `pending_release`. |
+| 2026-10-21 | opencode | Implementación completa: helper `resolveCurrency`, fix de carga de monedas y formato en Análisis/Facturas, etiquetas de moneda en formularios y auditoría de vistas relacionadas. Build y tests en verde; validación manual sobre copia de producción sanitizada. |
+| 2026-10-21 | opencode | Confirmación del usuario y release: merge a `main` (`e1c86d0`), tracker actualizado, label `spec/released` e issue cerrado. |
