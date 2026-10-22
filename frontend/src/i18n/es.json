@@ -242,12 +242,7 @@
     "syncing": "Sincronizando...",
     "sync_ok": "Sincronización completada",
     "sync_error": "Error al sincronizar",
-    "id": "ID",
-    "automation_account": "Cuenta de automation",
-    "automation_account_hint": "Vinculá el servicio a una cuenta para consultar facturas automáticamente.",
-    "automation_account_none": "Sin cuenta de automation",
-    "automation_account_empty": "No hay cuentas de automation.",
-    "automation_account_create": "Crear cuenta"
+    "id": "ID"
   },
   "frequency": {
     "monthly": "Mensual",
@@ -923,7 +918,7 @@
     "logs": "Entregas al webhook",
     "no_logs": "No hay entregas registradas.",
     "linked_services": "Servicios vinculados",
-    "no_linked_services": "Ningún servicio usa esta cuenta.",
+    "no_linked_services": "No hay un servicio vinculado. Editá la cuenta para elegir uno.",
     "sync": "Sincronizar",
     "synced": "Sincronizado: {delivered} entregadas, {failed} fallidas.",
     "last_run": "Última ejecución",
@@ -950,6 +945,11 @@
     "select_plugin_first": "Elegí un plugin para configurar sus credenciales.",
     "schedule_optional_desc": "Opcional · Consulta esta cuenta de forma periódica.",
     "schedule_manual_hint": "Podés consultar esta cuenta manualmente cuando quieras.",
-    "missing_prefix": "Falta:"
+    "missing_prefix": "Falta:",
+    "service": "Servicio",
+    "no_service": "Sin servicio",
+    "service_hint": "El sync actualizará las facturas de este servicio.",
+    "no_services": "No hay servicios activos.",
+    "no_services_action": "Ir a servicios"
   }
 }

@@ -242,12 +242,7 @@
     "syncing": "Syncing...",
     "sync_ok": "Sync completed",
     "sync_error": "Sync failed",
-    "id": "ID",
-    "automation_account": "Automation account",
-    "automation_account_hint": "Link the service to an account to fetch bills automatically.",
-    "automation_account_none": "No automation account",
-    "automation_account_empty": "No automation accounts yet.",
-    "automation_account_create": "Create account"
+    "id": "ID"
   },
   "frequency": {
     "monthly": "Monthly",
@@ -922,7 +917,7 @@
     "logs": "Webhook deliveries",
     "no_logs": "No deliveries logged yet.",
     "linked_services": "Linked services",
-    "no_linked_services": "No service uses this account.",
+    "no_linked_services": "No service is linked. Edit the account to choose one.",
     "sync": "Sync",
     "synced": "Synced: {delivered} delivered, {failed} failed.",
     "last_run": "Last run",
@@ -949,6 +944,11 @@
     "select_plugin_first": "Select a plugin to configure its credentials.",
     "schedule_optional_desc": "Optional · Fetch this account periodically.",
     "schedule_manual_hint": "You can fetch this account manually whenever you want.",
-    "missing_prefix": "Missing:"
+    "missing_prefix": "Missing:",
+    "service": "Service",
+    "no_service": "No service",
+    "service_hint": "Sync will update this service's bills.",
+    "no_services": "No active services.",
+    "no_services_action": "Go to services"
   }
 }
