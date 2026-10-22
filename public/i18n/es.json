@@ -936,7 +936,6 @@
     "no_institutions": "Primero creá una institución.",
     "no_institutions_action": "Ir a instituciones",
     "no_plugins": "No hay plugins disponibles.",
-    "invalid_url": "La URL debe empezar con http:// o https://",
     "invalid_time": "Ingresá una hora válida (HH:MM).",
     "invalid_interval": "El intervalo debe ser al menos 1 día.",
     "invalid_day": "Elegí un día entre 1 y 28.",
