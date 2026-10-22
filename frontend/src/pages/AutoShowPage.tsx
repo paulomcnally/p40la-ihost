@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useAppStore } from '../stores/appStore'
+import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { Icon } from '../components/Icons'
 import DeleteModal from '../components/DeleteModal'
@@ -11,9 +12,11 @@ import AddInsuranceModal from '../components/AddInsuranceModal'
 import CardMenu from '../components/CardMenu'
 import type { Auto, AutoService } from '../types'
 import { resolveCurrency } from '../utils/currency'
+import { autoSubtitle } from '../utils/auto'
 
 export default function AutoShowPage() {
   const { id } = useParams()
+  const { t } = useI18nStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { currencies, loadCurrencies } = useAppStore()
   const currencyLabel = (currencyId: number) => {
@@ -75,12 +78,20 @@ export default function AutoShowPage() {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl sm:text-2xl font-bold break-words">{auto.brand} {auto.model}</h2>
-            <p className="text-text-secondary mt-1 break-words">{auto.year} · {auto.color} · {auto.placa}</p>
-            <div className="mt-3 space-y-1 text-sm text-text-secondary">
-              <p className="break-words"><span className="font-medium">Motor:</span> {auto.motor}</p>
-              <p className="break-words"><span className="font-medium">Chasis:</span> {auto.chasis}</p>
-              <p className="break-words"><span className="font-medium">VIN:</span> {auto.vin}</p>
-            </div>
+            <p className="text-text-secondary mt-1 break-words">{autoSubtitle(t, auto)}</p>
+            {(auto.motor || auto.chasis || auto.vin) && (
+              <div className="mt-3 space-y-1 text-sm text-text-secondary">
+                {auto.motor && (
+                  <p className="break-words"><span className="font-medium">{t('autos.motor')}:</span> {auto.motor}</p>
+                )}
+                {auto.chasis && (
+                  <p className="break-words"><span className="font-medium">{t('autos.chasis')}:</span> {auto.chasis}</p>
+                )}
+                {auto.vin && (
+                  <p className="break-words"><span className="font-medium">{t('autos.vin')}:</span> {auto.vin}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

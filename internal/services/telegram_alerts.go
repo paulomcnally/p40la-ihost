@@ -37,10 +37,20 @@ func formatInsuranceAlerts(alerts []appmodels.AutoAlert) []string {
 		default:
 			reason = a.AlertType
 		}
-		fmt.Fprintf(&b, "  • %s — %s\n    %s\n\n", vehicle, a.Placa, reason)
+		fmt.Fprintf(&b, "  • %s%s\n    %s\n\n", vehicle, formatPlacaSuffix(a.Placa), reason)
 	}
 	b.WriteString("Ingresá a P40LA para revisar y asociar un nuevo seguro.")
 	return []string{strings.TrimRight(b.String(), "\n")}
+}
+
+// formatPlacaSuffix agrega la placa al vehículo solo si está presente
+// (SPEC-118: la placa es opcional).
+func formatPlacaSuffix(placa string) string {
+	placa = strings.TrimSpace(placa)
+	if placa == "" {
+		return ""
+	}
+	return " — " + placa
 }
 
 // formatBillCreatedAlert construye el aviso de facturas generadas

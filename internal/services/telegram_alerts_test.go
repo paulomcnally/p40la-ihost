@@ -33,6 +33,23 @@ func TestFormatInsuranceAlerts(t *testing.T) {
 			t.Errorf("auto con seguro vencido mal formateado:\n%s", msg)
 		}
 	})
+
+	t.Run("auto sin placa", func(t *testing.T) {
+		alerts := []appmodels.AutoAlert{
+			{AutoID: 3, Brand: "Nissan", Model: "Versa", Year: 2021, AlertType: appmodels.AlertTypeNoInsurance},
+		}
+		got := formatInsuranceAlerts(alerts)
+		if len(got) != 1 {
+			t.Fatalf("esperado 1 mensaje, got %d", len(got))
+		}
+		msg := got[0]
+		if !strings.Contains(msg, "Nissan Versa 2021") || !strings.Contains(msg, "Sin seguro asociado") {
+			t.Errorf("auto sin placa mal formateado:\n%s", msg)
+		}
+		if strings.Contains(msg, "2021 —") || strings.Contains(msg, "— \n") {
+			t.Errorf("no debe quedar un separador huérfano sin placa:\n%s", msg)
+		}
+	})
 }
 
 func TestFormatBillCreatedAlert(t *testing.T) {

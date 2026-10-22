@@ -3,11 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
-import { Icon, iconNames } from '../components/Icons'
+import { Icon } from '../components/Icons'
 import { useToast } from '../components/Toast'
+import Select from '../components/Select'
+import { AUTO_COLORS, isAutoColor } from '../constants/autoColors'
 import type { Auto } from '../types'
 
 const vehicleIcons = ['van', 'truck', 'vehicle', 'moto']
+
+const fieldClass =
+  'w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]'
 
 export default function AutoFormPage() {
   const navigate = useNavigate()
@@ -34,7 +39,8 @@ export default function AutoFormPage() {
           setYear(auto.year)
           setModel(auto.model)
           setBrand(auto.brand)
-          setColor(auto.color)
+          // Los colores fuera de la paleta (legado) requieren reselección.
+          setColor(isAutoColor(auto.color) ? auto.color : '')
           setIcon(auto.icon)
           setMotor(auto.motor)
           setChasis(auto.chasis)
@@ -50,19 +56,23 @@ export default function AutoFormPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!color) {
+      showToast(t('autos.color_required'), 'error')
+      return
+    }
     setLoading(true)
     try {
       const data: Partial<Auto> = { year, model, brand, color, icon, motor, chasis, vin, placa }
       if (isEdit) {
         await api.autos.update(Number(id), data)
-        showToast('Auto actualizado', 'success')
+        showToast(t('autos.updated'), 'success')
       } else {
         await api.autos.create(data)
-        showToast('Auto creado', 'success')
+        showToast(t('autos.created'), 'success')
       }
       navigate('/autos')
     } catch (err: any) {
-      showToast(err.message || 'Error al guardar', 'error')
+      showToast(err.message || t('autos.save_error'), 'error')
     } finally {
       setLoading(false)
     }
@@ -71,106 +81,117 @@ export default function AutoFormPage() {
   if (loadingData) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-text-secondary">Cargando...</div>
+        <div className="text-text-secondary">{t('app.loading')}</div>
       </div>
     )
   }
 
   return (
     <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-4 sm:p-6">
-      <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">{isEdit ? 'Editar Auto' : 'Crear Auto'}</h2>
+      <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">
+        {isEdit ? t('autos.form_title_edit') : t('autos.form_title_create')}
+      </h2>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium mb-1">Año</label>
+          <label className="block text-sm font-medium mb-1">{t('autos.year')}</label>
           <input
             type="number"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
             min={1900}
             max={2100}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            className={fieldClass}
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Marca</label>
+          <label className="block text-sm font-medium mb-1">{t('autos.brand')}</label>
           <input
             type="text"
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
-            placeholder="Ej: Toyota"
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            placeholder={t('autos.brand_placeholder')}
+            className={fieldClass}
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Modelo</label>
+          <label className="block text-sm font-medium mb-1">{t('autos.model')}</label>
           <input
             type="text"
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            placeholder="Ej: Corolla"
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+            placeholder={t('autos.model_placeholder')}
+            className={fieldClass}
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Color</label>
-          <input
-            type="text"
+          <label className="block text-sm font-medium mb-1">{t('autos.color')}</label>
+          <Select
+            options={AUTO_COLORS.map((code) => ({ value: code, label: t(`autos.colors.${code}`) }))}
             value={color}
-            onChange={(e) => setColor(e.target.value)}
-            placeholder="Ej: Rojo"
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-            required
+            onChange={(value) => setColor(String(value))}
+            placeholder={t('autos.color_placeholder')}
+            searchable
+            searchPlaceholder={t('app.search')}
+            emptyLabel={t('app.no_results')}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Motor</label>
+          <label className="block text-sm font-medium mb-1">
+            {t('autos.motor')}{' '}
+            <span className="text-text-secondary font-normal">{t('autos.optional')}</span>
+          </label>
           <input
             type="text"
             value={motor}
             onChange={(e) => setMotor(e.target.value)}
-            placeholder="Ej: 2ZR12345678"
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-            required
+            placeholder={t('autos.motor_placeholder')}
+            className={fieldClass}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Chasis</label>
+          <label className="block text-sm font-medium mb-1">
+            {t('autos.chasis')}{' '}
+            <span className="text-text-secondary font-normal">{t('autos.optional')}</span>
+          </label>
           <input
             type="text"
             value={chasis}
             onChange={(e) => setChasis(e.target.value)}
-            placeholder="Ej: JTDBU4EE1B9123456"
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-            required
+            placeholder={t('autos.chasis_placeholder')}
+            className={fieldClass}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">VIN</label>
+          <label className="block text-sm font-medium mb-1">
+            {t('autos.vin')}{' '}
+            <span className="text-text-secondary font-normal">{t('autos.optional')}</span>
+          </label>
           <input
             type="text"
             value={vin}
             onChange={(e) => setVin(e.target.value.toUpperCase())}
-            placeholder="Ej: JTDBU4EE1B9123456"
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-            required
+            placeholder={t('autos.vin_placeholder')}
+            className={fieldClass}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Placa</label>
+          <label className="block text-sm font-medium mb-1">
+            {t('autos.placa')}{' '}
+            <span className="text-text-secondary font-normal">{t('autos.optional')}</span>
+          </label>
           <input
             type="text"
             value={placa}
             onChange={(e) => setPlaca(e.target.value.toUpperCase())}
-            placeholder="Ej: P123ABC"
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-            required
+            placeholder={t('autos.placa_placeholder')}
+            className={fieldClass}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">Ícono</label>
+          <label className="block text-sm font-medium mb-2">{t('autos.icon')}</label>
           <div className="grid grid-cols-4 gap-2">
             {vehicleIcons.map((iconName) => (
               <button
@@ -184,7 +205,7 @@ export default function AutoFormPage() {
                 }`}
               >
                 <Icon name={iconName} className="w-6 h-6" />
-                <span className="text-xs capitalize">{iconName}</span>
+                <span className="text-xs">{t(`autos.icons.${iconName}`)}</span>
               </button>
             ))}
           </div>
@@ -196,7 +217,7 @@ export default function AutoFormPage() {
             className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2 min-h-[44px]"
           >
             <Icon name="cancel" className="w-4 h-4" />
-            Cancelar
+            {t('app.cancel')}
           </button>
           <button
             type="submit"
@@ -204,7 +225,7 @@ export default function AutoFormPage() {
             className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2 min-h-[44px]"
           >
             <Icon name="save" className="w-4 h-4" />
-            {isEdit ? 'Actualizar' : 'Guardar'}
+            {isEdit ? t('autos.update') : t('app.save')}
           </button>
         </div>
       </form>

@@ -242,7 +242,7 @@ func renderAlertsContent(alerts []models.AutoAlert) string {
 
 		b.WriteString("<tr>")
 		b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, vehicle))
-		b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, a.Placa))
+		b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, formatPlacaOrDash(a.Placa)))
 		b.WriteString(fmt.Sprintf(`<td style="padding:12px;border-bottom:1px solid #e5e5ea;">%s</td>`, reason))
 		b.WriteString("</tr>")
 	}
@@ -252,6 +252,16 @@ func renderAlertsContent(alerts []models.AutoAlert) string {
 	b.WriteString(`Ingresá a P40LA para revisar y asociar un nuevo seguro.</p>`)
 
 	return b.String()
+}
+
+// formatPlacaOrDash muestra un guion cuando la placa está vacía
+// (SPEC-118: la placa es opcional).
+func formatPlacaOrDash(placa string) string {
+	placa = strings.TrimSpace(placa)
+	if placa == "" {
+		return "—"
+	}
+	return placa
 }
 
 // formatDate convierte YYYY-MM-DD a DD/MM/YYYY.
