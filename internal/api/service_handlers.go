@@ -221,7 +221,6 @@ func (h *ServiceHandlers) SyncService(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, services.ErrAutomationNoPlugin),
 			errors.Is(err, services.ErrAutomationNotLinked),
 			errors.Is(err, services.ErrAutomationAmbiguousService),
-			errors.Is(err, services.ErrAutomationWebhooksDisabled),
 			errors.Is(err, services.ErrAutomationNotConfigured):
 			respondError(w, http.StatusBadRequest, "invalid_sync", err.Error())
 		case errors.Is(err, services.ErrAutomationUnauthorized):
