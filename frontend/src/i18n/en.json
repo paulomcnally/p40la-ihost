@@ -945,8 +945,10 @@
     "tab_plugin": "Plugin",
     "tab_schedule": "Frequency",
     "identifier_required": "Enter the identifier.",
-    "required_hint": "Complete the required fields to save.",
     "no_credentials": "This plugin requires no credentials.",
-    "select_plugin_first": "Select a plugin to configure its credentials."
+    "select_plugin_first": "Select a plugin to configure its credentials.",
+    "schedule_optional_desc": "Optional · Fetch this account periodically.",
+    "schedule_manual_hint": "You can fetch this account manually whenever you want.",
+    "missing_prefix": "Missing:"
   }
 }

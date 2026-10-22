@@ -137,26 +137,25 @@ export default function AutomationFormPage() {
   const infoInvalid = !form.institution_id || !form.identifier.trim()
   const pluginInvalid = !form.plugin_name || missingCredentials
 
-  let scheduleError: string | null = null
-  if (form.schedule_enabled) {
-    if (!TIME_PATTERN.test(form.schedule_time)) {
-      scheduleError = t('automation.invalid_time')
-    } else if (form.schedule_frequency === 'every_n_days' && (!Number.isFinite(form.schedule_interval) || form.schedule_interval < 1)) {
-      scheduleError = t('automation.invalid_interval')
-    } else if (form.schedule_frequency === 'weekly' && weeklyDays.length === 0) {
-      scheduleError = t('automation.invalid_weekday')
-    } else if (form.schedule_frequency === 'monthly' && (monthlyDay < 1 || monthlyDay > 28)) {
-      scheduleError = t('automation.invalid_day')
-    }
+  const missingItems: { key: string; label: string; tab: FormTab }[] = []
+  if (!form.institution_id) {
+    missingItems.push({ key: 'institution', label: t('automation.institution'), tab: 'info' })
+  }
+  if (!form.identifier.trim()) {
+    missingItems.push({ key: 'identifier', label: t('automation.identifier'), tab: 'info' })
+  }
+  if (!form.plugin_name) {
+    missingItems.push({ key: 'plugin', label: t('automation.plugin'), tab: 'plugin' })
+  } else if (missingCredentials) {
+    missingItems.push({ key: 'credentials', label: t('automation.credentials'), tab: 'plugin' })
   }
 
-  const scheduleInvalid = scheduleError !== null
-  const canSave = !infoInvalid && !pluginInvalid && !scheduleInvalid
+  const canSave = missingItems.length === 0
 
   const tabs: { key: FormTab; labelKey: string; hasError: boolean }[] = [
     { key: 'info', labelKey: 'automation.tab_info', hasError: infoInvalid },
     { key: 'plugin', labelKey: 'automation.tab_plugin', hasError: pluginInvalid },
-    { key: 'schedule', labelKey: 'automation.tab_schedule', hasError: scheduleInvalid },
+    { key: 'schedule', labelKey: 'automation.tab_schedule', hasError: false },
   ]
 
   const validate = (): boolean => {
@@ -178,11 +177,6 @@ export default function AutomationFormPage() {
     if (missingCredentials) {
       setActiveTab('plugin')
       showToast(t('automation.credentials_required'), 'error')
-      return false
-    }
-    if (scheduleError) {
-      setActiveTab('schedule')
-      showToast(scheduleError, 'error')
       return false
     }
     return true
@@ -264,6 +258,7 @@ export default function AutomationFormPage() {
           ))}
         </div>
 
+        <div className="min-h-[420px] sm:min-h-[360px]">
         {activeTab === 'info' && (
           <div className="space-y-5">
             <div>
@@ -371,101 +366,133 @@ export default function AutomationFormPage() {
         )}
 
         {activeTab === 'schedule' && (
-          <div className="border border-border rounded-ios p-4 space-y-4">
-            <label className="flex items-center justify-between gap-3 cursor-pointer">
-              <span className="text-sm font-medium">{t('automation.schedule_enabled')}</span>
-              <input
-                type="checkbox"
-                checked={form.schedule_enabled}
-                onChange={(e) => update('schedule_enabled', e.target.checked)}
-                className="w-5 h-5 accent-primary"
-              />
-            </label>
+          <div className="border border-border rounded-ios p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-sm font-medium">{t('automation.schedule_enabled')}</div>
+                <p className="text-xs text-text-secondary mt-0.5">{t('automation.schedule_optional_desc')}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.schedule_enabled}
+                aria-label={t('automation.schedule_enabled')}
+                onClick={() => update('schedule_enabled', !form.schedule_enabled)}
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
+                  form.schedule_enabled ? 'bg-primary' : 'bg-border'
+                }`}
+              >
+                <span
+                  className={`inline-block h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 motion-reduce:transition-none ${
+                    form.schedule_enabled ? 'translate-x-5' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
+            </div>
 
-            {form.schedule_enabled && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('automation.time')}</label>
-                    <input
-                      type="time"
-                      value={form.schedule_time}
-                      onChange={(e) => update('schedule_time', e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('automation.frequency')}</label>
-                    <select
-                      value={form.schedule_frequency}
-                      onChange={(e) => update('schedule_frequency', e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
-                    >
-                      <option value="daily">{t('automation.frequency_daily')}</option>
-                      <option value="every_n_days">{t('automation.frequency_days')}</option>
-                      <option value="weekly">{t('automation.frequency_weekly')}</option>
-                      <option value="monthly">{t('automation.frequency_monthly')}</option>
-                    </select>
-                  </div>
-                </div>
+            {!form.schedule_enabled && (
+              <p className="text-sm text-text-secondary mt-4">{t('automation.schedule_manual_hint')}</p>
+            )}
 
-                {form.schedule_frequency === 'every_n_days' && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('automation.interval')}</label>
-                    <div className="flex items-center gap-2">
+            <div
+              className={`grid transition-all duration-200 ease-out motion-reduce:transition-none ${
+                form.schedule_enabled ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+              }`}
+              inert={!form.schedule_enabled}
+              aria-hidden={!form.schedule_enabled}
+            >
+              <div className="overflow-hidden">
+                <div className="space-y-4 pt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">{t('automation.time')}</label>
+                      <input
+                        type="time"
+                        value={form.schedule_time}
+                        onChange={(e) => update('schedule_time', e.target.value)}
+                        onBlur={() => {
+                          if (!TIME_PATTERN.test(form.schedule_time)) {
+                            update('schedule_time', '07:00')
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">{t('automation.frequency')}</label>
+                      <select
+                        value={form.schedule_frequency}
+                        onChange={(e) => update('schedule_frequency', e.target.value)}
+                        className="w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
+                      >
+                        <option value="daily">{t('automation.frequency_daily')}</option>
+                        <option value="every_n_days">{t('automation.frequency_days')}</option>
+                        <option value="weekly">{t('automation.frequency_weekly')}</option>
+                        <option value="monthly">{t('automation.frequency_monthly')}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {form.schedule_frequency === 'every_n_days' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">{t('automation.interval')}</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={365}
+                          value={form.schedule_interval}
+                          onChange={(e) => update('schedule_interval', Math.max(1, Number(e.target.value) || 1))}
+                          className="w-28 px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
+                        />
+                        <span className="text-sm text-text-secondary">{t('automation.interval_days')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {form.schedule_frequency === 'weekly' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">{t('automation.days')}</label>
+                      <div className="flex flex-wrap gap-2">
+                        {WEEKDAYS.map((day) => (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => toggleWeekday(day)}
+                            aria-pressed={weeklyDays.includes(day)}
+                            className={`px-3 py-2 rounded-ios-sm text-sm border transition-colors min-h-[40px] ${
+                              weeklyDays.includes(day)
+                                ? 'bg-primary/10 border-primary text-primary font-medium'
+                                : 'bg-card border-border text-text-secondary hover:border-primary/50'
+                            }`}
+                          >
+                            {t(`automation.weekday_${day}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {form.schedule_frequency === 'monthly' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">{t('automation.day_of_month')}</label>
                       <input
                         type="number"
                         min={1}
-                        max={365}
-                        value={form.schedule_interval}
-                        onChange={(e) => update('schedule_interval', Number(e.target.value))}
+                        max={28}
+                        value={monthlyDay}
+                        onChange={(e) => setMonthlyDay(Math.min(28, Math.max(1, Number(e.target.value) || 1)))}
                         className="w-28 px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
                       />
-                      <span className="text-sm text-text-secondary">{t('automation.interval_days')}</span>
                     </div>
-                  </div>
-                )}
-
-                {form.schedule_frequency === 'weekly' && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2">{t('automation.days')}</label>
-                    <div className="flex flex-wrap gap-2">
-                      {WEEKDAYS.map((day) => (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => toggleWeekday(day)}
-                          aria-pressed={weeklyDays.includes(day)}
-                          className={`px-3 py-2 rounded-ios-sm text-sm border transition-colors min-h-[40px] ${
-                            weeklyDays.includes(day)
-                              ? 'bg-primary/10 border-primary text-primary font-medium'
-                              : 'bg-card border-border text-text-secondary hover:border-primary/50'
-                          }`}
-                        >
-                          {t(`automation.weekday_${day}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {form.schedule_frequency === 'monthly' && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t('automation.day_of_month')}</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={28}
-                      value={monthlyDay}
-                      onChange={(e) => setMonthlyDay(Number(e.target.value))}
-                      className="w-28 px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
-                    />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
+
+        </div>
 
         <div className="pt-4 border-t border-border">
           <div className="flex justify-end gap-3">
@@ -485,8 +512,23 @@ export default function AutomationFormPage() {
               {saving ? t('app.saving') : t('app.save')}
             </button>
           </div>
-          {!canSave && (
-            <p className="text-xs text-text-secondary text-right mt-2">{t('automation.required_hint')}</p>
+          {missingItems.length > 0 && (
+            <p className="text-xs text-text-secondary text-right mt-2">
+              {t('automation.missing_prefix')}{' '}
+              {missingItems.map((item, index) => (
+                <span key={item.key}>
+                  {index > 0 && ', '}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(item.tab)}
+                    className="text-primary hover:underline"
+                  >
+                    {item.label}
+                  </button>
+                </span>
+              ))}
+              .
+            </p>
           )}
         </div>
       </form>
