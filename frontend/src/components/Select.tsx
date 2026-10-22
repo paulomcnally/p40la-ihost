@@ -13,10 +13,27 @@ export interface SelectProps {
   onChange: (value: string | number) => void
   placeholder?: string
   searchable?: boolean
+  searchPlaceholder?: string
+  emptyLabel?: string
   zIndex?: string
 }
 
-export default function Select({ options, value, onChange, placeholder, searchable = false, zIndex = 'z-50' }: SelectProps) {
+// normalizeText quita acentos y mayúsculas para que el buscador encuentre
+// "marron" al escribir sobre "Marrón" (SPEC-118).
+function normalizeText(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
+export default function Select({
+  options,
+  value,
+  onChange,
+  placeholder,
+  searchable = false,
+  searchPlaceholder = 'Buscar...',
+  emptyLabel = 'Sin resultados',
+  zIndex = 'z-50',
+}: SelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number } | null>(null)
@@ -25,7 +42,7 @@ export default function Select({ options, value, onChange, placeholder, searchab
 
   const selected = options.find(o => o.value === value)
   const filtered = searchable
-    ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+    ? options.filter(o => normalizeText(o.label).includes(normalizeText(search)))
     : options
 
   const close = () => {
@@ -75,7 +92,7 @@ export default function Select({ options, value, onChange, placeholder, searchab
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 border border-border rounded-ios-sm bg-card hover:border-primary/50 focus:outline-none focus:border-primary transition-colors text-left text-text"
+        className="w-full min-h-[44px] flex items-center justify-between px-3 py-2 border border-border rounded-ios-sm bg-card hover:border-primary/50 focus:outline-none focus:border-primary transition-colors text-left text-text"
       >
         <span className={selected ? '' : 'text-text-secondary'}>
           {selected?.label || placeholder || 'Seleccionar...'}
@@ -98,14 +115,14 @@ export default function Select({ options, value, onChange, placeholder, searchab
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar..."
+                  placeholder={searchPlaceholder}
                   className="w-full px-2 py-1.5 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-card"
                 />
               </div>
             )}
             <div className="max-h-48 overflow-y-auto">
               {filtered.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-text-secondary">Sin resultados</div>
+                <div className="px-3 py-2 text-sm text-text-secondary">{emptyLabel}</div>
               ) : (
                 filtered.map(opt => (
                   <button

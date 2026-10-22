@@ -113,6 +113,14 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - Los **títulos de formularios** sí pueden ser descriptivos ("Editar servicio", "Editar deuda") usando su clave específica; la regla aplica solo a etiquetas de acciones.
 - Precedente: SPEC-114 usó "Editar servicio" en el menú del detalle de servicio; SPEC-115 lo corrige a "Editar" y documenta el estándar.
 
+### 4.6 Dropdowns: componente `Select` obligatorio
+
+- **Todo** selector de opciones (color, mes, moneda, estado, institución, etc.) DEBE usar el componente reutilizable `frontend/src/components/Select.tsx`: dropdown custom con portal, tokens de tema (`bg-card`, `text-text`, `text-text-secondary`) y soporte de darkmode.
+- **Prohibido** `<select>`/`<option>` nativo. El dropdown del sistema operativo rompe el patrón visual iOS de la app y no respeta el tema.
+- Los selectores con muchas opciones (colores, monedas, instituciones, etc.) DEBEN ser `searchable`: el buscador se enfoca al abrir y filtra por etiqueta sin distinguir mayúsculas ni acentos.
+- El build de `frontend/` ejecuta `frontend/scripts/check-ui-rules.cjs` **antes** de compilar y falla si detecta un `<select>` nativo. También se puede correr aislado con `npm run check:ui`.
+- Precedentes: SPEC-004 CA-022 (dropdowns custom, no el del OS), SPEC-111 CA-018 (frecuencia con `Select`), SPEC-118 (selector de color de autos y guardrail de build).
+
 ---
 
 ## 5. Convenciones de Código Go

@@ -8,6 +8,7 @@ import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
+import { autoSubtitle } from '../utils/auto'
 import type { Auto } from '../types'
 
 export default function AutosPage() {
@@ -78,7 +79,7 @@ export default function AutosPage() {
               <Icon name={auto.icon} className="w-6 h-6" />
             </div>
             <h3 className="font-semibold text-base truncate">{auto.brand} {auto.model}</h3>
-            <p className="text-sm text-text-secondary mt-1 truncate">{auto.year} · {auto.color} · {auto.placa}</p>
+            <p className="text-sm text-text-secondary mt-1 truncate">{autoSubtitle(t, auto)}</p>
           </div>
         ))}
       </div>

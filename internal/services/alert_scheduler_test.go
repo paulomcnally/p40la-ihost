@@ -136,6 +136,21 @@ func TestRenderAlertsContent(t *testing.T) {
 	}
 }
 
+func TestRenderAlertsContentSinPlaca(t *testing.T) {
+	alerts := []models.AutoAlert{
+		{AutoID: 3, Year: 2021, Model: "Versa", Brand: "Nissan", AlertType: models.AlertTypeNoInsurance},
+	}
+
+	html := renderAlertsContent(alerts)
+
+	if !strings.Contains(html, "Nissan Versa 2021") {
+		t.Errorf("vehículo sin placa no aparece en HTML")
+	}
+	if !strings.Contains(html, ">—<") {
+		t.Errorf("la celda de placa vacía debería mostrar un guion")
+	}
+}
+
 func TestFormatDate(t *testing.T) {
 	cases := []struct{ in, want string }{
 		{"2025-01-01", "01/01/2025"},
