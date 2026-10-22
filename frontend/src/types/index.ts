@@ -498,3 +498,91 @@ export interface SuggestedAssignment {
   source_service_ids?: number[]
   source_service_names?: string[]
 }
+
+// --- Automation unificada (SPEC-111) ---
+
+export interface AutomationAccountOption {
+  id: number
+  label: string
+}
+
+export interface AutomationAccount {
+  id: number
+  institution_id: number
+  institution_name?: string
+  identifier: string
+  label?: string
+  plugin_name?: string | null
+  webhook_url?: string | null
+  schedule_time?: string | null
+  schedule_enabled: boolean
+  last_run_at?: string | null
+  schedule_frequency: string
+  schedule_interval?: number | null
+  schedule_days?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AutomationPlugin {
+  id: number
+  name: string
+  version: string
+  source: string
+  description?: string
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface AutomationBill {
+  id: number
+  account_id: number
+  plugin_name: string
+  plugin_version: string
+  source: string
+  status: string
+  error?: string | null
+  fetched_at: string
+  created_at: string
+}
+
+export interface AutomationWebhookLog {
+  id: number
+  account_id: number
+  webhook_url: string
+  status: string
+  response?: string
+  ran_at: string
+  http_status?: number | null
+}
+
+export interface AutomationCredentialField {
+  key: string
+  label: string
+  type: 'text' | 'password'
+  required: boolean
+  secret: boolean
+}
+
+export interface AutomationBillItem {
+  period: string
+  amount: string
+  due_date: string
+  issue_date: string
+  status: string
+}
+
+export interface AutomationAccountInput {
+  institution_id: number
+  identifier: string
+  label?: string
+  credentials?: string
+  plugin_name?: string
+  webhook_url?: string
+  schedule_enabled?: boolean
+  schedule_time?: string
+  schedule_frequency?: string
+  schedule_interval?: number | null
+  schedule_days?: string | null
+}
