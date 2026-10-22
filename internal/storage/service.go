@@ -270,3 +270,32 @@ func (s *ServiceStorage) ListByAutomationAccountID(ctx context.Context, accountI
 	defer rows.Close()
 	return scanServices(rows)
 }
+
+// ClearAutomationAccount desvincula todos los servicios de una cuenta de
+// automation (SPEC-110 REQ-018). La relación vive en services.
+func (s *ServiceStorage) ClearAutomationAccount(ctx context.Context, accountID int64) error {
+	if _, err := s.db.ExecContext(ctx,
+		"UPDATE services SET automation_account_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE automation_account_id = ?",
+		accountID); err != nil {
+		return fmt.Errorf("desvincular servicios de la cuenta %d: %w", accountID, err)
+	}
+	return nil
+}
+
+// SetAutomationAccount vincula un servicio con una cuenta de automation.
+func (s *ServiceStorage) SetAutomationAccount(ctx context.Context, serviceID, accountID int64) error {
+	result, err := s.db.ExecContext(ctx,
+		"UPDATE services SET automation_account_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL",
+		accountID, serviceID)
+	if err != nil {
+		return fmt.Errorf("vincular servicio %d a la cuenta %d: %w", serviceID, accountID, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("verificar vínculo del servicio %d: %w", serviceID, err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("el servicio %d no existe", serviceID)
+	}
+	return nil
+}

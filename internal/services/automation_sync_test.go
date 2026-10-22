@@ -213,3 +213,54 @@ func TestIsAutomationDue(t *testing.T) {
 		t.Error("monthly debería ejecutarse el día 15")
 	}
 }
+
+func TestAutomationAccountServiceLink(t *testing.T) {
+	automation := newAutomationSyncEnv(t, &fakePlugin{})
+	ctx := context.Background()
+
+	input := AutomationAccountInput{
+		InstitutionID: 1,
+		Identifier:    "demo-account-001",
+		PluginName:    stringPtr("demo.provider"),
+		ServiceID:     int64Ptr(0),
+	}
+	if _, err := automation.UpdateAccount(ctx, 1, input); err != nil {
+		t.Fatalf("desvincular: %v", err)
+	}
+	linked, err := automation.serviceStorage.ListByAutomationAccountID(ctx, 1)
+	if err != nil {
+		t.Fatalf("listar desvinculados: %v", err)
+	}
+	if len(linked) != 0 {
+		t.Fatalf("servicios vinculados = %d, want 0", len(linked))
+	}
+
+	input.ServiceID = int64Ptr(1)
+	if _, err := automation.UpdateAccount(ctx, 1, input); err != nil {
+		t.Fatalf("vincular: %v", err)
+	}
+	linked, err = automation.serviceStorage.ListByAutomationAccountID(ctx, 1)
+	if err != nil {
+		t.Fatalf("listar vinculados: %v", err)
+	}
+	if len(linked) != 1 || linked[0].ID != 1 {
+		t.Fatalf("servicios vinculados = %+v, want servicio 1", linked)
+	}
+
+	// Sin service_id el vínculo actual se preserva.
+	input.ServiceID = nil
+	if _, err := automation.UpdateAccount(ctx, 1, input); err != nil {
+		t.Fatalf("preservar vínculo: %v", err)
+	}
+	linked, err = automation.serviceStorage.ListByAutomationAccountID(ctx, 1)
+	if err != nil {
+		t.Fatalf("listar preservados: %v", err)
+	}
+	if len(linked) != 1 {
+		t.Fatalf("servicios vinculados = %d, want 1", len(linked))
+	}
+}
+
+func int64Ptr(value int64) *int64 { return &value }
+
+func stringPtr(value string) *string { return &value }
