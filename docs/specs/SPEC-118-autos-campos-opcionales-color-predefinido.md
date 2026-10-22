@@ -4,7 +4,7 @@ id: "SPEC-118"
 status: "released"
 author: "opencode"
 created: "2026-10-21"
-updated: "2026-10-21"
+updated: "2026-10-22"
 github_issue: 121
 ---
 
@@ -14,7 +14,7 @@ github_issue: 121
 **Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
-**Actualizado**: 2026-10-21
+**Actualizado**: 2026-10-22  
 
 ---
 
@@ -425,3 +425,4 @@ Sin cambios de rutas, middleware ni códigos de error existentes.
 | 2026-10-21 | opencode | Corrección: el selector de color usa el componente custom `Select` (no `<select>` nativo del OS), se migra el último select nativo y se agrega guardrail de build + reglas en AGENTS/project-rules/skill. |
 | 2026-10-21 | opencode | El `Select` de color incorpora buscador con autofocus, filtrado sin mayúsculas ni acentos y textos i18n (`app.search`, `app.no_results`). |
 | 2026-10-21 | opencode | Release: merge `877196a` de `feature/SPEC-118` a `main`, label `spec/released`, issue #121 cerrado y worktree limpiado. |
+| 2026-10-22 | opencode | Deploy: release **v0.5.1** (tag `v0.5.1`) publicado en Docker Hub; workflow [39730386628](https://github.com/paulomcnally/p40la-ihost/actions/runs/39730386628) success. Manifiesto multi-arch verificado: `linux/amd64`, `linux/arm/v7`, `linux/arm64`. |
