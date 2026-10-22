@@ -935,7 +935,6 @@
     "no_institutions": "Create an institution first.",
     "no_institutions_action": "Go to institutions",
     "no_plugins": "No plugins available.",
-    "invalid_url": "URL must start with http:// or https://",
     "invalid_time": "Enter a valid time (HH:MM).",
     "invalid_interval": "Interval must be at least 1 day.",
     "invalid_day": "Choose a day between 1 and 28.",
