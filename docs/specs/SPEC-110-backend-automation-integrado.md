@@ -1,7 +1,7 @@
 ---
 title: "Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo)"
 id: "SPEC-110"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 113
 # Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo)
 
 **ID**: SPEC-110  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -226,3 +226,4 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 | 2026-10-21 | opencode | Fase 1 implementada: modelos, storage con join a `institutions`, servicios y endpoints de lectura (`/api/automation/accounts`, `?for=service`, plugins, facturas, logs) con tests y validación contra copia de producción. |
 | 2026-10-21 | opencode | Fase 2 implementada: CRUD de cuentas con validación de institución/plugin y unicidad, revelado de credenciales con contraseña, webhook/schedule por cuenta y bloqueo de borrado si hay servicios vinculados. E2E contra copia de producción (201/200/401/409/400). |
 | 2026-10-21 | opencode | Fase 3 implementada: registry del módulo privado de plugins (repo aparte), catálogo de plugins, fetch y persistencia de facturas, sync directo a `WebhookService.UpsertBill` (sin webhook HTTP interno), scheduler en proceso y bot/endpoint de sync usando `AutomationSyncer`. Go 1.26 y Dockerfile actualizados por requisito del módulo. E2E: 5 plugins registrados y scheduler iniciado sobre copia de producción. Se agregaron `GET /api/automation/plugins/{name}/schema` y `POST /api/automation/accounts/{id}/bills:fetch`. |
+| 2026-10-21 | opencode | Backend completo y validado: CRUD, plugins, sync directo, scheduler, bot y endpoints auxiliares. `go test ./...` y build OK. Pasa a pending_release a la espera del release conjunto 109–112. |
