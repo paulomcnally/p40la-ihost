@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
@@ -61,9 +61,26 @@ export default function AutomationFormPage() {
   const [plugins, setPlugins] = useState<AutomationPlugin[]>([])
   const [weeklyDays, setWeeklyDays] = useState<number[]>([1])
   const [monthlyDay, setMonthlyDay] = useState(15)
-  const [activeTab, setActiveTab] = useState<FormTab>('info')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // La tab activa vive en la URL (?tab=info|plugin|frequency) para que el
+  // formulario se pueda compartir y sobreviva a una recarga (SPEC-111 REQ-024).
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const activeTab: FormTab =
+    tabParam === 'plugin' ? 'plugin'
+      : tabParam === 'frequency' || tabParam === 'schedule' ? 'schedule'
+        : 'info'
+  const setActiveTab = (tab: FormTab) => {
+    const next = new URLSearchParams(searchParams)
+    if (tab === 'info') {
+      next.delete('tab')
+    } else {
+      next.set('tab', tab === 'schedule' ? 'frequency' : tab)
+    }
+    setSearchParams(next, { replace: true })
+  }
 
   useEffect(() => {
     const init = async () => {
