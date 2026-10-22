@@ -171,7 +171,8 @@ Luego, en la UI:
 - Login.
 - `/automation`: 6 cuentas (o el conteo esperado).
 - Detalle de una cuenta: facturas y logs.
-- `/services`: editar un servicio y ver el selector de cuentas.
+- `/automation`: editar cada cuenta, elegir el **servicio destino** en el selector y guardar. El import no crea ese vínculo; el formulario de servicio ya no lo edita.
+- Alternativa opcional: backfill único que copie el vínculo viejo (`automation_accounts.webhook_url` → `services.webhook_uuid`) a `services.automation_account_id`, sobre una copia y con backup.
 - Ejecutar un sync manual solo si el proveedor está disponible.
 
 ---
