@@ -16,11 +16,11 @@ type ServiceHandlers struct {
 	service      *services.ServiceService
 	homes        *services.HomeService
 	institutions *storage.InstitutionStorage
-	automation   *services.AutomationClient
+	automation   services.AutomationSyncer
 }
 
 // NewServiceHandlers crea un nuevo ServiceHandlers.
-func NewServiceHandlers(service *services.ServiceService, homes *services.HomeService, institutions *storage.InstitutionStorage, automation *services.AutomationClient) *ServiceHandlers {
+func NewServiceHandlers(service *services.ServiceService, homes *services.HomeService, institutions *storage.InstitutionStorage, automation services.AutomationSyncer) *ServiceHandlers {
 	return &ServiceHandlers{service: service, homes: homes, institutions: institutions, automation: automation}
 }
 
@@ -213,25 +213,19 @@ func (h *ServiceHandlers) SyncService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	configured, err := h.automation.IsConfigured(r.Context())
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
-		return
-	}
-	if !configured {
-		respondError(w, http.StatusBadRequest, "automation_not_configured", "Configurá Automation en Settings antes de sincronizar.")
-		return
-	}
-
 	delivered, failed, err := h.automation.SyncAccount(r.Context(), *svc.AutomationAccountID)
 	if err != nil {
 		switch {
-		case errors.Is(err, services.ErrAutomationNotConfigured):
-			respondError(w, http.StatusBadRequest, "automation_not_configured", err.Error())
+		case errors.Is(err, services.ErrAutomationAccountNotFound):
+			respondError(w, http.StatusNotFound, "not_found", err.Error())
+		case errors.Is(err, services.ErrAutomationNoPlugin),
+			errors.Is(err, services.ErrAutomationNotLinked),
+			errors.Is(err, services.ErrAutomationAmbiguousService),
+			errors.Is(err, services.ErrAutomationWebhooksDisabled),
+			errors.Is(err, services.ErrAutomationNotConfigured):
+			respondError(w, http.StatusBadRequest, "invalid_sync", err.Error())
 		case errors.Is(err, services.ErrAutomationUnauthorized):
 			respondError(w, http.StatusUnauthorized, "automation_unauthorized", err.Error())
-		case errors.Is(err, services.ErrAutomationUnreachable):
-			respondError(w, http.StatusBadGateway, "automation_unreachable", err.Error())
 		default:
 			respondError(w, http.StatusBadGateway, "automation_error", err.Error())
 		}

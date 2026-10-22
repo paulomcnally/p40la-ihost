@@ -42,12 +42,13 @@ Al terminar, la app principal podrá listar cuentas de automation por instituci�
    - `GET /api/automation/accounts/{id}/webhook/logs`
    - `GET/PUT /api/automation/settings/webhook`
 4. **REQ-004**: Las credenciales de las cuentas se guardan como JSON en `credentials`; el endpoint de revelado (`POST /api/automation/accounts/{id}/credentials:reveal`) exige la contraseña del usuario de p40la (mismo patrón de seguridad que automation).
-5. **REQ-005**: Ejecutar los plugins (módulo privado `p40la-ihost-automation-plugins`) para consultar facturas de una cuenta y persistirlas en `automation_bills`, sin llamadas HTTP al proceso viejo.
+5. **REQ-005**: Ejecutar los plugins (módulo privado `p40la-ihost-automation-plugins`, repo aparte) para consultar facturas de una cuenta, persistirlas en `automation_bills` y entregarlas **en proceso** al servicio vinculado (sin POST HTTP interno).
 6. **REQ-006**: Scheduler en proceso: job diario por cuenta con `schedule_enabled`, `schedule_time`, `schedule_frequency`, `schedule_interval` y `schedule_days`, con la misma semántica que automation. Debe convivir con los schedulers existentes de p40la sin bloquear el arranque.
-7. **REQ-007**: `POST /api/services/{id}/sync` deja de usar `AutomationClient` y llama directamente al servicio de automation (fetch del plugin + entrega/upsert de facturas).
+7. **REQ-007**: `POST /api/services/{id}/sync` deja de usar `AutomationClient` y llama directamente al servicio de automation: fetch del plugin + `WebhookService.UpsertBill` en proceso. No hay llamada HTTP a `/webhooks/{uuid}`.
 8. **REQ-008**: El bot de Telegram (`/sincronizar`, `/sincronizar_servicio`) usa el mismo camino directo.
 9. **REQ-009**: Migrar las claves `automation_base_url` y `automation_api_key` a obsoletas: se dejan de leer y se documenta su eliminación del frontend en SPEC-111.
 10. **REQ-010**: Tests unitarios de storage y servicios, y de integración del sync con un plugin de prueba. La validación con datos reales se corre contra una copia de la DB de producción (regla de AGENTS.md).
+11. **REQ-017**: El módulo privado de plugins requiere Go 1.26. Actualizar `go.mod` (`go 1.26.0`) y el Dockerfile a `golang:1.26-alpine`; el runtime del iHost no cambia (binario estático).
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -109,6 +110,11 @@ Al terminar, la app principal podrá listar cuentas de automation por instituci�
 - **Decisión**: mantener el endpoint en el proyecto viejo hasta SPEC-112; el nuevo backend de p40la no lo necesita.
 - **Consecuencias**: convivencia breve sin romper el sync actual.
 
+**ADR-005**: El sync interno no usa webhooks HTTP.
+- **Contexto**: al estar todo en el mismo proceso, el POST a `/webhooks/{uuid}` es un salto innecesario; además `automation_webhook_logs` ya existe para la historia.
+- **Decisión**: el sync llama a `WebhookService.UpsertBill` directamente. El servicio destino se resuelve por `services.automation_account_id` (preferido) o, como fallback de transición, por el `uuid` del `webhook_url` de la cuenta. El endpoint `POST /webhooks/{uuid}` se mantiene **solo para clientes externos** (SPEC-069).
+- **Consecuencias**: menos latencia y menos puntos de fallo; los clientes externos no se ven afectados. Si una cuenta no tiene servicio vinculado ni webhook_url válido, el sync falla con un mensaje claro.
+
 ## 4. Diseño Técnico
 
 ### 4.1 Diagrama
@@ -158,7 +164,7 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 ### 4.5 Dependencias
 
 - **Internas**: `internal/db`, `internal/storage`, `internal/services`, `internal/api`, `internal/models`, `cmd/server`, bot de Telegram.
-- **Externas**: `github.com/paulomcnally/p40la-ihost-automation-plugins` (privado), `modernc.org/sqlite` (ya presente). Sin otras.
+- **Externas**: `github.com/paulomcnally/p40la-ihost-automation-plugins` v1.1.0 (privado, repo aparte; requiere Go 1.26), `modernc.org/sqlite` (ya presente). Sin otras.
 
 ## 5. Criterios de Aceptación
 
@@ -219,3 +225,4 @@ El de SPEC-109 §4.3. Cuentas con `institution_id`, plugins, facturas y logs. Si
 | 2026-10-21 | opencode | Creación inicial: backend integrado de automation (rutas, plugins, scheduler y sync directo). |
 | 2026-10-21 | opencode | Fase 1 implementada: modelos, storage con join a `institutions`, servicios y endpoints de lectura (`/api/automation/accounts`, `?for=service`, plugins, facturas, logs) con tests y validación contra copia de producción. |
 | 2026-10-21 | opencode | Fase 2 implementada: CRUD de cuentas con validación de institución/plugin y unicidad, revelado de credenciales con contraseña, webhook/schedule por cuenta y bloqueo de borrado si hay servicios vinculados. E2E contra copia de producción (201/200/401/409/400). |
+| 2026-10-21 | opencode | Fase 3 implementada: registry del módulo privado de plugins (repo aparte), catálogo de plugins, fetch y persistencia de facturas, sync directo a `WebhookService.UpsertBill` (sin webhook HTTP interno), scheduler en proceso y bot/endpoint de sync usando `AutomationSyncer`. Go 1.26 y Dockerfile actualizados por requisito del módulo. E2E: 5 plugins registrados y scheduler iniciado sobre copia de producción. |

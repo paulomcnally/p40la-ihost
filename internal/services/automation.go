@@ -19,11 +19,30 @@ var ErrAutomationAccountNotFound = errors.New("cuenta de automation no encontrad
 // unificado (SPEC-110 fase 1). Las operaciones de escritura, plugins y
 // scheduler se agregan en las fases siguientes.
 type AutomationService struct {
-	storage *storage.AutomationStorage
+	storage        *storage.AutomationStorage
+	serviceStorage *storage.ServiceStorage
+	webhook        *WebhookService
+	settings       *SystemSettingsService
+	plugins        PluginRegistry
 }
 
 func NewAutomationService(st *storage.AutomationStorage) *AutomationService {
 	return &AutomationService{storage: st}
+}
+
+// SetSyncDependencies inyecta las dependencias del sync/plugins (SPEC-110
+// fase 3). Se separa del constructor para que el CRUD se pueda testear sin
+// registry ni webhook.
+func (s *AutomationService) SetSyncDependencies(
+	serviceStorage *storage.ServiceStorage,
+	webhook *WebhookService,
+	settings *SystemSettingsService,
+	plugins PluginRegistry,
+) {
+	s.serviceStorage = serviceStorage
+	s.webhook = webhook
+	s.settings = settings
+	s.plugins = plugins
 }
 
 func (s *AutomationService) ListAccounts(ctx context.Context) ([]models.AutomationAccount, error) {
