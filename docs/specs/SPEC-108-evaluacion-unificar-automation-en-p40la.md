@@ -1,7 +1,7 @@
 ---
 title: "Evaluación: unificar p40la-ihost-automation dentro de p40la-ihost (una sola app y una sola DB)"
 id: "SPEC-108"
-status: "draft"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 111
 # Evaluación: unificar p40la-ihost-automation dentro de p40la-ihost (una sola app y una sola DB)
 
 **ID**: SPEC-108  
-**Estado**: draft  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -323,3 +323,4 @@ Cada spec de implementación se crea en su propio worktree y se libera por separ
 | 2026-10-21 | opencode | Creación inicial: evaluación de unificación de `p40la-ihost-automation` dentro de `p40la-ihost` para eliminar el ID manual de cuenta y las dos DB. |
 | 2026-10-21 | opencode | Prototipo de migración ejecutado sobre copias: tablas `automation_*`, 28 facturas y 100 logs preservados, `integrity_check` ok. Se documentó la pérdida de datos si se copia la DB sin el `-wal` y se definió la entrega en SPEC-109…SPEC-112. |
 | 2026-10-21 | opencode | `automation_apps` se unifica con `institutions`: `automation_accounts.institution_id`, matching por nombre normalizado y mapa de override para proveedores con nombres distintos. |
+| 2026-10-21 | opencode | Plan ejecutado y cerrado: SPEC-109 (migración), SPEC-110 (backend), SPEC-111 (frontend) y SPEC-112 (despliegue/import) implementadas y liberadas. Estado: released. |
