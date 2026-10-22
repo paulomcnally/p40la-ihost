@@ -281,3 +281,38 @@ func accountInput(req automationAccountRequest) services.AutomationAccountInput 
 		ScheduleDays:      req.ScheduleDays,
 	}
 }
+
+// GetPluginSchema devuelve los campos de credenciales de un plugin compilado.
+func (h *AutomationHandlers) GetPluginSchema(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	fields, err := h.automation.PluginSchema(r.Context(), name)
+	if err != nil {
+		respondError(w, http.StatusNotFound, "plugin_not_found", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, fields)
+}
+
+// FetchBills consulta el plugin de una cuenta manualmente y devuelve las
+// facturas obtenidas (además de persistirlas en automation_bills).
+func (h *AutomationHandlers) FetchBills(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+	bills, err := h.automation.FetchBills(r.Context(), id)
+	if errors.Is(err, services.ErrAutomationAccountNotFound) {
+		respondError(w, http.StatusNotFound, "not_found", err.Error())
+		return
+	}
+	if errors.Is(err, services.ErrAutomationNoPlugin) {
+		respondError(w, http.StatusBadRequest, "no_plugin", err.Error())
+		return
+	}
+	if err != nil {
+		respondError(w, http.StatusBadGateway, "plugin_error", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]any{"bills": bills})
+}

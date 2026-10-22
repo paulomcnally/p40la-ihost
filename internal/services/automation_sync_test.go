@@ -84,6 +84,20 @@ func newAutomationSyncEnv(t *testing.T, plugin *fakePlugin) *AutomationService {
 	return automation
 }
 
+func TestAutomationPluginSchema(t *testing.T) {
+	automation := newAutomationSyncEnv(t, &fakePlugin{})
+	fields, err := automation.PluginSchema(context.Background(), "demo.provider")
+	if err != nil {
+		t.Fatalf("PluginSchema: %v", err)
+	}
+	if len(fields) != 1 || fields[0].Key != "user" {
+		t.Errorf("fields = %+v", fields)
+	}
+	if _, err := automation.PluginSchema(context.Background(), "no.existe"); err == nil {
+		t.Error("se esperaba error para plugin inexistente")
+	}
+}
+
 func TestAutomationSyncAccount(t *testing.T) {
 	plugin := &fakePlugin{bills: []plugins.Bill{{
 		Period:    "2026-09",
