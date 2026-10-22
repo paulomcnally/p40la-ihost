@@ -10,11 +10,16 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import AddInsuranceModal from '../components/AddInsuranceModal'
 import CardMenu from '../components/CardMenu'
 import type { Auto, AutoService } from '../types'
+import { resolveCurrency } from '../utils/currency'
 
 export default function AutoShowPage() {
   const { id } = useParams()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { currencies, loadCurrencies } = useAppStore()
+  const currencyLabel = (currencyId: number) => {
+    const resolved = resolveCurrency(currencies, { id: currencyId })
+    return resolved.symbol || resolved.code
+  }
   const [auto, setAuto] = useState<Auto | null>(null)
   const [insurance, setInsurance] = useState<AutoService[]>([])
   const [loading, setLoading] = useState(true)
@@ -150,7 +155,7 @@ export default function AutoShowPage() {
                             </div>
                           </div>
                           <div className="text-right shrink-0 min-w-0 max-w-[45%] pr-8">
-                            <p className="text-sm font-semibold break-words">{formatMoney(item.suggested_amount, currencies.find(c => c.id === item.currency_id)?.symbol)}</p>
+                            <p className="text-sm font-semibold break-words">{formatMoney(item.suggested_amount, currencyLabel(item.currency_id))}</p>
                             <p className="text-xs text-text-secondary">{item.frequency === 'monthly' ? 'Mensual' : 'Anual'}</p>
                             {item.start_date && (
                               <p className="text-xs text-text-secondary mt-0.5 break-words">

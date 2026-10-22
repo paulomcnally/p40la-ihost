@@ -1,7 +1,7 @@
 ---
 title: "Estandarización de formato y moneda en todos los montos del módulo de servicios y facturas"
 id: "SPEC-113"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 116
 # Estandarización de formato y moneda en todos los montos del módulo de servicios y facturas
 
 **ID**: SPEC-113  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -36,7 +36,7 @@ Se propone una **regla única de presentación de montos**: todo valor monetario
 
 1. **REQ-001**: En `/services/bills/:id?tab=analisis`, **todos** los montos (Total, Pagado, Pendiente, Promedio, evolución, cambios de período, mayor aumento, mayor disminución, tooltips y etiquetas del gráfico de barras) deben mostrar su moneda. Ningún número monetario puede renderizarse sin símbolo o código de moneda.
 2. **REQ-002**: En `/services/bills/:id?tab=facturas`, la columna **Monto** de la tabla desktop y el monto de las cards móviles deben mostrar siempre la moneda del servicio.
-3. **REQ-003**: La moneda de una factura se resuelve desde **el servicio dueño de la factura** (`service.currency_id`) contra el catálogo `currencies`; si el catálogo no está disponible o el `currency_id` no existe, se debe mostrar el código ISO como fallback (nunca un número sin unidad). No se debe asumir `NIO` por defecto.
+3. **REQ-003**: La moneda de una factura se resuelve desde **el servicio dueño de la factura** (`service.currency_id`) contra el catálogo `currencies`; si el catálogo no está disponible o el `currency_id` no existe, se debe mostrar el código ISO cuando se conozca y, en el peor caso, el símbolo genérico `¤`. Nunca se debe renderizar un número monetario sin unidad ni asumir `NIO` por defecto.
 4. **REQ-004**: La página de facturas debe **cargar el catálogo de monedas por sí misma** al montarse (o exponer una forma equivalente que no dependa de que otra página lo haya cargado antes). Debe funcionar con navegación directa por URL, recarga (F5) y modo incógnito autenticado.
 5. **REQ-005**: En el formulario de creación/edición de factura (`BillFormPage`), el campo **Monto** debe indicar la moneda del servicio de forma visible y de solo lectura (por ejemplo, etiqueta "Monto (C$ · NIO)" o sufijo dentro del input). No se agrega un selector de moneda: la factura hereda la moneda del servicio.
 6. **REQ-006**: En el modal de subida de facturas (`UploadBillModal`), cada campo **Monto** por archivo debe indicar la moneda del servicio con el mismo criterio que REQ-005.
@@ -229,7 +229,7 @@ No se crean endpoints. Se consumen los existentes:
 - [ ] CA-001: Dado un servicio con moneda `NIO` y al menos una factura, cuando se abre **directamente** `/services/bills/3?tab=analisis` (URL nueva o recarga), entonces todos los montos muestran `C$` y los resúmenes indican `NIO`; ningún monto queda como número pelado.
 - [ ] CA-002: Dado el mismo servicio, cuando se abre `/services/bills/3?tab=facturas`, entonces la columna Monto (desktop) y el monto de cada card (móvil) muestran la moneda.
 - [ ] CA-003: Dado un servicio con moneda `USD`, cuando se abren ambas pestañas, entonces los montos muestran `US$`/`USD` y no `C$` ni `NIO`.
-- [ ] CA-004: Dado un catálogo de monedas que no se pudo cargar, cuando se abre la página, entonces los montos muestran el código ISO si está disponible y la vista no se rompe (sin `NaN`, sin `undefined`).
+- [ ] CA-004: Dado un catálogo de monedas que no se pudo cargar, cuando se abre la página, entonces los montos muestran el código ISO si está disponible, o el símbolo genérico `¤` en el peor caso, y la vista no se rompe (sin `NaN`, sin `undefined`).
 - [ ] CA-005: Cuando se crea o edita una factura, el campo Monto indica la moneda del servicio (etiqueta o sufijo) sin permitir cambiarla desde ese formulario.
 - [ ] CA-006: Cuando se sube una factura con el modal, cada campo Monto indica la moneda del servicio.
 - [ ] CA-007: Los separadores de miles, decimales y cantidad de decimales respetan la configuración de `Settings → Formato de moneda` (ej. `1.234,56` si así se configuró).
@@ -291,8 +291,21 @@ No se crean endpoints. Se consumen los existentes:
 - SPEC-060 (darkmode), SPEC-063 (navegación de retorno), SPEC-098 (facturas de servicios).
 - Regla del repo: i18n en `frontend/public/i18n/{es,en}.json`; validación con copia de la DB de producción.
 
+### 8.1 Implementación (2026-10-21)
+
+- **Helper**: `resolveCurrency()` y `UNKNOWN_CURRENCY_SYMBOL` (`¤`) en `frontend/src/utils/currency.ts`. Resuelve por `id` con prioridad y por `code` como alternativa; no inventa moneda.
+- **Facturas**: `BillsPage.tsx` ahora carga el catálogo de monedas dentro de su propio `load()` (en paralelo con servicio y facturas), resuelve la moneda desde `service.currency_id` y usa el helper en cards y tabla.
+- **Análisis**: `BillAnalysis.tsx` recibe `{symbol, code}` y eliminó las concatenaciones manuales de símbolo. Los encabezados de resumen muestran el código ISO; gráficos, badges y filas usan símbolo + número.
+- **Formularios**: `BillFormPage.tsx` y `UploadBillModal.tsx` muestran `Monto (símbolo · ISO)`; `RenewServiceModal.tsx` muestra la moneda en el monto sugerido. `BillHistoryModal.tsx` formatea los cambios de monto con la moneda del servicio.
+- **Auditoría REQ-009**: se reemplazó la resolución ad-hoc (`currencies.find`) por `resolveCurrency()` en `ServicesPage.tsx`, `AutoShowPage.tsx` y `AddInsuranceModal.tsx`. Hallazgos no corregidos (fuera del módulo de servicios, sin cambios en esta spec): `DebtAnalysis.tsx` usa `currency_code || 'NIO'` como fallback hardcodeado; `RegistrosPage.tsx` y `BudgetPage.tsx` concatenan el código manualmente. Se recomienda una spec futura de formato de moneda global.
+- **Validación manual**: sobre una copia de la DB de producción sanitizada (integraciones de salida deshabilitadas en la copia, sin escrituras en producción), servidor local en puerto alternativo. Se verificó navegación directa por URL y recarga en servicios NIO y USD, pestañas Análisis y Facturas, cards móviles, formulario de factura y darkmode/lightmode. Build de Vite y `go test ./...` en verde.
+
+**Nota**: los criterios de aceptación quedan pendientes de confirmación manual del usuario antes de pasar la spec a `pending_release`.
+
 ## 9. Historial de Cambios
 
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial de la especificación a partir del reporte del usuario sobre montos sin moneda en `/services/bills/:id` (pestañas Análisis y Facturas) y en el campo Monto del formulario. |
+| 2026-10-21 | opencode | Inicio de implementación: estado `in_progress`. |
+| 2026-10-21 | opencode | Implementación completa en worktree: helper `resolveCurrency`, fix de carga de monedas y formato en Análisis/Facturas, etiquetas de moneda en formularios y auditoría de vistas relacionadas. Build y tests en verde; validación manual sobre copia de producción sanitizada. Pendiente confirmación del usuario. |
