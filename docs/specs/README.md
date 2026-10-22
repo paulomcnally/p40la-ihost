@@ -9,9 +9,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | **Total de specs** | 114 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 1 🟣 |
+| **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 113 🟢 |
+| **Released** | 114 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-115 |
 
@@ -134,7 +134,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-112 | Unificación automation (4/4): despliegue único e importación del export JSON | released | 2026-10-21 | opencode |
 | SPEC-113 | Estandarización de formato y moneda en todos los montos del módulo de servicios y facturas | released | 2026-10-21 | opencode |
 | SPEC-114 | Opción Editar servicio en el menú de acciones del detalle de servicio | released | 2026-10-21 | opencode |
-| SPEC-115 | Menú de acciones Editar en el detalle de deuda y estandarización de la etiqueta Editar | in_progress | 2026-10-21 | opencode |
+| SPEC-115 | Menú de acciones Editar en el detalle de deuda y estandarización de la etiqueta Editar | released | 2026-10-21 | opencode |
 
 ---
 
@@ -204,4 +204,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-10-21 — SPEC-115 in_progress (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
+*Última actualización de este tracker: 2026-10-21 — SPEC-115 released (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
