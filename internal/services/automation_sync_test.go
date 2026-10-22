@@ -264,3 +264,25 @@ func TestAutomationAccountServiceLink(t *testing.T) {
 func int64Ptr(value int64) *int64 { return &value }
 
 func stringPtr(value string) *string { return &value }
+
+func TestAutomationSyncIgnoresWebhookFeatureFlag(t *testing.T) {
+	plugin := &fakePlugin{bills: []plugins.Bill{{
+		Period: "2026-09",
+		Amount: "10.00",
+		Status: "pending",
+	}}}
+	automation := newAutomationSyncEnv(t, plugin)
+	ctx := context.Background()
+
+	if err := automation.settings.SetWebhookEnabled(ctx, false); err != nil {
+		t.Fatalf("deshabilitar webhooks: %v", err)
+	}
+
+	delivered, failed, err := automation.SyncAccount(ctx, 1)
+	if err != nil {
+		t.Fatalf("SyncAccount con webhooks deshabilitados: %v", err)
+	}
+	if delivered != 1 || failed != 0 {
+		t.Errorf("delivered=%d failed=%d, esperado 1/0", delivered, failed)
+	}
+}
