@@ -96,16 +96,6 @@ export default function AutomationDetailPage() {
     }
   }
 
-  const copyWebhook = async () => {
-    if (!account?.webhook_url) return
-    try {
-      await navigator.clipboard.writeText(account.webhook_url)
-      showToast(t('services.webhook_copied'), 'success')
-    } catch {
-      showToast(t('errors.generic'), 'error')
-    }
-  }
-
   if (loading) return <LoadingSpinner />
   if (!account) {
     return (
@@ -161,21 +151,6 @@ export default function AutomationDetailPage() {
           <div>
             <dt className="text-text-secondary">{t('automation.last_run')}</dt>
             <dd className="font-medium mt-0.5">{formatDate(account.last_run_at) || t('automation.never')}</dd>
-          </div>
-          <div>
-            <dt className="text-text-secondary">{t('automation.webhook')}</dt>
-            <dd className="mt-0.5 flex items-center gap-2 min-w-0">
-              <span className="truncate text-text-secondary">{account.webhook_url || '—'}</span>
-              {account.webhook_url && (
-                <button
-                  onClick={copyWebhook}
-                  className="p-1.5 rounded-full hover:bg-bg transition-colors shrink-0"
-                  title={t('services.webhook_copy')}
-                >
-                  <Icon name="copy" className="w-4 h-4" />
-                </button>
-              )}
-            </dd>
           </div>
         </dl>
 
