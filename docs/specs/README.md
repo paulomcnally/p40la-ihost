@@ -6,12 +6,12 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 110 |
+| **Total de specs** | 111 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 110 🟢 |
+| **Released** | 111 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-112 |
 
@@ -127,6 +127,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-105 | Evolución de deudas en los últimos 12 meses: gráfico comparativo y totales | released | 2026-10-21 | opencode |
 | SPEC-106 | Gráfica de deudas: abrir por defecto en Últimos 12 meses y mostrar monto adeudado por mes | released | 2026-10-21 | opencode |
 | SPEC-107 | Proyección de finalización de deudas: gráfico escalonado con granularidad mensual o anual | released | 2026-10-21 | opencode |
+| SPEC-108 | Evaluación: unificar p40la-ihost-automation dentro de p40la-ihost (una sola app y una sola DB) | released | 2026-10-21 | opencode |
 | SPEC-109 | Unificación automation (1/4): migración de esquema y datos a tablas automation_* en app.db | released | 2026-10-21 | opencode |
 | SPEC-110 | Unificación automation (2/4): backend integrado (rutas, plugins, scheduler y sync directo) | released | 2026-10-21 | opencode |
 | SPEC-111 | Unificación automation (3/4): frontend integrado y selector de cuentas | released | 2026-10-21 | opencode |
@@ -200,4 +201,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-10-21 — SPEC-109 a SPEC-112 (Unificación de automation en p40la-ihost) released.*
+*Última actualización de este tracker: 2026-10-21 — SPEC-108 a SPEC-112 (Evaluación y unificación de automation en p40la-ihost) released.*
