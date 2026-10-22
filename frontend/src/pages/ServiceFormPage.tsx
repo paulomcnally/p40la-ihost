@@ -8,7 +8,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import IconPickerModal from '../components/IconPickerModal'
 import Select from '../components/Select'
-import type { Service, Institution, AnalyzerInfo } from '../types'
+import type { Service, Institution, AnalyzerInfo, AutomationAccountOption } from '../types'
 
 export default function ServiceFormPage() {
   const navigate = useNavigate()
@@ -41,11 +41,22 @@ export default function ServiceFormPage() {
   const [loading, setLoading] = useState(false)
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [noInstitutions, setNoInstitutions] = useState(false)
+  const [automationAccounts, setAutomationAccounts] = useState<AutomationAccountOption[]>([])
 
   useEffect(() => {
     loadAll()
     loadInstitutions()
+    loadAutomationAccounts()
   }, [])
+
+  const loadAutomationAccounts = async () => {
+    try {
+      const list = await api.automation.accountOptions()
+      setAutomationAccounts(list || [])
+    } catch {
+      setAutomationAccounts([])
+    }
+  }
 
   const loadInstitutions = async () => {
     try {
@@ -295,14 +306,29 @@ export default function ServiceFormPage() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">{t('services.automation_account')}</label>
-          <input
-            type="number"
-            min="1"
-            value={formData.automation_account_id}
-            onChange={(e) => handleChange('automation_account_id', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-            placeholder={t('services.automation_account_placeholder')}
-          />
+          {automationAccounts.length === 0 ? (
+            <div className="text-sm text-text-secondary">
+              <p>{t('services.automation_account_empty')}</p>
+              <button
+                type="button"
+                onClick={() => navigate('/automation/new')}
+                className="text-primary font-medium hover:underline mt-1"
+              >
+                {t('services.automation_account_create')}
+              </button>
+            </div>
+          ) : (
+            <Select
+              options={[
+                { value: '', label: t('services.automation_account_none') },
+                ...automationAccounts.map((account) => ({ value: String(account.id), label: account.label })),
+              ]}
+              value={formData.automation_account_id}
+              onChange={(value) => handleChange('automation_account_id', String(value))}
+              placeholder={t('services.automation_account_none')}
+              searchable
+            />
+          )}
           <p className="text-xs text-text-secondary mt-1">{t('services.automation_account_hint')}</p>
         </div>
         <div className="flex items-center gap-3">

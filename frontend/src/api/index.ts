@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -135,8 +135,6 @@ export const api = {
       email_alerts_enabled: boolean
       webhook_enabled: boolean
       webhook_base_url: string
-      automation_base_url: string
-      automation_configured: boolean
       currency_thousands_separator: string
       currency_decimal_separator: string
       currency_decimal_digits: number
@@ -342,5 +340,21 @@ salaries: {
       update: (id: number, body: Partial<Transfer>) => put<Transfer>(`/api/budget/transfers/${id}`, body),
       delete: (id: number) => del(`/api/budget/transfers/${id}`),
     },
+  },
+  automation: {
+    accounts: () => get<AutomationAccount[]>('/api/automation/accounts'),
+    accountOptions: () => get<AutomationAccountOption[]>('/api/automation/accounts?for=service'),
+    get: (id: number) => get<AutomationAccount>(`/api/automation/accounts/${id}`),
+    create: (body: AutomationAccountInput) => post<AutomationAccount>('/api/automation/accounts', body),
+    update: (id: number, body: AutomationAccountInput) => put<AutomationAccount>(`/api/automation/accounts/${id}`, body),
+    delete: (id: number) => del(`/api/automation/accounts/${id}`),
+    revealCredentials: (id: number, password: string) =>
+      post<{ credentials: string }>(`/api/automation/accounts/${id}/credentials:reveal`, { password }),
+    plugins: () => get<AutomationPlugin[]>('/api/automation/plugins'),
+    pluginSchema: (name: string) => get<AutomationCredentialField[]>(`/api/automation/plugins/${encodeURIComponent(name)}/schema`),
+    bills: (id: number) => get<AutomationBill[]>(`/api/automation/accounts/${id}/bills`),
+    fetchBills: (id: number) => post<{ bills: AutomationBillItem[] }>(`/api/automation/accounts/${id}/bills:fetch`, {}),
+    logs: (id: number, limit = 20, offset = 0) =>
+      get<AutomationWebhookLog[]>(`/api/automation/accounts/${id}/webhook/logs?limit=${limit}&offset=${offset}`),
   },
 }

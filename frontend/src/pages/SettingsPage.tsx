@@ -81,7 +81,6 @@ export default function SettingsPage() {
   const [telegramBotEnabled, setTelegramBotEnabled] = useState(false)
   const [telegramBotConfigured, setTelegramBotConfigured] = useState(false)
   const [webhookEnabled, setWebhookEnabled] = useState(false)
-  const [automationConfigured, setAutomationConfigured] = useState(false)
   const [emailPaletteCustom, setEmailPaletteCustom] = useState(false)
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [query, setQuery] = useState('')
@@ -114,7 +113,6 @@ export default function SettingsPage() {
         setTelegramBotEnabled(data.telegram_bot_enabled ?? false)
         setTelegramBotConfigured(data.telegram_bot_configured ?? false)
         setWebhookEnabled(data.webhook_enabled ?? false)
-        setAutomationConfigured(data.automation_configured ?? false)
         const custom =
           data.email_color_primary !== '#007aff' ||
           data.email_color_background !== '#f5f5f7' ||
@@ -261,19 +259,6 @@ export default function SettingsPage() {
         onClick: () => navigate('/settings/webhooks'),
       },
       {
-        key: 'automation',
-        icon: 'refresh',
-        title: t('settings.automation.title'),
-        subtitle: automationConfigured
-          ? t('settings.nav.status_configured')
-          : t('settings.nav.status_deactivated'),
-        statusLabel: automationConfigured
-          ? t('settings.nav.status_configured')
-          : t('settings.nav.status_deactivated'),
-        statusTone: automationConfigured ? 'success' : 'muted',
-        onClick: () => navigate('/settings/automation'),
-      },
-      {
         key: 'currencies',
         icon: 'savings',
         title: t('settings.nav.currencies'),
@@ -316,7 +301,6 @@ export default function SettingsPage() {
     telegramBotEnabled,
     telegramBotConfigured,
     webhookEnabled,
-    automationConfigured,
     currencies.length,
     thousandsSeparator,
     decimalSeparator,
@@ -346,7 +330,7 @@ export default function SettingsPage() {
     </div>
   )
 
-  const advancedKeys = ['email', 'voice', 'telegramBot', 'webhooks', 'automation', 'currencies', 'currencyFormat', 'emailAppearance']
+  const advancedKeys = ['email', 'voice', 'telegramBot', 'webhooks', 'currencies', 'currencyFormat', 'emailAppearance']
   const frequent = filtered.filter((r) => !advancedKeys.includes(r.key))
   const advanced = filtered.filter((r) => advancedKeys.includes(r.key))
 
