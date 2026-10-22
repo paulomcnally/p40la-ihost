@@ -1,7 +1,7 @@
 ---
 title: "Opción Editar servicio en el menú de acciones del detalle de servicio"
 id: "SPEC-114"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 117
 # Opción Editar servicio en el menú de acciones del detalle de servicio
 
 **ID**: SPEC-114  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -206,3 +206,4 @@ Sin cambios. Se reutilizan los endpoints existentes de servicios (`GET /api/serv
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-10-21 | opencode | Creación inicial de la especificación a partir del pedido del usuario |
+| 2026-10-21 | opencode | Estado a `in_progress`; opción "Editar servicio" agregada al `CreateMenu` de `BillsPage` |
