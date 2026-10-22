@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { api } from '../api'
 import { Icon } from './Icons'
+import Select from './Select'
 import { useToast } from './Toast'
 import { useI18nStore } from '../stores/i18nStore'
 import { UNKNOWN_CURRENCY_SYMBOL } from '../utils/currency'
@@ -330,15 +331,11 @@ export default function UploadBillModal({ isOpen, serviceId, frequency, currency
                           {frequency !== 'yearly' ? (
                             <div>
                               <label className="block text-sm font-medium mb-1">Mes</label>
-                              <select
+                              <Select
+                                options={months.map((m) => ({ value: m, label: String(m) }))}
                                 value={f.formData.month}
-                                onChange={(e) => updateFormData(i, { month: Number(e.target.value) })}
-                                className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary bg-card min-h-[44px]"
-                              >
-                                {months.map((m) => (
-                                  <option key={m} value={m}>{m}</option>
-                                ))}
-                              </select>
+                                onChange={(value) => updateFormData(i, { month: Number(value) })}
+                              />
                             </div>
                           ) : (
                             <div className="flex items-center px-3 py-2 bg-bg rounded-ios-sm border border-border">
