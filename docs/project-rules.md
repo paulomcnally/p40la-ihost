@@ -124,6 +124,12 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - Migraciones en `migrations/` con naming `NNNN_descripcion.up.sql` / `.down.sql`.
 - No usar ORM. SQL crudo con `database/sql` y helpers propios livianos.
 
+### 6.1 Validación con datos reales (obligatorio)
+
+- **Toda prueba cuyo resultado dependa del contenido de la DB se corre contra una copia de la DB de producción**, no contra `data/app.db` local.
+- Procedimiento: `sqlite3 /app/data/app.db ".backup '/tmp/<motivo>.db'"` vía SSH, descargar la copia y ejecutar sobre ella. Nunca escribir en producción durante la validación.
+- La DB local solo sirve para tests unitarios con fixtures sintéticos; está desactualizada y puede cambiar el resultado (precedente SPEC-109: `Tigo` apareció como institución nueva por no existir en la DB local).
+
 ---
 
 ## 7. Consideraciones de iHost
