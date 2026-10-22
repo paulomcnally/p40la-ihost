@@ -1,7 +1,7 @@
 ---
 title: "Instituciones: página de vista y formulario con tabs Información y Analizadores"
 id: "SPEC-116"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-10-21"
 updated: "2026-10-21"
@@ -11,7 +11,7 @@ github_issue: 119
 # Instituciones: página de vista y formulario con tabs Información y Analizadores
 
 **ID**: SPEC-116  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-10-21  
 **Actualizado**: 2026-10-21
@@ -243,27 +243,27 @@ Response 204/200. Si falla por dependencias, la UI muestra el mensaje del backen
 
 ### 5.1 Funcionales
 
-- [ ] CA-001: Dado el listado `/institutions`, cuando el usuario hace clic en el card de una institución, entonces navega a `/institutions/:id` y ve la página de vista (no el formulario de edición).
-- [ ] CA-002: Dado el listado `/institutions`, cuando el usuario abre el menú de 3 puntos de un card, entonces ve **Editar** y **Eliminar**, y Editar navega a `/institutions/edit/:id` con los datos precargados.
-- [ ] CA-003: Dada la vista `/institutions/:id`, entonces se muestran nombre, categoría (o "Sin categoría"), cantidad de analizadores y el listado de analizadores asignados con nombre legible.
-- [ ] CA-004: Dada la vista `/institutions/:id`, cuando el usuario abre el menú de 3 puntos, entonces la primera opción es **Editar** y navega al formulario de edición.
-- [ ] CA-005: Dado un ID inexistente o no numérico en `/institutions/:id`, entonces se muestra el estado "Institución no encontrada" con botón para volver a `/institutions`, sin errores de consola no controlados.
-- [ ] CA-006: Dado el formulario `/institutions/new`, entonces se muestran las tabs **Información** y **Analizadores**, con Información activa por defecto.
-- [ ] CA-007: Dado el formulario `/institutions/edit/:id`, entonces se muestran las mismas dos tabs y la tab Información precarga nombre y categoría; la tab Analizadores precarga los analizadores asignados.
-- [ ] CA-008: Dada cualquiera de las tabs, cuando el usuario recarga la página, entonces la tab activa se conserva (`?tab=analyzers` para Analizadores; sin parámetro para Información).
-- [ ] CA-009: Dada la tab Analizadores, cuando el usuario agrega o remueve analizadores y pulsa Guardar, entonces los cambios se persisten y se reflejan en la vista y en el listado.
-- [ ] CA-010: Dada la tab Analizadores con el nombre vacío, cuando el usuario pulsa Guardar, entonces la UI cambia a la tab Información, marca el error de nombre y no ejecuta ningún request de creación/actualización.
-- [ ] CA-011: Dada una institución existente, cuando el usuario edita nombre y categoría y guarda, entonces se persisten ambos cambios y la vista muestra los valores actualizados.
-- [ ] CA-012: Dado el flujo de eliminar desde la vista, cuando se confirma, entonces la institución se elimina y se navega a `/institutions`; si el backend rechaza el borrado por registros asociados, se muestra un mensaje claro de "registros asociados" y no se navega.
-- [ ] CA-DARK: Los inputs/selects del formulario usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó legibilidad de texto y placeholders en darkmode.
-- [ ] CA-BACK: La ruta `/institutions/:id` está registrada en `BACK_ROUTES`; en móvil la flecha atrás del header vuelve a `/institutions` y no existen links "← Instituciones" dentro del contenido.
+- [x] CA-001: Dado el listado `/institutions`, cuando el usuario hace clic en el card de una institución, entonces navega a `/institutions/:id` y ve la página de vista (no el formulario de edición).
+- [x] CA-002: Dado el listado `/institutions`, cuando el usuario abre el menú de 3 puntos de un card, entonces ve **Editar** y **Eliminar**, y Editar navega a `/institutions/edit/:id` con los datos precargados.
+- [x] CA-003: Dada la vista `/institutions/:id`, entonces se muestran nombre, categoría (o "Sin categoría"), cantidad de analizadores y el listado de analizadores asignados con nombre legible.
+- [x] CA-004: Dada la vista `/institutions/:id`, cuando el usuario abre el menú de 3 puntos, entonces la primera opción es **Editar** y navega al formulario de edición.
+- [x] CA-005: Dado un ID inexistente o no numérico en `/institutions/:id`, entonces se muestra el estado "Institución no encontrada" con botón para volver a `/institutions`, sin errores de consola no controlados.
+- [x] CA-006: Dado el formulario `/institutions/new`, entonces se muestran las tabs **Información** y **Analizadores**, con Información activa por defecto.
+- [x] CA-007: Dado el formulario `/institutions/edit/:id`, entonces se muestran las mismas dos tabs y la tab Información precarga nombre y categoría; la tab Analizadores precarga los analizadores asignados.
+- [x] CA-008: Dada cualquiera de las tabs, cuando el usuario recarga la página, entonces la tab activa se conserva (`?tab=analyzers` para Analizadores; sin parámetro para Información).
+- [x] CA-009: Dada la tab Analizadores, cuando el usuario agrega o remueve analizadores y pulsa Guardar, entonces los cambios se persisten y se reflejan en la vista y en el listado.
+- [x] CA-010: Dada la tab Analizadores con el nombre vacío, cuando el usuario pulsa Guardar, entonces la UI cambia a la tab Información, marca el error de nombre y no ejecuta ningún request de creación/actualización.
+- [x] CA-011: Dada una institución existente, cuando el usuario edita nombre y categoría y guarda, entonces se persisten ambos cambios y la vista muestra los valores actualizados.
+- [x] CA-012: Dado el flujo de eliminar desde la vista, cuando se confirma, entonces la institución se elimina y se navega a `/institutions`; si el backend rechaza el borrado por registros asociados, se muestra un mensaje claro de "registros asociados" y no se navega.
+- [x] CA-DARK: Los inputs/selects del formulario usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó legibilidad de texto y placeholders en darkmode.
+- [x] CA-BACK: La ruta `/institutions/:id` está registrada en `BACK_ROUTES`; en móvil la flecha atrás del header vuelve a `/institutions` y no existen links "← Instituciones" dentro del contenido.
 
 ### 5.2 No funcionales
 
-- [ ] CA-NF-001: `npm run build` en `frontend/` finaliza sin errores ni warnings nuevos.
-- [ ] CA-NF-002: No se agregan dependencias ni se modifica `go.mod`, `package.json` ni el esquema SQLite.
-- [ ] CA-NF-003: La vista no genera más de 4 requests al abrirse (institución, analizadores asignados, catálogo de analizadores y categorías).
-- [ ] CA-NF-004: Funciona correctamente en viewport móvil (375 px) y desktop, sin overflow horizontal.
+- [x] CA-NF-001: `npm run build` en `frontend/` finaliza sin errores ni warnings nuevos.
+- [x] CA-NF-002: No se agregan dependencias ni se modifica `go.mod`, `package.json` ni el esquema SQLite.
+- [x] CA-NF-003: La vista no genera más de 4 requests al abrirse (institución, analizadores asignados, catálogo de analizadores y categorías).
+- [x] CA-NF-004: Funciona correctamente en viewport móvil (375 px) y desktop, sin overflow horizontal.
 
 ### 5.3 Testing
 
@@ -325,3 +325,4 @@ Response 204/200. Si falla por dependencias, la UI muestra el mensaje del backen
 | 2026-10-21 | opencode | Estado a `in_progress`. Se ajusta el presupuesto de requests de la vista a 4 (se agrega `institutionCategories.list()` para nombre/ícono de categoría). |
 | 2026-10-21 | opencode | Implementación frontend completada: `InstitutionShowPage`, navegación desde el listado, tabs `Información`/`Analizadores` con `?tab=`, validación de nombre e i18n ES/EN. Build y tests Go OK. Pendiente validación manual del usuario. |
 | 2026-10-21 | opencode | Manejo amigable de errores de FK al eliminar una institución con registros asociados (vista y listado). Sin cambios de backend. |
+| 2026-10-21 | opencode | Release: merge de `feature/SPEC-116` a `main`, issue #119 cerrado con label `spec/released`. Commits `155b2be` (spec), `8c29c38` (implementación), `402ca50` (sync con `main`). |
