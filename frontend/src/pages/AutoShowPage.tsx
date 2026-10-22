@@ -74,7 +74,7 @@ export default function AutoShowPage() {
       <div className="relative bg-card rounded-ios shadow-ios p-4 sm:p-6 mb-6">
         <CardMenu
           options={[
-            { label: t('autos.edit'), icon: 'edit', onClick: () => navigate(`/autos/edit/${auto.id}`) },
+            { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/autos/edit/${auto.id}`) },
           ]}
         />
         <div className="flex items-start gap-4 pr-8">

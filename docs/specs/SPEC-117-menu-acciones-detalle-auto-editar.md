@@ -22,7 +22,7 @@ github_issue: 120
 
 Hoy la página de detalle de un auto (`/autos/:id`) muestra la información del vehículo y el listado de seguros asociados, pero no ofrece ninguna acción sobre el auto. Para editar marca, modelo, año, color, placa, motor, chasis, VIN o ícono, el usuario debe volver a la lista `/autos`, abrir el menú de 3 puntos del card y elegir "Editar". El pedido del usuario es poder editar el auto directamente desde su página de detalle.
 
-Esta spec agrega el menú de acciones de 3 puntos (`CardMenu`) en la card resumen del detalle del auto, con la opción **"Editar auto"**, reutilizando el formulario y la ruta existentes `/autos/edit/:id`. El alcance aprobado por el usuario es **solo Editar**; no se agrega Eliminar ni ninguna otra acción en esta entrega.
+Esta spec agrega el menú de acciones de 3 puntos (`CardMenu`) en la card resumen del detalle del auto, con la opción **"Editar"**, reutilizando el formulario y la ruta existentes `/autos/edit/:id`. El alcance aprobado por el usuario es **solo Editar**; no se agrega Eliminar ni ninguna otra acción en esta entrega. La etiqueta sigue el estándar de SPEC-115 y `docs/project-rules.md` §4.5: las acciones de edición se rotulan **Editar** (`app.edit`), nunca "Editar <entidad>".
 
 El cambio es exclusivamente de frontend: no toca backend, base de datos, APIs ni endpoints. Impacto en iHost: nulo. No se agregan dependencias, no hay cambios de esquema ni de memoria en runtime; solo se reutiliza un componente ya renderizado en la lista de autos (`CardMenu`) y una ruta ya existente. El build de React sigue realizándose fuera del iHost.
 
@@ -35,10 +35,10 @@ Consideraciones de UI:
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
 
 1. **REQ-001**: En la página de detalle del auto (`/autos/:id`), la card resumen del vehículo DEBE mostrar el botón de acciones de 3 puntos (`CardMenu`) en la esquina superior derecha, visible en móvil y desktop.
-2. **REQ-002**: Al abrir el menú, DEBE mostrar la opción **"Editar auto"** (en inglés, "Edit car"), utilizando la clave i18n existente `autos.edit`; no se admite texto hardcodeado nuevo.
-3. **REQ-003**: Al seleccionar **"Editar auto"**, la app DEBE navegar a `/autos/edit/:id` usando el `id` del auto actual, con el formulario precargado con los datos existentes.
+2. **REQ-002**: Al abrir el menú, DEBE mostrar la opción **"Editar"** (en inglés, "Edit"), utilizando la clave i18n genérica `app.edit`; no se admite texto hardcodeado. Conforme al estándar de SPEC-115, la etiqueta de la acción NO debe ser "Editar auto".
+3. **REQ-003**: Al seleccionar **"Editar"**, la app DEBE navegar a `/autos/edit/:id` usando el `id` del auto actual, con el formulario precargado con los datos existentes.
 4. **REQ-004**: Al guardar los cambios, se DEBE persistir la edición mediante el flujo existente de `AutoFormPage`. El comportamiento posterior al guardado se mantiene igual que hoy: navegar a `/autos`.
-5. **REQ-005**: El menú del detalle DEBE contener únicamente la opción "Editar auto" en esta entrega. No se agrega "Eliminar" ni acciones sobre seguros.
+5. **REQ-005**: El menú del detalle DEBE contener únicamente la opción "Editar" en esta entrega. No se agrega "Eliminar" ni acciones sobre seguros.
 6. **REQ-006**: El menú de 3 puntos de cada seguro (`Editar` / `Eliminar` seguro) DEBE seguir funcionando sin cambios.
 7. **REQ-007**: El componente `CardMenu` DEBE conservar su comportamiento actual: se abre al hacer clic, se cierra al seleccionar una opción y al hacer clic fuera.
 
@@ -62,6 +62,8 @@ Consideraciones de UI:
 - No se modifica el menú de la lista `/autos` ni el formulario `AutoFormPage`.
 - No se agregan modales nuevos ni páginas nuevas.
 - No se cambia el comportamiento de guardado de `AutoFormPage` (sigue navegando a `/autos`).
+- No se cambia el valor de `autos.edit` ("Editar auto" / "Edit car"), que se mantiene como **título de página** del formulario `AutoFormPage`; el estándar aplica a etiquetas de acciones, no a títulos descriptivos de página.
+- No se modifican otras etiquetas "Editar <entidad>" usadas como título de formulario (`deudas.edit`, `homes.edit`, etc.).
 
 ### 2.5 Requerimientos No Funcionales
 
@@ -83,7 +85,7 @@ Archivos relevantes del frontend:
 - `frontend/src/components/CardMenu.tsx`: menú de 3 puntos con `options: { label, icon?, danger?, onClick }[]`. Su raíz es `absolute top-3 right-3 z-50` y el dropdown se renderiza en un portal con `z-index: 9999`. Cierra al hacer clic fuera y al seleccionar una opción.
 - `frontend/src/components/DashboardLayout.tsx`: `BACK_ROUTES` ya incluye `/autos/:id` → `/autos` y `/autos/(new|edit/:id)` → `/autos`.
 - `frontend/src/App.tsx`: rutas `autos`, `autos/new`, `autos/edit/:id`, `autos/:id`.
-- `frontend/public/i18n/es.json` y `en.json`: la clave `autos.edit` ya existe con los textos "Editar auto" / "Edit car".
+- `frontend/public/i18n/es.json` y `en.json`: la clave genérica `app.edit` ya existe con los textos "Editar" / "Edit" y es la que usa el menú de la lista de autos. La clave `autos.edit` ("Editar auto" / "Edit car") existe y se conserva como título de página del formulario `AutoFormPage`; no se usa para la acción del menú.
 - `frontend/src/components/Icons.tsx`: el ícono `edit` y el ícono `more` ya existen y se usan en la lista de autos.
 
 Observación de layout: la card resumen de `AutoShowPage` no tiene `relative`, y su contenido ocupa todo el ancho. Para que `CardMenu` (que es `absolute top-3 right-3`) se posicione respecto de la card y no tape el título, la card debe volverse `relative` y el contenido debe reservar espacio a la derecha (padding derecho) en móvil y desktop.
@@ -92,7 +94,7 @@ Observación de layout: la card resumen de `AutoShowPage` no tiene `relative`, y
 
 | Opción | Pros | Contras | Decisión |
 |--------|------|---------|----------|
-| A: Agregar `CardMenu` a la card resumen de `AutoShowPage` con la opción "Editar auto" apuntando a `/autos/edit/:id` | Cambio mínimo (1 archivo), reutiliza componente, formulario, ruta e i18n existentes; respeta el patrón de UI de 3 puntos | Requiere ajustar `relative`/padding para evitar solapamiento en móvil | ✅ Seleccionada |
+| A: Agregar `CardMenu` a la card resumen de `AutoShowPage` con la opción "Editar" apuntando a `/autos/edit/:id` | Cambio mínimo (1 archivo), reutiliza componente, formulario, ruta e i18n existentes; respeta el patrón de UI de 3 puntos y el estándar de etiqueta de SPEC-115 | Requiere ajustar `relative`/padding para evitar solapamiento en móvil | ✅ Seleccionada |
 | B: Agregar la acción al menú global del header (`CreateMenu` de `DashboardLayout`) | No toca la card | El header es compartido por todas las páginas y las acciones dependen del auto cargado; acopla el layout global a una entidad y complica el estado | ❌ Rechazada |
 | C: Botón "Editar" directo en la card (fuera del menú) | Más visible | Rompe el patrón de acciones en menú de 3 puntos y el pedido explícito del usuario | ❌ Rechazada |
 | D: Modal de edición dentro del detalle | No abandona el contexto | Duplica el formulario y su lógica; más código, más superficie de error y más peso para un iHost con recursos limitados | ❌ Rechazada |
@@ -110,10 +112,10 @@ Observación de layout: la card resumen de `AutoShowPage` no tiene `relative`, y
 - **Decisión**: Insertar un `CardMenu` dentro de la card resumen del auto.
 - **Consecuencias**: Consistencia visual con `/autos` y con las cards de seguros. Se debe marcar la card como `relative` y reservar espacio a la derecha para evitar solapamientos.
 
-**ADR-003**: Etiqueta i18n `autos.edit`.
-- **Contexto**: La clave ya existe en ambos idiomas y describe exactamente la acción.
-- **Decisión**: Usar `t('autos.edit')` en lugar de un literal.
-- **Consecuencias**: Cero cambios en archivos de traducción y texto correcto en ES/EN.
+**ADR-003**: Etiqueta i18n genérica `app.edit`.
+- **Contexto**: SPEC-115 y `docs/project-rules.md` §4.5 establecen que las acciones de edición se rotulan siempre **Editar** (`app.edit`), mientras que las claves específicas (`autos.edit`, `services.edit`, etc.) quedan reservadas para títulos de página.
+- **Decisión**: Usar `t('app.edit')` en la opción del menú, no `t('autos.edit')`.
+- **Consecuencias**: Consistencia con el resto de los menús de acciones del sistema y cumplimiento del estándar documentado; cero cambios en archivos de traducción.
 
 ## 4. Diseño Técnico
 
@@ -124,7 +126,7 @@ Observación de layout: la card resumen de `AutoShowPage` no tiene `relative`, y
                  │
                  ├── card resumen (relative)
                  │       └── CardMenu (3 puntos)
-                 │               └── "Editar auto" ── navigate() ──► [/autos/edit/:id (AutoFormPage)]
+                 │               └── "Editar" ── navigate() ──► [/autos/edit/:id (AutoFormPage)]
                  │
                  └── card de seguros
                          └── CardMenu por seguro (sin cambios: Editar / Eliminar)
@@ -147,7 +149,7 @@ No hay llamadas nuevas al backend.
      ```tsx
      <CardMenu
        options={[
-         { label: t('autos.edit'), icon: 'edit', onClick: () => navigate(`/autos/edit/${auto.id}`) },
+         { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/autos/edit/${auto.id}`) },
        ]}
      />
      ```
@@ -181,7 +183,7 @@ Sin cambios. Se reutilizan los endpoints existentes consumidos por `AutoShowPage
 
 ### 4.5 Dependencias
 
-- **Internas**: `AutoShowPage`, `CardMenu`, `AutoFormPage`, `DashboardLayout`, i18n (`autos.edit`, ya existente), `Icons` (`edit`, `more`, ya existentes).
+- **Internas**: `AutoShowPage`, `CardMenu`, `AutoFormPage`, `DashboardLayout`, i18n (`app.edit`, ya existente), `Icons` (`edit`, `more`, ya existentes).
 - **Externas**: ninguna nueva.
 
 ## 5. Criterios de Aceptación
@@ -189,13 +191,13 @@ Sin cambios. Se reutilizan los endpoints existentes consumidos por `AutoShowPage
 ### 5.1 Funcionales
 
 - [ ] CA-001: Dado el detalle `/autos/:id` con un auto existente, cuando carga la página, entonces se ve el botón de 3 puntos en la esquina superior derecha de la card resumen.
-- [ ] CA-002: Dado el botón de 3 puntos, cuando el usuario lo pulsa, entonces se abre un dropdown con la opción "Editar auto" (ES) / "Edit car" (EN).
-- [ ] CA-003: Dado el menú abierto, cuando el usuario hace clic en "Editar auto", entonces navega a `/autos/edit/:id` y el formulario muestra los datos actuales del auto.
+- [ ] CA-002: Dado el botón de 3 puntos, cuando el usuario lo pulsa, entonces se abre un dropdown con la opción **"Editar"** (ES) / **"Edit"** (EN), conforme a SPEC-115.
+- [ ] CA-003: Dado el menú abierto, cuando el usuario hace clic en "Editar", entonces navega a `/autos/edit/:id` y el formulario muestra los datos actuales del auto.
 - [ ] CA-004: Dado el formulario abierto desde el detalle, cuando el usuario modifica un campo y guarda, entonces el cambio se persiste y la app vuelve a `/autos` (comportamiento existente); al reabrir el detalle se ven los datos actualizados.
 - [ ] CA-005: Dado el detalle, cuando el usuario abre el menú de un seguro, entonces las opciones "Editar" y "Eliminar" del seguro siguen funcionando igual que antes.
 - [ ] CA-006: Dado el menú abierto, cuando el usuario hace clic fuera o selecciona una opción, entonces el menú se cierra.
 - [ ] CA-007: En viewports de 320 px, 375 px, 768 px y desktop, el botón de 3 puntos y su dropdown no se superponen con el ícono del auto, el título ni los datos del vehículo.
-- [ ] CA-008: El menú no contiene opciones distintas de "Editar auto" en esta entrega.
+- [ ] CA-008: El menú no contiene opciones distintas de "Editar" en esta entrega.
 - [ ] CA-DARK: El menú y el formulario reutilizado se verificaron en darkmode: fondo, borde y texto legibles; los inputs usan los tokens del tema (`bg-card`, `text-text`, `text-text-secondary`).
 - [ ] CA-BACK: La página de detalle mantiene la flecha atrás del header (`/autos/:id` → `/autos`) y no se agregaron links "← Título" dentro del contenido. `/autos/edit/:id` ya está registrada en `BACK_ROUTES`.
 
@@ -218,13 +220,13 @@ Sin cambios. Se reutilizan los endpoints existentes consumidos por `AutoShowPage
 
 | Fase | Descripción | Estimación | Dependencias |
 |------|-------------|------------|--------------|
-| 1 | Agregar `CardMenu` a la card resumen de `AutoShowPage` con la opción "Editar auto" (`autos.edit`) y navegación a `/autos/edit/:id` | 20 min | Ninguna |
+| 1 | Agregar `CardMenu` a la card resumen de `AutoShowPage` con la opción "Editar" (`app.edit`) y navegación a `/autos/edit/:id` | 20 min | Ninguna |
 | 2 | Ajustar layout responsive (`relative` + padding derecho) para evitar solapamiento en móvil | 15 min | Fase 1 |
 | 3 | Build del frontend y prueba manual en local (ES/EN, light/dark, 320/375/768/desktop) | 30 min | Fase 1-2 |
 
 ### 6.2 Milestones
 
-1. **MVP**: botón de 3 puntos visible en el detalle con "Editar auto" y navegación funcional al formulario.
+1. **MVP**: botón de 3 puntos visible en el detalle con "Editar" y navegación funcional al formulario.
 2. **V1.0**: MVP + layout responsive verificado, darkmode, idiomas, build y prueba manual aprobada por el usuario.
 
 ## 7. Riesgos y Mitigaciones
@@ -232,7 +234,7 @@ Sin cambios. Se reutilizan los endpoints existentes consumidos por `AutoShowPage
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |--------|--------------|---------|------------|
 | El botón de 3 puntos se superpone con el título o los datos en móvil | Media | Medio | Marcar la card como `relative` y reservar padding derecho; CA-007 con 320/375 px |
-| Confusión entre el menú del auto y el menú de cada seguro | Media | Bajo | Ubicar el menú del auto en la card resumen (arriba) y mantener los menús de seguros en cada card; etiqueta "Editar auto" |
+| Confusión entre el menú del auto y el menú de cada seguro | Media | Bajo | Ubicar el menú del auto en la card resumen (arriba) y mantener los menús de seguros en cada card; ambos usan la etiqueta estándar "Editar" |
 | Regresión en el menú de seguros al tocar `AutoShowPage` | Baja | Medio | No modificar los `CardMenu` de seguros; CA-005 |
 | El usuario espera volver al detalle después de guardar y vuelve a la lista | Media | Bajo | Documentado en REQ-012 como deuda técnica; comportamiento actual consistente con la lista |
 | El dropdown queda detrás de otro elemento | Baja | Bajo | `CardMenu` ya usa portal con `z-index: 9999`; no se modifica |
@@ -250,3 +252,4 @@ Sin cambios. Se reutilizan los endpoints existentes consumidos por `AutoShowPage
 | 2026-10-21 | opencode | Creación inicial de la especificación a partir del pedido del usuario. Alcance confirmado: solo opción "Editar auto" en el menú de 3 puntos del detalle. |
 | 2026-10-21 | opencode | Estado a `in_progress`: inicio de implementación en el worktree `p40la-ihost-spec-117` (rama `feature/SPEC-117`). |
 | 2026-10-21 | opencode | Implementado en `AutoShowPage`: `CardMenu` con "Editar auto" (`autos.edit`) en la card resumen, `relative` + `pr-8` para evitar solapamiento. Build de frontend OK. E2E con Playwright: 14/14 checks (ES/EN, dark/light, 320 px, navegación, precarga, guardado y persistencia). Pendiente validación manual del usuario. |
+| 2026-10-21 | opencode | Corrección solicitada por el usuario: la opción del menú pasa de "Editar auto" (`autos.edit`) a **"Editar"** (`app.edit`) para cumplir SPEC-115 y `docs/project-rules.md` §4.5. Se actualizó la spec antes de modificar el código. |
