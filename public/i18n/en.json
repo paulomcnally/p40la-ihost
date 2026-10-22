@@ -893,8 +893,6 @@
     "reveal_desc": "Enter your password to view the stored credentials.",
     "password": "Password",
     "password_placeholder": "Your password",
-    "webhook": "Webhook",
-    "webhook_desc": "Optional. Used as a fallback when the service is not linked via the selector.",
     "schedule": "Schedule",
     "schedule_enabled": "Automatic fetch",
     "time": "Time",
