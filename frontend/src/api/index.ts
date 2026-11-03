@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -32,6 +32,23 @@ function postFormData<T>(path: string, file: File): Promise<T | null> {
     }
     const data = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(data.message || 'Request failed')
+    return data
+  })
+}
+
+function postMultipart<T>(path: string, form: FormData): Promise<T | null> {
+  return fetch(path, { method: 'POST', body: form }).then(async (res) => {
+    if (res.status === 401) {
+      window.location.href = '/login'
+      return null
+    }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      const err = new Error(data.message || 'Request failed') as Error & { status?: number; validation?: unknown }
+      err.status = res.status
+      err.validation = data.validation
+      throw err
+    }
     return data
   })
 }
@@ -272,6 +289,29 @@ salaries: {
   pensionGenerate: {
     generate: (year: number, month: number) =>
       post<{ ok: boolean; created_salary_payments: number; created_support_records: number }>(`/api/pension/generate?year=${year}&month=${month}`, {}),
+  },
+  pensionImport: {
+    previewFile: (file: File, opts?: { year?: number; month?: number; child_id?: number }) => {
+      const form = new FormData()
+      form.append('file', file)
+      if (opts?.year) form.append('year', String(opts.year))
+      if (opts?.month) form.append('month', String(opts.month))
+      if (opts?.child_id) form.append('child_id', String(opts.child_id))
+      return postMultipart<PensionImportPreview>('/api/pension/import/preview', form)
+    },
+    previewText: (body: { text: string; year?: number; month?: number; child_id?: number }) =>
+      post<PensionImportPreview>('/api/pension/import/preview', body),
+    confirm: (body: { batch_id: number; child_id: number; rows: PensionImportConfirmRow[] }) =>
+      post<PensionImportConfirmResult>('/api/pension/import/confirm', body),
+    batches: () => get<PensionImportBatch[]>('/api/pension/import/batches'),
+    templateUrl: '/api/pension/import/template.csv',
+    exportUrl: (year: number, month: number) => `/api/pension/import/export?year=${year}&month=${month}`,
+    keywords: {
+      list: () => get<PensionCategoryKeyword[]>('/api/pension/keywords'),
+      create: (body: { pension_category_id: number; keyword: string }) =>
+        post<PensionCategoryKeyword>('/api/pension/keywords', body),
+      delete: (id: number) => del(`/api/pension/keywords/${id}`),
+    },
   },
   pensionConfigs: {
     list: () => get<ChildSupportConfig[]>('/api/pension/configs'),

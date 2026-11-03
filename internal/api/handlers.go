@@ -33,6 +33,7 @@ type Handler struct {
 	monthClosing        *MonthClosingHandlers
 	config              *ChildSupportConfigHandlers
 	pensionDashboard    *PensionDashboardHandlers
+	pensionImport       *PensionImportHandlers
 	debt                *DebtHandlers
 	webhooks            *WebhookHandlers
 	budget              *BudgetHandlers
@@ -64,6 +65,7 @@ func NewHandler(
 	monthClosing *MonthClosingHandlers,
 	config *ChildSupportConfigHandlers,
 	pensionDashboard *PensionDashboardHandlers,
+	pensionImport *PensionImportHandlers,
 	debt *DebtHandlers,
 	webhooks *WebhookHandlers,
 	budget *BudgetHandlers,
@@ -93,6 +95,7 @@ func NewHandler(
 		monthClosing:        monthClosing,
 		config:              config,
 		pensionDashboard:    pensionDashboard,
+		pensionImport:       pensionImport,
 		debt:                debt,
 		webhooks:            webhooks,
 		budget:              budget,

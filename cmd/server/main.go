@@ -83,6 +83,7 @@ func main() {
 	salaryStorage := storage.NewSalaryStorage(database)
 	pensionCategoryStorage := storage.NewPensionCategoryStorage(database)
 	supportRecordStorage := storage.NewSupportRecordStorage(database)
+	pensionImportStorage := storage.NewPensionImportStorage(database)
 	salaryPaymentStorage := storage.NewSalaryPaymentStorage(database)
 	monthClosingStorage := storage.NewMonthClosingStorage(database)
 	childSupportConfigStorage := storage.NewChildSupportConfigStorage(database)
@@ -123,6 +124,7 @@ func main() {
 	salaryService := services.NewSalaryService(salaryStorage, currencyStorage)
 	pensionCategoryService := services.NewPensionCategoryService(pensionCategoryStorage)
 	supportRecordService := services.NewSupportRecordService(supportRecordStorage, monthClosingStorage, childStorage, pensionCategoryStorage, cfg.DataDir)
+	pensionImportService := services.NewPensionImportService(pensionImportStorage, pensionCategoryStorage, childStorage, supportRecordStorage, monthClosingStorage)
 	salaryPaymentService := services.NewSalaryPaymentService(salaryPaymentStorage, monthClosingStorage)
 	monthClosingService := services.NewMonthClosingService(monthClosingStorage)
 	childSupportConfigService := services.NewChildSupportConfigService(childSupportConfigStorage, childStorage, pensionCategoryStorage)
@@ -205,6 +207,7 @@ func main() {
 	salaryHandlers := api.NewSalaryHandlers(salaryService)
 	pensionCategoryHandlers := api.NewPensionCategoryHandlers(pensionCategoryService)
 	supportRecordHandlers := api.NewSupportRecordHandlers(supportRecordService, pensionNotificationService)
+	pensionImportHandlers := api.NewPensionImportHandlers(pensionImportService)
 	salaryPaymentHandlers := api.NewSalaryPaymentHandlers(salaryPaymentService, pensionNotificationService)
 	monthClosingHandlers := api.NewMonthClosingHandlers(monthClosingService, pensionNotificationService)
 	configHandlers := api.NewChildSupportConfigHandlers(childSupportConfigService)
@@ -214,7 +217,7 @@ func main() {
 	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService, transferService)
 	automationHandlers := api.NewAutomationHandlers(automationService, authService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, debtHandlers, webhookHandlers, budgetHandlers, automationHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, pensionImportHandlers, debtHandlers, webhookHandlers, budgetHandlers, automationHandlers)
 
 	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
 	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {

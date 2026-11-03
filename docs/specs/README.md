@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 117 |
+| **Total de specs** | 118 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 117 🟢 |
+| **Released** | 118 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-118 |
+| **Último ID usado** | SPEC-119 |
 
 ---
 
@@ -138,6 +138,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-116 | Instituciones: página de vista y formulario con tabs Información y Analizadores | released | 2026-10-21 | opencode |
 | SPEC-117 | Menú de acciones (3 puntos) en el detalle del auto con opción Editar | released | 2026-10-21 | opencode |
 | SPEC-118 | Autos: campos opcionales y color predefinido | released | 2026-10-21 | opencode |
+| SPEC-119 | Importador mensual de gastos escolares y pensión por palabras clave | released | 2026-11-03 | opencode |
 
 ---
 
@@ -207,4 +208,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-10-21 — SPEC-118 released (autos con campos opcionales, color predefinido con buscador y guardrail de dropdowns); SPEC-116 released (página de vista y tabs de instituciones); SPEC-117 released (menú Editar en el detalle del auto); SPEC-115 released (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
+*Última actualización de este tracker: 2026-11-03 — SPEC-119 released (importador mensual de gastos escolares y pensión con matching por palabras clave, reparto por categoría y validación todo-o-nada); 2026-10-21 — SPEC-118 released (autos con campos opcionales, color predefinido con buscador y guardrail de dropdowns); SPEC-116 released (página de vista y tabs de instituciones); SPEC-117 released (menú Editar en el detalle del auto); SPEC-115 released (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
