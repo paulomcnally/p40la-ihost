@@ -8,6 +8,8 @@ type PensionCategory struct {
 	Name         string    `json:"name"`
 	Description  string    `json:"description"`
 	AutoGenerate bool      `json:"auto_generate"`
+	SharePercent int       `json:"share_percent"`
+	Currency     string    `json:"currency"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }

@@ -22,6 +22,7 @@ const BACK_ROUTES: { pattern: RegExp; to: string }[] = [
   { pattern: /^\/pension\/categorias\/(new|edit\/\d+)$/, to: '/pension/categorias' },
   { pattern: /^\/pension\/salarios\/(new|edit\/\d+)$/, to: '/pension/salarios' },
   { pattern: /^\/pension\/notificaciones\/(new|edit\/\d+)$/, to: '/pension/notificaciones' },
+  { pattern: /^\/pension\/import$/, to: '/pension/registros' },
   { pattern: /^\/automation\/new$/, to: '/automation' },
   { pattern: /^\/automation\/edit\/\d+$/, to: '/automation' },
   { pattern: /^\/automation\/plugins$/, to: '/automation' },

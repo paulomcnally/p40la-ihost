@@ -12,6 +12,15 @@ type pensionCategoryRequest struct {
 	Name         string `json:"name"`
 	Description  string `json:"description"`
 	AutoGenerate bool   `json:"auto_generate"`
+	SharePercent int    `json:"share_percent"`
+	Currency     string `json:"currency"`
+}
+
+func (r *pensionCategoryRequest) share() int {
+	if r.SharePercent == 0 {
+		return 50
+	}
+	return r.SharePercent
 }
 
 // PensionCategoryHandlers agrupa los handlers de categorías de pensión.
@@ -60,7 +69,7 @@ func (h *PensionCategoryHandlers) CreateCategory(w http.ResponseWriter, r *http.
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	category, err := h.service.Create(r.Context(), req.Name, req.Description, req.AutoGenerate)
+	category, err := h.service.CreateFull(r.Context(), req.Name, req.Description, req.AutoGenerate, req.share(), req.Currency)
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "validation_error", err.Error())
 		return
@@ -80,7 +89,7 @@ func (h *PensionCategoryHandlers) UpdateCategory(w http.ResponseWriter, r *http.
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	category, err := h.service.Update(r.Context(), id, req.Name, req.Description, req.AutoGenerate)
+	category, err := h.service.UpdateFull(r.Context(), id, req.Name, req.Description, req.AutoGenerate, req.share(), req.Currency)
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "validation_error", err.Error())
 		return

@@ -453,6 +453,7 @@ export default function RegistrosPage() {
 
   const menuOptions = [
     { label: t('registros.create_manual'), icon: 'plus', onClick: openCreateForm },
+    { label: t('registros.import'), icon: 'upload', onClick: () => navigate(`/pension/import?year=${year}&month=${month}`) },
     ...(!isClosed
       ? [{ label: t('registros.generate'), icon: 'refresh', onClick: handleGenerateMonth }]
       : []),

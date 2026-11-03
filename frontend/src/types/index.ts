@@ -190,8 +190,105 @@ export interface PensionCategory {
   name: string
   description: string
   auto_generate: boolean
+  share_percent: number
+  currency: string
   created_at: string
   updated_at: string
+}
+
+export interface PensionCategoryKeyword {
+  id: number
+  pension_category_id: number
+  keyword: string
+  normalized_keyword: string
+  source: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PensionImportPeriod {
+  year: number
+  month: number
+}
+
+export interface ImportValidationError {
+  line_no?: number
+  code: string
+  message: string
+}
+
+export interface PensionImportValidation {
+  status: 'ok' | 'invalid'
+  declared_reimbursable_total: number
+  computed_reimbursable_total: number
+  computed_grand_total: number
+  errors: ImportValidationError[]
+}
+
+export interface PensionImportLine {
+  id?: number
+  batch_id?: number
+  line_no: number
+  raw_text: string
+  concept: string
+  amount_total: number
+  amount_to_record: number
+  rounding_adjustment: number
+  share_percent: number
+  currency: string
+  suggested_category_id?: number
+  chosen_category_id?: number
+  child_id?: number
+  confidence: number
+  match_reason: string
+  category_name?: string
+  validation_status: 'ok' | 'invalid'
+  validation_code: string
+  action: string
+  message?: string
+  previous_amount?: number
+  variation_pct?: number
+}
+
+export interface PensionImportPreview {
+  batch_id: number
+  period: PensionImportPeriod
+  source: string
+  filename?: string
+  validation: PensionImportValidation
+  warnings?: string[]
+  lines: PensionImportLine[]
+}
+
+export interface PensionImportBatch {
+  id: number
+  filename: string
+  period_year: number
+  period_month: number
+  status: string
+  total_lines: number
+  declared_total: number
+  computed_total: number
+  created_count: number
+  skipped_count: number
+  created_at: string
+  confirmed_at?: string
+}
+
+export interface PensionImportConfirmRow {
+  line_no: number
+  action: string
+  category_id: number
+  amount_total: number
+  status: string
+}
+
+export interface PensionImportConfirmResult {
+  batch_id: number
+  created: number
+  skipped_existing: number
+  learned_keywords: number
+  errors: ImportValidationError[]
 }
 
 export interface Alert {

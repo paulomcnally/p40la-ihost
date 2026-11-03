@@ -43,6 +43,7 @@ import SalaryFormPage from './pages/SalaryFormPage'
 import CategoriasPage from './pages/CategoriasPage'
 import CategoryFormPage from './pages/CategoryFormPage'
 import RegistrosPage from './pages/RegistrosPage'
+import PensionImportPage from './pages/PensionImportPage'
 import DeudasPage from './pages/DeudasPage'
 import DebtFormPage from './pages/DebtFormPage'
 import DebtBillsPage from './pages/DebtBillsPage'
@@ -138,6 +139,7 @@ function App() {
                   <Route path="pension/salarios/new" element={<SalaryFormPage />} />
                   <Route path="pension/salarios/edit/:id" element={<SalaryFormPage />} />
                   <Route path="pension/registros" element={<RegistrosPage />} />
+                  <Route path="pension/import" element={<PensionImportPage />} />
                   <Route path="pension/notificaciones" element={<NotificationsPage />} />
                   <Route path="pension/notificaciones/new" element={<NotificationFormPage />} />
                   <Route path="pension/notificaciones/edit/:id" element={<NotificationFormPage />} />
