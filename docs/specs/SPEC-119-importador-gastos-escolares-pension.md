@@ -26,6 +26,8 @@ Esta spec define un **importador mensual** que recibe el PDF (con capa de texto)
 
 El objetivo es que la carga mensual pase de "transcribir a mano" a "revisar y confirmar", sin introducir dependencias pesadas ni servicios externos. El matching es determinista (nombre normalizado + diccionario de palabras clave + historial), por lo que corre en el iHost sin costo de red ni de IA. Un formato CSV propio queda como fallback robusto y exportable cuando el PDF no tenga capa de texto (escaneo/foto), caso en el que el OCR queda explícitamente fuera de alcance por consumo de recursos.
 
+**Regla de reparto**: el documento trae los montos totales pagados por la otra persona, pero a nosotros solo nos corresponde una parte. Cada **categoría interna de pensión** define un reparto cerrado: **Compartido 50 %** (se registra la mitad) o **Completo 100 %** (se registra el total). Pensión Alimenticia y Combustible/Transporte van al 100 %; el resto de las categorías escolares, al 50 %. El reparto se decide por la categoría, **nunca por el texto del concepto** (los textos cambian mes a mes). La división es **exacta, sin redondeo**: si el 50 % de un monto no da un valor con dos decimales exactos, la fila es inválida. La importación es **todo o nada**: si una fila no cumple, no se importa ninguna y se muestra el detalle de cada fila con el motivo del rechazo.
+
 Consideraciones de iHost: el parseo es en memoria sobre archivos de pocos KB, no se agregan binarios externos ni OCR, y las tablas nuevas son de tamaño despreciable (decenas de filas por mes). Los archivos temporales se procesan en memoria y nunca se persisten en disco.
 
 Consideraciones de UI obligatorias:
@@ -46,8 +48,8 @@ Consideraciones de UI obligatorias:
    - decimales con coma o punto (`3845,5`, `3845.50`, `3845`);
    - símbolos de moneda (`C$`, `$`, `NIO`, `USD`) y espacios múltiples;
    - encabezado de período en español (`GASTOS ESCOLARES - OCTUBRE 2026`, `PENSION OCTUBRE 2026`) para inferir `year`/`month`.
-3. **REQ-003 — Líneas de control**: ignorar como registro las líneas de subtotal/total (`TOTAL A REEMBOLSAR`, `TOTAL`, `SUBTOTAL`), pero usarlas como control: si el total declarado no coincide con la suma de las líneas compartidas, mostrar una advertencia no bloqueante en el preview.
-4. **REQ-004 — Preview obligatorio**: nunca escribir en la base sin confirmación. El preview muestra por fila: texto original, concepto normalizado, monto detectado, moneda, período, hijo, categoría sugerida, confianza y motivo del match.
+3. **REQ-003 — Líneas de control (bloqueante)**: ignorar como registro las líneas de subtotal/total (`TOTAL A REEMBOLSAR`, `TOTAL`, `SUBTOTAL`), pero usarlas como control: si el total declarado no coincide con la suma calculada de las líneas compartidas, **se bloquea la importación completa**. Si el documento no trae línea de control, se muestra una advertencia no bloqueante ("sin línea de control").
+4. **REQ-004 — Preview obligatorio**: nunca escribir en la base sin confirmación. El preview muestra por fila: texto original, concepto normalizado, monto total detectado, porcentaje de reparto de la categoría, **monto a registrar**, moneda, período, hijo, categoría sugerida, confianza, motivo del match y **estado de validación** (`ok` / `inválida` con el motivo).
 5. **REQ-005 — Matching determinista en capas**:
    1. coincidencia exacta con el nombre normalizado de una categoría de pensión (sin acentos, mayúsculas ni signos);
    2. coincidencia por palabra clave registrada en `pension_category_keywords`;
@@ -55,10 +57,13 @@ Consideraciones de UI obligatorias:
    4. historial: último registro de la misma categoría/hijo para sugerir monto y detectar variaciones.
    Cada sugerencia devuelve un score de 0 a 1 y el motivo (`name`, `keyword`, `fuzzy`, `history`).
 6. **REQ-006 — Fila sin match**: la fila se muestra como "Sin categoría" con la acción **Crear categoría**, que abre el formulario de categoría de pensión precargado con el concepto detectado. Al crearla, la fila queda asignada a la categoría nueva sin salir del preview.
-7. **REQ-007 — Confirmación idempotente**: al confirmar se crean `support_records` para el hijo/período/categoría elegidos. Si ya existe un registro para `(child_id, pension_category_id, year, month)`, se omite y se informa como "ya existente" (no se duplica ni se sobreescribe).
+7. **REQ-007 — Confirmación idempotente y todo-o-nada**: al confirmar se crean `support_records` para el hijo/período/categoría elegidos, con el monto calculado según el reparto de la categoría. Si **cualquier** fila del lote es inválida, no se crea ningún registro y se devuelve el detalle por fila con el motivo. Si ya existe un registro para `(child_id, pension_category_id, year, month)` con el mismo monto, se omite y se informa como "ya existente"; si existe con **otro** monto, el lote se bloquea como conflicto.
 8. **REQ-008 — Aprendizaje de palabras clave**: al confirmar una fila con categoría elegida, se guarda el concepto normalizado como palabra clave de esa categoría (si no existe). Las palabras clave son visibles, editables y borrables desde la UI.
 9. **REQ-009 — Formato propio (CSV)**: importar y exportar el formato canónico definido en §4.6, con plantilla descargable y opción "Exportar mes anterior" para reutilizar la estructura del mes previo.
 10. **REQ-010 — Autenticación y validación**: todos los endpoints requieren sesión. Se valida período (`year` 2000-2100, `month` 1-12), monto > 0, categoría existente, hijo existente y que el mes no esté cerrado (`month_closings`) para poder confirmar.
+11. **REQ-018 — Reparto por categoría interna**: cada categoría de pensión tiene un reparto cerrado de dos valores: `50` (Compartido) o `100` (Completo). El monto a registrar es `monto_total × reparto / 100`. El reparto se edita en el CRUD de categorías (SPEC-048) y **no depende del texto del concepto** ni de la palabra clave. El preview muestra el porcentaje y el monto resultante.
+12. **REQ-019 — División exacta, sin redondeo**: el resultado del reparto debe tener como máximo 2 decimales exactos. Si no los tiene (ej. `1000.01 × 50 % = 500.005`), la fila es inválida y el lote no se importa. No se aplica ningún redondeo automático.
+13. **REQ-020 — Resumen de validación por fila**: el preview/confirmación devuelve, por cada fila, `ok` o `invalid` con un código y mensaje de motivo (`mixed_concept`, `missing_category`, `invalid_amount`, `split_not_exact`, `total_mismatch`, `duplicate_in_file`, `existing_conflict`, `closed_month`, `missing_period`). La UI muestra el resumen completo antes de confirmar y bloquea el botón si hay al menos una fila inválida.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -137,6 +142,16 @@ Consideraciones de UI obligatorias:
 - **Decisión**: definir un CSV estable (§4.6), importable y exportable, con plantilla y exportación del mes anterior.
 - **Consecuencias**: integración simple con Excel/Notas; sirve de respaldo y de contrato para futuras fuentes.
 
+**ADR-006 — Reparto 50/100 en la categoría, no en el texto**
+- **Contexto**: los conceptos del documento cambian mes a mes, pero la categoría interna es estable.
+- **Decisión**: agregar `share_percent` (50 o 100) a `pension_categories`. El cálculo se hace después del matching, usando la categoría elegida. La UI de categorías expone dos opciones cerradas ("Compartido 50 %", "Completo 100 %").
+- **Consecuencias**: cambiar el texto de una línea no altera el reparto; agregar una excepción nueva es editar una categoría, no código. Requiere migración y actualizar el formulario de categorías existente.
+
+**ADR-007 — Importación todo-o-nada con validación previa**
+- **Contexto**: un lote con una fila mal parseada o un total que no cuadra contamina los registros del mes.
+- **Decisión**: validar todas las filas y el total antes de escribir; si hay al menos un error, no se crea ningún registro y se devuelve el resumen por fila. Sin redondeo: el reparto debe ser exacto a 2 decimales.
+- **Consecuencias**: el usuario corrige el archivo y reimporta; nunca quedan cargas parciales. El costo es que un error bloquea todo el mes hasta resolverse.
+
 ---
 
 ## 4. Diseño Técnico
@@ -185,8 +200,20 @@ Consideraciones de UI obligatorias:
   - normalizar el período desde nombres de mes en español/inglés y año de 4 dígitos.
 - **Ubicación**: `internal/services/pension_import_parser.go`.
 
-#### 4.2.3 `internal/services/pension_import_match.go`
-- **Responsabilidad**: calcular la mejor categoría para cada línea.
+#### 4.2.3 `internal/services/pension_import_validation.go`
+- **Responsabilidad**: aplicar la regla de reparto y validar cada fila antes de confirmar.
+- **Reglas**:
+  1. obtener `share_percent` (50 o 100) de la categoría elegida;
+  2. `monto_a_registrar = monto_total × share_percent / 100`, en aritmética decimal exacta;
+  3. si el resultado tiene más de 2 decimales → `split_not_exact` (sin redondear);
+  4. si el concepto contiene más de un término mapeado a categorías distintas (ej. `COMBUSTIBLE Y COLEGIATURA`) → `mixed_concept`, no se divide y se bloquea;
+  5. comparar la suma de las líneas compartidas (50 %) y completas (100 %) contra `TOTAL A REEMBOLSAR` cuando exista; cualquier diferencia → `total_mismatch` y lote bloqueado;
+  6. detectar duplicados dentro del archivo (`hijo, categoría, período`) y conflictos con registros existentes de distinto monto.
+- **Salida**: `[]RowValidation {line_no, status, code, message}`.
+- **Ubicación**: `internal/services/pension_import_validation.go`.
+
+#### 4.2.4 `internal/services/pension_import_match.go`
+- **Responsabilidad**: calcular la mejor categoría para cada línea (no calcula montos).
 - **Algoritmo**:
   1. normalizar concepto (mayúsculas, sin acentos, sin signos, espacios colapsados);
   2. nombre de categoría normalizado idéntico → `score 1.00`, motivo `name`;
@@ -194,12 +221,13 @@ Consideraciones de UI obligatorias:
   4. Levenshtein normalizado ≥ 0.85 contra nombres/claves → `score 0.80`, motivo `fuzzy`;
   5. si hay historial de la categoría para el hijo, usar el último monto como referencia (`previous_amount`) y ajustar `score` según diferencia (no bloqueante).
 - **Umbrales**: `≥ 0.85` alta, `0.60–0.85` media, `< 0.60` sin match.
+- **Restricción**: si el concepto matchea términos de **dos o más** categorías distintas, se devuelve `mixed_concept` en lugar de elegir una.
 
-#### 4.2.4 `internal/storage/pension_import.go`
+#### 4.2.5 `internal/storage/pension_import.go`
 - **Responsabilidad**: persistencia de keywords, lotes y filas; creación transaccional de `support_records`.
 - **Ubicación**: `internal/storage/pension_import.go`.
 
-#### 4.2.5 `internal/api/pension_import_handlers.go`
+#### 4.2.6 `internal/api/pension_import_handlers.go`
 - **Responsabilidad**: endpoints HTTP, parseo de multipart/JSON, mapeo de errores.
 - **Ubicación**: `internal/api/pension_import_handlers.go`.
 - **Rutas** (registradas en `internal/api/routes.go`, todas con `authMiddleware`):
@@ -210,18 +238,20 @@ Consideraciones de UI obligatorias:
   - `GET  /api/pension/import/export?year=&month=`
   - `GET/POST/DELETE /api/pension/keywords`
 
-#### 4.2.6 Frontend
+#### 4.2.7 Frontend
 - **Página**: `frontend/src/pages/PensionImportPage.tsx`, ruta `/pension/import`.
 - **Entrada**: acción **Importar gastos** en el menú de 3 puntos de `RegistrosPage.tsx` (no botón directo en el header).
 - **Paso 1**: dropzone + selector de archivo, o textarea "Pegar texto", o descarga de plantilla CSV.
 - **Paso 2**: preview en cards (móvil) / tabla (desktop) con:
-  - concepto original y monto editable;
+  - concepto original y monto total editable;
+  - porcentaje de reparto de la categoría (`Compartido 50 %` / `Completo 100 %`) y **monto a registrar** calculado;
   - `Select` searchable de categoría (incluye "Sin categoría");
   - `Select` de hijo (si hay más de uno) y de estado;
   - badge de confianza y motivo;
   - monto del mes anterior + variación (REQ-011);
-  - acción **Crear categoría** por fila cuando no hay match.
-- **Paso 3**: resumen (crear N, omitir M, errores) y botón **Confirmar importación**.
+  - acción **Crear categoría** por fila cuando no hay match (con el reparto elegido en el formulario de categoría);
+  - estado de validación por fila (`ok` / `inválida` + motivo).
+- **Paso 3**: resumen de validación por fila (válidas, inválidas con motivo), total calculado vs. `TOTAL A REEMBOLSAR`, y botón **Confirmar importación** deshabilitado si hay cualquier fila inválida. Si se confirma, se crea todo; si falla, no se crea nada.
 - **Retorno**: flecha atrás en el header (`BACK_ROUTES` → `/pension/registros`).
 - **i18n**: claves nuevas en `frontend/public/i18n/{es,en}.json` bajo `pension.import.*` (fuente de verdad: `frontend/public/i18n/`).
 
@@ -229,7 +259,14 @@ Consideraciones de UI obligatorias:
 
 Migración `0041_create_pension_import.up.sql` / `.down.sql`.
 
+Incluye un `ALTER TABLE pension_categories ADD COLUMN share_percent INTEGER NOT NULL DEFAULT 50 CHECK (share_percent IN (50,100));` (SQLite no permite agregar CHECK con ALTER de forma directa en todas las versiones; se implementa con `ALTER TABLE ... ADD COLUMN share_percent INTEGER NOT NULL DEFAULT 50` + trigger de validación `CHECK` o validación en storage; ver nota).
+
+> **Nota SQLite**: `ALTER TABLE ... ADD COLUMN` no acepta `CHECK` en versiones antiguas. La migración agrega la columna con default 50 y crea un trigger `BEFORE INSERT/UPDATE` que valida `share_percent IN (50,100)`, manteniendo la integridad sin recrear la tabla.
+
 ```
+Entidad: pension_categories (modificada)
+- share_percent: INTEGER NOT NULL DEFAULT 50   (50 = Compartido, 100 = Completo)
+
 Entidad: pension_category_keywords
 - id: INTEGER PK
 - pension_category_id: INTEGER NOT NULL → pension_categories(id) ON DELETE CASCADE
@@ -255,20 +292,24 @@ Entidad: pension_import_rows
 - line_no: INTEGER
 - raw_text: TEXT
 - concept: TEXT
-- amount: REAL
+- amount_total: REAL                        (monto del documento)
+- amount_to_record: REAL                    (monto calculado según reparto)
+- share_percent: INTEGER                    (50 o 100, copiado de la categoría al validar)
 - currency: TEXT
 - suggested_category_id: INTEGER NULL → pension_categories(id)
 - chosen_category_id: INTEGER NULL → pension_categories(id)
 - child_id: INTEGER NULL → children(id)
 - confidence: REAL
 - match_reason: TEXT
+- validation_status: TEXT CHECK (validation_status IN ('ok','invalid'))
+- validation_code: TEXT
 - action: TEXT CHECK (action IN ('create','skip','existing','error'))
 - created_at
 ```
 
 Índices: `pension_import_rows(batch_id)`, `pension_import_batches(period_year, period_month)`.
 
-**Seed inicial** (solo si la categoría existe por nombre, para no fallar en instalaciones personalizadas):
+**Seed inicial de palabras clave** (solo si la categoría existe por nombre, para no fallar en instalaciones personalizadas):
 
 | Palabra clave | Categoría destino |
 |---|---|
@@ -282,7 +323,22 @@ Entidad: pension_import_rows
 | `HOPPERS` | Colegio - Actividad - Hoppers |
 | `ENCUENTRO CON CRISTO` | Colegio - Actividad - Encuentro con Cristo |
 
-> **Decisión pendiente de confirmar con el usuario**: `COMBUSTIBLE` se mapea por defecto a **Colegio - Transporte**. Si en la práctica corresponde a combustible del auto, se cambia la palabra clave desde la UI sin tocar código.
+**Seed inicial de reparto** (por nombre de categoría):
+
+| Categoría | `share_percent` | Significado |
+|---|---:|---|
+| Pensión Alimenticia | 100 | Completo |
+| Colegio - Transporte (combustible) | 100 | Completo |
+| Colegio - Mensualidad | 50 | Compartido |
+| Colegio - Uniforme | 50 | Compartido |
+| Colegio - Seguro | 50 | Compartido |
+| Colegio - Matrícula | 50 | Compartido |
+| Colegio - Libros | 50 | Compartido |
+| Colegio - Actividad - Hoppers | 50 | Compartido |
+| Colegio - Actividad escolar | 50 | Compartido |
+| Colegio - Actividad - Encuentro con Cristo | 50 | Compartido |
+
+> **Decisión pendiente de confirmar con el usuario (mapeo de combustible)**: `COMBUSTIBLE` se mapea por defecto a **Colegio - Transporte** con reparto 100 %. Si se prefiere separar conceptos, se crea una categoría interna **`Combustible`** al 100 % y `Colegio - Transporte` pasa al 50 % para transporte escolar real. El cambio se hace en datos, sin tocar código.
 
 ### 4.4 APIs / Contratos
 
@@ -305,49 +361,102 @@ Entidad: pension_import_rows
   "batch_id": 1,
   "period": { "year": 2026, "month": 10 },
   "source": "pdf",
-  "warnings": [
-    { "code": "total_mismatch", "message": "El total declarado no coincide con la suma de las líneas." }
-  ],
-  "declared_total": 4000,
+  "validation": {
+    "status": "ok",
+    "declared_reimbursable_total": 4000,
+    "computed_reimbursable_total": 4000,
+    "computed_grand_total": 17200,
+    "errors": []
+  },
   "lines": [
     {
       "line_no": 2,
       "raw_text": "COLEGIATURA 8000",
       "concept": "COLEGIATURA",
-      "amount": 8000,
+      "amount_total": 8000,
+      "share_percent": 50,
+      "amount_to_record": 4000,
       "currency": "NIO",
       "suggested_category_id": 5,
       "category_name": "Colegio - Mensualidad",
       "confidence": 0.95,
       "match_reason": "keyword",
       "previous_amount": 8000,
-      "variation_pct": 0
+      "variation_pct": 0,
+      "validation_status": "ok",
+      "validation_code": null
     },
     {
       "line_no": 4,
       "raw_text": "COMBUSTIBLE 1200",
       "concept": "COMBUSTIBLE",
-      "amount": 1200,
+      "amount_total": 1200,
+      "share_percent": 100,
+      "amount_to_record": 1200,
       "currency": "NIO",
       "suggested_category_id": 3,
       "category_name": "Colegio - Transporte",
       "confidence": 0.95,
       "match_reason": "keyword",
       "previous_amount": 1500,
-      "variation_pct": -20
+      "variation_pct": -20,
+      "validation_status": "ok",
+      "validation_code": null
     },
     {
       "line_no": 5,
       "raw_text": "PENSION OCTUBRE 12000",
       "concept": "PENSION OCTUBRE",
-      "amount": 12000,
+      "amount_total": 12000,
+      "share_percent": 100,
+      "amount_to_record": 12000,
       "currency": "NIO",
       "suggested_category_id": 1,
       "category_name": "Pensión Alimenticia",
       "confidence": 0.95,
       "match_reason": "keyword",
       "previous_amount": 12000,
-      "variation_pct": 0
+      "variation_pct": 0,
+      "validation_status": "ok",
+      "validation_code": null
+    }
+  ]
+}
+```
+
+> `declared_reimbursable_total` y `computed_reimbursable_total` cubren **solo las líneas compartidas (50 %)**, que son las que la otra persona reembolsa. `computed_grand_total` es la suma de todos los `amount_to_record` (incluye pensión y combustible al 100 %). El control bloqueante se hace contra el primero.
+
+**Response 200 con lote inválido** (no se importa nada):
+
+```json
+{
+  "batch_id": 2,
+  "validation": {
+    "status": "invalid",
+    "declared_reimbursable_total": 4000,
+    "computed_reimbursable_total": 4100,
+    "computed_grand_total": 17600,
+    "errors": [
+      { "code": "total_mismatch", "message": "El total declarado (4000) no coincide con la suma calculada (4100)." }
+    ]
+  },
+  "lines": [
+    {
+      "line_no": 3,
+      "raw_text": "COLEGIATURA Y COMBUSTIBLE 5000",
+      "validation_status": "invalid",
+      "validation_code": "mixed_concept",
+      "message": "La línea mezcla conceptos de dos categorías distintas."
+    },
+    {
+      "line_no": 4,
+      "raw_text": "UNIFORME 1000.01",
+      "amount_total": 1000.01,
+      "share_percent": 50,
+      "amount_to_record": 500.005,
+      "validation_status": "invalid",
+      "validation_code": "split_not_exact",
+      "message": "El reparto del 50 % no da un monto exacto de dos decimales."
     }
   ]
 }
@@ -366,12 +475,14 @@ Entidad: pension_import_rows
   "batch_id": 1,
   "child_id": 1,
   "rows": [
-    { "line_no": 2, "action": "create", "category_id": 5, "amount": 4000, "status": "pending" },
-    { "line_no": 4, "action": "create", "category_id": 3, "amount": 1200, "status": "pending" },
-    { "line_no": 5, "action": "create", "category_id": 1, "amount": 12000, "status": "pending" }
+    { "line_no": 2, "action": "create", "category_id": 5, "amount_total": 8000, "status": "pending" },
+    { "line_no": 4, "action": "create", "category_id": 3, "amount_total": 1200, "status": "pending" },
+    { "line_no": 5, "action": "create", "category_id": 1, "amount_total": 12000, "status": "pending" }
   ]
 }
 ```
+
+> El cliente envía el **monto total del documento**; el backend vuelve a calcular `amount_to_record` con el `share_percent` de la categoría y valida exactitud. Nunca se confía en un monto ya dividido enviado por el cliente.
 
 **Response 200**:
 
@@ -385,7 +496,17 @@ Entidad: pension_import_rows
 }
 ```
 
-**Errores**: `400` validación, `401` sin sesión, `409` mes cerrado o duplicado en el archivo, `422` formato no soportado.
+**Response 409** (lote inválido, no se crea nada):
+
+```json
+{
+  "error": "batch_invalid",
+  "message": "El lote tiene filas inválidas; no se importó ningún registro.",
+  "validation": { "status": "invalid", "errors": [ { "line_no": 3, "code": "mixed_concept" } ] }
+}
+```
+
+**Errores**: `400` validación de request, `401` sin sesión, `409` lote inválido / mes cerrado / conflicto con registro existente, `422` formato no soportado.
 
 ### 4.5 Interfaz de usuario
 
@@ -398,26 +519,29 @@ Entidad: pension_import_rows
 
 ### 4.6 Formato CSV canónico
 
-Encabezado obligatorio, UTF-8, coma, punto decimal, sin separador de miles:
+Encabezado obligatorio, UTF-8, coma, punto decimal, sin separador de miles. **La columna `monto` es el monto total del documento (antes del reparto)**; el sistema aplica el porcentaje de la categoría, igual que con el PDF.
 
 ```csv
 periodo,concepto,monto,moneda,categoria,hijo,estado,notas
 2026-10,PENSION OCTUBRE,12000.00,NIO,Pensión Alimenticia,,pending,
-2026-10,COLEGIATURA (50%),4000.00,NIO,Colegio - Mensualidad,,pending,
+2026-10,COLEGIATURA,8000.00,NIO,Colegio - Mensualidad,,pending,
 2026-10,COMBUSTIBLE,1200.00,NIO,Colegio - Transporte,,pending,
 ```
+
+Importe registrado con este ejemplo: 12.000 (pensión, 100 %) + 4.000 (colegiatura, 50 %) + 1.200 (combustible, 100 %) = 17.200.
 
 Reglas:
 - `periodo`: `YYYY-MM` (obligatorio).
 - `categoria` vacía → se aplica matching (útil para importar solo concepto/monto).
 - `hijo` vacío → el único hijo si existe exactamente uno; si hay varios, error de validación.
-- `monto`: > 0, punto decimal (se aceptan coma decimal al importar).
+- `monto`: > 0, **total del documento**, punto decimal (se aceptan coma decimal al importar).
 - `estado`: `pending` (default) o `paid`.
 - `moneda`: `NIO` (default) o código existente en `currencies`.
+- **Exportación**: el CSV exportado reconstruye el total a partir del registro guardado (`total = registrado × 100 / share_percent`), de modo que reimportarlo produce los mismos montos sin volver a dividir. Si un registro no permite la reconstrucción exacta, la exportación lo marca como error en lugar de inventar un monto.
 
 ### 4.7 Dependencias
 
-- **Internas**: `pension_categories`, `children`, `support_records`, `month_closings`, `categories` (solo lectura para P2).
+- **Internas**: `pension_categories` (nuevo `share_percent` y formulario de categorías), `pension_category_keywords` (nueva), `children`, `support_records`, `month_closings`, `categories` (solo lectura para P2).
 - **Externas**: `github.com/ledongthuc/pdf` (extracción de texto). Sin servicios de red.
 - **Migración**: `0041_create_pension_import.up.sql` / `.down.sql`.
 
@@ -431,17 +555,23 @@ Reglas:
 - [ ] **CA-002**: Dado un monto `24.500,00`, `24500`, `24,500.00` o `C$ 24500.00`, el parser lo interpreta como `24500.00`.
 - [ ] **CA-003**: Dado un concepto `PENSION OCTUBRE`, el matcher sugiere `Pensión Alimenticia` con confianza ≥ 0.85 y motivo `keyword`.
 - [ ] **CA-004**: Dado un concepto `COLEGIATURA`, el matcher sugiere `Colegio - Mensualidad`; `COMBUSTIBLE` sugiere `Colegio - Transporte` (configurable por palabra clave).
+- [ ] **CA-004b**: El reparto se toma de la **categoría**: `Pensión Alimenticia` y `Colegio - Transporte` registran el 100 %; `Colegio - Mensualidad` registra el 50 %; cambiar el texto del concepto no cambia el reparto.
+- [ ] **CA-004c**: Si el 50 % de un monto no da un valor exacto de 2 decimales (ej. `1000.01`), la fila queda `invalid` con código `split_not_exact`, se muestra el motivo y **no se redondea**.
 - [ ] **CA-005**: Dado un concepto sin coincidencia, la fila aparece sin categoría y el botón **Crear categoría** abre el formulario precargado con el concepto.
 - [ ] **CA-006**: Al crear la categoría desde el preview, la fila queda asignada y la categoría aparece en el selector sin recargar la página.
-- [ ] **CA-007**: Al confirmar, se crean exactamente los registros marcados; los existentes para el mismo `(hijo, categoría, período)` se informan como omitidos y no se duplican.
+- [ ] **CA-007**: Al confirmar, se crean exactamente los registros válidos; si existe un registro con el mismo monto se informa "ya existente" y se omite; si existe con **otro** monto, el lote se bloquea como conflicto.
 - [ ] **CA-008**: Al confirmar, el concepto normalizado queda guardado como palabra clave; una segunda importación del mismo concepto la resuelve sin intervención.
 - [ ] **CA-009**: Si el PDF no tiene capa de texto, la API responde 422 con mensaje accionable y la UI ofrece CSV/pegar texto.
 - [ ] **CA-010**: La importación de un CSV canónico válido crea los registros; un CSV con `monto` vacío o `periodo` inválido devuelve error de validación por fila.
-- [ ] **CA-011**: La exportación del mes anterior genera un CSV que, reimportado sin cambios, produce un preview válido.
+- [ ] **CA-011**: La exportación del mes anterior genera un CSV con los **totales reconstruidos** que, reimportado sin cambios, produce un preview válido con los mismos montos registrados.
 - [ ] **CA-012**: No se puede confirmar sobre un mes cerrado (`month_closings`); la API responde `409` y la UI lo explica.
 - [ ] **CA-013**: El lote queda registrado en `pension_import_batches` con conteos de creadas/omitidas y fecha.
 - [ ] **CA-014**: La acción **Importar gastos** está en el menú de 3 puntos de Registros, no como botón suelto en el header.
 - [ ] **CA-015**: No existe ningún `<select>` nativo en la pantalla nueva (`npm run check:ui` pasa).
+- [ ] **CA-016**: Si `TOTAL A REEMBOLSAR` no coincide con la suma calculada de las líneas compartidas, el lote queda `invalid`, se muestra el desvío y **no se crea ningún registro**.
+- [ ] **CA-017**: Si una línea contiene dos conceptos mapeados a categorías distintas (ej. `COMBUSTIBLE Y COLEGIATURA`), queda `invalid` con `mixed_concept` y el lote completo se bloquea.
+- [ ] **CA-018**: La confirmación es **todo o nada**: con al menos una fila inválida, `created = 0` y la respuesta incluye el resumen por fila con código y mensaje.
+- [ ] **CA-019**: El preview muestra por fila `amount_total`, `share_percent`, `amount_to_record` y `validation_status` con el motivo cuando corresponde.
 - [ ] **CA-DARK**: Los inputs y selectores usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó legibilidad en darkmode (texto y placeholders).
 - [ ] **CA-BACK**: La página `/pension/import` tiene flecha atrás en el header registrada en `BACK_ROUTES` y no muestra links "← Título" en el contenido.
 
@@ -456,15 +586,20 @@ Reglas:
 
 - **Unit tests**:
   - parser: formatos de monto (`24.500,00`, `24,500.00`, `24500`, `3845,5`), líneas de total, detección de período, líneas vacías;
-  - matcher: exacto, keyword, fuzzy, sin match, desempate entre dos categorías;
-  - CSV: parseo y generación, encabezado inválido, columnas faltantes.
+  - matcher: exacto, keyword, fuzzy, sin match, desempate entre dos categorías, `mixed_concept`;
+  - reparto: 50 % exacto (`8000 → 4000`), 100 % (`12000 → 12000`), 50 % no exacto (`1000.01 → invalid`);
+  - validación: total declarado vs. calculado, duplicados en archivo, conflicto con registro existente de otro monto;
+  - CSV: parseo y generación, encabezado inválido, columnas faltantes, reconstrucción del total al exportar.
 - **Integration tests** (httptest + SQLite en `/tmp`):
   - preview no escribe en `support_records`;
-  - confirm crea N registros y omite duplicados;
+  - confirm crea N registros y omite duplicados con el mismo monto;
+  - lote con una fila inválida → `created = 0` y detalle por fila;
+  - `split_not_exact` bloquea el lote y no redondea;
+  - `total_mismatch` bloquea el lote;
   - mes cerrado → 409;
   - aprendizaje de keyword al confirmar;
   - PDF sin texto → 422.
-- **Manual**: importar el PDF real del mes, verificar preview, crear una categoría nueva, confirmar y revisar el listado de Registros. Validar contra una copia de la DB de producción, nunca contra `data/app.db`.
+- **Manual**: importar el PDF real del mes, verificar preview (montos totales vs. registrados), crear una categoría nueva, confirmar y revisar el listado de Registros. Validar contra una copia de la DB de producción, nunca contra `data/app.db`.
 - **UI**: build de `frontend/` con `check:ui`, revisión en darkmode y móvil.
 
 ---
@@ -475,18 +610,19 @@ Reglas:
 
 | Fase | Descripción | Estimación | Dependencias |
 |------|-------------|------------|--------------|
-| 1 | Migración 0041 (keywords, batches, rows) + seeds + storage | 0,5 día | — |
+| 1 | Migración 0041 (`share_percent` + keywords, batches, rows) + seeds + storage | 1 día | — |
 | 2 | Parser PDF/TXT/CSV + detección de período y totales | 1 día | Fase 1 |
-| 3 | Matcher (normalización, keyword, fuzzy, historial) + tests | 1 día | Fase 2 |
+| 3 | Matcher (normalización, keyword, fuzzy, historial) + validador de reparto y totales + tests | 1,5 días | Fase 2 |
 | 4 | Endpoints `preview`, `confirm`, `batches`, `template.csv`, `export` | 1 día | Fases 2-3 |
-| 5 | Frontend: página de importación, preview, crear categoría, i18n | 1,5 días | Fase 4 |
-| 6 | Tests de integración, validación con copia de producción, darkmode | 0,5 día | Fase 5 |
-| 7 | Documentación y release | 0,5 día | Fase 6 |
+| 5 | Frontend: página de importación, preview con validación por fila, crear categoría, i18n | 1,5 días | Fase 4 |
+| 6 | Formulario de categorías: opción de reparto (50/100) | 0,5 día | Fase 1 |
+| 7 | Tests de integración, validación con copia de producción, darkmode | 0,5 día | Fases 5-6 |
+| 8 | Documentación y release | 0,5 día | Fase 7 |
 
 ### 6.2 Milestones
 
-1. **MVP**: PDF/TXT/CSV → preview → confirmar con categorías existentes, sin crear categorías ni keywords (solo sugerencias).
-2. **V1.0**: creación de categoría desde el preview, aprendizaje de palabras clave, auditoría de lotes, exportación del mes anterior.
+1. **MVP**: PDF/TXT/CSV → preview con reparto y validación → confirmar con categorías existentes, sin crear categorías ni keywords.
+2. **V1.0**: creación de categoría desde el preview, aprendizaje de palabras clave, auditoría de lotes, exportación del mes anterior, edición del reparto en categorías.
 3. **V1.1 (P2)**: vínculo con presupuesto, recordatorio mensual, multi-moneda.
 
 ---
@@ -497,8 +633,10 @@ Reglas:
 |--------|--------------|---------|------------|
 | El PDF cambia de formato o llega escaneado | Media | Alto | Fallback CSV/texto pegado; 422 accionable; el parser tolera variantes de orden y separadores |
 | La librería PDF falla con un generador específico | Media | Medio | Tests con PDFs sintéticos de varios orígenes; fallback a texto/CSV |
-| `COMBUSTIBLE` u otro concepto mapea a la categoría equivocada | Media | Medio | Preview obligatorio + keywords editables + confirmación del usuario |
-| Duplicados por reimportación | Baja | Alto | `UNIQUE(child, category, year, month)` + acción `existing` explícita |
+| `COMBUSTIBLE` u otro concepto mapea a la categoría equivocada | Media | Medio | Preview obligatorio + keywords editables + reparto por categoría + confirmación del usuario |
+| Un monto impar no se puede dividir exacto y bloquea el mes | Media | Medio | Se avisa con `split_not_exact` y el usuario corrige el archivo; no se redondea |
+| El total declarado no coincide y bloquea el lote | Media | Medio | El preview muestra el desvío exacto; se corrige el archivo antes de importar |
+| Duplicados por reimportación | Baja | Alto | `UNIQUE(child, category, year, month)` + acción `existing` explícita y conflicto si el monto difiere |
 | Crecimiento de tablas de auditoría | Baja | Bajo | Retención sugerida: borrar batches > 24 meses (job manual o P2) |
 | Montos con separadores ambiguos (`1.500` = 1500 o 1,5) | Media | Medio | Regla documentada: si el último grupo tiene 3 dígitos y no hay decimales explícitos, se interpreta como miles; el preview permite corregir |
 | Dependencia nueva rompe multi-arch | Baja | Alto | Verificar buildx de las 3 plataformas antes del release |
@@ -506,6 +644,14 @@ Reglas:
 ---
 
 ## 8. Notas y Referencias
+
+### 8.1 Decisiones abiertas (pendientes de confirmar)
+
+1. **Estado inicial de los registros**: ¿`pending` (recomendado) o `paid`?
+2. **Moneda**: ¿siempre NIO? Si llega una línea en USD, ¿se aplica el mismo reparto y se registra en USD?
+3. **Mapeo de combustible**: ¿se deja `Colegio - Transporte` al 100 % o se crea una categoría interna `Combustible` al 100 % y `Colegio - Transporte` pasa al 50 %?
+
+### 8.2 Referencias
 
 - SPEC-048: CRUD de categorías de pensión.
 - SPEC-049: Backend de registros de pensión (modelo `support_records`).
@@ -524,3 +670,4 @@ Reglas:
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-03 | opencode | Creación inicial de la especificación (draft) a partir del análisis del PDF mensual de gastos escolares y de los registros históricos del módulo de pensión. |
+| 2026-11-03 | opencode | Se incorpora la regla de reparto por categoría interna (50 % compartido / 100 % completo), división exacta sin redondeo, validación bloqueante del total y del lote completo (todo o nada), resumen de validación por fila y ajustes en el CSV (monto total + reconstrucción al exportar). |
