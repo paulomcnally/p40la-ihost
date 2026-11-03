@@ -5,8 +5,9 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import Toggle from '../components/Toggle'
+import Select from '../components/Select'
 import { useToast } from '../components/Toast'
-import type { PensionCategory } from '../types'
+import type { PensionCategory, Currency } from '../types'
 
 export default function CategoryFormPage() {
   const navigate = useNavigate()
@@ -17,16 +18,22 @@ export default function CategoryFormPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [autoGenerate, setAutoGenerate] = useState(false)
+  const [sharePercent, setSharePercent] = useState(50)
+  const [currency, setCurrency] = useState('NIO')
+  const [currencies, setCurrencies] = useState<Currency[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(isEdit)
 
   useEffect(() => {
+    api.currencies.list().then((data) => setCurrencies(data || []))
     if (isEdit) {
       api.pensionCategories.get(Number(id)).then((category) => {
         if (category) {
           setName(category.name)
           setDescription(category.description)
           setAutoGenerate(category.auto_generate)
+          setSharePercent(category.share_percent ?? 50)
+          setCurrency(category.currency || 'NIO')
         }
         setLoadingData(false)
       })
@@ -39,7 +46,7 @@ export default function CategoryFormPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const data: Partial<PensionCategory> = { name, description, auto_generate: autoGenerate }
+      const data: Partial<PensionCategory> = { name, description, auto_generate: autoGenerate, share_percent: sharePercent, currency }
       if (isEdit) {
         await api.pensionCategories.update(Number(id), data)
         showToast(t('categorias.updated'), 'success')
@@ -88,6 +95,29 @@ export default function CategoryFormPage() {
             placeholder={t('categorias.description_placeholder')}
             rows={3}
             className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] resize-none"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">{t('pensionImport.share')}</label>
+          <Select
+            options={[
+              { value: 50, label: t('pensionImport.share_shared') },
+              { value: 100, label: t('pensionImport.share_full') },
+            ]}
+            value={sharePercent}
+            onChange={(v) => setSharePercent(Number(v))}
+          />
+          <p className="text-xs text-text-secondary mt-1">{t('categorias.share_hint')}</p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">{t('pensionImport.currency')}</label>
+          <Select
+            options={currencies.length > 0
+              ? currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))
+              : [{ value: 'NIO', label: 'NIO' }, { value: 'USD', label: 'USD' }]}
+            value={currency}
+            onChange={(v) => setCurrency(String(v))}
+            searchable
           />
         </div>
         <div className="flex items-center justify-between gap-4 pt-2">
