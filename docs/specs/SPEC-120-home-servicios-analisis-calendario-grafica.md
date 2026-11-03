@@ -1,7 +1,7 @@
 ---
 title: "Home de Servicios con Análisis, Calendario y Gráfica (espejo de Deudas)"
 id: "SPEC-120"
-status: "draft"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-03"
 updated: "2026-11-03"
@@ -11,7 +11,7 @@ github_issue: 123
 # Home de Servicios con Análisis, Calendario y Gráfica (espejo de Deudas)
 
 **ID**: SPEC-120  
-**Estado**: draft  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-11-03  
 **Actualizado**: 2026-11-03
@@ -495,3 +495,5 @@ Notas:
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-03 | opencode | Creación inicial de la especificación a pedido del usuario (replicar el home de Deudas en Servicios, con estado en querystring y casa persistente). |
+| 2026-11-03 | opencode | Implementación completa: endpoints `GET /api/service-bills`, `/summary` y `/projection`; regla de período efectivo; componentes `ServiceAnalysis`, `ServiceCalendar`, `ServiceChart`; refactor de `ServicesPage` con tabs y estado en querystring; i18n es/en; tests unitarios de período, resumen y proyección. Validado con build de frontend, `go test ./...` y una copia de la DB de producción en `/tmp` (totales de API contra SQL independiente). |
+| 2026-11-03 | opencode | Ajustes de UX durante la validación: moneda por defecto según la vista de la gráfica, consolidación de facturas duplicadas por servicio en la proyección, filtro de moneda aplicado al resumen del tab Análisis y empty state del calendario en desktop. |

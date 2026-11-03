@@ -120,6 +120,70 @@ export interface Bill {
   payment_reference?: string
 }
 
+// Factura con contexto para el home global de Servicios (SPEC-120).
+export interface ServiceBillDetail extends Bill {
+  service_name: string
+  institution: string
+  home_id: number
+  home_name: string
+  icon_key: string
+  currency_id: number
+  currency_code: string
+  currency_symbol: string
+  frequency: 'monthly' | 'yearly'
+  billing_day: number | null
+  active: boolean
+  period_year: number
+  period_month: number
+  period_date: string
+  date_estimated: boolean
+}
+
+export interface ServiceBillSummaryRow {
+  period: string
+  year: number
+  month: number
+  currency_code: string
+  currency_symbol: string
+  total: number
+  paid: number
+  pending: number
+  count: number
+}
+
+export interface ServiceBillSummaryResponse {
+  from: string
+  to: string
+  periods: ServiceBillSummaryRow[]
+}
+
+export interface ServiceProjectionItem {
+  service_id: number
+  name: string
+  amount: number
+  source: 'bill' | 'estimate'
+  currency_code: string
+}
+
+export interface ServiceProjectionPeriod {
+  period: string
+  year: number
+  month: number
+  currency_code: string
+  currency_symbol: string
+  confirmed: number
+  estimated: number
+  total: number
+  services: ServiceProjectionItem[]
+}
+
+export interface ServiceProjectionResponse {
+  from: string
+  months: number
+  periods: ServiceProjectionPeriod[]
+  estimate_note: boolean
+}
+
 export interface ServiceCycle {
   id: number
   service_id: number

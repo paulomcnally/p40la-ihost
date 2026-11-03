@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -124,6 +124,23 @@ export const api = {
     },
     createBillFromExtracted: (serviceId: number, body: { amount: number; invoice_number: string; year: number; month: number; file_hash?: string }) =>
       post<Bill & { updated?: boolean; duplicate?: boolean }>(`/api/services/${serviceId}/bills/from-extracted`, body),
+  },
+  serviceBills: {
+    byMonth: (year: number, month: number, homeId?: number | null) => {
+      const params = new URLSearchParams({ year: String(year), month: String(month) })
+      if (homeId) params.set('home_id', String(homeId))
+      return get<ServiceBillDetail[]>(`/api/service-bills?${params.toString()}`)
+    },
+    summary: (from: string, to: string, homeId?: number | null) => {
+      const params = new URLSearchParams({ from, to })
+      if (homeId) params.set('home_id', String(homeId))
+      return get<ServiceBillSummaryResponse>(`/api/service-bills/summary?${params.toString()}`)
+    },
+    projection: (from: string, months: number, homeId?: number | null) => {
+      const params = new URLSearchParams({ from, months: String(months) })
+      if (homeId) params.set('home_id', String(homeId))
+      return get<ServiceProjectionResponse>(`/api/service-bills/projection?${params.toString()}`)
+    },
   },
   auth: {
     login: (email: string, password: string, remember: boolean) =>
