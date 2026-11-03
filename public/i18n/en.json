@@ -1081,6 +1081,26 @@
     "recent": "Recent imports",
     "pasted_text": "pasted text",
     "batch_confirmed": "{created} created, {skipped} already existing",
-    "batch_preview": "preview"
+    "batch_preview": "preview",
+    "new_category_option": "+ New category",
+    "document_reimbursement": "Document reimbursement",
+    "matches": "matches the computed amount",
+    "mismatch": "does not match · difference",
+    "no_control_line": "The document has no control total line.",
+    "will_import": "{count} expenses will be imported · {total}",
+    "period_mismatch": "The document is for {document} but the screen was set to {selected}. It will be imported into {document}.",
+    "control_lines": "Lines interpreted as control totals",
+    "matched_by": "matched by “{keyword}”",
+    "matched_name": "matched by name",
+    "matched_manual": "assigned manually",
+    "matched_fuzzy": "approximate match",
+    "original_line": "Original line",
+    "include": "Include",
+    "exclude": "Exclude",
+    "already_exists": "A record of {amount} already exists for this period; it will be skipped.",
+    "error_duplicate": "Two lines use the same category; exclude one.",
+    "reset_title": "Start over?",
+    "reset_message": "The preview and your edits will be discarded.",
+    "confirm_count": "Import {count} expenses ({total})"
   }
 }

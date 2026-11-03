@@ -23,9 +23,17 @@ type ParsedLine struct {
 	Category    string // solo CSV: nombre de categoría provisto
 }
 
+// ParsedControlLine es una línea de total/subtotal detectada.
+type ParsedControlLine struct {
+	LineNo  int
+	RawText string
+	Amount  float64
+}
+
 // ParsedDocument es el resultado del parseo de un archivo.
 type ParsedDocument struct {
 	Lines         []ParsedLine
+	ControlLines  []ParsedControlLine
 	DeclaredTotal *float64
 	Year          int
 	Month         int
@@ -113,6 +121,11 @@ func ParseText(text string) (*ParsedDocument, error) {
 		if isTotalLine(concept) {
 			v := amount
 			doc.DeclaredTotal = &v
+			doc.ControlLines = append(doc.ControlLines, ParsedControlLine{
+				LineNo:  i + 1,
+				RawText: rawText,
+				Amount:  amount,
+			})
 			continue
 		}
 		if amount <= 0 {

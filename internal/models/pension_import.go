@@ -48,12 +48,14 @@ type PensionImportRow struct {
 	ChildID             *int64    `json:"child_id,omitempty"`
 	Confidence          float64   `json:"confidence"`
 	MatchReason         string    `json:"match_reason"`
+	MatchedKeyword      string    `json:"matched_keyword,omitempty"`
 	ValidationStatus    string    `json:"validation_status"`
 	ValidationCode      string    `json:"validation_code"`
 	Action              string    `json:"action"`
 	CategoryName        string    `json:"category_name,omitempty"`
 	Message             string    `json:"message,omitempty"`
 	PreviousAmount      *float64  `json:"previous_amount,omitempty"`
+	ExistingAmount      *float64  `json:"existing_amount,omitempty"`
 	VariationPct        *float64  `json:"variation_pct,omitempty"`
 	CreatedAt           time.Time `json:"created_at"`
 }
@@ -76,13 +78,23 @@ type ImportValidationError struct {
 
 // PensionImportPreview es la respuesta del endpoint de preview.
 type PensionImportPreview struct {
-	BatchID    int64                   `json:"batch_id"`
-	Period     PensionImportPeriod     `json:"period"`
-	Source     string                  `json:"source"`
-	Filename   string                  `json:"filename,omitempty"`
-	Validation PensionImportValidation `json:"validation"`
-	Warnings   []string                `json:"warnings,omitempty"`
-	Lines      []PensionImportRow      `json:"lines"`
+	BatchID        int64                      `json:"batch_id"`
+	Period         PensionImportPeriod        `json:"period"`
+	Source         string                     `json:"source"`
+	Filename       string                     `json:"filename,omitempty"`
+	Validation     PensionImportValidation    `json:"validation"`
+	DocumentPeriod *PensionImportPeriod       `json:"document_period,omitempty"`
+	PeriodMismatch bool                       `json:"period_mismatch"`
+	ControlLines   []PensionImportControlLine `json:"control_lines"`
+	Warnings       []string                   `json:"warnings,omitempty"`
+	Lines          []PensionImportRow         `json:"lines"`
+}
+
+// PensionImportControlLine es una línea de total/subtotal del documento.
+type PensionImportControlLine struct {
+	LineNo  int     `json:"line_no"`
+	RawText string  `json:"raw_text"`
+	Amount  float64 `json:"amount"`
 }
 
 // PensionImportPeriod identifica el período detectado.

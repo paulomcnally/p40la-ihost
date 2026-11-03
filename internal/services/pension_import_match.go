@@ -11,6 +11,7 @@ type MatchResult struct {
 	CategoryID *int64
 	Confidence float64
 	Reason     string
+	Keyword    string
 	Mixed      bool
 }
 
@@ -46,9 +47,9 @@ func matchCategory(concept string, categories []models.PensionCategory, keywords
 	if len(keywordHits) > 1 {
 		return MatchResult{Mixed: true}
 	}
-	for id := range keywordHits {
+	for id, hit := range keywordHits {
 		categoryID := id
-		return MatchResult{CategoryID: &categoryID, Confidence: 0.95, Reason: "keyword"}
+		return MatchResult{CategoryID: &categoryID, Confidence: 0.95, Reason: "keyword", Keyword: hit.Keyword}
 	}
 
 	// 3) Fuzzy contra el nombre de la categoría.
