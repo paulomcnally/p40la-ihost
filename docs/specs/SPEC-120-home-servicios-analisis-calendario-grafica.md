@@ -498,14 +498,20 @@ Notas:
 | 2026-11-03 | opencode | Implementación completa: endpoints `GET /api/service-bills`, `/summary` y `/projection`; regla de período efectivo; componentes `ServiceAnalysis`, `ServiceCalendar`, `ServiceChart`; refactor de `ServicesPage` con tabs y estado en querystring; i18n es/en; tests unitarios de período, resumen y proyección. Validado con build de frontend, `go test ./...` y una copia de la DB de producción en `/tmp` (totales de API contra SQL independiente). |
 | 2026-11-03 | opencode | Ajustes de UX durante la validación: moneda por defecto según la vista de la gráfica, consolidación de facturas duplicadas por servicio en la proyección, filtro de moneda aplicado al resumen del tab Análisis y empty state del calendario en desktop. |
 | 2026-11-03 | opencode | Release de la spec: merge a `main`, actualización del tracker y cierre del issue. Implementación validada manualmente por el usuario. |
+| 2026-11-03 | opencode | Release de imagen `v0.5.3` con `scripts/release.sh`: tag, push y build multi-arch verificado (`linux/amd64`, `linux/arm/v7`, `linux/arm64`). |
 
 ---
 
 ## 10. Release
 
+- **Versión**: `v0.5.3`
 - **Fecha**: 2026-11-03
+- **Tag**: `v0.5.3`
+- **Imagen**: `paulomcnally/p40la-ihost:0.5.3` (multi-arch: `linux/amd64`, `linux/arm/v7`, `linux/arm64`)
 - **Commit de implementación**: `ca4e1b5` (`SPEC-120: implementar home de servicios con análisis, calendario y gráfica`).
-- **Release de spec**: merge de `feature/SPEC-120` a `main` (commit de merge visible en el historial de `main`).
+- **Commit de liberación**: `0590039` (merge `SPEC-120: home de servicios con análisis, calendario y gráfica`) + `6893d43` (`bump version to 0.5.3`).
 - **Tracker**: `docs/specs/README.md` actualizado (total 119, released 119, último ID `SPEC-120`).
 - **Issue**: [#123](https://github.com/paulomcnally/p40la-ihost/issues/123) cerrado con label `spec/released`.
-- **Deploy Docker/versión**: no ejecutado en este release. `scripts/release.sh` requiere que no existan ramas de feature sin mergear a `main`; al momento del release existen `feature/SPEC-095` y `feature/SPEC-108` en otras sesiones. El deploy a iHost queda a aprobación del usuario.
+- **Workflow**: [41693099282](https://github.com/paulomcnally/p40la-ihost/actions/runs/41693099282) success.
+- **Manifiesto verificado**: `linux/amd64`, `linux/arm/v7`, `linux/arm64`.
+- **Deploy a iHost**: imagen publicada; la actualización del add-on queda a aprobación/instalación del usuario.
