@@ -763,4 +763,6 @@ Reglas:
 - **Fecha**: 2026-11-03
 - **Tag**: `v0.5.2`
 - **Imagen**: `paulomcnally/p40la-ihost:0.5.2` (multi-arch: `linux/amd64`, `linux/arm/v7`, `linux/arm64`)
-- **Commit de liberación**: ver historial de `main` (`SPEC-119: liberar spec y actualizar tracker`).
+- **Commit de liberación**: `e7d2328` (merge `SPEC-119: importador mensual de gastos escolares y pensión`).
+- **Workflow**: [41676070522](https://github.com/paulomcnally/p40la-ihost/actions/runs/41676070522) success.
+- **Manifiesto verificado**: `linux/amd64`, `linux/arm/v7`, `linux/arm64`.
