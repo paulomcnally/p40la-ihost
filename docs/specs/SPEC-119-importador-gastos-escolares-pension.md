@@ -1,7 +1,7 @@
 ---
 title: "Importador mensual de gastos escolares y pensión por palabras clave"
 id: "SPEC-119"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-03"
 updated: "2026-11-03"
@@ -11,7 +11,7 @@ github_issue: 122
 # Importador mensual de gastos escolares y pensión por palabras clave
 
 **ID**: SPEC-119  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-03  
 **Actualizado**: 2026-11-03
@@ -707,6 +707,7 @@ Reglas:
 | 2026-11-03 | opencode | Creación inicial de la especificación (draft) a partir del análisis del PDF mensual de gastos escolares y de los registros históricos del módulo de pensión. |
 | 2026-11-03 | opencode | Se incorpora la regla de reparto por categoría interna (50 % compartido / 100 % completo), validación bloqueante del total y del lote completo (todo o nada), resumen de validación por fila y ajustes en el CSV (monto total + reconstrucción al exportar). |
 | 2026-11-03 | opencode | Estado pasa a `in_progress` para implementación. |
+| 2026-11-03 | opencode | **Release v0.5.2**: spec liberada, README actualizado, tag `v0.5.2` y workflow de Docker multi-arch. |
 | 2026-11-03 | opencode | Mejoras de UX de la revisión del usuario: resumen claro, líneas de control, cálculo visible, período del documento, duplicados existentes, exclusión de filas, chip de confianza y confirmación con conteo/total. |
 | 2026-11-03 | opencode | Implementación completa (commit `9fd11d9`): migración 0041, parser PDF/TXT/CSV, matcher, validador, endpoints, pantalla de importación, CRUD de palabras clave y reparto/moneda en categorías. |
 | 2026-11-03 | opencode | Se define moneda por categoría sin conversión, se confirma `Colegio - Transporte` al 100 % para combustible y se reemplaza la división exacta por redondeo half-up a 2 decimales con ajuste auditado en el lote. Estado inicial `pending` por defecto. |
@@ -752,3 +753,14 @@ Reglas:
 - Chip de confianza (alto/medio/bajo) con la palabra clave que coincidió.
 - Botón de confirmación con cantidad y total; "Empezar de nuevo" separado y con confirmación si hubo ediciones.
 - Opción "+ Nueva categoría" dentro del selector; el botón grande queda solo para filas sin coincidencia.
+
+
+---
+
+## 11. Release
+
+- **Versión**: `v0.5.2`
+- **Fecha**: 2026-11-03
+- **Tag**: `v0.5.2`
+- **Imagen**: `paulomcnally/p40la-ihost:0.5.2` (multi-arch: `linux/amd64`, `linux/arm/v7`, `linux/arm64`)
+- **Commit de liberación**: ver historial de `main` (`SPEC-119: liberar spec y actualizar tracker`).
