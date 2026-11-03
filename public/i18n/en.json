@@ -767,7 +767,8 @@
     "auto_generate_badge": "Auto generation",
     "created": "Category created",
     "updated": "Category updated",
-    "save_error": "Error saving"
+    "save_error": "Error saving",
+    "share_hint": "How much of the total is recorded: 50% shared, 100% full."
   },
   "registros": {
     "title": "Monthly records",
@@ -826,7 +827,8 @@
       "check": "Check",
       "mobile": "Mobile payment",
       "other": "Other"
-    }
+    },
+    "import": "Import expenses"
   },
   "salaryPayments": {
     "title": "Monthly salaries",
@@ -1029,5 +1031,56 @@
     "service_hint": "Sync will update this service's bills.",
     "no_services": "No active services.",
     "no_services_action": "Go to services"
+  },
+  "pensionImport": {
+    "title": "Import expenses",
+    "subtitle": "Upload the monthly PDF, TXT or CSV. Review the suggestions before confirming.",
+    "file": "File",
+    "file_hint": "Text-layer PDF, TXT or CSV (max 2 MB).",
+    "or_paste": "Or paste the text",
+    "paste_placeholder": "SCHOOL EXPENSES - OCTOBER 2026\nTUITION 8000\nTOTAL TO REIMBURSE 4000\nFUEL 1200\nOCTOBER PENSION 12000",
+    "period": "Period",
+    "child": "Child",
+    "select_child": "Select a child",
+    "select_file_or_text": "Choose a file or paste the text.",
+    "preview": "Preview",
+    "summary_ok": "Ready to import",
+    "summary_invalid": "Some rows need fixing",
+    "declared": "Declared total",
+    "computed_shared": "Computed total (50%)",
+    "computed_grand": "Recorded total",
+    "summary_hint": "The import is all-or-nothing: if there is an error, no records are created.",
+    "total_mismatch": "Declared total does not match the computed total.",
+    "match": "Match",
+    "amount_total": "Total amount",
+    "rounding": "Adjustment",
+    "category": "Category",
+    "select_category": "Select a category",
+    "create_category": "Create category",
+    "category_created": "Category created",
+    "share": "Split",
+    "share_shared": "Shared (50%)",
+    "share_full": "Full (100%)",
+    "currency": "Currency",
+    "error_missing_category": "Category is required.",
+    "error_invalid_amount": "Amount must be greater than zero.",
+    "error_currency": "Currency does not match the category.",
+    "fix_errors": "Fix the marked rows to confirm.",
+    "confirm": "Confirm import",
+    "confirmed": "Import confirmed: {created} records created.",
+    "confirm_error": "Could not confirm the import.",
+    "start_over": "Start over",
+    "download_template": "Download template",
+    "pdf_without_text": "The PDF has no text layer. Use CSV or paste the text.",
+    "previous": "Previous month",
+    "keywords": "Keywords",
+    "keywords_hint": "The importer uses these words to suggest a category. They are learned when you confirm an import.",
+    "keyword": "Keyword",
+    "keyword_placeholder": "e.g. TUITION",
+    "keyword_saved": "Keyword saved",
+    "recent": "Recent imports",
+    "pasted_text": "pasted text",
+    "batch_confirmed": "{created} created, {skipped} already existing",
+    "batch_preview": "preview"
   }
 }

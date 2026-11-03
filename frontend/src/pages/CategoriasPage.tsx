@@ -80,6 +80,10 @@ export default function CategoriasPage() {
             {category.description && (
               <p className="text-sm text-text-secondary mt-1 line-clamp-2">{category.description}</p>
             )}
+            <p className="inline-flex items-center gap-1 mt-2 mr-3 text-xs font-medium text-text-secondary">
+              <Icon name="chart" className="w-3.5 h-3.5" />
+              {category.share_percent === 100 ? '100%' : '50%'} · {category.currency}
+            </p>
             {category.auto_generate && (
               <p className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-success">
                 <Icon name="refresh" className="w-3.5 h-3.5" />
