@@ -1082,6 +1082,26 @@
     "recent": "Últimas importaciones",
     "pasted_text": "texto pegado",
     "batch_confirmed": "{created} creados, {skipped} ya existentes",
-    "batch_preview": "preview"
+    "batch_preview": "preview",
+    "new_category_option": "+ Nueva categoría",
+    "document_reimbursement": "Reembolso según el documento",
+    "matches": "coincide con lo calculado",
+    "mismatch": "no coincide · diferencia",
+    "no_control_line": "El documento no trae línea de control de total.",
+    "will_import": "Se importarán {count} gastos · {total}",
+    "period_mismatch": "El documento corresponde a {document} y la pantalla estaba en {selected}. Se importará en {document}.",
+    "control_lines": "Líneas interpretadas como totales de control",
+    "matched_by": "coincidió por «{keyword}»",
+    "matched_name": "coincidió por nombre",
+    "matched_manual": "asignada manualmente",
+    "matched_fuzzy": "coincidencia aproximada",
+    "original_line": "Línea original",
+    "include": "Incluir",
+    "exclude": "Excluir",
+    "already_exists": "Ya existe un registro de {amount} para este período; se omitirá.",
+    "error_duplicate": "Hay dos líneas con la misma categoría; excluí una.",
+    "reset_title": "¿Empezar de nuevo?",
+    "reset_message": "Se descartarán el preview y los cambios que hiciste.",
+    "confirm_count": "Importar {count} gastos ({total})"
   }
 }

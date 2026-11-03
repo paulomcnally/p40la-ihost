@@ -241,18 +241,29 @@ export interface PensionImportLine {
   child_id?: number
   confidence: number
   match_reason: string
+  matched_keyword?: string
   category_name?: string
   validation_status: 'ok' | 'invalid'
   validation_code: string
   action: string
   message?: string
   previous_amount?: number
+  existing_amount?: number
   variation_pct?: number
+}
+
+export interface PensionImportControlLine {
+  line_no: number
+  raw_text: string
+  amount: number
 }
 
 export interface PensionImportPreview {
   batch_id: number
   period: PensionImportPeriod
+  document_period?: PensionImportPeriod
+  period_mismatch: boolean
+  control_lines: PensionImportControlLine[]
   source: string
   filename?: string
   validation: PensionImportValidation

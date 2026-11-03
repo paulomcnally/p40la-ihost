@@ -67,7 +67,17 @@ func (s *PensionImportService) Preview(ctx context.Context, in PensionImportPrev
 	}
 
 	year, month := in.Year, in.Month
-	if year == 0 || month == 0 {
+	if year < 2000 || year > 2100 || month < 1 || month > 12 {
+		year, month = 0, 0
+	}
+	var documentPeriod *models.PensionImportPeriod
+	periodMismatch := false
+	if doc.Year > 0 && doc.Month > 0 {
+		documentPeriod = &models.PensionImportPeriod{Year: doc.Year, Month: doc.Month}
+		if year > 0 && (year != doc.Year || month != doc.Month) {
+			periodMismatch = true
+		}
+		// El período del documento manda: evita cargar en el mes equivocado.
 		year, month = doc.Year, doc.Month
 	}
 	if year < 2000 || year > 2100 || month < 1 || month > 12 {
@@ -93,12 +103,19 @@ func (s *PensionImportService) Preview(ctx context.Context, in PensionImportPrev
 	}
 
 	previous := map[int64]float64{}
+	existing := map[int64]float64{}
 	if childID > 0 {
 		py, pm := importPreviousPeriod(year, month)
 		prevRecords, err := s.records.ListByFilters(ctx, py, pm, childID)
 		if err == nil {
 			for _, r := range prevRecords {
 				previous[r.PensionCategoryID] = r.Amount
+			}
+		}
+		currentRecords, err := s.records.ListByFilters(ctx, year, month, childID)
+		if err == nil {
+			for _, r := range currentRecords {
+				existing[r.PensionCategoryID] = r.Amount
 			}
 		}
 	}
@@ -162,6 +179,7 @@ func (s *PensionImportService) Preview(ctx context.Context, in PensionImportPrev
 		row.ChosenCategoryID = match.CategoryID
 		row.Confidence = match.Confidence
 		row.MatchReason = match.Reason
+		row.MatchedKeyword = match.Keyword
 		row.SharePercent = category.SharePercent
 		if row.Currency == "" {
 			row.Currency = category.Currency
@@ -174,6 +192,10 @@ func (s *PensionImportService) Preview(ctx context.Context, in PensionImportPrev
 		row.AmountToRecord, row.RoundingAdjustment = roundShare(line.AmountTotal, category.SharePercent)
 		row.CategoryName = category.Name
 
+		if existingAmount, ok := existing[category.ID]; ok {
+			v := existingAmount
+			row.ExistingAmount = &v
+		}
 		if prev, ok := previous[category.ID]; ok {
 			p := prev
 			row.PreviousAmount = &p
@@ -280,14 +302,24 @@ func (s *PensionImportService) Preview(ctx context.Context, in PensionImportPrev
 		return nil, err
 	}
 
+	controlLines := make([]models.PensionImportControlLine, 0, len(doc.ControlLines))
+	for _, c := range doc.ControlLines {
+		controlLines = append(controlLines, models.PensionImportControlLine{
+			LineNo: c.LineNo, RawText: c.RawText, Amount: c.Amount,
+		})
+	}
+
 	return &models.PensionImportPreview{
-		BatchID:    batchID,
-		Period:     models.PensionImportPeriod{Year: year, Month: month},
-		Source:     doc.Source,
-		Filename:   in.Filename,
-		Validation: validation,
-		Warnings:   doc.Warnings,
-		Lines:      rows,
+		BatchID:        batchID,
+		Period:         models.PensionImportPeriod{Year: year, Month: month},
+		DocumentPeriod: documentPeriod,
+		PeriodMismatch: periodMismatch,
+		ControlLines:   controlLines,
+		Source:         doc.Source,
+		Filename:       in.Filename,
+		Validation:     validation,
+		Warnings:       doc.Warnings,
+		Lines:          rows,
 	}, nil
 }
 

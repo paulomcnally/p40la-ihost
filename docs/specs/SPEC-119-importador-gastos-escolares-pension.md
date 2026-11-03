@@ -68,6 +68,17 @@ Consideraciones de UI obligatorias:
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
+0. **REQ-022 — Claridad del resumen**: mostrar por separado (a) la verificación del reembolso contra el documento y (b) el total que se va a importar. Si no coinciden, mostrar la diferencia explícita y en color de advertencia.
+0. **REQ-023 — Transparencia de líneas de control**: listar en un bloque colapsable las líneas interpretadas como totales (`TOTAL A REEMBOLSAR`, `TOTAL`, `SUBTOTAL`) con su monto.
+0. **REQ-024 — Cálculo visible por fila**: mostrar `monto total × porcentaje = monto a registrar` y, si hubo ajuste, indicar el redondeo aplicado.
+0. **REQ-025 — Período del documento**: detectar el período del documento y usarlo como período efectivo; si difiere del período seleccionado en la URL, mostrar una advertencia destacada con ambos períodos.
+0. **REQ-026 — Duplicados existentes**: detectar registros ya existentes para el mismo hijo/categoría/período y avisarlo en la fila (no bloqueante; la confirmación los omite).
+0. **REQ-027 — Excluir líneas**: permitir excluir una fila del lote sin reiniciar el preview; las filas excluidas no cuentan para totales ni se envían al confirmar.
+0. **REQ-028 — Confianza visual**: mostrar un chip de color según la confianza (alta/media/baja) y la palabra clave que produjo la coincidencia.
+0. **REQ-029 — Acción de confirmar explícita**: el botón indica cantidad de gastos y total a importar. "Empezar de nuevo" se separa y pide confirmación si hubo ediciones.
+0. **REQ-030 — Crear categoría desde el selector**: opción "+ Nueva categoría" al final del dropdown; el botón grande queda reservado para filas sin coincidencia.
+
+
 1. **REQ-011 — Comparación con el mes anterior**: mostrar el monto del mes previo por categoría y resaltar variaciones mayores al 20 % (ej. `+33 %`).
 2. **REQ-012 — Detección de duplicados en el archivo**: si dos líneas producen el mismo `(hijo, categoría, período)`, marcar la segunda y no permitir confirmarla sin resolver.
 3. **REQ-013 — Auditoría de importaciones**: registrar lote (archivo, hash, período, cantidad de filas, creadas/omitidas, fecha) para poder consultar qué se importó y repetir o revertir la carga de un lote.
@@ -696,6 +707,7 @@ Reglas:
 | 2026-11-03 | opencode | Creación inicial de la especificación (draft) a partir del análisis del PDF mensual de gastos escolares y de los registros históricos del módulo de pensión. |
 | 2026-11-03 | opencode | Se incorpora la regla de reparto por categoría interna (50 % compartido / 100 % completo), validación bloqueante del total y del lote completo (todo o nada), resumen de validación por fila y ajustes en el CSV (monto total + reconstrucción al exportar). |
 | 2026-11-03 | opencode | Estado pasa a `in_progress` para implementación. |
+| 2026-11-03 | opencode | Mejoras de UX de la revisión del usuario: resumen claro, líneas de control, cálculo visible, período del documento, duplicados existentes, exclusión de filas, chip de confianza y confirmación con conteo/total. |
 | 2026-11-03 | opencode | Implementación completa (commit `9fd11d9`): migración 0041, parser PDF/TXT/CSV, matcher, validador, endpoints, pantalla de importación, CRUD de palabras clave y reparto/moneda en categorías. |
 | 2026-11-03 | opencode | Se define moneda por categoría sin conversión, se confirma `Colegio - Transporte` al 100 % para combustible y se reemplaza la división exacta por redondeo half-up a 2 decimales con ajuste auditado en el lote. Estado inicial `pending` por defecto. |
 
@@ -728,3 +740,15 @@ Reglas:
 - REQ-014 (edición masiva en el preview) no implementado.
 - REQ-015 a REQ-017 (vínculo con presupuesto, recordatorio mensual, conversión manual) quedan para una próxima spec.
 - El total declarado se compara con tolerancia de medio centavo por línea redondeada; si el documento usa otro criterio de redondeo, el lote se bloquea y se corrige el archivo.
+
+### 10.4 Mejoras de UX (ronda de revisión)
+
+- Resumen separado en dos planos: verificación del reembolso documental (con coincidencia/diferencia explícita) y total a importar.
+- Bloque colapsable con las líneas de control interpretadas (`TOTAL A REEMBOLSAR`, etc.).
+- Cálculo visible por fila (`monto × % = registrado`) y ajuste de redondeo cuando aplica.
+- Período del documento como período efectivo; advertencia si difiere del período de la URL.
+- Detección de registros existentes por hijo/categoría/período.
+- Exclusión de filas sin reiniciar el preview.
+- Chip de confianza (alto/medio/bajo) con la palabra clave que coincidió.
+- Botón de confirmación con cantidad y total; "Empezar de nuevo" separado y con confirmación si hubo ediciones.
+- Opción "+ Nueva categoría" dentro del selector; el botón grande queda solo para filas sin coincidencia.
