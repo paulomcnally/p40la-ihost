@@ -696,4 +696,35 @@ Reglas:
 | 2026-11-03 | opencode | Creación inicial de la especificación (draft) a partir del análisis del PDF mensual de gastos escolares y de los registros históricos del módulo de pensión. |
 | 2026-11-03 | opencode | Se incorpora la regla de reparto por categoría interna (50 % compartido / 100 % completo), validación bloqueante del total y del lote completo (todo o nada), resumen de validación por fila y ajustes en el CSV (monto total + reconstrucción al exportar). |
 | 2026-11-03 | opencode | Estado pasa a `in_progress` para implementación. |
+| 2026-11-03 | opencode | Implementación completa (commit `9fd11d9`): migración 0041, parser PDF/TXT/CSV, matcher, validador, endpoints, pantalla de importación, CRUD de palabras clave y reparto/moneda en categorías. |
 | 2026-11-03 | opencode | Se define moneda por categoría sin conversión, se confirma `Colegio - Transporte` al 100 % para combustible y se reemplaza la división exacta por redondeo half-up a 2 decimales con ajuste auditado en el lote. Estado inicial `pending` por defecto. |
+
+---
+
+## 10. Implementación
+
+**Commit de implementación**: `9fd11d9` (rama `feature/SPEC-119`).
+
+### 10.1 Archivos principales
+
+- `migrations/0041_create_pension_import.up.sql` / `.down.sql`: `share_percent`, `currency`, triggers de validación, tablas de palabras clave/lotes/filas y seeds.
+- `internal/models/pension_import.go`, `internal/models/pension_category.go`.
+- `internal/storage/pension_import.go`, `internal/storage/pension_category.go`.
+- `internal/services/pension_import.go`, `pension_import_parser.go`, `pension_import_match.go`.
+- `internal/api/pension_import_handlers.go`, rutas y wiring en `cmd/server/main.go`.
+- `frontend/src/pages/PensionImportPage.tsx`, ruta `/pension/import`, acción en Registros, formulario de categorías con reparto/moneda, i18n `pensionImport.*`.
+
+### 10.2 Funcionalidad entregada
+
+- Parseo de PDF con capa de texto, TXT y CSV (incluye PDFs con concepto y monto en líneas separadas).
+- Detección de período, línea de control bloqueante y validación todo-o-nada.
+- Matching por nombre, palabras clave (seed + aprendizaje + CRUD) y fuzzy.
+- Reparto por categoría (50/100) con redondeo half-up a 2 decimales y ajuste auditado.
+- Moneda por categoría sin conversión; `currency_mismatch` por fila.
+- Preview editable, creación de categoría desde la fila, auditoría de lotes y exportación del mes anterior.
+
+### 10.3 Pendientes conocidos (P1/P2)
+
+- REQ-014 (edición masiva en el preview) no implementado.
+- REQ-015 a REQ-017 (vínculo con presupuesto, recordatorio mensual, conversión manual) quedan para una próxima spec.
+- El total declarado se compara con tolerancia de medio centavo por línea redondeada; si el documento usa otro criterio de redondeo, el lote se bloquea y se corrige el archivo.
