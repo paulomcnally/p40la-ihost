@@ -1,7 +1,7 @@
 ---
 title: "Importador mensual de gastos escolares y pensión por palabras clave"
 id: "SPEC-119"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-03"
 updated: "2026-11-03"
@@ -11,7 +11,7 @@ github_issue: 122
 # Importador mensual de gastos escolares y pensión por palabras clave
 
 **ID**: SPEC-119  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-11-03  
 **Actualizado**: 2026-11-03
@@ -695,4 +695,5 @@ Reglas:
 |-------|-------|-------------|
 | 2026-11-03 | opencode | Creación inicial de la especificación (draft) a partir del análisis del PDF mensual de gastos escolares y de los registros históricos del módulo de pensión. |
 | 2026-11-03 | opencode | Se incorpora la regla de reparto por categoría interna (50 % compartido / 100 % completo), validación bloqueante del total y del lote completo (todo o nada), resumen de validación por fila y ajustes en el CSV (monto total + reconstrucción al exportar). |
+| 2026-11-03 | opencode | Estado pasa a `in_progress` para implementación. |
 | 2026-11-03 | opencode | Se define moneda por categoría sin conversión, se confirma `Colegio - Transporte` al 100 % para combustible y se reemplaza la división exacta por redondeo half-up a 2 decimales con ajuste auditado en el lote. Estado inicial `pending` por defecto. |
