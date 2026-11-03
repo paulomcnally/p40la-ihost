@@ -160,6 +160,110 @@ func (h *BillHandlers) GetBillHistory(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, history)
 }
 
+// parseHomeIDQuery parsea home_id opcional del querystring.
+func parseHomeIDQuery(r *http.Request) (*int64, bool) {
+	raw := r.URL.Query().Get("home_id")
+	if raw == "" {
+		return nil, true
+	}
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return nil, false
+	}
+	return &id, true
+}
+
+// ListServiceBillsByMonth responde con las facturas de todos los servicios
+// cuyo período efectivo cae en el mes (SPEC-120).
+func (h *BillHandlers) ListServiceBillsByMonth(w http.ResponseWriter, r *http.Request) {
+	now := time.Now()
+	year, err := strconv.Atoi(r.URL.Query().Get("year"))
+	if err != nil {
+		year = now.Year()
+	}
+	month, err := strconv.Atoi(r.URL.Query().Get("month"))
+	if err != nil || month < 1 || month > 12 {
+		if r.URL.Query().Get("month") != "" {
+			respondError(w, http.StatusBadRequest, "invalid_month", "month inválido")
+			return
+		}
+		month = int(now.Month())
+	}
+	homeID, ok := parseHomeIDQuery(r)
+	if !ok {
+		respondError(w, http.StatusBadRequest, "invalid_home_id", "home_id inválido")
+		return
+	}
+
+	bills, err := h.service.ListServiceBillsByPeriod(r.Context(), year, month, homeID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, bills)
+}
+
+// ServiceBillsSummary responde con el agregado por período y moneda del rango
+// solicitado (SPEC-120).
+func (h *BillHandlers) ServiceBillsSummary(w http.ResponseWriter, r *http.Request) {
+	from := r.URL.Query().Get("from")
+	to := r.URL.Query().Get("to")
+	if from == "" || to == "" {
+		respondError(w, http.StatusBadRequest, "invalid_range", "from y to son obligatorios (YYYY-MM)")
+		return
+	}
+	homeID, ok := parseHomeIDQuery(r)
+	if !ok {
+		respondError(w, http.StatusBadRequest, "invalid_home_id", "home_id inválido")
+		return
+	}
+
+	summary, err := h.service.ServiceBillsSummary(r.Context(), from, to, homeID)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_range", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, summary)
+}
+
+// ServiceBillsProjection responde con la proyección de los próximos meses
+// separando facturas confirmadas de estimaciones (SPEC-120).
+func (h *BillHandlers) ServiceBillsProjection(w http.ResponseWriter, r *http.Request) {
+	now := time.Now()
+	year := now.Year()
+	month := int(now.Month())
+	if raw := r.URL.Query().Get("from"); raw != "" {
+		parsed, err := time.Parse("2006-01", raw)
+		if err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_period", "from inválido (YYYY-MM)")
+			return
+		}
+		year = parsed.Year()
+		month = int(parsed.Month())
+	}
+	months := 12
+	if raw := r.URL.Query().Get("months"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 1 || parsed > 24 {
+			respondError(w, http.StatusBadRequest, "invalid_months", "months debe estar entre 1 y 24")
+			return
+		}
+		months = parsed
+	}
+	homeID, ok := parseHomeIDQuery(r)
+	if !ok {
+		respondError(w, http.StatusBadRequest, "invalid_home_id", "home_id inválido")
+		return
+	}
+
+	projection, err := h.service.ServiceBillsProjection(r.Context(), year, month, months, homeID)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, projection)
+}
+
 // PayBill marca una factura como pagada (SPEC-043). Requiere paid_at; drive_url
 // (comprobante Google Drive) y payment_reference son opcionales.
 func (h *BillHandlers) PayBill(w http.ResponseWriter, r *http.Request) {
