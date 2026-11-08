@@ -50,16 +50,19 @@ La primera vez que el contenedor arranca sin usuarios registrados, mostrará un 
 
 La app incluye manifest, íconos y service worker. Para que Chrome Android ofrezca **Instalar app** (y no solo **Crear acceso directo**), la app debe servirse por **HTTPS con certificado confiable**. `http://<ip-del-ihost>:8088` y `http://ihost.local:8088` no son *secure contexts*: el service worker no se registra y la instalación queda deshabilitada. iOS permite **Compartir → Añadir a pantalla de inicio** incluso por HTTP, pero sin HTTPS no hay service worker ni funcionamiento offline.
 
-> **Si ya tenés el add-on oficial `tailscale/TailScale` de iHost:** el nodo `ihost.<tailnet>.ts.net` que ves en el admin de Tailscale es el iHost (UI de eWeLink CUBE), **no** es la app `p40la-ihost`. Ese add-on no publica el puerto `8088` con HTTPS por defecto. Si su UI de Docker permite agregar variables y volúmenes, se puede **intentar** `TS_SERVE_CONFIG=/config/serve.json` (ver más abajo); si el add-on no lo aplica, la vía segura es instalar **aparte** el contenedor `tailscale/tailscale` (nodo `p40la-ihost`). Ambos pueden convivir en el iHost.
+> **Si ya tenés Tailscale corriendo en el iHost:** fijate si el contenedor es **`tailscale/tailscale`** (el que usa `TS_STATE_DIR`/`TS_SOCKET`) o el **add-on de eWeLink** con el botón **Go to TailScale**.
+>
+> - Si es **`tailscale/tailscale`**, **sí** acepta `TS_SERVE_CONFIG`: reutilizá su volumen de estado (por ejemplo `tailscale` → `/data/tailscalState`), agregá un volumen `tailscale-config` → `/config` con `serve.json` y la variable `TS_SERVE_CONFIG=/config/serve.json`. La URL queda en el nodo existente: `https://ihost.<tailnet>.ts.net`.
+> - Si es el **add-on de eWeLink** y no permite agregar variables/volúmenes, usá un contenedor `tailscale/tailscale` **aparte** con `TS_HOSTNAME=p40la-ihost`; la URL será `https://p40la-ihost.<tailnet>.ts.net`.
 
 ### ¿Add-on oficial o contenedor `tailscale/tailscale`?
 
-| | Add-on oficial `tailscale/TailScale` | Contenedor `tailscale/tailscale` |
+| | Add-on de eWeLink (`tailscale/TailScale` con Go to TailScale) | Contenedor `tailscale/tailscale` |
 |---|---|---|
-| Cómo se instala | Add-on/Docker → buscar `tailscale/TailScale` → Add | Docker → **+** → `tailscale/tailscale` → Add |
-| Seña particular | Botón **Go to TailScale**; nodo `ihost` | Variables `TS_AUTHKEY`, `TS_HOSTNAME`, `TS_SERVE_CONFIG`; nodo definido por vos |
+| Seña particular | Botón **Go to TailScale**; UI propia de eWeLink | Variables `TS_STATE_DIR`, `TS_SOCKET`, `TS_SERVE_CONFIG`; imagen oficial de Tailscale |
 | ¿Publica la app en `:8088`? | **No por defecto** (solo la UI del iHost) | **Sí**, con `TS_SERVE_CONFIG` + volumen `/config` |
 | ¿Acepta `serve.json`? | **No documentado**; se puede intentar si la UI permite agregar `TS_SERVE_CONFIG` y un volumen `/config` | **Sí** |
+| Nodo/URL | `ihost.<tailnet>.ts.net` | El nodo existente (`ihost...`) o uno nuevo (`p40la-ihost...`) |
 
 Si tenés el add-on oficial, no lo borres: sirve para acceder a la UI del iHost. Si en tu add-on ves un volumen como `tailscale` → `/data/tailscalState` y `TS_STATE_DIR=/data/tailscalState`, **no cambies ese volumen ni esa variable**: agregá un volumen nuevo para `/config` y la variable `TS_SERVE_CONFIG`. Si el add-on no aplica la configuración, usá el contenedor aparte. Si ya tenés el contenedor `tailscale/tailscale`, solo falta agregarle el volumen `/config` con `serve.json` y la variable `TS_SERVE_CONFIG=/config/serve.json`.
 
@@ -213,12 +216,11 @@ En Chrome o Edge para iOS el camino también está en el menú Compartir, pero n
 
 ### Notas y diagnóstico
 
-- La PWA queda atada al origen `https://p40la-ihost.<tailnet>.ts.net`. **No uses `https://ihost.<tailnet>.ts.net`**: ese es el nodo del add-on oficial del iHost, no la app. Tampoco la instales desde la IP ni desde `ihost.local`; si renombrás el nodo, hay que reinstalarla.
+- La PWA queda atada al nodo que tenga `TS_SERVE_CONFIG`: `https://ihost.<tailnet>.ts.net` si reutilizás el nodo existente, o `https://p40la-ihost.<tailnet>.ts.net` si usás un contenedor aparte. No la instales desde la IP ni desde `ihost.local`; si renombrás el nodo, hay que reinstalarla.
 - Sin Tailscale activo, el nombre `*.ts.net` no resuelve y la PWA no abre. `http://ihost.local:8088` sigue disponible como acceso LAN de respaldo para escritorio.
-- El add-on oficial `tailscale/TailScale` y el contenedor `tailscale/tailscale` pueden convivir: el primero te da acceso remoto a la UI del iHost; el segundo publica la app con Serve.
 - El service worker no cachea `/api/*` ni PDFs; solo el shell, los assets con hash, los íconos y el i18n.
 - Para verificar el service worker y el manifest: DevTools → Application → Service Workers / Manifest. Lighthouse ya no tiene categoría PWA.
-- Si Tailscale no emite el certificado, revisá que MagicDNS y HTTPS Certificates estén habilitados y que el nodo esté conectado.
+- Si Tailscale no emite el certificado, revisá que MagicDNS y **HTTPS Certificates** estén habilitados y que el nodo esté conectado. En los logs del add-on Tailscale, `serve proxy: ... not able to issue TLS certs` significa que falta habilitar HTTPS Certificates; después de habilitarlo, reiniciá el add-on.
 
 ## Solución de problemas
 
