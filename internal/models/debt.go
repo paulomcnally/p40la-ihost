@@ -30,8 +30,11 @@ type Debt struct {
 	LastPaidAt    string  `json:"last_paid_at,omitempty"`
 	// HasContract indica si existe un contrato PDF en el volumen (SPEC-123).
 	// Es calculado, no se persiste.
-	HasContract bool       `json:"has_contract"`
-	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	HasContract bool `json:"has_contract"`
+	// HasDocuments indica si la deuda tiene al menos una factura o comprobante
+	// PDF (SPEC-122). No se persiste.
+	HasDocuments bool       `json:"has_documents"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }

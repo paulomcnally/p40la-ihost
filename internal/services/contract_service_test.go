@@ -24,14 +24,14 @@ func TestDebtContractLifecycle(t *testing.T) {
 		t.Fatalf("insertar institución: %v", err)
 	}
 
+	dataDir := t.TempDir()
 	svc := NewDebtService(
 		storage.NewDebtStorage(database),
 		storage.NewDebtBillStorage(database),
 		storage.NewInstitutionStorage(database),
 		storage.NewCurrencyStorage(database),
+		dataDir,
 	)
-	store := NewContractStore(t.TempDir())
-	svc.SetContractStore(store)
 
 	debt, err := svc.Create(ctx, &models.Debt{
 		InstitutionID:     1,
@@ -53,7 +53,7 @@ func TestDebtContractLifecycle(t *testing.T) {
 		t.Fatal("HasContract debería ser false al crear")
 	}
 
-	if err := svc.SaveContract(ctx, debt.ID, "contrato.pdf", bytes.NewReader(testPDF("deuda"))); err != nil {
+	if err := svc.SaveContract(ctx, debt.ID, "contrato.pdf", bytes.NewReader(contractTestPDF("deuda"))); err != nil {
 		t.Fatalf("SaveContract: %v", err)
 	}
 
@@ -92,7 +92,7 @@ func TestDebtContractLifecycle(t *testing.T) {
 		t.Error("HasContract debería ser false después de borrar")
 	}
 
-	if err := svc.SaveContract(ctx, 99999, "contrato.pdf", bytes.NewReader(testPDF("x"))); !errors.Is(err, ErrContractEntityNotFound) {
+	if err := svc.SaveContract(ctx, 99999, "contrato.pdf", bytes.NewReader(contractTestPDF("x"))); !errors.Is(err, ErrContractEntityNotFound) {
 		t.Errorf("SaveContract de deuda inexistente = %v, want ErrContractEntityNotFound", err)
 	}
 	if _, err := svc.ContractPath(ctx, 99999); !errors.Is(err, ErrContractEntityNotFound) {
@@ -137,7 +137,7 @@ func TestServiceContractLifecycle(t *testing.T) {
 		t.Fatal("HasContract debería ser false sin contrato")
 	}
 
-	if err := svc.SaveContract(ctx, list[0].ID, "contrato.pdf", bytes.NewReader(testPDF("servicio"))); err != nil {
+	if err := svc.SaveContract(ctx, list[0].ID, "contrato.pdf", bytes.NewReader(contractTestPDF("servicio"))); err != nil {
 		t.Fatalf("SaveContract: %v", err)
 	}
 
@@ -168,7 +168,7 @@ func TestServiceContractLifecycle(t *testing.T) {
 		t.Error("HasContract debería ser false después de borrar")
 	}
 
-	if err := svc.SaveContract(ctx, 99999, "contrato.pdf", bytes.NewReader(testPDF("x"))); !errors.Is(err, ErrContractEntityNotFound) {
+	if err := svc.SaveContract(ctx, 99999, "contrato.pdf", bytes.NewReader(contractTestPDF("x"))); !errors.Is(err, ErrContractEntityNotFound) {
 		t.Errorf("SaveContract de servicio inexistente = %v, want ErrContractEntityNotFound", err)
 	}
 }

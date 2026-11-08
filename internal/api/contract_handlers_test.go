@@ -189,14 +189,14 @@ func TestDebtContractHandlers(t *testing.T) {
 	if _, err := database.ExecContext(ctx, "INSERT INTO institutions (name) VALUES ('Proveedor Demo')"); err != nil {
 		t.Fatalf("insertar institución: %v", err)
 	}
+	dataDir := t.TempDir()
 	debtSvc := services.NewDebtService(
 		storage.NewDebtStorage(database),
 		storage.NewDebtBillStorage(database),
 		storage.NewInstitutionStorage(database),
 		storage.NewCurrencyStorage(database),
+		dataDir,
 	)
-	store := services.NewContractStore(t.TempDir())
-	debtSvc.SetContractStore(store)
 	handlers := NewDebtHandlers(debtSvc)
 
 	debt, err := debtSvc.Create(ctx, &models.Debt{
