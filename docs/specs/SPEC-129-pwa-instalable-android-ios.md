@@ -134,7 +134,7 @@ Consideraciones de UI obligatorias:
 
 **Notas de la comparación**
 
-- **Tailscale Serve (seleccionada)**: certificado Let's Encrypt automático para `https://<nodo>.<tailnet>.ts.net`, sin abrir puertos. `tailscale serve` solo puede proxificar a `http://127.0.0.1`, por lo que el contenedor Tailscale debe compartir el namespace de red con la app (`network_mode: host` o `network_mode: service:p40la-ihost`) y usar `TS_USERSPACE=true` si no hay `/dev/net/tun`. Requiere Tailscale instalado y activo en cada dispositivo; el nombre del nodo queda en los logs de CT. La imagen publica `arm/v7` y `arm64`.
+- **Tailscale Serve (seleccionada)**: certificado Let's Encrypt automático para `https://<nodo>.<tailnet>.ts.net`, sin abrir puertos. Se configura **desde la UI del iHost** con `TS_SERVE_CONFIG=/config/serve.json` y un volumen `/config` (directorio) editado con Filebrowser; **no requiere `docker exec`**. Serve solo puede proxificar a `http://127.0.0.1`, por lo que el contenedor usa `Network: host` y `TS_USERSPACE=true` si no hay `/dev/net/tun`. Requiere Tailscale instalado y activo en cada dispositivo; el nombre del nodo queda en los logs de CT. La imagen publica `arm/v7` y `arm64`.
 - **Caddy + DNS-01 (alternativa)**: el registro A puede apuntar a la IP LAN; Let's Encrypt no mira el A para validar por DNS-01. El certificado es público y confiable, se renueva solo y no requiere abrir puertos en el router. Requiere dominio propio y un token de API DNS (secreto). Caddy publica `arm/v7` y `arm64`. Queda como opción si más adelante se quiere acceder sin Tailscale.
 - **Cloudflare Tunnel**: cert válido y Access, pero **todo el tráfico depende de Internet** incluso en la LAN y la imagen oficial no publica `arm/v7` (habría que hornear el binario). Descartado para LAN pura.
 - **TLS nativo en Go**: mínima RAM y cero contenedores extra, pero hay que montar certificados y renovarlos (o sumar `certmagic` + DNS-01, que agrega dependencia y tamaño de binario). Es una alternativa válida si el usuario prefiere no sumar otro proceso.
@@ -324,8 +324,10 @@ Consideraciones de UI obligatorias:
 #### 4.2.7 Terminador TLS: Tailscale Serve (seleccionado)
 
 - **Contenedor**: `tailscale/tailscale` (imagen oficial multi-arch; verificar `arm/v7`/`arm64` con `docker buildx imagetools inspect`), con `TS_AUTHKEY` como secreto, `TS_STATE_DIR=/var/lib/tailscale` en un volumen persistente y `TS_USERSPACE=true` si el iHost no expone `/dev/net/tun`.
-- **Red**: `tailscale serve` solo puede proxificar a `http://127.0.0.1`, así que el contenedor debe compartir el namespace de red con la app: `network_mode: host` (la app ya publica 8088 en el host) o `network_mode: service:p40la-ihost`. No usar una red bridge aislada.
-- **Arranque**: `tailscale up --authkey=$TS_AUTHKEY --hostname=p40la-ihost` (una vez) y `tailscale serve --bg --https=443 127.0.0.1:8088`. Con `--bg`, Serve se reanuda solo tras reboot o restart. Alternativa declarativa: `TS_SERVE_CONFIG` con el JSON de Serve.
+- **UI del iHost, sin shell**: la configuración se hace desde la UI de Docker del iHost (variables de entorno + volúmenes). **No se usa `docker exec`**. El `serve.json` se crea/edita con el add-on **Filebrowser** (`filebrowser/filebrowser`) montando el volumen de configuración; no hace falta consola ni SSH.
+- **Add-on oficial de Tailscale del iHost**: si ya existe el nodo `ihost.<tailnet>.ts.net` (add-on `tailscale/TailScale`), ese nodo publica la UI del iHost y **no** la app en `:8088`; su UI web no configura Serve. La PWA usa un contenedor `tailscale/tailscale` **aparte** (`TS_HOSTNAME=p40la-ihost`) con `TS_SERVE_CONFIG`; ambos nodos conviven y el add-on oficial no se toca.
+- **Red**: `tailscale serve` solo puede proxificar a `http://127.0.0.1`, así que el contenedor debe usar **Network: host** en la UI del iHost (la app ya publica 8088 en el host). La alternativa `network_mode: service:p40la-ihost` requiere compose/SSH y no es el flujo del iHost.
+- **Arranque**: el contenedor hace el login solo con `TS_AUTHKEY` (`TS_AUTH_ONCE=true`). La publicación HTTPS se declara con `TS_SERVE_CONFIG=/config/serve.json` y un volumen `/config` montado como **directorio** (no archivo suelto) con el JSON de `deploy/tailscale/serve.json`; `containerboot` sustituye `${TS_CERT_DOMAIN}` y aplica cambios por fsnotify. No se usa `tailscale serve --bg` por CLI.
 - **Tailnet**: habilitar **MagicDNS** y **HTTPS Certificates** en el admin de Tailscale; el certificado se emite por DNS-01 y queda en los logs de Certificate Transparency. Aplicar ACLs para que solo los dispositivos/usuarios del hogar accedan al nodo.
 - **Origen canónico**: `https://<nodo>.<tailnet>.ts.net` (sin puerto). El nombre del nodo debe ser estable; renombrar o recrear el contenedor cambia el origen y obliga a reinstalar la PWA.
 - **Clientes**: instalar Tailscale en Android/iOS, iniciar sesión en la misma tailnet y activar **VPN siempre activa** (Android) / perfil VPN (iOS). Sin Tailscale activo, el nombre `*.ts.net` no resuelve y la PWA no abre.
@@ -409,9 +411,9 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 - [ ] **CA-017**: Si se agrega un modal de instrucciones, no se cierra por click fuera, tiene cierre visible en todos los estados, respeta la escala de capas y se verificó en darkmode. Si se agrega un formulario, los inputs usan tokens del tema y se verificó el darkmode.
 - [ ] **CA-018**: Si se agrega una página de detalle con lista padre, el retorno usa la flecha atrás del header vía `BACK_ROUTES`, sin links "← Título" en el contenido.
 - [ ] **CA-019**: La imagen `tailscale/tailscale` es multi-arch `linux/amd64`, `linux/arm/v7` y `linux/arm64`, verificada con `docker buildx imagetools inspect`.
-- [ ] **CA-020**: El contenedor Tailscale arranca en el iHost, `tailscale status` muestra el nodo conectado y `tailscale serve status` muestra `https://<nodo>.<tailnet>.ts.net` → `http://127.0.0.1:8088`.
+- [ ] **CA-020**: El add-on Tailscale se configura **desde la UI del iHost** (variables + volúmenes, sin `docker exec`), arranca sin errores en los logs y el nodo `p40la-ihost` aparece conectado en el admin de Tailscale.
 - [ ] **CA-021**: El certificado `*.ts.net` carga sin warning en Chrome Android y Safari iOS; el nodo aparece con HTTPS habilitado en el admin de Tailscale.
-- [ ] **CA-022**: El estado de Tailscale persiste en un volumen y Serve se reanuda tras reiniciar el contenedor/iHost (`tailscale serve status` sigue activo).
+- [ ] **CA-022**: El estado de Tailscale persiste en el volumen y la URL HTTPS sigue funcionando tras reiniciar el contenedor/iHost, sin reconfigurar `serve.json`.
 - [ ] **CA-023**: `docs/ihost.md` explica que la PWA requiere Tailscale activo en el dispositivo, cómo instalar la app en Android/iOS y qué hacer si el tailnet no está disponible (acceso LAN HTTP de respaldo).
 
 ### 5.2 No funcionales
@@ -426,7 +428,7 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 - **Unit tests (backend)**: rutas `/manifest.webmanifest` y `/sw.js` devuelven el MIME y `Cache-Control` esperados; archivo faltante → 404; `/health` no se redirige. Test de que `spaHandler` no captura las rutas PWA.
 - **Unit tests (frontend)**: parsing/validación del manifest (campos obligatorios, íconos 192/512/any/maskable); lógica de detección de plataforma/standalone; que el registro del SW no ocurra en dev.
 - **Integration tests**: build de Vite copia `manifest.webmanifest`, `sw.js` e íconos a `public/`; `GET /manifest.webmanifest` y `GET /sw.js` responden 200 con contenido; `GET /api/*` no se cachea (inspección del SW o test de estrategia).
-- **Infra TLS**: `tailscale status` (nodo conectado), `tailscale serve status` (443 → `127.0.0.1:8088`), certificado válido en el navegador, persistencia tras `docker restart` y reinicio del iHost, header `X-Forwarded-Proto: https` en el backend y que el acceso LAN HTTP siga funcionando.
+- **Infra TLS**: nodo `p40la-ihost` conectado en el admin de Tailscale, URL `https://<nodo>.<tailnet>.ts.net` con certificado válido, logs del add-on sin errores (UI del iHost), persistencia tras reiniciar el add-on/iHost, header `X-Forwarded-Proto: https` en el backend y acceso LAN HTTP de respaldo funcionando.
 - **E2E/manual (obligatorio)**:
   - Android real: Tailscale activo; Chrome actual, sin incógnito, app no instalada; menú → Install → WebAPK; `chrome://webapks`; abrir standalone; icono; splash; login; offline.
   - iOS real: Safari → Compartir → Añadir a pantalla de inicio → Open as Web App ON; abrir standalone; icono; login; reabrir; modo avión (shell).
@@ -473,8 +475,8 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 |---|---|---|---|
 | Tailnet o control plane de Tailscale no disponible / sin Internet | Media | Alto | Mantener HTTP LAN como fallback; documentar que la PWA requiere tailnet activo; monitorear |
 | Dispositivo sin Tailscale activo no puede abrir la PWA | Alta | Medio | VPN siempre activa en Android/iOS; guía de instalación; acceso LAN HTTP para escritorio |
-| Contenedor Tailscale sin `/dev/net/tun` o sin permisos | Media | Alto | `TS_USERSPACE=true`; `network_mode: host` o `network_mode: service:p40la-ihost` |
-| `tailscale serve` no persiste tras reboot/restart | Media | Medio | Usar `--bg`; estado en volumen; `TS_SERVE_CONFIG` declarativo; verificar `tailscale serve status` |
+| Contenedor Tailscale sin `/dev/net/tun` o sin permisos | Media | Alto | `TS_USERSPACE=true`; `Network: host` en la UI del iHost (sin TUN ni capabilities) |
+| `TS_SERVE_CONFIG` no se aplica tras reiniciar | Media | Medio | Volumen `/config` montado como **directorio**, `TS_SERVE_CONFIG=/config/serve.json`, estado persistente; revisar logs y reiniciar el add-on desde la UI |
 | Renombrar o recrear el nodo cambia el origen y rompe la PWA | Media | Medio | Fijar `TS_HOSTNAME`; documentar reinstalación; no recrear el contenedor sin necesidad |
 | Cambio de origen invalida PWA/shortcuts/cookies existentes | Alta | Medio | Definir origen canónico antes de implementar; mantener HTTP LAN sin redirect global; documentar reinstalación |
 | Chrome Android sin Google Play Services no crea WebAPK | Media | Medio | Aceptar fallback a shortcut; documentar; no bloquear la app |
@@ -549,7 +551,7 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 
 ### 9.3 Pendiente de validación manual
 
-- Configurar Tailscale Serve en el iHost real (auth key, MagicDNS, HTTPS Certificates, `tailscale serve --bg --https=443 127.0.0.1:8088`) y verificar el certificado.
+- Configurar el contenedor `tailscale/tailscale` de la PWA en el iHost real (auth key, `TS_SERVE_CONFIG`, volúmenes, `Network: host`) y verificar `https://p40la-ihost.<tailnet>.ts.net`. El nodo `ihost.<tailnet>.ts.net` del add-on oficial no sirve para la PWA.
 - Probar en Android real: Install habilitado, WebAPK en `chrome://webapks`, standalone, splash, login y offline.
 - Probar en iOS real: Safari → Compartir → Añadir a pantalla de inicio → Abrir como app web; login y reapertura.
 - Verificar consumo de RAM del contenedor Tailscale en el iHost y la persistencia tras reiniciar.
@@ -562,3 +564,4 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 | 2026-11-08 | opencode | Creación inicial de la especificación con auditoría de `main`, investigación multi-agente (Chrome Android, iOS/WebKit, opciones HTTPS para iHost), requerimientos, diseño, criterios de aceptación y plan. Estado `draft`; decisión de HTTPS pendiente de confirmación del usuario. |
 | 2026-11-08 | opencode | Decisión del usuario: **Tailscale Serve** como camino de HTTPS. Se actualizan ADR-001, REQ-001/REQ-011, tabla comparativa, §4.2.7 (contenedor, red, `serve`, clientes, cookies), configuración, criterios de aceptación, plan y riesgos. La PWA se instala desde `https://<nodo>.<tailnet>.ts.net`; `http://ihost.local:8088` queda como acceso LAN de respaldo. |
 | 2026-11-08 | opencode | Implementación completa de la spec: manifest, íconos, service worker v2, rutas/MIME/headers, cookie `Secure` por request, card de instalación Android/iOS, guardrail `check:pwa`, robustez offline y documentación de Tailscale Serve. Verificación local con `go test ./...`, `npm run build` y Chrome headless (`Page.getInstallabilityErrors` sin errores, SW y cachés OK). Pendiente: configurar Tailscale en el iHost y validar en dispositivos reales. |
+| 2026-11-08 | opencode | Corrección del despliegue en iHost: **no se usa `docker exec`**. Serve se declara con `TS_SERVE_CONFIG=/config/serve.json` y un volumen `/config` (directorio) editado con el add-on Filebrowser desde la UI del iHost (`deploy/tailscale/serve.json`). Se aclara que `ihost.<tailnet>.ts.net` es el nodo del add-on oficial `tailscale/TailScale` del iHost y no la app; la PWA usa un contenedor `tailscale/tailscale` aparte con `TS_HOSTNAME=p40la-ihost` y URL `https://p40la-ihost.<tailnet>.ts.net`. |

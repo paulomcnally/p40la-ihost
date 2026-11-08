@@ -50,54 +50,97 @@ La primera vez que el contenedor arranca sin usuarios registrados, mostrará un 
 
 La app incluye manifest, íconos y service worker. Para que Chrome Android ofrezca **Instalar app** (y no solo **Crear acceso directo**), la app debe servirse por **HTTPS con certificado confiable**. `http://<ip-del-ihost>:8088` y `http://ihost.local:8088` no son *secure contexts*: el service worker no se registra y la instalación queda deshabilitada. iOS permite **Compartir → Añadir a pantalla de inicio** incluso por HTTP, pero sin HTTPS no hay service worker ni funcionamiento offline.
 
-### HTTPS con Tailscale Serve
+> **Si ya tenés el add-on oficial `tailscale/TailScale` de iHost:** el nodo `ihost.<tailnet>.ts.net` que ves en el admin de Tailscale es el iHost (UI de eWeLink CUBE), **no** es la app `p40la-ihost`. Ese add-on no publica el puerto `8088` con HTTPS ni permite configurar Serve desde su UI web. Para la PWA se instala **aparte** el contenedor `tailscale/tailscale` con `TS_SERVE_CONFIG` (nodo `p40la-ihost`); no reemplaza al add-on oficial y ambos pueden convivir en el iHost.
 
-Tailscale publica la app en `https://<nodo>.<tailnet>.ts.net` con certificado Let's Encrypt automático, sin abrir puertos a Internet. Requiere una cuenta de Tailscale y la app instalada en los dispositivos que vayan a usar la PWA.
+### HTTPS con Tailscale Serve (todo desde la UI del iHost)
+
+Tailscale publica la app en `https://<nodo>.<tailnet>.ts.net` con certificado Let's Encrypt automático, sin abrir puertos a Internet. En el iHost **no hace falta `docker exec` ni una consola**: la UI de Docker permite definir variables de entorno y volúmenes antes de ejecutar cada add-on, y el `serve.json` se edita con el add-on **Filebrowser**. Tailscale aplica la configuración de Serve de forma declarativa con `TS_SERVE_CONFIG`.
+
+#### 1. Preparar la tailnet
 
 1. En el admin de Tailscale, habilita **MagicDNS** y **HTTPS Certificates** para la tailnet.
 2. Crea un **auth key** (Settings → Keys). Guardalo como secreto; no lo commitees.
-3. Ejecuta el contenedor de Tailscale en el iHost. Ejemplo de Docker Compose:
 
-   ```yaml
-   services:
-     tailscale:
-       image: tailscale/tailscale:stable
-       container_name: p40la-tailscale
-       restart: unless-stopped
-       network_mode: host
-       environment:
-         - TS_AUTHKEY=${TS_AUTHKEY}
-         - TS_HOSTNAME=p40la-ihost
-         - TS_STATE_DIR=/var/lib/tailscale
-         - TS_USERSPACE=true
-         - TS_AUTH_ONCE=true
-       volumes:
-         - tailscale-state:/var/lib/tailscale
+#### 2. Crear los volúmenes en el iHost
 
-   volumes:
-     tailscale-state:
+En `http://ihost.local` → **Docker → Volume → Add**:
+
+- `p40la-tailscale-state` — estado del nodo (identidad, claves).
+- `p40la-tailscale-config` — configuración de Serve (`serve.json`).
+
+#### 3. Crear `serve.json` con Filebrowser
+
+1. Docker → **+** → buscá `filebrowser/filebrowser` → **Add**.
+2. **Run** con esta configuración:
+   - **Network**: `bridge`
+   - **Port**: host `8081` → container `80` (elegí un puerto libre; no uses el 80 del iHost)
+   - **Volume**: `p40la-tailscale-config` → `/srv/p40la-tailscale-config`
+   - **Restart Policy**: `unless-stopped`
+3. Abrí `http://ihost.local:8081` (usuario/password por defecto: `admin` / `admin`) y entrá a la carpeta `p40la-tailscale-config`.
+4. Creá el archivo `serve.json` con este contenido (también está en `deploy/tailscale/serve.json`):
+
+   ```json
+   {
+     "TCP": {
+       "443": {
+         "HTTPS": true
+       }
+     },
+     "Web": {
+       "${TS_CERT_DOMAIN}:443": {
+         "Handlers": {
+           "/": {
+             "Proxy": "http://127.0.0.1:8088"
+           }
+         }
+       }
+     },
+     "AllowFunnel": {
+       "${TS_CERT_DOMAIN}:443": false
+     }
+   }
    ```
 
-   - `TS_USERSPACE=true` evita depender de `/dev/net/tun` (si el iHost lo expone, podés usar modo kernel con `cap_add: [NET_ADMIN]` y el dispositivo `/dev/net/tun`).
-   - `network_mode: host` permite que Serve llegue a `127.0.0.1:8088` (la app ya publica ese puerto en el host). También podés usar `network_mode: service:p40la-ihost`.
-   - El estado del nodo queda en el volumen `tailscale-state`; no borres ese volumen sin querer.
+   - `${TS_CERT_DOMAIN}` lo reemplaza Tailscale automáticamente; no pongas el nombre real.
+   - `AllowFunnel: false` mantiene la app privada (solo tailnet).
+   - El archivo debe quedar dentro de una **carpeta montada**, no como archivo suelto: Tailscale detecta los cambios del directorio por fsnotify.
+5. Guardá el archivo. Podés dejar Filebrowser corriendo o detenerlo; no es necesario para que Tailscale funcione.
 
-4. Verifica que el nodo esté conectado:
+#### 4. Ejecutar Tailscale en la UI de Docker
 
-   ```bash
-   docker exec p40la-tailscale tailscale status
-   ```
+1. Docker → **+** → buscá `tailscale/tailscale` → **Add**.
+2. **Run** con esta configuración:
+   - **Container Name**: `p40la-tailscale`
+   - **Restart Policy**: `unless-stopped`
+   - **Network**: `host` (necesario para que Serve llegue a `127.0.0.1:8088`)
+   - **Environment Variables**:
 
-5. Configura Serve una vez (con `--bg` se reanuda solo tras reiniciar el contenedor o el iHost):
+     | Variable | Valor |
+     |---|---|
+     | `TS_AUTHKEY` | tu auth key (`tskey-auth-...`) |
+     | `TS_HOSTNAME` | `p40la-ihost` |
+     | `TS_STATE_DIR` | `/var/lib/tailscale` |
+     | `TS_USERSPACE` | `true` |
+     | `TS_AUTH_ONCE` | `true` |
+     | `TS_SERVE_CONFIG` | `/config/serve.json` |
 
-   ```bash
-   docker exec p40la-tailscale tailscale serve --bg --https=443 127.0.0.1:8088
-   docker exec p40la-tailscale tailscale serve status
-   ```
+   - **Volumes**:
 
-   Alternativa declarativa: usar la variable `TS_SERVE_CONFIG` con la configuración de Serve.
+     | Volume | Container path |
+     |---|---|
+     | `p40la-tailscale-state` | `/var/lib/tailscale` |
+     | `p40la-tailscale-config` | `/config` |
 
-6. Abre `https://p40la-ihost.<tailnet>.ts.net` y verificá que el certificado sea válido (sin warning).
+3. **Run**. El contenedor hace el login con `TS_AUTHKEY` y aplica `serve.json` al arrancar.
+
+> **Red**: si la UI del iHost no te permite `Network: host`, no uses Tailscale Serve con `TS_SERVE_CONFIG` en bridge: Serve solo puede proxyficar a `127.0.0.1` y no vería la app. La UI del iHost sí ofrece `host` (ver `docs/ihost.md` y la guía de volúmenes de eWeLink CUBE).
+
+#### 5. Verificar
+
+- En el admin de Tailscale → **Machines**, el nodo `p40la-ihost` debe aparecer conectado.
+- Abrí `https://p40la-ihost.<tailnet>.ts.net` y verificá que el certificado sea válido (sin warning).
+- Si no carga, revisá los **Logs** del add-on `p40la-tailscale` desde la UI de Docker (More info → Logs); no hace falta consola.
+- Si cambiás `serve.json`, esperá unos segundos. Si no se aplica, detené y volvé a ejecutar el add-on desde la UI; los volúmenes persisten.
 
 ### Instalar en Android
 
@@ -119,8 +162,9 @@ En Chrome o Edge para iOS el camino también está en el menú Compartir, pero n
 
 ### Notas y diagnóstico
 
-- La PWA queda atada al origen `https://<nodo>.<tailnet>.ts.net`. No la instales desde la IP ni desde `ihost.local`; si renombrás el nodo, hay que reinstalarla.
+- La PWA queda atada al origen `https://p40la-ihost.<tailnet>.ts.net`. **No uses `https://ihost.<tailnet>.ts.net`**: ese es el nodo del add-on oficial del iHost, no la app. Tampoco la instales desde la IP ni desde `ihost.local`; si renombrás el nodo, hay que reinstalarla.
 - Sin Tailscale activo, el nombre `*.ts.net` no resuelve y la PWA no abre. `http://ihost.local:8088` sigue disponible como acceso LAN de respaldo para escritorio.
+- El add-on oficial `tailscale/TailScale` y el contenedor `tailscale/tailscale` pueden convivir: el primero te da acceso remoto a la UI del iHost; el segundo publica la app con Serve.
 - El service worker no cachea `/api/*` ni PDFs; solo el shell, los assets con hash, los íconos y el i18n.
 - Para verificar el service worker y el manifest: DevTools → Application → Service Workers / Manifest. Lighthouse ya no tiene categoría PWA.
 - Si Tailscale no emite el certificado, revisá que MagicDNS y HTTPS Certificates estén habilitados y que el nodo esté conectado.
