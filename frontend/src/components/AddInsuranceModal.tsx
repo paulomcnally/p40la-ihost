@@ -66,10 +66,20 @@ export default function AddInsuranceModal({ autoId, onAdd, onCancel, insurance }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onCancel}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-border">
-          <h3 className="text-lg font-bold">{isEditing ? 'Editar Seguro' : 'Agregar Seguro'}</h3>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-lg font-bold">{isEditing ? 'Editar Seguro' : 'Agregar Seguro'}</h3>
+            <button
+              onClick={onCancel}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:bg-bg transition-colors shrink-0"
+              title="Cerrar"
+              aria-label="Cerrar"
+            >
+              <Icon name="cancel" className="w-4 h-4" />
+            </button>
+          </div>
           {!isEditing && (
             <input
               type="text"
