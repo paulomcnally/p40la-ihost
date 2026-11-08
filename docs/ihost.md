@@ -50,6 +50,8 @@ La primera vez que el contenedor arranca sin usuarios registrados, mostrará un 
 
 La app incluye manifest, íconos y service worker. Para que Chrome Android ofrezca **Instalar app** (y no solo **Crear acceso directo**), la app debe servirse por **HTTPS con certificado confiable**. `http://<ip-del-ihost>:8088` y `http://ihost.local:8088` no son *secure contexts*: el service worker no se registra y la instalación queda deshabilitada. iOS permite **Compartir → Añadir a pantalla de inicio** incluso por HTTP, pero sin HTTPS no hay service worker ni funcionamiento offline.
 
+> **Runbook técnico y script**: el flujo completo por API (sin `docker exec`, sin guardar credenciales) está en `docs/ihost-pwa-tailscale-setup.md`; el script es `scripts/ihost-pwa-setup.mjs`.
+>
 > **Si ya tenés Tailscale corriendo en el iHost:** fijate si el contenedor es **`tailscale/tailscale`** (el que usa `TS_STATE_DIR`/`TS_SOCKET`) o el **add-on de eWeLink** con el botón **Go to TailScale**.
 >
 > - Si es **`tailscale/tailscale`**, **sí** acepta `TS_SERVE_CONFIG`: reutilizá su volumen de estado (por ejemplo `tailscale` → `/data/tailscalState`), agregá un volumen `tailscale-config` → `/config` con `serve.json` y la variable `TS_SERVE_CONFIG=/config/serve.json`. La URL queda en el nodo existente: `https://ihost.<tailnet>.ts.net`.

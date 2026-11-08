@@ -520,7 +520,7 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 - **Android — Certificate Transparency**: <https://developer.android.com/privacy-and-security/certificate-transparency-policy>
 - **mkcert**: <https://github.com/FiloSottile/mkcert>
 - **Specs relacionadas**: SPEC-001 (infraestructura iHost), SPEC-057 (iconos iOS), SPEC-063 (navegación de retorno), SPEC-118 (dropdowns), SPEC-122/SPEC-126 (modales).
-- **Documentación interna**: `docs/ihost.md`, `docs/project-rules.md`, `docs/ssh-ihost-access.md`.
+- **Documentación interna**: `docs/ihost.md`, `docs/ihost-pwa-tailscale-setup.md`, `deploy/tailscale/serve.json`, `scripts/ihost-pwa-setup.mjs`, `docs/project-rules.md`, `docs/ssh-ihost-access.md`.
 
 ---
 
