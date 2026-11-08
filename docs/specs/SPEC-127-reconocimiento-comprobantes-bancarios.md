@@ -1,7 +1,7 @@
 ---
 title: "Sistema interno de reconocimiento de comprobantes bancarios (nivel proyecto)"
 id: "SPEC-127"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-08"
 updated: "2026-11-08"
@@ -11,7 +11,7 @@ github_issue: 130
 # Sistema interno de reconocimiento de comprobantes bancarios (nivel proyecto)
 
 **ID**: SPEC-127
-**Estado**: draft
+**Estado**: in_progress
 **Autor**: opencode
 **Creado**: 2026-11-08
 **Actualizado**: 2026-11-08
@@ -505,6 +505,35 @@ file: <PDF>
 
 ---
 
+### 6.3 Estado de implementación (2026-11-08)
+
+Implementado en la rama `feature/SPEC-127`:
+
+- **Migración 0042**: tabla `document_recognitions` con hash único, estados, referencia, fecha, monto, moneda, cuota, concepto sanitizado, entidad destino, confianza, advertencias, rutas de inbox/final y timestamps. No se modificó el esquema de `debts`/`debt_bills`.
+- **Backend**:
+  - `internal/recognizers/`: interfaz `ReceiptRecognizer`, registry project-level y `BankReceiptRecognizer` para nota de débito y confirmación de transferencia.
+  - `internal/models/document_recognition.go`: modelos de reconocimiento, candidatos, confirmación y resultado.
+  - `internal/storage/document_recognition.go`: CRUD, idempotencia por hash y asociación transaccional con `debt_bills.payment_reference`.
+  - `internal/services/document_recognition.go`: validación de PDF, staging en `_inbox`, SHA-256, matching con score/warnings, confirmación atómica y reemplazo con backup.
+  - `internal/api/document_recognition_handlers.go` + rutas:
+    - `POST /api/documents/recognize`
+    - `POST /api/documents/recognitions/{id}/confirm`
+- **Frontend**:
+  - `RecognizeDocumentModal.tsx`: upload, preview editable, confianza, advertencias, candidatos, selección de cuota y confirmación.
+  - `ConfirmWordModal.tsx`: confirmación por palabra `confirmo` con foco automático y Enter (SPEC-126).
+  - Acción **"Reconocer comprobante"** en el menú de 3 puntos del detalle de deuda.
+  - API client, tipos e i18n `documents.*` en `frontend/public/i18n/{es,en}.json`.
+
+Validaciones ejecutadas:
+
+- `go test ./...`: OK.
+- `go vet ./...`: OK.
+- `npm run build` (incluye `check:ui-rules.cjs`): OK.
+- Migración 0042 probada sobre una copia de la DB de producción (`/tmp`, eliminada al terminar): deudas 12 → 12, cuotas 702 → 702, `PRAGMA integrity_check = ok`.
+- Tests con PDFs sintéticos para ambos formatos, matching, `Detalle` repetido, duplicados, conflictos, PDF sin texto y PDF inválido.
+
+Pendiente: prueba manual del usuario en local y release formal (merge a `main`, tracker, label e issue).
+
 ## 7. Riesgos y Mitigaciones
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
@@ -548,3 +577,5 @@ file: <PDF>
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-08 | opencode | Creación inicial de la especificación a partir de la investigación en `docs/analyzers/BANK-RECEIPTS-RESEARCH.md`. |
+| 2026-11-08 | opencode | Estado `in_progress`: comienza la implementación aprobada por el usuario. |
+| 2026-11-08 | opencode | Implementación completa backend/frontend, tests automáticos y validación de la migración sobre copia de producción. Pendiente prueba manual y release. |
