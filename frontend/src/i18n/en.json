@@ -552,6 +552,7 @@
       "institution_required": "Select an inspection center",
       "save_error": "Error saving inspection",
       "next_due": "Next inspection",
+      "register_pending": "Register {year} inspection",
       "delete_title": "Delete inspection",
       "delete_subtitle": "Delete the inspection for {year}?",
       "status_overdue": "Overdue",
