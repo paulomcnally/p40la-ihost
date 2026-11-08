@@ -101,6 +101,36 @@ func (s *DebtBillStorage) ListDueOnDate(ctx context.Context, date string) ([]mod
 	return scanDebtBills(rows)
 }
 
+// ListPaidWithDetails devuelve las cuotas pagadas con contexto de deuda,
+// institución y moneda. Es la base del matching de comprobantes (SPEC-127).
+func (s *DebtBillStorage) ListPaidWithDetails(ctx context.Context) ([]models.DebtBill, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT `+debtBillColumns+`
+		`+debtBillJoins+`
+		WHERE db.status = 'paid' AND db.deleted_at IS NULL
+		ORDER BY db.paid_at DESC, db.id DESC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("listar cuotas pagadas: %w", err)
+	}
+	defer rows.Close()
+
+	return scanDebtBills(rows)
+}
+
+// FindByPaymentReference busca una cuota por referencia de pago exacta.
+// Se usa para detectar referencias duplicadas (SPEC-127, CA-011).
+func (s *DebtBillStorage) FindByPaymentReference(ctx context.Context, reference string) (*models.DebtBill, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT `+debtBillColumns+`
+		`+debtBillJoins+`
+		WHERE db.payment_reference = ? AND db.deleted_at IS NULL
+		ORDER BY db.id
+		LIMIT 1
+	`, reference)
+	return scanDebtBill(row)
+}
+
 // ListByMonth devuelve las cuotas no eliminadas cuyo vencimiento cae en un
 // mes (YYYY-MM), para la vista Calendario (SPEC-054).
 func (s *DebtBillStorage) ListByMonth(ctx context.Context, year, month int) ([]models.DebtBill, error) {

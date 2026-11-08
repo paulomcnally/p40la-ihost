@@ -8,6 +8,8 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import DebtDocumentButtons from '../components/DebtDocumentButtons'
 import DebtDocumentModal from '../components/DebtDocumentModal'
+import PaymentTimingLabel from '../components/PaymentTimingLabel'
+import RecognizeDocumentModal from '../components/RecognizeDocumentModal'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import CreateMenu from '../components/CreateMenu'
 import ContractModal from '../components/ContractModal'
@@ -33,6 +35,7 @@ export default function DebtBillsPage() {
   const [bills, setBills] = useState<DebtBill[]>([])
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
   const [contractOpen, setContractOpen] = useState(false)
+  const [recognizeOpen, setRecognizeOpen] = useState(false)
   const [documentModal, setDocumentModal] = useState<{ bill: DebtBill; kind: 'invoice' | 'receipt' } | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -116,6 +119,7 @@ export default function DebtBillsPage() {
           title={t('app.actions')}
           options={[
             { label: t('contracts.menu'), icon: 'pdf', onClick: () => setContractOpen(true) },
+            { label: t('documents.recognize'), icon: 'pdf', onClick: () => setRecognizeOpen(true) },
             { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/deudas/edit/${debt.id}`) },
           ]}
         />
@@ -177,9 +181,17 @@ export default function DebtBillsPage() {
                 </p>
                 <p className="text-sm text-text-secondary">{bill.due_date}</p>
                 {bill.status === 'paid' && bill.paid_at && (
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    {t('deudas.pay_date')}: {bill.paid_at.slice(0, 10)}
-                  </p>
+                  <>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {t('deudas.pay_date')}: {bill.paid_at.slice(0, 10)}
+                    </p>
+                    <PaymentTimingLabel
+                      paidDate={bill.paid_at}
+                      dueDate={bill.due_date}
+                      mode="paid"
+                      className="block text-xs mt-0.5"
+                    />
+                  </>
                 )}
               </div>
               <div className="flex items-center gap-3 shrink-0">
@@ -220,6 +232,14 @@ export default function DebtBillsPage() {
           entityName={debt.description}
           hasContract={!!debt.has_contract}
           onClose={() => setContractOpen(false)}
+          onChanged={() => load(true)}
+        />
+      )}
+      {recognizeOpen && (
+        <RecognizeDocumentModal
+          debt={debt}
+          bills={bills}
+          onClose={() => setRecognizeOpen(false)}
           onChanged={() => load(true)}
         />
       )}
