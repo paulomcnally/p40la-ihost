@@ -52,7 +52,7 @@ export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
       fixed top-0 bottom-0 z-50
       w-60 left-0
       lg:fixed lg:left-0 lg:top-0 lg:bottom-0
-      border-r
+      border-r safe-top
       transition-transform duration-200 ease-in-out
       ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
     `}>
