@@ -35,6 +35,7 @@ export interface Service {
   last_webhook_request?: string | null
   automation_account_id?: number
   latest_bill_status: 'paid' | 'pending' | null
+  has_contract?: boolean
 }
 
 export interface AutoService {
@@ -475,6 +476,7 @@ export interface Debt {
   next_due_date?: string
   last_due_date?: string
   last_paid_at?: string
+  has_contract?: boolean
   created_at: string
   updated_at: string
 }

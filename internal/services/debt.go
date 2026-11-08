@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"io"
 	"math"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ type DebtService struct {
 	debtBills    *storage.DebtBillStorage
 	institutions *storage.InstitutionStorage
 	currencies   *storage.CurrencyStorage
+	contracts    *ContractStore
 }
 
 // NewDebtService crea un nuevo DebtService.
@@ -43,12 +45,74 @@ func NewDebtService(
 
 // List devuelve todas las deudas.
 func (s *DebtService) List(ctx context.Context) ([]models.Debt, error) {
-	return s.debts.List(ctx)
+	debts, err := s.debts.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range debts {
+		s.decorateContract(&debts[i])
+	}
+	return debts, nil
 }
 
 // GetByID busca una deuda por ID.
 func (s *DebtService) GetByID(ctx context.Context, id int64) (*models.Debt, error) {
-	return s.debts.GetByID(ctx, id)
+	debt, err := s.debts.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	s.decorateContract(debt)
+	return debt, nil
+}
+
+// SetContractStore inyecta el almacén de contratos (SPEC-123).
+func (s *DebtService) SetContractStore(store *ContractStore) {
+	s.contracts = store
+}
+
+// SaveContract valida que la deuda exista y guarda su contrato PDF.
+func (s *DebtService) SaveContract(ctx context.Context, id int64, fileName string, r io.Reader) error {
+	debt, err := s.debts.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if debt == nil {
+		return ErrContractEntityNotFound
+	}
+	if s.contracts == nil {
+		return fmt.Errorf("almacén de contratos no configurado")
+	}
+	return s.contracts.Save(ContractOwnerDebt, id, fileName, r)
+}
+
+// ContractPath devuelve la ruta del contrato de una deuda existente.
+func (s *DebtService) ContractPath(ctx context.Context, id int64) (string, error) {
+	debt, err := s.debts.GetByID(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	if debt == nil {
+		return "", ErrContractEntityNotFound
+	}
+	if s.contracts == nil {
+		return "", ErrContractNotFound
+	}
+	return s.contracts.Path(ContractOwnerDebt, id)
+}
+
+// DeleteContract elimina el contrato de una deuda existente.
+func (s *DebtService) DeleteContract(ctx context.Context, id int64) error {
+	debt, err := s.debts.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if debt == nil {
+		return ErrContractEntityNotFound
+	}
+	if s.contracts == nil {
+		return ErrContractNotFound
+	}
+	return s.contracts.Delete(ContractOwnerDebt, id)
 }
 
 // Create crea una deuda y genera su serie completa de cuotas si está activa.
@@ -68,6 +132,7 @@ func (s *DebtService) Create(ctx context.Context, debt *models.Debt) (*models.De
 	if err := s.ensureDebtBills(ctx, created); err != nil {
 		return nil, err
 	}
+	s.decorateContract(created)
 	return created, nil
 }
 
@@ -111,7 +176,12 @@ func (s *DebtService) Update(ctx context.Context, debt *models.Debt) (*models.De
 		return nil, err
 	}
 	// Releer para devolver el resumen de cuotas actualizado (SPEC-104).
-	return s.debts.GetByID(ctx, debt.ID)
+	result, err := s.debts.GetByID(ctx, debt.ID)
+	if err != nil {
+		return nil, err
+	}
+	s.decorateContract(result)
+	return result, nil
 }
 
 // Delete elimina lógicamente una deuda y sus cuotas.
@@ -245,6 +315,14 @@ func dueDateForInstallment(start time.Time, k, paymentDay int) string {
 		day = last
 	}
 	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+}
+
+// decorateContract completa el campo calculado has_contract (SPEC-123).
+func (s *DebtService) decorateContract(debt *models.Debt) {
+	if debt == nil {
+		return
+	}
+	debt.HasContract = s.contracts != nil && s.contracts.Exists(ContractOwnerDebt, debt.ID)
 }
 
 func (s *DebtService) validate(ctx context.Context, debt *models.Debt) error {

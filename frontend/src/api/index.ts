@@ -95,6 +95,14 @@ export const api = {
       post<{ service: Service; cycle: ServiceCycle }>(`/api/services/${id}/renew`, body),
     sync: (id: number) => post<{ delivered: number; failed: number }>(`/api/services/${id}/sync`, {}),
   },
+  contracts: {
+    upload: (owner: 'debts' | 'services', id: number, file: File) =>
+      postFormData<{ has_contract: boolean }>(`/api/${owner}/${id}/contract`, file),
+    remove: (owner: 'debts' | 'services', id: number) =>
+      del(`/api/${owner}/${id}/contract`),
+    url: (owner: 'debts' | 'services', id: number) =>
+      `/api/${owner}/${id}/contract`,
+  },
   webhooks: {
     getApiKey: () => get<{ api_key: string }>('/api/webhook/key'),
     regenerateApiKey: () => post<{ api_key: string }>('/api/webhook/key/regenerate', {}),

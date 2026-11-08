@@ -8,6 +8,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
+import ContractModal from '../components/ContractModal'
 import DeleteModal from '../components/DeleteModal'
 import PayBillModal from '../components/PayBillModal'
 import UploadBillModal from '../components/UploadBillModal'
@@ -43,6 +44,7 @@ export default function BillsPage() {
   const [payTarget, setPayTarget] = useState<Bill | null>(null)
   const [historyTarget, setHistoryTarget] = useState<Bill | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [contractOpen, setContractOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [webhookOpen, setWebhookOpen] = useState(false)
   const [renewOpen, setRenewOpen] = useState(false)
@@ -131,6 +133,7 @@ export default function BillsPage() {
           <p className="text-sm text-text-secondary">{t('bills.subtitle')}</p>
         </div>
         <CreateMenu options={[
+          { label: t('contracts.menu'), icon: 'pdf', onClick: () => setContractOpen(true) },
           { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/services/edit/${serviceId}`) },
           { label: 'Subir factura', icon: 'upload', onClick: () => setUploadOpen(true) },
           { label: t('bills.create'), icon: 'plus', onClick: () => navigate(`/bills/new?service=${serviceId}`) },
@@ -388,6 +391,16 @@ export default function BillsPage() {
           subtitle={`${deletePolicyTarget.name}`}
           onConfirm={handleDeletePolicy}
           onCancel={() => setDeletePolicyTarget(null)}
+        />
+      )}
+      {contractOpen && service && (
+        <ContractModal
+          owner="services"
+          entityId={service.id}
+          entityName={service.name}
+          hasContract={!!service.has_contract}
+          onClose={() => setContractOpen(false)}
+          onChanged={load}
         />
       )}
     </div>
