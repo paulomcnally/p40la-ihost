@@ -7,9 +7,9 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | Métrica | Valor |
 |---------|-------|
 | **Total de specs** | 120 |
-| **En draft** | 1 🟡 |
+| **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 0 🟣 |
+| **In progress** | 1 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 119 🟢 |
 | **Canceladas** | 0 ⚫ |
@@ -140,7 +140,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-118 | Autos: campos opcionales y color predefinido | released | 2026-10-21 | opencode |
 | SPEC-119 | Importador mensual de gastos escolares y pensión por palabras clave | released | 2026-11-03 | opencode |
 | SPEC-120 | Home de Servicios con Análisis, Calendario y Gráfica (espejo de Deudas) | released | 2026-11-03 | opencode |
-| SPEC-124 | Autos: mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs | draft | 2026-11-07 | opencode |
+| SPEC-124 | Autos: mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs | in_progress | 2026-11-07 | opencode |
 
 ---
 

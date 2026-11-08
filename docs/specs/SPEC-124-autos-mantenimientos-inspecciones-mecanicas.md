@@ -1,7 +1,7 @@
 ---
 title: "Autos: mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs"
 id: "SPEC-124"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-07"
 updated: "2026-11-07"
@@ -11,7 +11,7 @@ github_issue: 127
 # Autos: mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs
 
 **ID**: SPEC-124  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-11-07  
 **Actualizado**: 2026-11-07
@@ -652,3 +652,5 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-07 | opencode | Creación inicial de la especificación (mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs). |
+| 2026-11-07 | opencode | Inicio de implementación: estado `in_progress`. |
+| 2026-11-08 | opencode | Implementación completa: migración `0042`, backend (storage/services/API), frontend (secciones, modales, adjuntos y badge), i18n es/en, tests Go y build del frontend. Migración validada sobre copia de producción: 3 autos y 16 instituciones; `up`/`down`/`up` idempotente e `integrity_check = ok`. |
