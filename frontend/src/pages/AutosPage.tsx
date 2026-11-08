@@ -8,21 +8,29 @@ import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
+import InspectionStatusBadge from '../components/InspectionStatusBadge'
 import { autoSubtitle } from '../utils/auto'
-import type { Auto } from '../types'
+import type { Auto, AutoInspectionAlert } from '../types'
 
 export default function AutosPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
   const [autos, setAutos] = useState<Auto[]>([])
+  const [inspectionAlerts, setInspectionAlerts] = useState<Record<number, AutoInspectionAlert>>({})
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
   usePageTitle(t('autos.title'))
 
   const loadAutos = useCallback(async () => {
-    const data = await api.autos.list()
+    const [data, alerts] = await Promise.all([
+      api.autos.list(),
+      api.autos.inspectionAlerts().catch(() => [] as AutoInspectionAlert[]),
+    ])
     setAutos(data || [])
+    const alertMap: Record<number, AutoInspectionAlert> = {}
+    for (const alert of alerts || []) alertMap[alert.auto_id] = alert
+    setInspectionAlerts(alertMap)
   }, [])
 
   useEffect(() => {
@@ -80,6 +88,14 @@ export default function AutosPage() {
             </div>
             <h3 className="font-semibold text-base truncate">{auto.brand} {auto.model}</h3>
             <p className="text-sm text-text-secondary mt-1 truncate">{autoSubtitle(t, auto)}</p>
+            {inspectionAlerts[auto.id] && (
+              <div className="mt-2 flex items-center gap-2">
+                <InspectionStatusBadge status={inspectionAlerts[auto.id].status} compact />
+                <span className="text-[11px] text-text-secondary truncate">
+                  {inspectionAlerts[auto.id].next_due_date}
+                </span>
+              </div>
+            )}
           </div>
         ))}
       </div>

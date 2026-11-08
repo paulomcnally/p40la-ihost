@@ -15,7 +15,7 @@ services:
       - PORT=8088
       - DATA_DIR=/app/data
       - LOG_LEVEL=info
-      - VERSION=0.5.3
+      - VERSION=0.5.4
 
 volumes:
   p40la:

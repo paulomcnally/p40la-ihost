@@ -35,6 +35,7 @@ export interface Service {
   last_webhook_request?: string | null
   automation_account_id?: number
   latest_bill_status: 'paid' | 'pending' | null
+  has_contract?: boolean
 }
 
 export interface AutoService {
@@ -225,6 +226,113 @@ export interface Auto {
   placa: string
   created_at: string
   updated_at: string
+}
+
+export interface AutoAttachment {
+  id: number
+  auto_id: number
+  owner_type: 'maintenance' | 'inspection'
+  owner_id: number
+  file_name: string
+  size_bytes: number
+  created_at: string
+}
+
+export type AutoMaintenanceItemType = 'labor' | 'supplies'
+
+export interface AutoMaintenanceItem {
+  id: number
+  maintenance_id: number
+  item_type: AutoMaintenanceItemType
+  description: string
+  amount: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AutoMaintenanceItemInput {
+  item_type: AutoMaintenanceItemType
+  description: string
+  amount: number
+}
+
+export interface AutoMaintenanceInput {
+  performed_at: string
+  mileage: number
+  institution_id: number
+  description: string
+  currency_id: number
+}
+
+export interface AutoMaintenance {
+  id: number
+  auto_id: number
+  performed_at: string
+  mileage: number
+  institution_id: number
+  institution_name: string
+  description: string
+  labor_cost: number
+  supplies_cost: number
+  total_cost: number
+  currency_id: number
+  currency_code: string
+  items: AutoMaintenanceItem[]
+  attachments: AutoAttachment[]
+  created_at: string
+  updated_at: string
+}
+
+export interface AutoMaintenanceCurrencyTotal {
+  currency_id: number
+  currency_code: string
+  total: number
+}
+
+export interface AutoMaintenanceList {
+  items: AutoMaintenance[]
+  latest_mileage: number
+  totals_by_currency: AutoMaintenanceCurrencyTotal[]
+}
+
+export type AutoInspectionResult = 'approved' | 'rejected'
+export type InspectionStatus = 'overdue' | 'due_soon' | 'ok'
+
+export interface AutoInspection {
+  id: number
+  auto_id: number
+  performed_at: string
+  inspection_year: number
+  institution_id: number
+  institution_name: string
+  result: AutoInspectionResult
+  notes: string
+  attachments: AutoAttachment[]
+  created_at: string
+  updated_at: string
+}
+
+export interface InspectionSchedule {
+  first_due_year: number
+  next_due_year: number
+  next_due_date: string
+  status: InspectionStatus
+  days_until_due: number
+  approved_years: number[]
+  rejected_years: number[]
+}
+
+export interface AutoInspectionList {
+  items: AutoInspection[]
+  schedule: InspectionSchedule
+}
+
+export interface AutoInspectionAlert {
+  auto_id: number
+  next_due_year: number
+  next_due_date: string
+  status: InspectionStatus
+  days_until_due: number
 }
 
 export interface Child {
@@ -475,6 +583,8 @@ export interface Debt {
   next_due_date?: string
   last_due_date?: string
   last_paid_at?: string
+  has_contract?: boolean
+  has_documents?: boolean
   created_at: string
   updated_at: string
 }
@@ -493,6 +603,8 @@ export interface DebtBill {
   status: 'pending' | 'paid'
   paid_at?: string
   payment_reference?: string
+  has_invoice?: boolean
+  has_receipt?: boolean
   created_at: string
   updated_at: string
 }

@@ -210,7 +210,7 @@ export default function UploadBillModal({ isOpen, serviceId, frequency, currency
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div ref={modalRef} className="bg-card rounded-ios shadow-ios w-full max-w-2xl mx-auto max-h-[85vh] flex flex-col">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h3 className="text-lg font-bold">Subir facturas</h3>

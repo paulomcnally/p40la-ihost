@@ -1,20 +1,20 @@
 ---
 title: "Detalle de deuda: resumen humano de tiempo restante, último pago y fin estimado"
 id: "SPEC-125"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-07"
-updated: "2026-11-07"
+updated: "2026-11-08"
 github_issue: 128
 ---
 
 # Detalle de deuda: resumen humano de tiempo restante, último pago y fin estimado
 
 **ID**: SPEC-125  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-07  
-**Actualizado**: 2026-11-07
+**Actualizado**: 2026-11-08
 
 ---
 
@@ -781,3 +781,4 @@ Agregar al bloque `deudas` en `frontend/public/i18n/es.json` y `en.json`:
 | 2026-11-07 | opencode | Revisión crítica incorporada: se separa “último pago realizado” de “última cuota”, se muestra la fecha exacta, se corrige la timeline (orden/futuro/vencida), se agregan estados `missing-bills` y cierre manual, se completan plurales i18n, se cambia la barra a `bg-primary` por contraste, se retira el donut y se amplía la matriz de tests. |
 | 2026-11-07 | opencode | Issue de GitHub #128 creado con label `spec/draft`; tracker actualizado en la rama de la spec. |
 | 2026-11-07 | opencode | Implementación frontend: helpers `debtPayoff.ts` y `date.ts`, componente `DebtPayoffSummary`, integración en `DebtBillsPage`, i18n es/en, tests unitarios (14/14) y build; validación en Chrome headless con DB sintética (al día, vencida, pausa, saldada, cuotas faltantes, inconsistente y “2 años y 9 meses”). |
+| 2026-11-08 | opencode | Release: validación manual del usuario satisfactoria; merge a `main`, issue #128 cerrado y label `spec/released`. Implementación: commit `ea8ae22`. |

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -61,6 +62,7 @@ type ServiceService struct {
 	homes      *storage.HomeStorage
 	currencies *storage.CurrencyStorage
 	bills      *storage.BillStorage
+	contracts  *ContractStore
 }
 
 // NewServiceService crea un nuevo ServiceService.
@@ -80,12 +82,74 @@ func NewServiceService(
 
 // List devuelve los servicios activos, opcionalmente filtrados por home_id.
 func (s *ServiceService) List(ctx context.Context, homeID *int64) ([]models.Service, error) {
-	return s.services.List(ctx, homeID)
+	list, err := s.services.List(ctx, homeID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range list {
+		s.decorateContract(&list[i])
+	}
+	return list, nil
 }
 
 // GetByID busca un servicio por ID.
 func (s *ServiceService) GetByID(ctx context.Context, id int64) (*models.Service, error) {
-	return s.services.GetByID(ctx, id)
+	svc, err := s.services.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	s.decorateContract(svc)
+	return svc, nil
+}
+
+// SetContractStore inyecta el almacén de contratos (SPEC-123).
+func (s *ServiceService) SetContractStore(store *ContractStore) {
+	s.contracts = store
+}
+
+// SaveContract valida que el servicio exista y guarda su contrato PDF.
+func (s *ServiceService) SaveContract(ctx context.Context, id int64, fileName string, r io.Reader) error {
+	svc, err := s.services.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if svc == nil {
+		return ErrContractEntityNotFound
+	}
+	if s.contracts == nil {
+		return fmt.Errorf("almacén de contratos no configurado")
+	}
+	return s.contracts.Save(ContractOwnerService, id, fileName, r)
+}
+
+// ContractPath devuelve la ruta del contrato de un servicio existente.
+func (s *ServiceService) ContractPath(ctx context.Context, id int64) (string, error) {
+	svc, err := s.services.GetByID(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	if svc == nil {
+		return "", ErrContractEntityNotFound
+	}
+	if s.contracts == nil {
+		return "", ErrContractNotFound
+	}
+	return s.contracts.Path(ContractOwnerService, id)
+}
+
+// DeleteContract elimina el contrato de un servicio existente.
+func (s *ServiceService) DeleteContract(ctx context.Context, id int64) error {
+	svc, err := s.services.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if svc == nil {
+		return ErrContractEntityNotFound
+	}
+	if s.contracts == nil {
+		return ErrContractNotFound
+	}
+	return s.contracts.Delete(ContractOwnerService, id)
 }
 
 // FindByWebhookUUID busca un servicio activo por su webhook_uuid (SPEC-069).
@@ -115,6 +179,7 @@ func (s *ServiceService) Create(ctx context.Context, svc *models.Service) (*mode
 	if created.Active {
 		_ = s.generateCurrentBill(ctx, created)
 	}
+	s.decorateContract(created)
 
 	return created, nil
 }
@@ -177,6 +242,7 @@ func (s *ServiceService) Update(ctx context.Context, svc *models.Service) (*mode
 	if updated.Active {
 		_ = s.generateCurrentBill(ctx, updated)
 	}
+	s.decorateContract(updated)
 
 	return updated, nil
 }
@@ -198,6 +264,14 @@ func (s *ServiceService) ReconcileBills(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// decorateContract completa el campo calculado has_contract (SPEC-123).
+func (s *ServiceService) decorateContract(svc *models.Service) {
+	if svc == nil {
+		return
+	}
+	svc.HasContract = s.contracts != nil && s.contracts.Exists(ContractOwnerService, svc.ID)
 }
 
 func (s *ServiceService) validate(ctx context.Context, svc *models.Service) error {
