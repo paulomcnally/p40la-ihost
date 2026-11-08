@@ -1,7 +1,7 @@
 ---
 title: "Detalle de deuda: resumen humano de tiempo restante, último pago y fin estimado"
 id: "SPEC-125"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-07"
 updated: "2026-11-07"
@@ -11,7 +11,7 @@ github_issue: 128
 # Detalle de deuda: resumen humano de tiempo restante, último pago y fin estimado
 
 **ID**: SPEC-125  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-11-07  
 **Actualizado**: 2026-11-07
@@ -537,6 +537,7 @@ Agregar al bloque `deudas` en `frontend/public/i18n/es.json` y `en.json`:
 
 | Clave | Español | Inglés |
 |---|---|---|
+| `total_original` | Total original | Original total |
 | `payoff_eyebrow` | Estado del plan | Plan status |
 | `payoff_remaining_less_than_month` | Te falta menos de un mes para saldar esta deuda | You have less than a month left to pay off this debt |
 | `payoff_remaining_due_today` | La última cuota vence hoy | The last installment is due today |
@@ -551,7 +552,6 @@ Agregar al bloque `deudas` en `frontend/public/i18n/es.json` y `en.json`:
 | `payoff_remaining_past` | La última cuota venció el {date}; revisá tus cuotas | The last installment was due on {date}; check your installments |
 | `payoff_final_installment` | Última cuota | Last installment |
 | `payoff_final_installment_hint` | si seguís el plan | if you follow the plan |
-| `payoff_final_installment_past` | Última cuota: {date} (vencida) | Last installment: {date} (overdue) |
 | `payoff_final_installment_unknown` | No pudimos estimar la fecha de la última cuota | We couldn't estimate the last installment date |
 | `payoff_paid_of` | Ya pagaste {paid} de {total} cuotas | You've paid {paid} of {total} installments |
 | `payoff_paid_of_one` | Ya pagaste {paid} de 1 cuota | You've paid {paid} of 1 installment |
@@ -568,12 +568,14 @@ Agregar al bloque `deudas` en `frontend/public/i18n/es.json` y `en.json`:
 | `payoff_overdue_many` | {count} cuotas vencidas | {count} overdue installments |
 | `payoff_on_track` | Al día | On track |
 | `payoff_paused` | En pausa | Paused |
-| `payoff_paused_detail` | Quedan {count} cuotas pendientes; no se generan cuotas nuevas mientras esté en pausa. | {count} installments left; no new installments are generated while paused. |
-| `payoff_paused_detail_one` | Queda 1 cuota pendiente; no se generan cuotas nuevas mientras esté en pausa. | 1 installment left; no new installments are generated while paused. |
+| `payoff_paused_note` | No se generan cuotas nuevas mientras esté en pausa. | No new installments are generated while paused. |
 | `payoff_catch_up` | Si te ponés al día, terminás en {date} | If you catch up, you'll pay it off by {date} |
 | `payoff_settled` | Deuda saldada | Debt paid off |
 | `payoff_settled_on` | Deuda saldada el {date} | Paid off on {date} |
 | `payoff_settled_total` | Total pagado: {amount} | Total paid: {amount} |
+| `payoff_badge_settled` | Saldada | Paid off |
+| `payoff_badge_no_bills` | Sin cuotas | No installments |
+| `payoff_badge_review` | Revisar | Review |
 | `payoff_closed_manually` | Deuda cerrada manualmente | Debt closed manually |
 | `payoff_no_installments` | Sin cuotas generadas | No installments generated |
 | `payoff_no_installments_detail` | Esta deuda no tiene cuotas registradas para mostrar. | This debt has no installments to show. |
@@ -778,3 +780,4 @@ Agregar al bloque `deudas` en `frontend/public/i18n/es.json` y `en.json`:
 | 2026-11-07 | opencode | Creación inicial de la especificación (draft): resumen humano de tiempo restante, último pago y fin estimado en el detalle de deuda; investigación UX con multi-agentes; sin cambios de backend. |
 | 2026-11-07 | opencode | Revisión crítica incorporada: se separa “último pago realizado” de “última cuota”, se muestra la fecha exacta, se corrige la timeline (orden/futuro/vencida), se agregan estados `missing-bills` y cierre manual, se completan plurales i18n, se cambia la barra a `bg-primary` por contraste, se retira el donut y se amplía la matriz de tests. |
 | 2026-11-07 | opencode | Issue de GitHub #128 creado con label `spec/draft`; tracker actualizado en la rama de la spec. |
+| 2026-11-07 | opencode | Implementación frontend: helpers `debtPayoff.ts` y `date.ts`, componente `DebtPayoffSummary`, integración en `DebtBillsPage`, i18n es/en, tests unitarios (14/14) y build; validación en Chrome headless con DB sintética (al día, vencida, pausa, saldada, cuotas faltantes, inconsistente y “2 años y 9 meses”). |
