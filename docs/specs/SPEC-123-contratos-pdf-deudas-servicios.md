@@ -739,4 +739,4 @@ Códigos:
 | 2026-11-07 | opencode | Ajuste de UI solicitado: botones "Quitar" (izquierda) y "Abrir" (derecha), sin "contrato" en las etiquetas; se elimina el botón "Cerrar" del pie y se usa la X del header. |
 | 2026-11-07 | opencode | Regla global de modales: sin cierre por click fuera, overlay `z-[60]` bloqueante y `DeleteModal` en `z-[70]` con foco automático y confirmación con Enter. |
 | 2026-11-07 | opencode | Integración con `main`/SPEC-122: se conservan comprobantes, el layout con espacio para los 3 puntos (`pr-14`) y el badge "Pendiente"; `NewDebtService` recibe `dataDir` e inicializa documentos y contratos. |
-| 2026-11-07 | opencode | Release: validación manual satisfactoria del usuario; spec liberada y tracker actualizado. |
+| 2026-11-07 | opencode | Release: validación manual satisfactoria del usuario; spec liberada, merge a `main` (`e9cfd4e`) y push a `origin/main`. |
