@@ -373,6 +373,8 @@ salaries: {
       form.append('file', file)
       return multipartRequest<DebtBill>(`/api/debt-bills/${id}/receipt`, form, 'POST')
     },
+    removeInvoice: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/invoice`),
+    removeReceipt: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/receipt`),
   },
   budget: {
     monthView: (year: number, month: number) => get<BudgetMonthView>(`/api/budget/months/${year}/${month}`),

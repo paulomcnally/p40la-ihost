@@ -145,8 +145,10 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/debt-bills/{id}/pay", authMiddleware(http.HandlerFunc(handler.debt.PayDebtBill)))
 	mux.Handle("GET /api/debt-bills/{id}/invoice", authMiddleware(http.HandlerFunc(handler.debt.DownloadDebtInvoice)))
 	mux.Handle("POST /api/debt-bills/{id}/invoice", authMiddleware(http.HandlerFunc(handler.debt.UploadDebtInvoice)))
+	mux.Handle("DELETE /api/debt-bills/{id}/invoice", authMiddleware(http.HandlerFunc(handler.debt.DeleteDebtInvoice)))
 	mux.Handle("GET /api/debt-bills/{id}/receipt", authMiddleware(http.HandlerFunc(handler.debt.DownloadDebtReceipt)))
 	mux.Handle("POST /api/debt-bills/{id}/receipt", authMiddleware(http.HandlerFunc(handler.debt.UploadDebtReceipt)))
+	mux.Handle("DELETE /api/debt-bills/{id}/receipt", authMiddleware(http.HandlerFunc(handler.debt.DeleteDebtReceipt)))
 
 	// APIs de seguros de autos
 	mux.Handle("GET /api/autos/{id}/services", authMiddleware(http.HandlerFunc(handler.autoService.ListAutoServices)))

@@ -316,6 +316,41 @@ func (s *DebtService) SaveDocument(ctx context.Context, id int64, kind DebtDocum
 	return updated, nil
 }
 
+// DeleteDocument remueve la factura o el comprobante de una cuota pagada
+// (SPEC-122).
+func (s *DebtService) DeleteDocument(ctx context.Context, id int64, kind DebtDocumentKind) (*models.DebtBill, error) {
+	if !validDocumentKind(kind) {
+		return nil, fmt.Errorf("tipo de documento inválido")
+	}
+	bill, err := s.debtBills.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if bill == nil {
+		return nil, fmt.Errorf("la cuota no existe")
+	}
+	if bill.Status != "paid" {
+		return nil, fmt.Errorf("la cuota debe estar pagada para remover un documento")
+	}
+
+	path := s.documentPath(bill.DebtID, bill.InstallmentNumber, kind)
+	if err := os.Remove(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrDocumentNotFound
+		}
+		return nil, fmt.Errorf("remover documento: %w", err)
+	}
+
+	updated, err := s.debtBills.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if updated != nil {
+		s.attachDocumentFlags(updated)
+	}
+	return updated, nil
+}
+
 // DocumentPath devuelve la ruta física y el nombre de descarga de una factura
 // o comprobante (SPEC-122).
 func (s *DebtService) DocumentPath(ctx context.Context, id int64, kind DebtDocumentKind) (filePath, fileName string, err error) {

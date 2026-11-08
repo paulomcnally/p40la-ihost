@@ -249,6 +249,58 @@ func TestUploadDebtDocumentRequiresPaidBill(t *testing.T) {
 	}
 }
 
+func TestDeleteDebtDocuments(t *testing.T) {
+	handler, svc, ctx := setupDebtDocumentHandlers(t)
+	debtID := createDocumentTestDebt(t, svc, ctx)
+	billID := firstDocumentBillID(t, svc, ctx, debtID)
+
+	if _, err := svc.PayBillWithDocuments(
+		ctx,
+		billID,
+		time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC),
+		"",
+		&services.PDFUpload{FileName: "factura.pdf", Reader: strings.NewReader(testDocumentPDF)},
+		&services.PDFUpload{FileName: "comprobante.pdf", Reader: strings.NewReader(testDocumentPDF)},
+	); err != nil {
+		t.Fatalf("PayBillWithDocuments: %v", err)
+	}
+
+	for _, tc := range []struct {
+		path        string
+		handler     func(http.ResponseWriter, *http.Request)
+		wantInvoice bool
+		wantReceipt bool
+	}{
+		{"/invoice", handler.DeleteDebtInvoice, false, true},
+		{"/receipt", handler.DeleteDebtReceipt, false, false},
+	} {
+		req := httptest.NewRequest(http.MethodDelete, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+tc.path, nil)
+		req.SetPathValue("id", strconv.FormatInt(billID, 10))
+		rec := httptest.NewRecorder()
+		tc.handler(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("delete %s: status=%d body=%s", tc.path, rec.Code, rec.Body.String())
+		}
+		var updated models.DebtBill
+		if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+			t.Fatalf("decodificar respuesta %s: %v", tc.path, err)
+		}
+		if updated.HasInvoice != tc.wantInvoice || updated.HasReceipt != tc.wantReceipt {
+			t.Fatalf("flags tras delete %s: %+v", tc.path, updated)
+		}
+	}
+
+	// Borrar de nuevo un documento inexistente devuelve 404.
+	req := httptest.NewRequest(http.MethodDelete, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+"/invoice", nil)
+	req.SetPathValue("id", strconv.FormatInt(billID, 10))
+	rec := httptest.NewRecorder()
+	handler.DeleteDebtInvoice(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("delete inexistente: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestDownloadDebtDocumentsNotFound(t *testing.T) {
 	handler, svc, ctx := setupDebtDocumentHandlers(t)
 	debtID := createDocumentTestDebt(t, svc, ctx)

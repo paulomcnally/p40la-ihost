@@ -308,6 +308,47 @@ func TestDebtDocumentSaveRequiresPaidBill(t *testing.T) {
 	}
 }
 
+func TestDebtDocumentDelete(t *testing.T) {
+	svc, ctx, debtID, dataDir := newDebtReceiptTestService(t)
+	bill := firstBill(t, svc, ctx, debtID)
+
+	if _, err := svc.PayBillWithDocuments(
+		ctx,
+		bill.ID,
+		time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC),
+		"",
+		&PDFUpload{FileName: "factura.pdf", Reader: bytes.NewReader([]byte(testPDF))},
+		&PDFUpload{FileName: "comprobante.pdf", Reader: bytes.NewReader([]byte(testPDF))},
+	); err != nil {
+		t.Fatalf("PayBillWithDocuments: %v", err)
+	}
+
+	updated, err := svc.DeleteDocument(ctx, bill.ID, DebtDocumentInvoice)
+	if err != nil {
+		t.Fatalf("DeleteDocument invoice: %v", err)
+	}
+	if updated.HasInvoice || !updated.HasReceipt {
+		t.Fatalf("flags tras remover factura: %+v", updated)
+	}
+	if _, err := os.Stat(documentPathFor(dataDir, debtID, "invoice_1.pdf")); !os.IsNotExist(err) {
+		t.Errorf("invoice_1.pdf todavía existe: %v", err)
+	}
+	if _, err := os.Stat(documentPathFor(dataDir, debtID, "receipt_1.pdf")); err != nil {
+		t.Errorf("receipt_1.pdf no debería haberse removido: %v", err)
+	}
+
+	updated, err = svc.DeleteDocument(ctx, bill.ID, DebtDocumentReceipt)
+	if err != nil {
+		t.Fatalf("DeleteDocument receipt: %v", err)
+	}
+	if updated.HasInvoice || updated.HasReceipt {
+		t.Fatalf("flags tras remover comprobante: %+v", updated)
+	}
+	if _, err := svc.DeleteDocument(ctx, bill.ID, DebtDocumentInvoice); !errors.Is(err, ErrDocumentNotFound) {
+		t.Errorf("DeleteDocument sin archivo: got %v, want ErrDocumentNotFound", err)
+	}
+}
+
 func TestDebtDocumentMissingFile(t *testing.T) {
 	svc, ctx, debtID, dataDir := newDebtReceiptTestService(t)
 	bill := firstBill(t, svc, ctx, debtID)
