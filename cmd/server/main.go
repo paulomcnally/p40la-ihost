@@ -89,6 +89,7 @@ func main() {
 	childSupportConfigStorage := storage.NewChildSupportConfigStorage(database)
 	debtStorage := storage.NewDebtStorage(database)
 	debtBillStorage := storage.NewDebtBillStorage(database)
+	documentRecognitionStorage := storage.NewDocumentRecognitionStorage(database)
 	billHistoryStorage := storage.NewBillHistoryStorage(database)
 	serviceCycleStorage := storage.NewServiceCycleStorage(database)
 	categoryGroupStorage := storage.NewCategoryGroupStorage(database)
@@ -153,6 +154,7 @@ func main() {
 	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage, telegramBotService)
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
 	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage, cfg.DataDir)
+	documentRecognitionService := services.NewDocumentRecognitionService(documentRecognitionStorage, debtBillStorage, cfg.DataDir)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
@@ -200,6 +202,7 @@ func main() {
 	billHandlers := api.NewBillHandlers(billService)
 	institutionHandlers := api.NewInstitutionHandlers(institutionService, documentService)
 	documentHandlers := api.NewDocumentHandlers(documentService)
+	documentRecognitionHandlers := api.NewDocumentRecognitionHandlers(documentRecognitionService)
 	autoHandlers := api.NewAutoHandlers(autoService)
 	autoServiceHandlers := api.NewAutoServiceHandlers(autoInsuranceService)
 	serviceCycleHandlers := api.NewServiceCycleHandlers(serviceCycleService)
@@ -219,7 +222,7 @@ func main() {
 	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService, transferService)
 	automationHandlers := api.NewAutomationHandlers(automationService, authService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, pensionImportHandlers, debtHandlers, webhookHandlers, budgetHandlers, automationHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, documentRecognitionHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, pensionImportHandlers, debtHandlers, webhookHandlers, budgetHandlers, automationHandlers)
 
 	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
 	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {

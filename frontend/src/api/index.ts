@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse, DocumentRecognition, ConfirmRecognitionInput, AssociationResult } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -383,6 +383,15 @@ salaries: {
     },
     removeInvoice: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/invoice`),
     removeReceipt: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/receipt`),
+  },
+  documents: {
+    recognize: (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return multipartRequest<DocumentRecognition>('/api/documents/recognize', form, 'POST')
+    },
+    confirm: (recognitionId: number, body: ConfirmRecognitionInput) =>
+      post<AssociationResult>(`/api/documents/recognitions/${recognitionId}/confirm`, body),
   },
   budget: {
     monthView: (year: number, month: number) => get<BudgetMonthView>(`/api/budget/months/${year}/${month}`),
