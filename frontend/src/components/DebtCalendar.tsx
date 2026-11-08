@@ -33,6 +33,16 @@ function BillRow({ bill, onPay }: { bill: DebtBill; onPay: (b: DebtBill) => void
       </div>
       <div className="flex flex-col items-end gap-2 shrink-0 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {bill.has_receipt && (
+            <button
+              onClick={() => window.open(api.debts.receiptUrl(bill.id), '_blank', 'noopener,noreferrer')}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"
+              title={t('deudas.view_receipt')}
+              aria-label={t('deudas.view_receipt')}
+            >
+              <Icon name="pdf" className="w-4 h-4" />
+            </button>
+          )}
           {isPaidAhead(bill) && (
             <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary whitespace-nowrap">
               {t('deudas.paid_ahead_short')}

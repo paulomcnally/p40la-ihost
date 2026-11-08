@@ -2,8 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
@@ -199,15 +202,43 @@ type payDebtBillRequest struct {
 	PaymentReference string `json:"payment_reference"`
 }
 
-// PayDebtBill marca una cuota como pagada.
+// PayDebtBill marca una cuota como pagada y, opcionalmente, adjunta un
+// comprobante PDF (SPEC-122). Acepta JSON (compatibilidad) o multipart/form-data.
 func (h *DebtHandlers) PayDebtBill(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
 		return
 	}
+
 	var req payDebtBillRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var receipt *services.ReceiptUpload
+
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		r.Body = http.MaxBytesReader(w, r.Body, services.MaxDebtReceiptBytes+(1<<20))
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			var maxBytesErr *http.MaxBytesError
+			if errors.As(err, &maxBytesErr) {
+				respondError(w, http.StatusRequestEntityTooLarge, "request_too_large", "El comprobante no puede superar los 10 MB")
+				return
+			}
+			respondError(w, http.StatusBadRequest, "invalid_request", "No se pudo leer el formulario")
+			return
+		}
+		defer r.MultipartForm.RemoveAll()
+
+		req.PaidAt = r.FormValue("paid_at")
+		req.PaymentReference = r.FormValue("payment_reference")
+
+		file, header, fileErr := r.FormFile("file")
+		if fileErr == nil {
+			defer file.Close()
+			receipt = &services.ReceiptUpload{FileName: header.Filename, Reader: file}
+		} else if !errors.Is(fileErr, http.ErrMissingFile) {
+			respondError(w, http.StatusBadRequest, "invalid_file", "No se pudo leer el archivo")
+			return
+		}
+	} else if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
@@ -218,15 +249,95 @@ func (h *DebtHandlers) PayDebtBill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bill, err := h.service.PayBill(r.Context(), id, paidAt, req.PaymentReference)
+	bill, err := h.service.PayBillWithReceipt(r.Context(), id, paidAt, req.PaymentReference, receipt)
 	if err != nil {
 		switch {
 		case err.Error() == "la cuota no existe":
 			respondError(w, http.StatusNotFound, "not_found", err.Error())
 		case err.Error() == "la cuota ya está pagada":
 			respondError(w, http.StatusBadRequest, "already_paid", err.Error())
+		case errors.Is(err, services.ErrReceiptAfterPayment):
+			respondError(w, http.StatusInternalServerError, "receipt_save_failed", err.Error())
 		default:
-			respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+			respondError(w, http.StatusBadRequest, "invalid_file", err.Error())
+		}
+		return
+	}
+	respondJSON(w, http.StatusOK, bill)
+}
+
+// DownloadDebtReceipt sirve el comprobante PDF de una cuota (SPEC-122).
+func (h *DebtHandlers) DownloadDebtReceipt(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+
+	filePath, fileName, err := h.service.ReceiptPath(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, services.ErrReceiptNotFound) {
+			respondError(w, http.StatusNotFound, "not_found", err.Error())
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	disposition := "inline"
+	if r.URL.Query().Get("download") == "1" {
+		disposition = "attachment"
+	}
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`%s; filename="%s"`, disposition, fileName))
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	http.ServeFile(w, r, filePath)
+}
+
+// UploadDebtReceipt adjunta o reemplaza el comprobante de una cuota ya pagada
+// (SPEC-122 REQ-013).
+func (h *DebtHandlers) UploadDebtReceipt(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+	if !strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		respondError(w, http.StatusBadRequest, "invalid_request", "Se esperaba multipart/form-data")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, services.MaxDebtReceiptBytes+(1<<20))
+	if err := r.ParseMultipartForm(1 << 20); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			respondError(w, http.StatusRequestEntityTooLarge, "request_too_large", "El comprobante no puede superar los 10 MB")
+			return
+		}
+		respondError(w, http.StatusBadRequest, "invalid_request", "No se pudo leer el formulario")
+		return
+	}
+	defer r.MultipartForm.RemoveAll()
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_file", "No se encontró el archivo")
+		return
+	}
+	defer file.Close()
+
+	bill, err := h.service.SaveReceipt(r.Context(), id, services.ReceiptUpload{
+		FileName: header.Filename,
+		Reader:   file,
+	})
+	if err != nil {
+		switch {
+		case err.Error() == "la cuota no existe":
+			respondError(w, http.StatusNotFound, "not_found", err.Error())
+		case err.Error() == "la cuota debe estar pagada para adjuntar un comprobante":
+			respondError(w, http.StatusBadRequest, "not_paid", err.Error())
+		default:
+			respondError(w, http.StatusBadRequest, "invalid_file", err.Error())
 		}
 		return
 	}
