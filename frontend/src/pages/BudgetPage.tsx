@@ -568,7 +568,7 @@ function AssignModal({ category, year, month, currencies, formatMoney, onClose, 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-sm max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="font-bold truncate">{category.name}</h3>
@@ -781,7 +781,7 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-lg max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="font-bold">{t('budget.groups')}</h3>
@@ -872,6 +872,7 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
           onIconPick={() => setIconPickerFor('group')}
           onSave={saveGroup}
           onClose={() => setGroupForm(null)}
+          zIndex="z-[70]"
         />
       )}
 
@@ -885,13 +886,14 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
           services={services}
           accounts={accounts}
           linkedServiceIds={groups.flatMap((g) => (g.categories || []).flatMap((c) => c.service_ids || []))}
+          zIndex="z-[70]"
         />
       )}
 
       {iconPickerFor && (
         <IconPickerModal
           isOpen
-          zIndex="z-[70]"
+          zIndex="z-[80]"
           selectedIcon={iconPickerFor === 'group' ? groupForm?.icon || 'tag' : catForm?.icon || 'tag'}
           onSelect={(key) => {
             if (iconPickerFor === 'group' && groupForm) setGroupForm({ ...groupForm, icon: key })
@@ -914,16 +916,17 @@ function BudgetConfigModal({ onClose, onChanged, services, accounts }: { onClose
   )
 }
 
-function GroupFormModal({ form, onChange, onIconPick, onSave, onClose }: {
+function GroupFormModal({ form, onChange, onIconPick, onSave, onClose, zIndex = 'z-[60]' }: {
   form: { id?: number; name: string; icon: string }
   onChange: (f: { id?: number; name: string; icon: string }) => void
   onIconPick: () => void
   onSave: () => void
   onClose: () => void
+  zIndex?: string
 }) {
   const { t } = useI18nStore()
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+    <div className={`fixed inset-0 ${zIndex} flex items-center justify-center bg-black/40 p-4`}>
       <div className="bg-card rounded-ios shadow-ios w-full max-w-sm p-4 space-y-4">
         <h3 className="font-bold">{form.id ? t('budget.edit_group') : t('budget.create_group')}</h3>
         <div>
@@ -959,7 +962,7 @@ function GroupFormModal({ form, onChange, onIconPick, onSave, onClose }: {
   )
 }
 
-function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, services, accounts, linkedServiceIds }: {
+function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, services, accounts, linkedServiceIds, zIndex = 'z-[60]' }: {
   form: { id?: number; groupId: number; name: string; icon: string; target?: string; serviceIds?: number[]; accountId?: number | null }
   onChange: (f: { id?: number; groupId: number; name: string; icon: string; target?: string; serviceIds?: number[]; accountId?: number | null }) => void
   onIconPick: () => void
@@ -968,6 +971,7 @@ function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, servic
   services: Service[]
   accounts: Account[]
   linkedServiceIds?: number[]
+  zIndex?: string
 }) {
   const { t } = useI18nStore()
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -987,7 +991,7 @@ function CategoryFormModal({ form, onChange, onIconPick, onSave, onClose, servic
     onChange({ ...form, serviceIds: next, accountId: next.length > 0 ? form.accountId : null })
   }
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+    <div className={`fixed inset-0 ${zIndex} flex items-center justify-center bg-black/40 p-4`}>
       <div className="bg-card rounded-ios shadow-ios w-full max-w-sm p-4 space-y-4 max-h-[90vh] overflow-y-auto">
         <h3 className="font-bold">{form.id ? t('budget.edit_category') : t('budget.create_category')}</h3>
         <div>
