@@ -5,6 +5,7 @@ import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import DebtDocumentButtons from './DebtDocumentButtons'
+import PaymentTimingLabel from './PaymentTimingLabel'
 import LoadingSpinner from './LoadingSpinner'
 import DebtPayModal from './DebtPayModal'
 import Select from './Select'
@@ -286,6 +287,12 @@ export default function DebtAnalysis() {
                         {' · '}
                         {t('deudas.pay_date')} {(b.paid_at || '').slice(0, 10)}
                       </p>
+                      <PaymentTimingLabel
+                        paidDate={b.paid_at}
+                        dueDate={b.due_date}
+                        mode="paid"
+                        className="block text-xs mt-0.5"
+                      />
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <DebtDocumentButtons bill={b} />
