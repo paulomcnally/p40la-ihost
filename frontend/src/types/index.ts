@@ -913,6 +913,7 @@ export interface AutomationCredentialField {
   type: 'text' | 'password'
   required: boolean
   secret: boolean
+  description?: string
 }
 
 export interface AutomationBillItem {
