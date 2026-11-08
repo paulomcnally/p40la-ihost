@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -246,8 +246,8 @@ export const api = {
     removeService: (id: number, serviceId: number) => del(`/api/autos/${id}/services/${serviceId}`),
     availableServices: (id: number) => get<Service[]>(`/api/autos/${id}/available-services`),
     listMaintenances: (id: number) => get<AutoMaintenanceList>(`/api/autos/${id}/maintenances`),
-    createMaintenance: (id: number, body: Partial<AutoMaintenance>) => post<AutoMaintenance>(`/api/autos/${id}/maintenances`, body),
-    updateMaintenance: (id: number, maintenanceId: number, body: Partial<AutoMaintenance>) => put<AutoMaintenance>(`/api/autos/${id}/maintenances/${maintenanceId}`, body),
+    createMaintenance: (id: number, body: AutoMaintenanceInput) => post<AutoMaintenance>(`/api/autos/${id}/maintenances`, body),
+    updateMaintenance: (id: number, maintenanceId: number, body: AutoMaintenanceInput) => put<AutoMaintenance>(`/api/autos/${id}/maintenances/${maintenanceId}`, body),
     deleteMaintenance: (id: number, maintenanceId: number) => del(`/api/autos/${id}/maintenances/${maintenanceId}`),
     uploadMaintenanceAttachment: (id: number, maintenanceId: number, file: File) =>
       postFormData<AutoAttachment>(`/api/autos/${id}/maintenances/${maintenanceId}/attachments`, file),

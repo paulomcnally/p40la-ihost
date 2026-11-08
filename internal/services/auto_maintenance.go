@@ -55,6 +55,9 @@ func (s *AutoMaintenanceService) List(ctx context.Context, autoID int64) (*model
 	if err != nil {
 		return nil, err
 	}
+	if err := s.applyItemsGrouped(ctx, autoID, items); err != nil {
+		return nil, err
+	}
 	if err := s.attachFiles(ctx, autoID, items); err != nil {
 		return nil, err
 	}
@@ -86,6 +89,9 @@ func (s *AutoMaintenanceService) Get(ctx context.Context, autoID, id int64) (*mo
 	if item == nil {
 		return nil, ErrMaintenanceNotFound
 	}
+	if err := s.applyItemsOne(ctx, item); err != nil {
+		return nil, err
+	}
 	if err := s.attachOne(ctx, item); err != nil {
 		return nil, err
 	}
@@ -104,7 +110,7 @@ func (s *AutoMaintenanceService) Create(ctx context.Context, autoID int64, input
 
 	created, err := s.storage.Create(
 		ctx, autoID, input.PerformedAt, input.Mileage, input.InstitutionID,
-		input.WorkshopName, input.Description, input.LaborCost, input.SuppliesCost, input.CurrencyID,
+		input.Description, input.CurrencyID, input.Items,
 	)
 	if err != nil {
 		return nil, err
@@ -124,7 +130,7 @@ func (s *AutoMaintenanceService) Update(ctx context.Context, autoID, id int64, i
 
 	exists, err := s.storage.Update(
 		ctx, autoID, id, input.PerformedAt, input.Mileage, input.InstitutionID,
-		input.WorkshopName, input.Description, input.LaborCost, input.SuppliesCost, input.CurrencyID,
+		input.Description, input.CurrencyID, input.Items,
 	)
 	if err != nil {
 		return nil, err
@@ -161,8 +167,24 @@ func (s *AutoMaintenanceService) validate(ctx context.Context, auto *models.Auto
 	if input.Mileage < 0 {
 		return fmt.Errorf("el kilometraje no puede ser negativo")
 	}
-	if input.LaborCost < 0 || input.SuppliesCost < 0 {
-		return fmt.Errorf("los montos no pueden ser negativos")
+	if len(input.Items) == 0 {
+		return ErrMaintenanceItems
+	}
+	if len(input.Items) > 100 {
+		return fmt.Errorf("el mantenimiento no puede tener más de 100 conceptos")
+	}
+	for index := range input.Items {
+		item := &input.Items[index]
+		item.Description = strings.TrimSpace(item.Description)
+		if item.ItemType != models.AutoMaintenanceItemLabor && item.ItemType != models.AutoMaintenanceItemSupplies {
+			return fmt.Errorf("el tipo de concepto debe ser labor o supplies")
+		}
+		if item.Description == "" {
+			return fmt.Errorf("la descripción del concepto es requerida")
+		}
+		if item.Amount < 0 {
+			return fmt.Errorf("el valor del concepto no puede ser negativo")
+		}
 	}
 	if input.CurrencyID <= 0 {
 		return ErrCurrencyNotFound
@@ -175,35 +197,25 @@ func (s *AutoMaintenanceService) validate(ctx context.Context, auto *models.Auto
 		return ErrCurrencyNotFound
 	}
 
-	input.WorkshopName = strings.TrimSpace(input.WorkshopName)
 	input.Description = strings.TrimSpace(input.Description)
 	input.PerformedAt = performedAt.Format("2006-01-02")
 
-	if input.InstitutionID != nil && *input.InstitutionID <= 0 {
-		input.InstitutionID = nil
+	if input.InstitutionID <= 0 {
+		return fmt.Errorf("%w: el taller es requerido", ErrInstitutionNotFound)
 	}
-	if input.InstitutionID != nil {
-		institution, err := s.institutions.GetByID(ctx, *input.InstitutionID)
-		if err != nil {
-			return err
-		}
-		if institution == nil {
-			return ErrInstitutionNotFound
-		}
-		key, exists, err := s.institutions.GetCategoryKey(ctx, *input.InstitutionID)
-		if err != nil {
-			return err
-		}
-		if !exists || key != institutionCategoryWorkshop {
-			return fmt.Errorf("%w: se esperaba un taller mecánico", ErrInstitutionCategory)
-		}
-		// La institución es la fuente de verdad del nombre: si el registro tiene
-		// institution_id, el nombre del taller se deriva de la relación y no se
-		// duplica con un valor enviado por el cliente (SPEC-124 REQ-036).
-		input.WorkshopName = institution.Name
+	institution, err := s.institutions.GetByID(ctx, input.InstitutionID)
+	if err != nil {
+		return err
 	}
-	if input.WorkshopName == "" {
-		return fmt.Errorf("el nombre del taller es requerido")
+	if institution == nil {
+		return ErrInstitutionNotFound
+	}
+	key, exists, err := s.institutions.GetCategoryKey(ctx, input.InstitutionID)
+	if err != nil {
+		return err
+	}
+	if !exists || key != institutionCategoryWorkshop {
+		return fmt.Errorf("%w: se esperaba un taller mecánico", ErrInstitutionCategory)
 	}
 	return nil
 }
@@ -217,6 +229,44 @@ func (s *AutoMaintenanceService) requireAuto(ctx context.Context, autoID int64) 
 		return nil, ErrAutoNotFound
 	}
 	return auto, nil
+}
+
+func (s *AutoMaintenanceService) applyItemsGrouped(ctx context.Context, autoID int64, items []models.AutoMaintenanceDetail) error {
+	grouped, err := s.storage.ListItemsByAuto(ctx, autoID)
+	if err != nil {
+		return err
+	}
+	for index := range items {
+		applyMaintenanceTotals(&items[index], grouped[items[index].ID])
+	}
+	return nil
+}
+
+func (s *AutoMaintenanceService) applyItemsOne(ctx context.Context, item *models.AutoMaintenanceDetail) error {
+	items, err := s.storage.ListItemsByMaintenance(ctx, item.ID)
+	if err != nil {
+		return err
+	}
+	applyMaintenanceTotals(item, items)
+	return nil
+}
+
+func applyMaintenanceTotals(item *models.AutoMaintenanceDetail, items []models.AutoMaintenanceItem) {
+	if items == nil {
+		items = []models.AutoMaintenanceItem{}
+	}
+	item.Items = items
+	item.LaborCost = 0
+	item.SuppliesCost = 0
+	for _, detail := range items {
+		switch detail.ItemType {
+		case models.AutoMaintenanceItemLabor:
+			item.LaborCost += detail.Amount
+		case models.AutoMaintenanceItemSupplies:
+			item.SuppliesCost += detail.Amount
+		}
+	}
+	item.TotalCost = item.LaborCost + item.SuppliesCost
 }
 
 func (s *AutoMaintenanceService) attachFiles(ctx context.Context, autoID int64, items []models.AutoMaintenanceDetail) error {

@@ -5,6 +5,20 @@ import "testing"
 func TestMigrate042AutoMaintenanceInspection(t *testing.T) {
 	database := openMigrateTest(t, "mig042")
 
+	// Deshacer 0044 y 0043 para volver al esquema que crea 0042.
+	for _, name := range []string{
+		"0044_auto_maintenance_items.down.sql",
+		"0043_auto_maintenance_institution_reference.down.sql",
+	} {
+		data, err := readMigrationFile(t, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := database.Exec(string(data)); err != nil {
+			t.Fatalf("ejecutar %s: %v", name, err)
+		}
+	}
+
 	assertTableColumns(t, database, "auto_maintenances", []string{
 		"id", "auto_id", "performed_at", "mileage", "institution_id",
 		"workshop_name", "description", "labor_cost", "supplies_cost",
@@ -71,5 +85,19 @@ func TestMigrate042AutoMaintenanceInspection(t *testing.T) {
 	// Idempotencia: un segundo pase tampoco debe fallar.
 	if _, err := database.Exec(string(up)); err != nil {
 		t.Fatalf("segundo pase de la migración 0042: %v", err)
+	}
+
+	// Restaurar el esquema final.
+	for _, name := range []string{
+		"0043_auto_maintenance_institution_reference.up.sql",
+		"0044_auto_maintenance_items.up.sql",
+	} {
+		data, err := readMigrationFile(t, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := database.Exec(string(data)); err != nil {
+			t.Fatalf("ejecutar %s: %v", name, err)
+		}
 	}
 }

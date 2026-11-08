@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAppStore } from '../stores/appStore'
+import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from './Icons'
 import Select from './Select'
 import AutoAttachmentsField from './AutoAttachmentsField'
-import type { AutoAttachment, AutoMaintenance, Institution, InstitutionCategory } from '../types'
+import type { AutoAttachment, AutoMaintenance, AutoMaintenanceItemType, Institution, InstitutionCategory } from '../types'
 
 const MAX_ATTACHMENTS = 20
 
@@ -20,6 +21,12 @@ function trimNumber(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+type MaintenanceItemForm = {
+  item_type: AutoMaintenanceItemType
+  description: string
+  amount: string
+}
+
 export default function MaintenanceModal({
   autoId,
   maintenance,
@@ -32,6 +39,7 @@ export default function MaintenanceModal({
   onCancel: () => void
 }) {
   const { t } = useI18nStore()
+  const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { currencies, loadCurrencies } = useAppStore()
   const isEditing = !!maintenance
 
@@ -40,10 +48,14 @@ export default function MaintenanceModal({
   const [performedAt, setPerformedAt] = useState(maintenance?.performed_at ?? todayISO())
   const [mileage, setMileage] = useState(maintenance ? String(maintenance.mileage) : '')
   const [institutionId, setInstitutionId] = useState<number | ''>(maintenance?.institution_id ?? '')
-  const [workshopName, setWorkshopName] = useState(maintenance?.workshop_name ?? '')
   const [description, setDescription] = useState(maintenance?.description ?? '')
-  const [laborCost, setLaborCost] = useState(maintenance ? String(maintenance.labor_cost) : '0')
-  const [suppliesCost, setSuppliesCost] = useState(maintenance ? String(maintenance.supplies_cost) : '0')
+  const [items, setItems] = useState<MaintenanceItemForm[]>(
+    maintenance?.items?.map((item) => ({
+      item_type: item.item_type,
+      description: item.description,
+      amount: String(item.amount),
+    })) ?? [],
+  )
   const [currencyId, setCurrencyId] = useState<number | ''>(maintenance?.currency_id ?? '')
   const [savedId, setSavedId] = useState<number | null>(maintenance?.id ?? null)
   const [attachments, setAttachments] = useState<AutoAttachment[]>(maintenance?.attachments ?? [])
@@ -82,15 +94,27 @@ export default function MaintenanceModal({
     value: currency.id,
     label: `${currency.code} (${currency.symbol})`,
   }))
+  const selectedCurrency = currencies.find((currency) => currency.id === currencyId)
+  const currencySymbol = selectedCurrency?.symbol || selectedCurrency?.code || ''
 
-  const handleInstitutionChange = (value: string | number) => {
-    const nextId = value === '' ? '' : Number(value)
-    if (nextId === '' && institutionId !== '') {
-      const previous = workshops.find((institution) => institution.id === institutionId)
-      if (previous) setWorkshopName(previous.name)
-    }
-    setInstitutionId(nextId)
+  const addItem = (itemType: AutoMaintenanceItemType) => {
+    setItems((prev) => [...prev, { item_type: itemType, description: '', amount: '' }])
   }
+
+  const updateItem = (index: number, patch: Partial<MaintenanceItemForm>) => {
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)))
+  }
+
+  const removeItem = (index: number) => {
+    setItems((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const itemTotal = (itemType: AutoMaintenanceItemType) =>
+    items
+      .filter((item) => item.item_type === itemType)
+      .reduce((sum, item) => sum + trimNumber(item.amount), 0)
+
+  const grandTotal = itemTotal('labor') + itemTotal('supplies')
 
   const handleUpload = async (files: File[]) => {
     if (!savedId) {
@@ -121,10 +145,28 @@ export default function MaintenanceModal({
       setError(t('autos.maintenances.mileage_required'))
       return
     }
-    if (institutionId === '' && !workshopName.trim()) {
+    if (!institutionId) {
       setActiveFormTab('info')
-      setError(t('autos.maintenances.workshop_required'))
+      setError(t('autos.maintenances.institution_required'))
       return
+    }
+    if (items.length === 0) {
+      setActiveFormTab('info')
+      setError(t('autos.maintenances.items_required'))
+      return
+    }
+    for (const item of items) {
+      if (!item.description.trim()) {
+        setActiveFormTab('info')
+        setError(t('autos.maintenances.item_description_required'))
+        return
+      }
+      const amount = Number(item.amount)
+      if (item.amount.trim() === '' || !Number.isFinite(amount) || amount < 0) {
+        setActiveFormTab('info')
+        setError(t('autos.maintenances.item_amount_invalid'))
+        return
+      }
     }
     if (!currencyId) {
       setActiveFormTab('info')
@@ -138,12 +180,14 @@ export default function MaintenanceModal({
       const body = {
         performed_at: performedAt,
         mileage: trimNumber(mileage),
-        institution_id: institutionId === '' ? undefined : Number(institutionId),
-        workshop_name: institutionId === '' ? workshopName.trim() : '',
+        institution_id: Number(institutionId),
         description: description.trim(),
-        labor_cost: trimNumber(laborCost),
-        supplies_cost: trimNumber(suppliesCost),
         currency_id: Number(currencyId),
+        items: items.map((item) => ({
+          item_type: item.item_type,
+          description: item.description.trim(),
+          amount: Number(item.amount),
+        })),
       }
       savedRecord = savedId
         ? await api.autos.updateMaintenance(autoId, savedId, body)
@@ -259,7 +303,7 @@ export default function MaintenanceModal({
                 <Select
                   options={institutionOptions}
                   value={institutionId}
-                  onChange={handleInstitutionChange}
+                  onChange={(value) => setInstitutionId(value === '' ? '' : Number(value))}
                   placeholder={t('autos.maintenances.select_institution')}
                   searchable
                   searchPlaceholder={t('app.search')}
@@ -275,22 +319,6 @@ export default function MaintenanceModal({
                 )}
               </div>
 
-              {institutionId === '' ? (
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('autos.maintenances.workshop')}</label>
-                  <input
-                    type="text"
-                    value={workshopName}
-                    onChange={(e) => setWorkshopName(e.target.value)}
-                    placeholder={t('autos.maintenances.workshop_placeholder')}
-                    className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] placeholder:text-text-secondary"
-                    required
-                  />
-                </div>
-              ) : (
-                <p className="text-xs text-text-secondary">{t('autos.maintenances.institution_name_hint')}</p>
-              )}
-
               <div>
                 <label className="block text-sm font-medium mb-1">{t('autos.maintenances.description')}</label>
                 <textarea
@@ -300,33 +328,6 @@ export default function MaintenanceModal({
                   rows={2}
                   className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary placeholder:text-text-secondary"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('autos.maintenances.labor_cost')}</label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.01"
-                    value={laborCost}
-                    onChange={(e) => setLaborCost(e.target.value)}
-                    className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('autos.maintenances.supplies_cost')}</label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.01"
-                    value={suppliesCost}
-                    onChange={(e) => setSuppliesCost(e.target.value)}
-                    className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
-                  />
-                </div>
               </div>
 
               <div>
@@ -340,6 +341,86 @@ export default function MaintenanceModal({
                   searchPlaceholder={t('app.search')}
                   emptyLabel={t('app.no_results')}
                 />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium">{t('autos.maintenances.items')}</label>
+                  <span className="text-xs text-text-secondary">{formatMoney(grandTotal, currencySymbol)}</span>
+                </div>
+                <div className="space-y-4">
+                  {([
+                    { type: 'labor' as AutoMaintenanceItemType, label: t('autos.maintenances.labor_items'), add: t('autos.maintenances.add_labor') },
+                    { type: 'supplies' as AutoMaintenanceItemType, label: t('autos.maintenances.supplies_items'), add: t('autos.maintenances.add_supply') },
+                  ]).map((section) => {
+                    const sectionRows = items
+                      .map((item, index) => ({ item, index }))
+                      .filter(({ item }) => item.item_type === section.type)
+                    return (
+                      <div key={section.type}>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-sm font-medium">{section.label}</span>
+                          <span className="text-xs text-text-secondary">{formatMoney(itemTotal(section.type), currencySymbol)}</span>
+                        </div>
+                        <div className="space-y-2">
+                          {sectionRows.map(({ item, index }) => (
+                            <div key={index} className="flex items-start gap-2">
+                              <input
+                                type="text"
+                                value={item.description}
+                                onChange={(e) => updateItem(index, { description: e.target.value })}
+                                placeholder={t('autos.maintenances.item_description_placeholder')}
+                                className="flex-1 min-w-0 px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] placeholder:text-text-secondary"
+                              />
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                min={0}
+                                step="0.01"
+                                value={item.amount}
+                                onChange={(e) => updateItem(index, { amount: e.target.value })}
+                                placeholder="0.00"
+                                className="w-24 sm:w-28 px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeItem(index)}
+                                className="p-2 text-text-secondary hover:text-danger transition-colors rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                aria-label={t('app.remove')}
+                              >
+                                <Icon name="delete" className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => addItem(section.type)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border bg-card text-xs font-medium text-text-secondary hover:border-primary/50 hover:text-primary transition-colors min-h-[36px]"
+                          >
+                            <Icon name="plus" className="w-3.5 h-3.5" />
+                            {section.add}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                {items.length === 0 && (
+                  <p className="text-xs text-text-secondary mt-2">{t('autos.maintenances.items_empty')}</p>
+                )}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm">
+                  <span className="text-text-secondary">
+                    {t('autos.maintenances.labor_cost')}:{' '}
+                    <strong className="text-text">{formatMoney(itemTotal('labor'), currencySymbol)}</strong>
+                  </span>
+                  <span className="text-text-secondary">
+                    {t('autos.maintenances.supplies_cost')}:{' '}
+                    <strong className="text-text">{formatMoney(itemTotal('supplies'), currencySymbol)}</strong>
+                  </span>
+                  <span className="font-semibold">
+                    {t('autos.maintenances.total')}: {formatMoney(grandTotal, currencySymbol)}
+                  </span>
+                </div>
               </div>
             </>
           ) : (

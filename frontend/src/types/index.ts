@@ -237,20 +237,47 @@ export interface AutoAttachment {
   created_at: string
 }
 
+export type AutoMaintenanceItemType = 'labor' | 'supplies'
+
+export interface AutoMaintenanceItem {
+  id: number
+  maintenance_id: number
+  item_type: AutoMaintenanceItemType
+  description: string
+  amount: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AutoMaintenanceItemInput {
+  item_type: AutoMaintenanceItemType
+  description: string
+  amount: number
+}
+
+export interface AutoMaintenanceInput {
+  performed_at: string
+  mileage: number
+  institution_id: number
+  description: string
+  currency_id: number
+  items: AutoMaintenanceItemInput[]
+}
+
 export interface AutoMaintenance {
   id: number
   auto_id: number
   performed_at: string
   mileage: number
-  institution_id?: number
-  institution_name?: string
-  workshop_name: string
+  institution_id: number
+  institution_name: string
   description: string
   labor_cost: number
   supplies_cost: number
   total_cost: number
   currency_id: number
   currency_code: string
+  items: AutoMaintenanceItem[]
   attachments: AutoAttachment[]
   created_at: string
   updated_at: string
