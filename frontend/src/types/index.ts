@@ -261,7 +261,6 @@ export interface AutoMaintenanceInput {
   institution_id: number
   description: string
   currency_id: number
-  items: AutoMaintenanceItemInput[]
 }
 
 export interface AutoMaintenance {

@@ -110,7 +110,7 @@ func (s *AutoMaintenanceService) Create(ctx context.Context, autoID int64, input
 
 	created, err := s.storage.Create(
 		ctx, autoID, input.PerformedAt, input.Mileage, input.InstitutionID,
-		input.Description, input.CurrencyID, input.Items,
+		input.Description, input.CurrencyID,
 	)
 	if err != nil {
 		return nil, err
@@ -130,7 +130,7 @@ func (s *AutoMaintenanceService) Update(ctx context.Context, autoID, id int64, i
 
 	exists, err := s.storage.Update(
 		ctx, autoID, id, input.PerformedAt, input.Mileage, input.InstitutionID,
-		input.Description, input.CurrencyID, input.Items,
+		input.Description, input.CurrencyID,
 	)
 	if err != nil {
 		return nil, err
@@ -167,25 +167,6 @@ func (s *AutoMaintenanceService) validate(ctx context.Context, auto *models.Auto
 	if input.Mileage < 0 {
 		return fmt.Errorf("el kilometraje no puede ser negativo")
 	}
-	if len(input.Items) == 0 {
-		return ErrMaintenanceItems
-	}
-	if len(input.Items) > 100 {
-		return fmt.Errorf("el mantenimiento no puede tener más de 100 conceptos")
-	}
-	for index := range input.Items {
-		item := &input.Items[index]
-		item.Description = strings.TrimSpace(item.Description)
-		if item.ItemType != models.AutoMaintenanceItemLabor && item.ItemType != models.AutoMaintenanceItemSupplies {
-			return fmt.Errorf("el tipo de concepto debe ser labor o supplies")
-		}
-		if item.Description == "" {
-			return fmt.Errorf("la descripción del concepto es requerida")
-		}
-		if item.Amount < 0 {
-			return fmt.Errorf("el valor del concepto no puede ser negativo")
-		}
-	}
 	if input.CurrencyID <= 0 {
 		return ErrCurrencyNotFound
 	}
@@ -216,6 +197,78 @@ func (s *AutoMaintenanceService) validate(ctx context.Context, auto *models.Auto
 	}
 	if !exists || key != institutionCategoryWorkshop {
 		return fmt.Errorf("%w: se esperaba un taller mecánico", ErrInstitutionCategory)
+	}
+	return nil
+}
+
+// CreateItem agrega una línea de mano de obra o insumos al mantenimiento.
+func (s *AutoMaintenanceService) CreateItem(ctx context.Context, autoID, maintenanceID int64, input models.AutoMaintenanceItemInput) (*models.AutoMaintenanceItem, error) {
+	if err := s.requireMaintenance(ctx, autoID, maintenanceID); err != nil {
+		return nil, err
+	}
+	if err := validateMaintenanceItem(&input); err != nil {
+		return nil, err
+	}
+	return s.storage.CreateItem(ctx, maintenanceID, input)
+}
+
+// UpdateItem actualiza una línea de mano de obra o insumos.
+func (s *AutoMaintenanceService) UpdateItem(ctx context.Context, autoID, maintenanceID, itemID int64, input models.AutoMaintenanceItemInput) error {
+	if err := s.requireMaintenance(ctx, autoID, maintenanceID); err != nil {
+		return err
+	}
+	if err := validateMaintenanceItem(&input); err != nil {
+		return err
+	}
+	exists, err := s.storage.UpdateItem(ctx, maintenanceID, itemID, input)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrMaintenanceItemNotFound
+	}
+	return nil
+}
+
+// DeleteItem elimina una línea de mano de obra o insumos.
+func (s *AutoMaintenanceService) DeleteItem(ctx context.Context, autoID, maintenanceID, itemID int64) error {
+	if err := s.requireMaintenance(ctx, autoID, maintenanceID); err != nil {
+		return err
+	}
+	exists, err := s.storage.DeleteItem(ctx, maintenanceID, itemID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrMaintenanceItemNotFound
+	}
+	return nil
+}
+
+func (s *AutoMaintenanceService) requireMaintenance(ctx context.Context, autoID, maintenanceID int64) error {
+	if _, err := s.requireAuto(ctx, autoID); err != nil {
+		return err
+	}
+	item, err := s.storage.GetByID(ctx, autoID, maintenanceID)
+	if err != nil {
+		return err
+	}
+	if item == nil {
+		return ErrMaintenanceNotFound
+	}
+	return nil
+}
+
+func validateMaintenanceItem(item *models.AutoMaintenanceItemInput) error {
+	item.Description = strings.TrimSpace(item.Description)
+	if item.ItemType != models.AutoMaintenanceItemLabor && item.ItemType != models.AutoMaintenanceItemSupplies {
+		return fmt.Errorf("el tipo de concepto debe ser labor o supplies")
+	}
+	if item.Description == "" {
+		return fmt.Errorf("la descripción del concepto es requerida")
+	}
+	if item.Amount < 0 {
+		return fmt.Errorf("el valor del concepto no puede ser negativo")
 	}
 	return nil
 }

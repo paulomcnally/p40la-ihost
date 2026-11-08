@@ -67,7 +67,9 @@ La implementación debe respetar las limitaciones del iHost: cero dependencias n
 10. **REQ-034**: Mostrar en cada fila de mantenimiento e inspección una acción visible **Editar** además del menú de 3 puntos. En el banner de inspecciones, cuando el estado es `overdue` o `due_soon`, incluir una acción directa **Registrar inspección de {año}** que abra el modal con el año pendiente preseleccionado. El estado “Vencida” es el resultado calculado del ciclo pendiente y no un registro editable: si no existe una inspección para ese año, el usuario debe crearla.
 11. **REQ-035**: Organizar los modales de crear/editar mantenimiento e inspección en dos tabs: **Información** y **Facturas**. Información contiene los campos del registro; Facturas contiene la gestión de PDFs (subir, abrir, eliminar y pendientes). El tab Facturas muestra el contador de adjuntos existentes más pendientes. Si se intenta guardar desde Facturas con datos obligatorios incompletos, el modal vuelve a Información y muestra el error.
 12. **REQ-036**: No almacenar el nombre del taller como columna. La migración `0043` elimina `workshop_name`, migra los talleres libres existentes a instituciones de categoría `workshop` y deja `institution_id` como `NOT NULL`. El formulario solo muestra el selector de taller y la API rechaza un mantenimiento sin `institution_id`.
-13. **REQ-037**: Registrar la mano de obra y los insumos como líneas únicas en `auto_maintenance_items` (`item_type`, `description`, `amount`), asociadas al mantenimiento. Un mantenimiento debe tener al menos una línea y cada línea debe tener descripción y valor no negativo. Los totales `labor_cost`, `supplies_cost` y `total_cost` se calculan en la respuesta y no se persisten. La migración `0044` crea la tabla, migra los escalares existentes a líneas “Mano de obra” e “Insumos” y elimina las columnas escalares.
+13. **REQ-037**: Registrar la mano de obra y los insumos como líneas únicas en `auto_maintenance_items` (`item_type`, `description`, `amount`), asociadas al mantenimiento. Un mantenimiento puede crearse sin líneas y agregarlas después desde su detalle; cada línea debe tener descripción y valor no negativo. Los totales `labor_cost`, `supplies_cost` y `total_cost` se calculan en la respuesta y no se persisten. La migración `0044` crea la tabla, migra los escalares existentes a líneas “Mano de obra” e “Insumos” y elimina las columnas escalares.
+14. **REQ-038**: Tener una página de detalle por mantenimiento en `/autos/:id/maintenances/:maintenanceId`, accesible desde la opción **Ver** del menú de 3 puntos de la fila. El detalle permite editar la información básica, agregar/editar/eliminar líneas de mano de obra e insumos y subir/eliminar PDFs. El modal de crear/editar mantenimiento queda solo con la información básica (fecha, kilometraje, taller, descripción y moneda), sin conceptos ni archivos.
+15. **REQ-039**: Exponer CRUD de líneas de mantenimiento (`POST`, `PUT`, `DELETE` en `/api/autos/{id}/maintenances/{maintenance_id}/items[/{item_id}]`) y `GET /api/autos/{id}/maintenances/{maintenance_id}` para el detalle. Cada operación debe verificar que el mantenimiento y la línea pertenezcan al auto de la ruta.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -210,7 +212,7 @@ Se revisó el estado actual del repositorio (rama `main`, commit `ec19532`):
 #### 4.2.3 Storage
 - **Responsabilidad**: SQL crudo, sin lógica de negocio.
 - **Archivos**:
-  - `internal/storage/auto_maintenance.go`: `ListByAuto`, `GetByID`, `Create`, `Update`, `Delete`, `LatestMileage`, `SumByCurrency`.
+  - `internal/storage/auto_maintenance.go`: `ListByAuto`, `GetByID`, `Create`, `Update`, `Delete`, `LatestMileage`, `TotalsByCurrency`, `ListItemsByAuto`, `ListItemsByMaintenance`, `CreateItem`, `UpdateItem`, `DeleteItem`.
   - `internal/storage/auto_inspection.go`: `ListByAuto`, `GetByID`, `Create`, `Update`, `Delete`, `ApprovedYears`, `ListAllSchedules` (para el indicador del listado).
   - `internal/storage/auto_attachment.go`: `ListByOwner`, `ListByAuto`, `GetByID`, `Create`, `Delete`, `CountByOwner`, `DeleteByAuto`.
   - `internal/storage/institution.go` (extensión): `GetCategoryKey(ctx, id)` para validar la categoría.
@@ -219,7 +221,7 @@ Se revisó el estado actual del repositorio (rama `main`, commit `ec19532`):
 #### 4.2.4 Servicios
 - **Responsabilidad**: validaciones, regla de Inspección, coordinación de archivos.
 - **Archivos**:
-  - `internal/services/auto_maintenance.go`: valida auto, fechas, kilometraje, montos, moneda, institución/taller; delega storage.
+  - `internal/services/auto_maintenance.go`: valida auto, fechas, kilometraje, moneda e institución/taller; CRUD de líneas; calcula totales; delega storage.
   - `internal/services/auto_inspection.go`: valida auto, año de inspección, institución de categoría `mechanical_inspection`, resultado; calcula `InspectionSchedule`; valida años de inspección contra `auto.year + 2`.
   - `internal/services/auto_attachment.go`: `MaxAutoAttachmentBytes = 10 * 1024 * 1024`, `MaxAutoAttachmentsPerRecord = 20`; guarda/valida/borra PDFs; resuelve rutas; limpia el directorio del auto al eliminarlo.
   - `internal/services/inspection_schedule.go`: función pura `BuildInspectionSchedule(autoYear int64, approvedYears []int, today time.Time) models.InspectionSchedule` (testeable sin DB).
@@ -236,8 +238,10 @@ Se revisó el estado actual del repositorio (rama `main`, commit `ec19532`):
 #### 4.2.6 Frontend
 - **Responsabilidad**: secciones, formularios, adjuntos y estado.
 - **Archivos**:
-  - `frontend/src/pages/AutoShowPage.tsx`: agrega las secciones y carga los datos.
-  - `frontend/src/components/MaintenanceModal.tsx`: alta/edición de mantenimiento con adjuntos.
+  - `frontend/src/pages/AutoShowPage.tsx`: tabs de Seguros/Mantenimientos/Inspecciones, listados y opción **Ver**.
+  - `frontend/src/pages/AutoMaintenanceShowPage.tsx`: detalle de mantenimiento con información básica, líneas y archivos.
+  - `frontend/src/components/MaintenanceModal.tsx`: alta/edición de la información básica del mantenimiento.
+  - `frontend/src/components/MaintenanceItemModal.tsx`: alta/edición de líneas de mano de obra e insumos.
   - `frontend/src/components/InspectionModal.tsx`: alta/edición de inspección con adjuntos.
   - `frontend/src/components/AutoAttachmentsField.tsx`: selector múltiple, staging, lista de adjuntos existentes, eliminar.
   - `frontend/src/components/InspectionStatusBadge.tsx`: badge reutilizable (detalle y listado).
@@ -371,10 +375,14 @@ Todos los endpoints requieren sesión válida (401 sin sesión).
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/api/autos/{id}/maintenances` | Lista mantenimientos del auto, con adjuntos |
-| POST | `/api/autos/{id}/maintenances` | Crea mantenimiento |
-| PUT | `/api/autos/{id}/maintenances/{maintenance_id}` | Actualiza mantenimiento |
-| DELETE | `/api/autos/{id}/maintenances/{maintenance_id}` | Elimina mantenimiento + adjuntos |
+| GET | `/api/autos/{id}/maintenances` | Lista mantenimientos del auto, con conceptos y adjuntos |
+| POST | `/api/autos/{id}/maintenances` | Crea mantenimiento (información básica) |
+| GET | `/api/autos/{id}/maintenances/{maintenance_id}` | Detalle del mantenimiento |
+| PUT | `/api/autos/{id}/maintenances/{maintenance_id}` | Actualiza la información básica |
+| DELETE | `/api/autos/{id}/maintenances/{maintenance_id}` | Elimina mantenimiento + conceptos + adjuntos |
+| POST | `/api/autos/{id}/maintenances/{maintenance_id}/items` | Agrega una línea de mano de obra o insumos |
+| PUT | `/api/autos/{id}/maintenances/{maintenance_id}/items/{item_id}` | Actualiza una línea |
+| DELETE | `/api/autos/{id}/maintenances/{maintenance_id}/items/{item_id}` | Elimina una línea |
 | POST | `/api/autos/{id}/maintenances/{maintenance_id}/attachments` | Sube un PDF (multipart `file`) |
 | GET | `/api/autos/{id}/maintenances/{maintenance_id}/attachments/{attachment_id}` | Abre/descarga PDF (`?download=1`) |
 | DELETE | `/api/autos/{id}/maintenances/{maintenance_id}/attachments/{attachment_id}` | Elimina un adjunto |
@@ -387,12 +395,17 @@ Todos los endpoints requieren sesión válida (401 sin sesión).
   "mileage": 42000,
   "institution_id": 12,
   "description": "Cambio de aceite y filtros",
-  "currency_id": 1,
-  "items": [
-    { "item_type": "labor", "description": "Pintura", "amount": 45.0 },
-    { "item_type": "supplies", "description": "Pintura", "amount": 50.0 },
-    { "item_type": "supplies", "description": "Tornillos", "amount": 30.0 }
-  ]
+  "currency_id": 1
+}
+```
+
+**POST/PUT item request** (`application/json`):
+
+```json
+{
+  "item_type": "labor",
+  "description": "Pintura",
+  "amount": 45.0
 }
 ```
 
@@ -586,7 +599,8 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 - [ ] CA-024: Cada fila de inspección/mantenimiento tiene una acción visible **Editar**. El banner de inspección con estado vencido/próximo muestra **Registrar inspección de {año}** y abre el modal con ese año preseleccionado; crear la inspección pendiente recalcula el cronograma.
 - [ ] CA-025: Los modales de crear/editar mantenimiento e inspección muestran tabs **Información** y **Facturas**. Facturas lista los PDFs existentes, permite subir varios y eliminar, y muestra el contador; guardar desde Facturas sin los datos obligatorios vuelve a Información con el error visible.
 - [ ] CA-026: `auto_maintenances` no tiene columna `workshop_name` y `institution_id` es `NOT NULL`. El formulario solo muestra el selector de taller; la API rechaza un mantenimiento sin institución. La migración `0043` migra talleres libres existentes a instituciones antes de eliminar la columna.
-- [ ] CA-027: Un mantenimiento se crea con una o más líneas de `auto_maintenance_items` de tipo `labor`/`supplies`, cada una con descripción y valor. La API rechaza listas vacías, descripciones vacías, tipos inválidos y valores negativos. Los totales por tipo y el total general se calculan sumando las líneas. La migración `0044` convierte los escalares existentes en líneas “Mano de obra” e “Insumos”.
+- [ ] CA-027: Un mantenimiento puede crearse con la información básica y luego agregar líneas de `auto_maintenance_items` de tipo `labor`/`supplies`, cada una con descripción y valor. La API de líneas rechaza descripciones vacías, tipos inválidos y valores negativos. Los totales por tipo y el total general se calculan sumando las líneas. La migración `0044` convierte los escalares existentes en líneas “Mano de obra” e “Insumos”.
+- [ ] CA-028: La opción **Ver** del menú de la fila abre `/autos/:id/maintenances/:maintenanceId`. El detalle muestra la información básica, las líneas de mano de obra e insumos con sus totales, y los PDFs. Permite agregar/editar/eliminar líneas y subir/eliminar archivos. El modal de crear/editar solo contiene la información básica y la moneda. El header muestra la flecha atrás hacia `/autos/:id?tab=mantenimientos`.
 
 ### 5.2 No funcionales
 
@@ -694,3 +708,4 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 | 2026-11-08 | opencode | Cambio iterativo: eliminar la duplicación del nombre del taller. Con institución seleccionada se usa su nombre y se oculta el campo libre; sin institución se exige el nombre manual. Se agrega REQ-036 y CA-026. |
 | 2026-11-08 | opencode | Corrección de modelo: el taller es solo la referencia a la institución. Migración `0043` elimina la columna `workshop_name`, migra talleres libres a instituciones y deja `institution_id` `NOT NULL`. Se actualizan REQ-001/REQ-002/REQ-036 y CA-002/CA-003/CA-026. |
 | 2026-11-08 | opencode | Mano de obra e insumos como líneas de detalle en `auto_maintenance_items` (`item_type`, `description`, `amount`). Migración `0044`, totales calculados. Se agrega REQ-037 y CA-027; la moneda sigue en Información. |
+| 2026-11-08 | opencode | Página de detalle de mantenimiento con edición básica, CRUD de líneas y archivos. El modal de crear/editar queda solo con información básica y se agrega **Ver** al menú. Se agregan REQ-038/REQ-039 y CA-028. |

@@ -30,6 +30,7 @@ import InstitutionShowPage from './pages/InstitutionShowPage'
 import AutosPage from './pages/AutosPage'
 import AutoFormPage from './pages/AutoFormPage'
 import AutoShowPage from './pages/AutoShowPage'
+import AutoMaintenanceShowPage from './pages/AutoMaintenanceShowPage'
 import AutomationPage from './pages/AutomationPage'
 import AutomationFormPage from './pages/AutomationFormPage'
 import AutomationDetailPage from './pages/AutomationDetailPage'
@@ -128,6 +129,7 @@ function App() {
                   <Route path="autos" element={<AutosPage />} />
                   <Route path="autos/new" element={<AutoFormPage />} />
                   <Route path="autos/edit/:id" element={<AutoFormPage />} />
+                  <Route path="autos/:id/maintenances/:maintenanceId" element={<AutoMaintenanceShowPage />} />
                   <Route path="autos/:id" element={<AutoShowPage />} />
                   <Route path="pension/hijos" element={<HijosPage />} />
                   <Route path="pension/hijos/new" element={<HijoFormPage />} />

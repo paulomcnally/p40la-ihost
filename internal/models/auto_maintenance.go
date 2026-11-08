@@ -54,14 +54,14 @@ type AutoMaintenanceDetail struct {
 	Attachments     []AutoAttachment      `json:"attachments"`
 }
 
-// AutoMaintenanceInput es el payload de creación/edición.
+// AutoMaintenanceInput es el payload de creación/edición de la información
+// básica. Los conceptos se gestionan por separado desde el detalle.
 type AutoMaintenanceInput struct {
-	PerformedAt   string                     `json:"performed_at"`
-	Mileage       int64                      `json:"mileage"`
-	InstitutionID int64                      `json:"institution_id"`
-	Description   string                     `json:"description"`
-	CurrencyID    int64                      `json:"currency_id"`
-	Items         []AutoMaintenanceItemInput `json:"items"`
+	PerformedAt   string `json:"performed_at"`
+	Mileage       int64  `json:"mileage"`
+	InstitutionID int64  `json:"institution_id"`
+	Description   string `json:"description"`
+	CurrencyID    int64  `json:"currency_id"`
 }
 
 // AutoMaintenanceCurrencyTotal es el total de mantenimientos por moneda.

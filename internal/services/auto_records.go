@@ -8,18 +8,18 @@ import (
 
 // Errores centinela del módulo de mantenimientos e inspecciones (SPEC-124).
 var (
-	ErrAutoNotFound          = errors.New("el auto no existe")
-	ErrMaintenanceNotFound   = errors.New("el mantenimiento no existe")
-	ErrMaintenanceItems      = errors.New("el mantenimiento debe tener al menos un concepto")
-	ErrInspectionNotFound    = errors.New("la inspección no existe")
-	ErrInstitutionCategory   = errors.New("la institución no pertenece a la categoría requerida")
-	ErrInstitutionNotFound   = errors.New("la institución no existe")
-	ErrCurrencyNotFound      = errors.New("la moneda no existe")
-	ErrAttachmentNotFound    = errors.New("el adjunto no existe")
-	ErrAttachmentInvalid     = errors.New("archivo inválido")
-	ErrAttachmentTooLarge    = errors.New("el archivo supera el máximo de 10 MB")
-	ErrAttachmentLimit       = errors.New("se alcanzó el máximo de adjuntos por registro")
-	ErrAttachmentOwnerAbsent = errors.New("el registro asociado no existe")
+	ErrAutoNotFound            = errors.New("el auto no existe")
+	ErrMaintenanceNotFound     = errors.New("el mantenimiento no existe")
+	ErrMaintenanceItemNotFound = errors.New("el concepto del mantenimiento no existe")
+	ErrInspectionNotFound      = errors.New("la inspección no existe")
+	ErrInstitutionCategory     = errors.New("la institución no pertenece a la categoría requerida")
+	ErrInstitutionNotFound     = errors.New("la institución no existe")
+	ErrCurrencyNotFound        = errors.New("la moneda no existe")
+	ErrAttachmentNotFound      = errors.New("el adjunto no existe")
+	ErrAttachmentInvalid       = errors.New("archivo inválido")
+	ErrAttachmentTooLarge      = errors.New("el archivo supera el máximo de 10 MB")
+	ErrAttachmentLimit         = errors.New("se alcanzó el máximo de adjuntos por registro")
+	ErrAttachmentOwnerAbsent   = errors.New("el registro asociado no existe")
 )
 
 // parseDateOnly valida una fecha YYYY-MM-DD.
