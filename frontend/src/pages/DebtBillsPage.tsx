@@ -8,6 +8,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import DebtDocumentButtons from '../components/DebtDocumentButtons'
 import DebtDocumentModal from '../components/DebtDocumentModal'
+import PaymentTimingLabel from '../components/PaymentTimingLabel'
 import RecognizeDocumentModal from '../components/RecognizeDocumentModal'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import CreateMenu from '../components/CreateMenu'
@@ -253,9 +254,17 @@ export default function DebtBillsPage() {
                 </p>
                 <p className="text-sm text-text-secondary">{bill.due_date}</p>
                 {bill.status === 'paid' && bill.paid_at && (
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    {t('deudas.pay_date')}: {bill.paid_at.slice(0, 10)}
-                  </p>
+                  <>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {t('deudas.pay_date')}: {bill.paid_at.slice(0, 10)}
+                    </p>
+                    <PaymentTimingLabel
+                      paidDate={bill.paid_at}
+                      dueDate={bill.due_date}
+                      mode="paid"
+                      className="block text-xs mt-0.5"
+                    />
+                  </>
                 )}
               </div>
               <div className="flex items-center gap-3 shrink-0">

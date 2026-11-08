@@ -5,6 +5,7 @@ import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
 import PdfUploadField from './PdfUploadField'
+import PaymentTimingLabel from './PaymentTimingLabel'
 import Select from './Select'
 import ConfirmWordModal from './ConfirmWordModal'
 import { useToast } from './Toast'
@@ -396,11 +397,21 @@ export default function RecognizeDocumentModal({
                   </div>
 
                   {selectedBill && (
-                    <p className="text-xs text-text-secondary">
-                      {t('documents.target')}: #{selectedBill.installment_number} · {selectedBill.due_date}
-                      {selectedBill.payment_reference ? ` · ${selectedBill.payment_reference}` : ''}
-                      {selectedBill.has_receipt ? ` · ${t('documents.has_receipt')}` : ''}
-                    </p>
+                    <div className="text-xs text-text-secondary">
+                      <p>
+                        {t('documents.target')}: #{selectedBill.installment_number} · {selectedBill.due_date}
+                        {selectedBill.payment_reference ? ` · ${selectedBill.payment_reference}` : ''}
+                        {selectedBill.has_receipt ? ` · ${t('documents.has_receipt')}` : ''}
+                      </p>
+                      {paidAt && (
+                        <PaymentTimingLabel
+                          paidDate={paidAt}
+                          dueDate={selectedBill.due_date}
+                          mode="receipt"
+                          className="block text-xs mt-1"
+                        />
+                      )}
+                    </div>
                   )}
 
                   {(referenceConflict || fileConflict) && canConfirm && (

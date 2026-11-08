@@ -80,6 +80,12 @@ Consideraciones iHost: sin dependencias nuevas pesadas, usando la librería Go d
     - Los PDFs y fixtures reales nunca se commitean.
 13. **REQ-013**: Tests con PDFs sintéticos (sin datos reales) que cubran ambos formatos, referencias, fechas, montos, monedas, cuota, PDFs sin texto, duplicados y conflictos.
 14. **REQ-014**: No modificar el esquema de `debts`/`debt_bills`; solo insertar/actualizar datos. La única migración nueva es la tabla de reconocimientos.
+15. **REQ-028** (agregado durante la validación manual): Mostrar la diferencia en **días de calendario** entre la fecha de pago y el vencimiento de la cuota, en todo el ciclo de vida:
+    - **Cuota pagada**: en la tarjeta del detalle de deuda y en el listado de cuotas adelantadas del análisis, debajo de la fecha de pago, mostrar `Pagada N días antes del vencimiento`, `Pagada el día de vencimiento` o `Pagada N días después del vencimiento`.
+    - **Antes de pagar**: en `DebtPayModal`, mientras el usuario elige la fecha de pago, mostrar `Estás pagando N días antes/del vencimiento`, `Estás pagando el día de vencimiento` o `Estás pagando N días después del vencimiento`.
+    - **Revisión de comprobante**: en `RecognizeDocumentModal`, con la fecha detectada/editada y la cuota destino seleccionada, mostrar `El pago fue N días antes/del vencimiento`, `El pago fue el día de vencimiento` o `El pago fue N días después del vencimiento`.
+    - Usar diferencia de días de calendario (no horas), singular/plural correcto, i18n `es`/`en` y colores del tema (verde para pago antes o en fecha, ámbar para pago posterior).
+    - No requiere cambios de API ni de DB: `paid_at` y `due_date` ya existen en `debt_bills`.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -449,6 +455,7 @@ file: <PDF>
 - [ ] **CA-013**: Un PDF sin capa de texto devuelve `needs_ocr` y no genera una asociación falsa.
 - [ ] **CA-014**: Los tests usan PDFs sintéticos y no incluyen nombres, cuentas, referencias ni montos reales.
 - [ ] **CA-015**: La tabla `document_recognitions` se crea con una migración nueva; `debt_bills` y `debts` no cambian de esquema.
+- [ ] **CA-016**: La cuota pagada muestra la diferencia en días entre `paid_at` y `due_date`; el modal de pago la muestra mientras se elige la fecha; el modal de reconocimiento la muestra para la cuota destino. Los casos mismo día, 1 día y varios días usan singular/plural correcto en `es`/`en`.
 - [ ] **CA-DARK**: El modal de reconocimiento usa tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó en darkmode.
 - [ ] **CA-MODAL**: El modal no se cierra al hacer click fuera, el overlay bloquea el fondo, el cierre es con X/Cancelar y las acciones destructivas usan confirmación con `confirmo`.
 - [ ] **CA-BUILD**: `go test ./...`, `go vet ./...` y `npm run build` (con `check-ui-rules.cjs`) pasan.
@@ -474,7 +481,8 @@ file: <PDF>
   - No modificar `status`/`paid_at`.
 - **Frontend**:
   - `npm run check:ui`, `npm run build`.
-  - Prueba manual: subir ambos formatos, revisar/editar, confirmar, ver el comprobante en el detalle y la referencia en la DB.
+  - Unit tests con Node nativo: `node --test frontend/tests/*.test.ts`, incluyendo `paymentTiming` (mismo día, 1 día antes/después, varios días, fechas con hora/zona y valores inválidos).
+  - Prueba manual: subir ambos formatos, revisar/editar, confirmar, ver el comprobante en el detalle y la referencia en la DB; verificar la diferencia pago/vencimiento en la tarjeta pagada, en el modal de pago y en el de reconocimiento.
 - **iHost**:
   - Probar con PDFs sintéticos, verificar memoria/tiempo y que el archivo quede en `/app/data/documents/...`.
   - Nunca usar PDFs reales en el repo.
@@ -523,6 +531,7 @@ Implementado en la rama `feature/SPEC-127`:
   - `ConfirmWordModal.tsx`: confirmación por palabra `confirmo` con foco automático y Enter (SPEC-126).
   - Acción **"Reconocer comprobante"** en el menú de 3 puntos del detalle de deuda.
   - API client, tipos e i18n `documents.*` en `frontend/public/i18n/{es,en}.json`.
+  - **REQ-028**: helper `frontend/src/utils/paymentTiming.ts` y componente `PaymentTimingLabel` integrados en la tarjeta pagada, el listado de cuotas adelantadas de `DebtAnalysis`, `DebtPayModal` y `RecognizeDocumentModal`; i18n `deudas.timing_*`.
 
 Validaciones ejecutadas:
 
@@ -579,3 +588,4 @@ Pendiente: prueba manual del usuario en local y release formal (merge a `main`, 
 | 2026-11-08 | opencode | Creación inicial de la especificación a partir de la investigación en `docs/analyzers/BANK-RECEIPTS-RESEARCH.md`. |
 | 2026-11-08 | opencode | Estado `in_progress`: comienza la implementación aprobada por el usuario. |
 | 2026-11-08 | opencode | Implementación completa backend/frontend, tests automáticos y validación de la migración sobre copia de producción. Pendiente prueba manual y release. |
+| 2026-11-08 | opencode | Se agrega REQ-028 (diferencia pago vs vencimiento) a partir de la validación del usuario: tarjeta pagada, modal de pago y modal de reconocimiento. |
