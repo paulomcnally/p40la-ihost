@@ -3,7 +3,7 @@ title: "Reconocimiento de comprobantes bancarios (nivel proyecto)"
 status: "research"
 created: "2026-11-08"
 updated: "2026-11-08"
-related_spec: null
+related_spec: "SPEC-127"
 ---
 
 # Reconocimiento de comprobantes bancarios (nivel proyecto)
