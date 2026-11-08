@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api'
 import { Icon } from './Icons'
 import PdfUploadField from './PdfUploadField'
+import PaymentTimingLabel from './PaymentTimingLabel'
 import { useI18nStore } from '../stores/i18nStore'
 import { useToast } from './Toast'
 import type { DebtBill } from '../types'
@@ -91,6 +92,14 @@ export default function DebtPayModal({ bill, onClose, onSuccess }: DebtPayModalP
                 className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] bg-card"
                 required
               />
+              {paidAt && (
+                <PaymentTimingLabel
+                  paidDate={paidAt}
+                  dueDate={bill.due_date}
+                  mode="paying"
+                  className="block text-xs mt-1"
+                />
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">{t('deudas.payment_reference')}</label>

@@ -609,6 +609,71 @@ export interface DebtBill {
   updated_at: string
 }
 
+// SPEC-127: reconocimiento de comprobantes bancarios.
+export interface RecognitionCandidate {
+  entity_type: string
+  debt_id: number
+  debt_bill_id: number
+  installment_number: number
+  debt_description?: string
+  institution_name?: string
+  due_date: string
+  amount: number
+  currency_code?: string
+  status: string
+  existing_reference?: string
+  score: number
+  reasons?: string[]
+  warnings?: string[]
+}
+
+export interface DocumentRecognition {
+  recognition_id: number
+  document_hash?: string
+  recognizer_id?: string
+  document_type: string
+  status: 'recognized' | 'associated' | 'rejected' | 'expired'
+  reference?: string
+  paid_at?: string
+  amount: number
+  currency?: string
+  installment_number?: number
+  concept?: string
+  entity_type?: string
+  entity_id?: number
+  confidence: number
+  warnings?: string[]
+  final_path?: string
+  review_required: boolean
+  duplicate?: boolean
+  candidates?: RecognitionCandidate[]
+  created_at: string
+  updated_at: string
+  confirmed_at?: string
+}
+
+export interface ConfirmRecognitionInput {
+  entity_type: string
+  debt_id: number
+  debt_bill_id: number
+  installment_number: number
+  reference: string
+  paid_at?: string
+  amount: number
+  currency?: string
+  concept?: string
+  overwrite_reference: boolean
+  overwrite_file: boolean
+}
+
+export interface AssociationResult {
+  recognition_id: number
+  status: string
+  debt_bill_id: number
+  payment_reference: string
+  file_path: string
+}
+
 // SPEC-105: evolución mensual de deudas (cantidad, no montos).
 export interface DebtHistoryPoint {
   month: string

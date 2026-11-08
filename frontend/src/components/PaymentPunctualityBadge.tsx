@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useI18nStore } from '../stores/i18nStore'
 import { getSystemTimeZone } from '../utils/date'
-import { getPaymentTiming, type PaymentTiming } from '../utils/paymentTiming'
+import { getPaymentTiming, type PaymentPunctuality } from '../utils/paymentTiming'
 
 interface PaymentPunctualityBadgeProps {
   paidAt?: string | null
@@ -9,7 +9,7 @@ interface PaymentPunctualityBadgeProps {
   timeZone?: string
 }
 
-const TONE_CLASSES: Record<PaymentTiming['tone'], string> = {
+const TONE_CLASSES: Record<PaymentPunctuality['tone'], string> = {
   success: 'bg-success/20 text-green-800 dark:text-green-400',
   warning: 'bg-warning/20 text-yellow-800 dark:text-yellow-400',
   danger: 'bg-danger/20 text-red-800 dark:text-red-400',
@@ -23,7 +23,7 @@ export default function PaymentPunctualityBadge({
   timeZone,
 }: PaymentPunctualityBadgeProps) {
   const { t } = useI18nStore()
-  const [timing, setTiming] = useState<PaymentTiming | null>(null)
+  const [timing, setTiming] = useState<PaymentPunctuality | null>(null)
 
   useEffect(() => {
     if (!paidAt || !dueDate) {
