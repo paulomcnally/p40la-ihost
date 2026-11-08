@@ -48,6 +48,21 @@ button {
   touch-action: manipulation;
 }
 
+/* SPEC-130: safe areas para la PWA en iOS standalone (viewport-fit=cover). */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 640px) {
+  .safe-bottom {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+}
+
 input,
 select,
 textarea {
