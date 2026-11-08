@@ -80,14 +80,8 @@ export default function DebtDocumentModal({ bill, kind, onClose, onChanged }: De
 
   return (
     <>
-      <div
-        className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4"
-        onClick={onClose}
-      >
-        <div
-          className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
+        <div className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm overflow-hidden">
           <div className="p-5">
             <div className="flex items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2 min-w-0">
