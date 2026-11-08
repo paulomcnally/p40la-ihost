@@ -137,7 +137,7 @@ export default function ContractModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="contract-modal-title"
-        className="bg-card rounded-ios shadow-ios-lg w-full max-w-md overflow-hidden"
+        className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm overflow-hidden"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="p-5">
@@ -166,35 +166,37 @@ export default function ContractModal({
 
           {localHasContract ? (
             <>
-              <div className="rounded-ios-sm border border-border bg-bg p-5 text-center">
-                <Icon name="pdf" className="w-12 h-12 mx-auto text-primary mb-3" />
-                <p className="font-semibold">{t('contracts.uploaded_title')}</p>
-                <p className="text-sm text-text-secondary mt-1">{t('contracts.uploaded_hint')}</p>
+              <div className="flex items-center gap-3 rounded-ios-sm border border-border bg-bg px-3 py-3">
+                <Icon name="pdf" className="w-6 h-6 text-primary shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">contract.pdf</p>
+                  <p className="text-xs text-text-secondary">{t('contracts.document_attached')}</p>
+                </div>
               </div>
-              <div className="mt-4 space-y-2">
-                <button
-                  type="button"
-                  onClick={handleOpen}
-                  disabled={busy}
-                  className="w-full px-4 py-2.5 bg-primary text-white rounded-ios-sm hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2 min-h-[44px] font-semibold"
-                >
-                  <Icon name="pdf" className="w-4 h-4" />
-                  {t('contracts.open')}
-                </button>
+              <div className="flex gap-3 mt-5">
                 <button
                   type="button"
                   onClick={() => setConfirming(true)}
                   disabled={busy}
-                  className="w-full px-4 py-2.5 bg-danger/10 text-danger rounded-ios-sm hover:bg-danger/20 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-h-[44px] font-semibold"
+                  className="flex-1 px-4 py-2.5 bg-danger/10 text-danger rounded-ios-sm hover:bg-danger/20 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-h-[44px] font-semibold"
                 >
                   <Icon name="delete" className="w-4 h-4" />
-                  {t('contracts.remove')}
+                  {t('app.remove')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpen}
+                  disabled={busy}
+                  className="flex-1 px-4 py-2.5 bg-primary text-white rounded-ios-sm hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-h-[44px] font-semibold"
+                >
+                  <Icon name="pdf" className="w-4 h-4" />
+                  {t('contracts.open')}
                 </button>
               </div>
             </>
           ) : (
             <>
-              <p className="text-sm text-text-secondary mb-2">{t('contracts.upload_title')}</p>
+              <p className="text-sm text-text-secondary mb-3">{t('contracts.document_missing')}</p>
               <label
                 onDragOver={(event) => {
                   event.preventDefault()
@@ -245,28 +247,28 @@ export default function ContractModal({
 
               {error && <p className="text-sm text-danger mt-2">{error}</p>}
 
-              <button
-                type="button"
-                onClick={handleUpload}
-                disabled={!file || saving}
-                className="mt-4 w-full px-4 py-2.5 bg-primary text-white rounded-ios-sm hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2 min-h-[44px] font-semibold"
-              >
-                <Icon name="upload" className="w-4 h-4" />
-                {saving ? t('contracts.uploading') : t('contracts.upload')}
-              </button>
+              <div className="flex gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={saving}
+                  className="flex-1 px-4 py-2.5 bg-bg text-text rounded-ios-sm hover:bg-border disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                >
+                  <Icon name="cancel" className="w-4 h-4" />
+                  {t('app.cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUpload}
+                  disabled={saving || !file}
+                  className="flex-1 px-4 py-2.5 bg-primary text-white rounded-ios-sm hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-h-[44px] font-semibold"
+                >
+                  <Icon name="upload" className="w-4 h-4" />
+                  {saving ? t('contracts.uploading') : t('contracts.upload')}
+                </button>
+              </div>
             </>
           )}
-        </div>
-
-        <div className="p-4 border-t border-border">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="w-full px-4 py-2.5 bg-bg text-text rounded-ios-sm hover:bg-border disabled:opacity-50 transition-colors min-h-[44px]"
-          >
-            {t('app.close')}
-          </button>
         </div>
       </div>
 

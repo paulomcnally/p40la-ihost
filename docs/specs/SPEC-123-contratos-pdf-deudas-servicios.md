@@ -50,8 +50,8 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
    La opción se rotula siempre **"Contrato"** / **"Contract"** y usa el icono `pdf` existente en `frontend/src/components/Icons.tsx`.
 2. **REQ-002**: Al seleccionar "Contrato" se abre un **modal reutilizable** (`ContractModal`) con dos estados:
    - **Sin contrato**: área de drag & drop, botón "Seleccionar PDF", nombre/tamaño del archivo elegido, botón para quitarlo antes de subir y botón "Subir contrato".
-   - **Con contrato**: indicador de que el contrato existe, botón **"Abrir contrato"** y botón de peligro **"Quitar contrato"**.
-   No se crea ninguna página ni ruta nueva. Todo ocurre en el modal sobre la página actual.
+   - **Con contrato**: indicador de que el contrato existe y dos botones en una fila: **"Quitar"** a la izquierda (peligro) y **"Abrir"** a la derecha (primario).
+   No se crea ninguna página ni ruta nueva. Todo ocurre en el modal sobre la página actual. El modal se cierra con la **X del header**; no hay botón "Cerrar" en el pie.
 3. **REQ-003**: Validar el archivo en frontend y backend:
    - Solo formato **PDF** (extensión `.pdf`, sin distinguir mayúsculas, y firma de contenido `%PDF-`).
    - Tamaño máximo **10 MB** (consistente con comprobantes de pensión, SPEC-051, y comprobantes de deuda, SPEC-122).
@@ -82,10 +82,11 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
    - `DELETE` elimina el archivo y responde `204`. Si no existe → `404`.
 6. **REQ-006**: Exponer el campo booleano calculado `has_contract` en toda respuesta que devuelva una deuda o un servicio (`GET /api/debts`, `GET /api/debts/{id}`, `GET /api/services`, `GET /api/services/{id}`, y las respuestas de crear/actualizar). Se calcula con `os.Stat` sobre la ruta determinística; **no se persiste** ni requiere migración.
 7. **REQ-007**: En el estado "con contrato" del modal:
-   - "Abrir contrato" abre el PDF en una pestaña nueva con `window.open(url, '_blank', 'noopener,noreferrer')`.
-   - "Quitar contrato" abre un segundo modal de confirmación reutilizando `frontend/src/components/DeleteModal.tsx`, que exige escribir exactamente `confirmo` para habilitar la eliminación. Al confirmar, se llama al `DELETE`, se muestra un toast de éxito y el modal vuelve al estado "sin contrato" o se cierra.
+   - **"Abrir"** abre el PDF en una pestaña nueva con `window.open(url, '_blank', 'noopener,noreferrer')`.
+   - **"Quitar"** abre un segundo modal de confirmación reutilizando `frontend/src/components/DeleteModal.tsx`, que exige escribir exactamente `confirmo` para habilitar la eliminación. Al confirmar, se llama al `DELETE`, se muestra un toast de éxito y el modal vuelve al estado "sin contrato" o se cierra.
+   - Los botones usan textos genéricos ("Quitar"/"Abrir"), sin repetir "contrato".
    - El texto del modal de confirmación debe dejar claro que el PDF se elimina del volumen y que la acción no se puede deshacer.
-8. **REQ-008**: Agregar las claves i18n en `frontend/public/i18n/es.json` y `frontend/public/i18n/en.json`: título del modal, textos de drag & drop, botón de selección, formatos/tamaño aceptados, errores de validación, "Abrir contrato", "Quitar contrato", títulos/subtítulos de confirmación, éxitos y errores de red. La fuente de verdad es `frontend/public/i18n/`; nunca editar `public/i18n/` directamente.
+8. **REQ-008**: Agregar las claves i18n en `frontend/public/i18n/es.json` y `frontend/public/i18n/en.json`: título del modal, textos de drag & drop, botón de selección, formatos/tamaño aceptados, errores de validación, "Abrir", "Quitar", "Contrato adjunto", "No hay contrato cargado", títulos/subtítulos de confirmación, éxitos y errores de red. La fuente de verdad es `frontend/public/i18n/`; nunca editar `public/i18n/` directamente.
 9. **REQ-009**: La opción "Contrato" debe estar disponible para **todas** las deudas y servicios, tengan o no contrato. El estado inicial del modal se determina con `has_contract`.
 10. **REQ-010**: Documentar que `contracts/` forma parte del volumen Docker y debe incluirse en los respaldos junto con `app.db` y `documents/`. El respaldo del solo archivo SQLite no preserva los contratos. No crear un volumen adicional ni cambiar `docker-compose.yml`.
 
@@ -373,22 +374,22 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
   }
   ```
 - **Estado**:
-  - `localHasContract` inicializado con `hasContract` y sincronizado cuando cambia la prop o se abre.
-  - `mode: 'empty' | 'uploading' | 'existing' | 'deleting'`.
-  - `file: File | null`, `error: string | null`, `dragging: boolean`.
+  - `localHasContract` inicializado con `hasContract`.
+  - `file: File | null`, `error: string | null`, `dragging: boolean`, `saving: boolean`, `confirming: boolean`.
 - **UI estado "sin contrato"**:
-  - Área con borde punteado (`border-dashed`), tokens `bg-card`/`text-text-secondary`, `rounded-ios-sm`, `min-h-[160px]`.
+  - Texto "No hay contrato cargado" y área con borde punteado (`border-dashed`), tokens `bg-card`/`text-text-secondary`, `rounded-ios-sm`.
   - Texto: "Arrastrá y soltá un PDF o seleccioná un archivo (máx. 10 MB)".
-  - Botón "Seleccionar PDF" con `<input type="file" accept="application/pdf,.pdf" className="hidden">`.
-  - Al seleccionar/dropear: validar en cliente (extensión, `file.type === 'application/pdf'` o extensión, tamaño ≤ 10 MB); mostrar nombre + tamaño + icono `pdf` + botón de quitar (`cancel`).
-  - Botón "Subir contrato" deshabilitado sin archivo; spinner y texto "Subiendo..." durante el upload.
+  - Input de archivo oculto `<input type="file" accept="application/pdf,.pdf" className="hidden">` dentro de un `label`.
+  - Al seleccionar/dropear: validar en cliente (extensión y tamaño ≤ 10 MB); mostrar nombre + tamaño + icono `pdf` + botón de quitar (`cancel`).
+  - Fila de acciones: **"Cancelar"** a la izquierda y **"Subir"** a la derecha, ambos `flex-1`. Sin botón "Cerrar" en el pie.
 - **UI estado "con contrato"**:
-  - Icono `pdf` grande, texto "Contrato cargado" y, si se implementa REQ-013, tamaño/fecha.
-  - Botón primario "Abrir contrato" → `window.open(api.contracts.url(owner, entityId), '_blank', 'noopener,noreferrer')`.
-  - Botón de peligro "Quitar contrato" → `mode='deleting'`, monta `DeleteModal` con `title`, `subtitle`, `onConfirm`, `onCancel`.
-  - Confirmar → `api.contracts.remove(owner, entityId)`, toast de éxito, `localHasContract=false`, `onChanged()`, volver a `mode='empty'` o cerrar el modal.
-- **Cierre**: click en el overlay y tecla `Escape` cierran el modal, salvo mientras `mode` es `uploading` o `deleting`. Botón `cancel` visible.
-- **Accesibilidad**: `role="dialog"`, `aria-modal="true"`, `aria-labelledby`; el input de archivo accesible vía botón; foco inicial en el botón de seleccionar/abrir.
+  - Card compacta con icono `pdf`, nombre fijo `contract.pdf` y texto "Contrato adjunto"; si se implementa REQ-013, tamaño/fecha.
+  - Fila de acciones: **"Quitar"** a la izquierda (peligro) y **"Abrir"** a la derecha (primario), ambos `flex-1` y con iconos.
+  - "Quitar" monta `DeleteModal` con `title`, `subtitle`, `onConfirm`, `onCancel`.
+  - "Abrir" → `window.open(api.contracts.url(owner, entityId), '_blank', 'noopener,noreferrer')`.
+  - Confirmar eliminación → `api.contracts.remove(owner, entityId)`, toast de éxito, `localHasContract=false`, `onChanged()`, volver al estado "sin contrato" o cerrar el modal.
+- **Cierre**: solo la **X del header** (y click en el overlay/`Escape`), salvo mientras se está subiendo o eliminando. No existe botón "Cerrar" en el pie.
+- **Accesibilidad**: `role="dialog"`, `aria-modal="true"`, `aria-labelledby`; la X tiene `aria-label`; el input de archivo es accesible vía el `label`.
 
 #### 4.2.6 Frontend — integración en páginas
 
@@ -413,17 +414,15 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
   "contracts": {
     "menu": "Contrato",
     "title": "Contrato",
-    "upload_title": "Subir contrato",
     "drop_hint": "Arrastrá y soltá un PDF o seleccioná un archivo",
     "only_pdf": "Solo se aceptan archivos PDF",
     "max_size": "Máximo 10 MB",
     "select_file": "Seleccionar PDF",
-    "upload": "Subir contrato",
+    "upload": "Subir",
     "uploading": "Subiendo...",
-    "uploaded_title": "Contrato cargado",
-    "uploaded_hint": "Podés abrirlo o quitarlo.",
-    "open": "Abrir contrato",
-    "remove": "Quitar contrato",
+    "document_attached": "Contrato adjunto",
+    "document_missing": "No hay contrato cargado",
+    "open": "Abrir",
     "remove_title": "¿Quitar el contrato?",
     "remove_subtitle": "El PDF se elimina del volumen y la acción no se puede deshacer. Escribí \"confirmo\" para continuar.",
     "upload_success": "Contrato subido",
@@ -583,8 +582,8 @@ Códigos:
 - [ ] **CA-002**: Al abrir "Contrato" en una deuda/servicio **sin** contrato, se muestra un modal con drag & drop y botón "Seleccionar PDF"; se puede elegir un PDF, ver su nombre/tamaño, quitarlo antes de subir y subirlo.
 - [ ] **CA-003**: Al subir un PDF válido, se crea `{DATA_DIR}/contracts/debts/{id}/contract.pdf` o `{DATA_DIR}/contracts/services/{id}/contract.pdf`; el directorio se crea si no existe; la respuesta es `200 {"has_contract": true}`.
 - [ ] **CA-004**: El archivo se rechaza con mensaje claro si no es PDF, está vacío o supera 10 MB; en esos casos no se crea ni se reemplaza ningún archivo.
-- [ ] **CA-005**: Al abrir "Contrato" en una entidad **con** contrato, el modal muestra "Abrir contrato" y "Quitar contrato"; "Abrir" abre el PDF en una pestaña nueva.
-- [ ] **CA-006**: "Quitar contrato" abre el modal de confirmación que exige escribir `confirmo`; al confirmar se elimina el archivo, se muestra un toast de éxito y `has_contract` pasa a `false`.
+- [ ] **CA-005**: Al abrir "Contrato" en una entidad **con** contrato, el modal muestra **"Quitar"** a la izquierda y **"Abrir"** a la derecha, sin el texto "contrato" en los botones; "Abrir" abre el PDF en una pestaña nueva.
+- [ ] **CA-006**: "Quitar" abre el modal de confirmación que exige escribir `confirmo`; al confirmar se elimina el archivo, se muestra un toast de éxito y `has_contract` pasa a `false`.
 - [ ] **CA-007**: Cancelar el modal de confirmación **no** elimina el archivo y vuelve al estado "con contrato".
 - [ ] **CA-008**: `GET /api/debts/{id}/contract` y `GET /api/services/{id}/contract` devuelven `application/pdf` con `X-Content-Type-Options: nosniff`; sin archivo devuelven 404.
 - [ ] **CA-009**: `DELETE` devuelve `204` y el archivo deja de existir en disco; una segunda llamada devuelve `404`.
@@ -728,3 +727,4 @@ Códigos:
 | 2026-11-07 | opencode | Creación inicial de la especificación (SPEC-123). |
 | 2026-11-07 | opencode | Inicio de implementación; estado `in_progress`. |
 | 2026-11-07 | opencode | Implementación P0: almacén de contratos, endpoints, `has_contract`, modal, integración en 4 páginas, i18n y tests. |
+| 2026-11-07 | opencode | Ajuste de UI solicitado: botones "Quitar" (izquierda) y "Abrir" (derecha), sin "contrato" en las etiquetas; se elimina el botón "Cerrar" del pie y se usa la X del header. |
