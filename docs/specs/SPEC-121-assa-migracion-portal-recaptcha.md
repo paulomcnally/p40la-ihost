@@ -1,7 +1,7 @@
 ---
 title: "ASSA: recuperar la automatización tras la migración del portal Mi ASSANET (reCAPTCHA)"
 id: "SPEC-121"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-03"
 updated: "2026-11-08"
@@ -11,7 +11,7 @@ github_issue: 124
 # ASSA: recuperar la automatización tras la migración del portal Mi ASSANET (reCAPTCHA)
 
 **ID**: SPEC-121  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-03  
 **Actualizado**: 2026-11-08
@@ -37,11 +37,11 @@ Consideraciones de iHost: no se agregan dependencias pesadas ni un navegador; no
 
 Consideraciones de UI: el formulario de cuenta ya usa los tokens del tema y el componente `Select`; si se agrega el campo de cookie, debe verse bien en darkmode y mantener el patrón de credenciales existente. No se crean páginas de detalle nuevas, por lo que no aplica `BACK_ROUTES` salvo que el diseño cambie.
 
-### 1.1 Alcance de esta iteración (2026-11-08)
+### 1.1 Alcance liberado (2026-11-08)
 
-Se implementa el **MVP P0** (Fase 1 y milestone 1): detección explícita de la migración y del CAPTCHA, errores centinela nuevos, mensaje accionable en backend/UI, tests de regresión y release del plugin como `v1.1.1`.
+Se liberó el **MVP P0** (Fase 1 y milestone 1): detección explícita de la migración y del CAPTCHA, errores centinela nuevos, mensaje accionable en backend/UI, tests de regresión y plugin `v1.1.1` publicado.
 
-La **Fase 2 (spike con sesión real) y la Fase 3 (sesión asistida + parsers del portal nuevo)** quedan bloqueadas por una dependencia externa: requieren que el usuario inicie sesión manualmente y aporte una cookie de sesión válida para mapear las rutas autenticadas. Sin esa evidencia no se escribe el scraping, tal como exigen REQ-005, REQ-008 y CA-008. Cuando el usuario provea la sesión, se retoma la spec.
+La **Fase 2 (spike con sesión real) y la Fase 3 (sesión asistida + parsers del portal nuevo)** quedaron diferidas a **SPEC-129** por una dependencia externa: requieren que el usuario inicie sesión manualmente y aporte una cookie de sesión válida para mapear las rutas autenticadas. Sin esa evidencia no se escribe el scraping, tal como exigen REQ-005, REQ-008 y CA-008.
 
 Consecuencia operativa del MVP: la cuenta ASSA deja de reportar un error engañoso ("la API cambió su formato") y pasa a reportar `portal migrado` o `CAPTCHA requerido`; el usuario puede desactivar el schedule sin perder configuración ni facturas históricas.
 
@@ -61,6 +61,8 @@ Consecuencia operativa del MVP: la cuenta ASSA deja de reportar un error engaño
 10. **REQ-010 — Versionado y release.** Cualquier cambio del plugin requiere un tag nuevo del módulo privado: `v1.1.1` si solo agrega detección/diagnóstico, `v1.2.0` si agrega sesión asistida y nuevos parsers. Actualizar `go.mod`/`go.sum`, reconstruir la imagen multi-arch (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) y verificar que `automation_plugins.version` y `automation_bills.plugin_version` reflejen la versión nueva.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
+
+> **Estado**: los requerimientos que dependen de la sesión real (REQ-007, REQ-008) se trasladaron a **SPEC-129**. REQ-011 a REQ-015 quedan como seguimiento de la operación del MVP.
 
 1. **REQ-011 — Taxonomía de errores en la app.** Mapear `ErrPortalMigrated`, `ErrCaptchaRequired` y `ErrAuthExpired` a mensajes/HTTP claros en `GET`/`POST` de automation y en el sync de servicios, sin romper el contrato existente (`502 automation_error`/`plugin_error`).
 2. **REQ-012 — Alertas de fallo recurrente.** Cuando una cuenta acumule N ejecuciones fallidas por migración/captcha/sesión, mostrar un aviso visible en la página de automation (y opcionalmente Telegram/email) con la acción recomendada.
@@ -284,25 +286,25 @@ No se agregan endpoints. Se reutilizan:
 
 ### 5.1 Funcionales
 
-- [ ] **CA-001**: Un `302` legacy hacia `/ni/MiAssan-NI/login` (sin `var`) produce `ErrPortalMigrated` y el mensaje accionable; no produce "login sin token var".
-- [ ] **CA-002**: Un `200` con el formulario nuevo (`txt_usuario`, `recaptchaTokenV3`) o con "Por favor complete el CAPTCHA" produce `ErrCaptchaRequired`.
-- [ ] **CA-003**: Existe un test que verifica que el plugin **no** agrega `var` a la URL legacy ni acepta un `Location` con `var` como sesión válida si no hay cookie autenticada.
-- [ ] **CA-004**: La UI de la cuenta muestra el estado de migración/captcha/sesión expirada y permite desactivar el schedule; el error no es un genérico "API cambió su formato".
-- [ ] **CA-005**: Si se implementa la opción D, una cookie válida permite obtener pólizas/facturas/recibos y entregarlas al servicio; una cookie expirada devuelve `ErrAuthExpired` y un mensaje de renovación.
-- [ ] **CA-006**: La cookie no aparece en `automation_bills.raw`, logs, respuestas de listado, tests ni commits; el `reveal` sigue exigiendo la contraseña de la app.
-- [ ] **CA-007**: La cuenta ASSA puede quedar con el schedule desactivado sin perder la configuración ni las facturas históricas.
-- [ ] **CA-008**: Si la opción D no es viable (sesión demasiado corta o rutas nuevas no parseables), la spec se actualiza con la evidencia y se elige API oficial o carga manual; no se deja un fix a medias.
-- [ ] **CA-DARK**: Si se agrega el campo de cookie, se verifica en darkmode que el texto y el placeholder sean legibles y que el input use `bg-card`/`text-text`.
-- [ ] **CA-BACK**: No aplica salvo que se cree una página nueva; si se crea, el retorno va por `BACK_ROUTES` y no hay links "← Título".
+- [x] **CA-001**: Un `302` legacy hacia `/ni/MiAssan-NI/login` (sin `var`) produce `ErrPortalMigrated` y el mensaje accionable; no produce "login sin token var". Verificado con `TestFetchBills_PortalMigrated`.
+- [x] **CA-002**: Un `200` con el formulario nuevo (`txt_usuario`, `recaptchaTokenV3`) o con "Por favor complete el CAPTCHA" produce `ErrCaptchaRequired`. Verificado con `TestFetchBills_CaptchaRequired`.
+- [x] **CA-003**: Existe un test que verifica que el plugin **no** agrega `var` a la URL legacy ni acepta un `Location` con `var` como sesión válida si no hay cookie autenticada. Verificado con `TestFetchBills_LegacyVarWithoutCookie` y la aserción de `RawQuery` vacío.
+- [x] **CA-004**: La UI de la cuenta muestra el estado de migración/captcha/sesión expirada y permite desactivar el schedule; el error no es un genérico "API cambió su formato". Banner en el detalle con botón Editar; `error_code` verificado por API.
+- [ ] **CA-005**: Diferido a SPEC-129: cookie válida, parsers y `ErrAuthExpired`.
+- [x] **CA-006**: El MVP no incorpora cookie; los errores persistidos/logueados se sanitizan y los tests verifican que no filtran credenciales ni tokens. El `reveal` no cambió.
+- [x] **CA-007**: La cuenta ASSA puede quedar con el schedule desactivado sin perder la configuración ni las facturas históricas (se probó en la DB temporal con la cuenta demo desactivada).
+- [ ] **CA-008**: Diferido a SPEC-129: decisión no-go entre sesión asistida, API oficial o carga manual.
+- [x] **CA-DARK**: No se agregó un campo de formulario nuevo; el banner usa tokens del tema (`bg-danger/10`, `text-text-secondary`). No aplica la verificación de placeholder.
+- [x] **CA-BACK**: No se creó una página nueva; no aplica `BACK_ROUTES`.
 
 ### 5.2 No funcionales
 
-- [ ] **CA-NF-001**: El plugin no incorpora navegador ni dependencias pesadas; el binario y la imagen mantienen el tamaño actual dentro de un margen razonable.
-- [ ] **CA-NF-002**: El scheduler completa una ejecución fallida en menos de 30 s y no bloquea a los demás plugins.
-- [ ] **CA-NF-003**: `go test ./...` del repo de la app y del módulo de plugins pasa.
-- [ ] **CA-NF-004**: La imagen se publica con los tres manifests (`linux/amd64`, `linux/arm/v7`, `linux/arm64`).
-- [ ] **CA-NF-005**: La validación con datos reales se hace contra una copia de la DB de producción, nunca contra `data/app.db` local; no se escribe en producción durante la validación.
-- [ ] **CA-NF-006**: `PRAGMA integrity_check` y `foreign_key_check` quedan OK después de cualquier prueba sobre la copia.
+- [x] **CA-NF-001**: El plugin no incorpora navegador ni dependencias pesadas; solo agrega detección y centinelas.
+- [x] **CA-NF-002**: El scheduler conserva un intento por ejecución y el plugin tiene timeout de 15 s; no se agregaron reintentos.
+- [x] **CA-NF-003**: `go test ./...` del repo de la app y del módulo de plugins pasa.
+- [ ] **CA-NF-004**: La imagen se publica con los tres manifests (`linux/amd64`, `linux/arm/v7`, `linux/arm64`). Se verifica en el release.
+- [x] **CA-NF-005**: No se usaron datos reales: la validación local usó una DB temporal en `/tmp` y `data/app.db` no se tocó.
+- [x] **CA-NF-006**: `PRAGMA integrity_check` y `foreign_key_check` quedan OK en la DB temporal de validación.
 
 ### 5.3 Testing
 
@@ -362,4 +364,4 @@ Si la Fase 2 da "no-go", las fases 3–4 se reemplazan por la opción E (API ofi
 | Fecha | Autor | Descripción |
 |---|---|---|
 | 2026-11-03 | opencode | Creación inicial de la especificación. Se documenta la migración del portal ASSA, la causa raíz del error `login sin token var`, la evidencia del portal nuevo con reCAPTCHA y las opciones de recuperación (sesión asistida, API oficial, manual/PDF). |
-| 2026-11-08 | opencode | Estado `in_progress`. Se implementa el MVP P0: detección de migración/CAPTCHA, centinelas `ErrPortalMigrated`/`ErrCaptchaRequired`, mapeo de mensajes accionables en app/UI, tests de regresión y plugin `v1.1.1`. La Fase 2/3 (sesión asistida) queda bloqueada hasta validar con una sesión real. |
+| 2026-11-08 | opencode | Estado `released` (MVP P0). Se libera la detección de migración/CAPTCHA, los centinelas `ErrPortalMigrated`/`ErrCaptchaRequired`, el mapeo de mensajes accionables en app/UI, los tests de regresión y el plugin `v1.1.1` (commit `6cb1ebb`, merge `b5b8bf6`, imagen `v0.5.5`). La Fase 2/3 (sesión asistida, parsers del portal MVC) queda cubierta por SPEC-129. |
