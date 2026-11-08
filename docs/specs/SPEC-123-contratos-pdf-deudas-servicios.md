@@ -1,7 +1,7 @@
 ---
 title: "Contratos PDF para deudas y servicios: upload, visualización y eliminación"
 id: "SPEC-123"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-07"
 updated: "2026-11-07"
@@ -11,7 +11,7 @@ github_issue: 126
 # Contratos PDF para deudas y servicios: upload, visualización y eliminación
 
 **ID**: SPEC-123  
-**Estado**: draft  
+**Estado**: in_progress
 **Autor**: opencode  
 **Creado**: 2026-11-07  
 **Actualizado**: 2026-11-07
@@ -66,6 +66,7 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
    - No crear directorios al arrancar el server.
    - El nombre original del archivo **nunca** se usa para construir la ruta; el nombre final es siempre `contract.pdf`.
    - `debt_id` y `service_id` se formatean como enteros; el "owner" (`debts`/`services`) se elige de una whitelist interna, nunca de input del usuario.
+   - El archivo final queda con permisos `0644` para que los respaldos del volumen puedan leerlo; el directorio se crea con `0755`.
 5. **REQ-005**: Agregar endpoints autenticados para cada entidad:
    ```
    POST   /api/debts/{id}/contract    # subir o reemplazar
@@ -177,7 +178,7 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
 
 **ADR-004: Escritura atómica y streaming**
 - **Contexto**: Un corte de luz o un error a mitad de escritura no debe dejar un PDF corrupto. El iHost tiene RAM limitada.
-- **Decisión**: Validar extensión; crear un temporal en el directorio destino con `os.CreateTemp`; leer los primeros 5 bytes para validar `%PDF-` (usando `bufio.Reader.Peek`); copiar el resto con `io.Copy` y un `io.LimitReader` de 10 MB + 1 byte; verificar que no se superó el límite; `Sync`/`Close` y `os.Rename` al nombre final. Ante cualquier error, borrar el temporal. Si ya existía un contrato, el rename lo reemplaza atómicamente.
+- **Decisión**: Validar extensión; crear un temporal en el directorio destino con `os.CreateTemp`; leer los primeros 5 bytes para validar `%PDF-` (usando `bufio.Reader.Peek`); copiar el resto con `io.Copy` y un `io.LimitReader` de 10 MB + 1 byte; verificar que no se superó el límite; aplicar `Chmod(0o644)`; `Sync`/`Close` y `os.Rename` al nombre final. Ante cualquier error, borrar el temporal. Si ya existía un contrato, el rename lo reemplaza atómicamente.
 - **Consecuencias**: El archivo final siempre está completo. No se cargan 10 MB en RAM. Si el rename falla, queda el contrato anterior (si existía) y se devuelve error; el usuario puede reintentar.
 
 **ADR-005: Modal único con dos estados y reutilización de `DeleteModal`**
@@ -702,6 +703,12 @@ Códigos:
 - **Rutas**: `internal/api/routes.go` (deudas en la sección de deudas, servicios en la sección de servicios).
 - **Datos sintéticos**: los ejemplos usan `debt_id=1`, `service_id=1`, `contract.pdf`, `demo-reference-001`. Nunca usar contratos reales en tests, specs ni commits.
 
+### Estado de implementación (2026-11-07)
+
+- **P0 implementado**: `ContractStore`, validación PDF/10 MB, escritura atómica, endpoints `POST`/`GET`/`DELETE`, `has_contract` en deudas y servicios, `ContractModal` con drag & drop/abrir/quitar, confirmación con `confirmo`, integración en tarjetas y detalles de deudas/servicios, i18n es/en y tests unitarios/de handlers.
+- **P1 pendiente**: indicador PDF en tarjetas, metadatos del contrato (tamaño/fecha), `?download=1` desde la UI y limpieza de huérfanos al eliminar entidades.
+- **Validación local**: `go test ./...`, `go vet ./...` y `npm run build` pasan; flujo de upload/descarga/eliminación probado contra un `DATA_DIR` temporal con datos sintéticos.
+
 ### Fuera de alcance
 
 - OCR o extracción de datos del contrato.
@@ -719,3 +726,5 @@ Códigos:
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-07 | opencode | Creación inicial de la especificación (SPEC-123). |
+| 2026-11-07 | opencode | Inicio de implementación; estado `in_progress`. |
+| 2026-11-07 | opencode | Implementación P0: almacén de contratos, endpoints, `has_contract`, modal, integración en 4 páginas, i18n y tests. |

@@ -109,7 +109,9 @@ func main() {
 	alertService := services.NewAlertService(alertStorage)
 	currencyService := services.NewCurrencyService(currencyStorage)
 	homeService := services.NewHomeService(homeStorage)
+	contractStore := services.NewContractStore(cfg.DataDir)
 	serviceService := services.NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
+	serviceService.SetContractStore(contractStore)
 	billService := services.NewBillService(billStorage, serviceStorage)
 	billService.SetBillHistoryStorage(billHistoryStorage)
 	institutionService := services.NewInstitutionService(institutionStorage)
@@ -151,6 +153,7 @@ func main() {
 	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage, telegramBotService)
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
 	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
+	debtService.SetContractStore(contractStore)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {

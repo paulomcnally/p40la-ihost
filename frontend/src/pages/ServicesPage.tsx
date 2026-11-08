@@ -8,6 +8,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
+import ContractModal from '../components/ContractModal'
 import DeleteModal from '../components/DeleteModal'
 import HousePickerModal from '../components/HousePickerModal'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -66,6 +67,7 @@ export default function ServicesPage() {
 
   const [services, setServices] = useState<Service[]>([])
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
+  const [contractTarget, setContractTarget] = useState<Service | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [servicesLoading, setServicesLoading] = useState(true)
@@ -211,6 +213,7 @@ export default function ServicesPage() {
       >
         <CardMenu
           options={[
+            { label: t('contracts.menu'), icon: 'pdf', onClick: () => setContractTarget(svc) },
             { label: t('services.webhook_title'), icon: 'link', onClick: () => setWebhookService(svc) },
             { label: syncingId === svc.id ? t('services.syncing') : t('services.sync'), icon: 'refresh', onClick: () => handleSync(svc) },
             { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/services/edit/${svc.id}`) },
@@ -414,6 +417,16 @@ export default function ServicesPage() {
       />
       {webhookService && (
         <WebhookModal service={webhookService} onClose={() => setWebhookService(null)} />
+      )}
+      {contractTarget && (
+        <ContractModal
+          owner="services"
+          entityId={contractTarget.id}
+          entityName={contractTarget.name}
+          hasContract={!!contractTarget.has_contract}
+          onClose={() => setContractTarget(null)}
+          onChanged={loadServices}
+        />
       )}
     </div>
   )
