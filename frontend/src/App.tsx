@@ -49,6 +49,9 @@ import PensionImportPage from './pages/PensionImportPage'
 import DeudasPage from './pages/DeudasPage'
 import DebtFormPage from './pages/DebtFormPage'
 import DebtBillsPage from './pages/DebtBillsPage'
+import DebtTemplatesHubPage from './pages/DebtTemplatesHubPage'
+import DebtInformationTemplatesPage from './pages/DebtInformationTemplatesPage'
+import DebtInformationTemplateFormPage from './pages/DebtInformationTemplateFormPage'
 import BudgetPage from './pages/BudgetPage'
 import BudgetTransactionsPage from './pages/BudgetTransactionsPage'
 
@@ -150,6 +153,10 @@ function App() {
                   <Route path="deudas" element={<DeudasPage />} />
                   <Route path="deudas/new" element={<DebtFormPage />} />
                   <Route path="deudas/edit/:id" element={<DebtFormPage />} />
+                  <Route path="deudas/plantillas" element={<DebtTemplatesHubPage />} />
+                  <Route path="deudas/plantillas/informacion" element={<DebtInformationTemplatesPage />} />
+                  <Route path="deudas/plantillas/informacion/new" element={<DebtInformationTemplateFormPage />} />
+                  <Route path="deudas/plantillas/informacion/edit/:id" element={<DebtInformationTemplateFormPage />} />
                   <Route path="deudas/:id" element={<DebtBillsPage />} />
                   <Route path="budget" element={<BudgetPage />} />
                   <Route path="budget/transacciones" element={<BudgetTransactionsPage />} />

@@ -14,6 +14,7 @@ import CreateMenu from '../components/CreateMenu'
 import ContractModal from '../components/ContractModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtPayModal from '../components/DebtPayModal'
+import DebtPaymentInformationModal from '../components/DebtPaymentInformationModal'
 import DebtPayoffSummary from '../components/DebtPayoffSummary'
 import DueDateBadge from '../components/DueDateBadge'
 import PaymentPunctualityBadge from '../components/PaymentPunctualityBadge'
@@ -21,7 +22,7 @@ import PaymentReferenceBadge from '../components/PaymentReferenceBadge'
 import { isPaidAhead } from '../utils/debtMonthlyAggregation'
 import { getSystemTimeZone } from '../utils/date'
 import { paymentDateInTimeZone } from '../utils/paymentTiming'
-import type { Debt, DebtBill } from '../types'
+import type { Debt, DebtBill, DebtPaymentInformation } from '../types'
 
 type BillFilter = 'all' | 'pending' | 'paid'
 
@@ -36,7 +37,9 @@ export default function DebtBillsPage() {
   const billFilter: BillFilter = rawFilter === 'all' || rawFilter === 'paid' || rawFilter === 'pending' ? rawFilter : 'pending'
   const [debt, setDebt] = useState<Debt | null>(null)
   const [bills, setBills] = useState<DebtBill[]>([])
+  const [paymentInfo, setPaymentInfo] = useState<DebtPaymentInformation | null>(null)
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
+  const [paymentInfoOpen, setPaymentInfoOpen] = useState(false)
   const [contractOpen, setContractOpen] = useState(false)
   const [recognizeOpen, setRecognizeOpen] = useState(false)
   const [documentModal, setDocumentModal] = useState<{ bill: DebtBill; kind: 'invoice' | 'receipt' } | null>(null)
@@ -46,12 +49,14 @@ export default function DebtBillsPage() {
   const load = useCallback(async (silent = false) => {
     if (!id) return
     if (!silent) setLoading(true)
-    const [debtData, billList] = await Promise.all([
+    const [debtData, billList, info] = await Promise.all([
       api.debts.get(Number(id)),
       api.debts.listBills(Number(id)),
+      api.debtPaymentInformation.get(Number(id)).catch(() => null),
     ])
     setDebt(debtData)
     setBills(billList || [])
+    setPaymentInfo(info)
     // SPEC-104: en una deuda cerrada, abrir directamente el historial de cuotas pagadas.
     if (!searchParams.get('status') && debtData && (debtData.pending_count ?? 0) === 0) {
       setSearchParams({ status: 'paid' }, { replace: true })
@@ -136,6 +141,7 @@ export default function DebtBillsPage() {
         <CreateMenu
           title={t('app.actions')}
           options={[
+            { label: t('deudas.payment_method'), icon: 'bank', onClick: () => setPaymentInfoOpen(true) },
             { label: t('contracts.menu'), icon: 'pdf', onClick: () => setContractOpen(true) },
             { label: t('documents.recognize'), icon: 'pdf', onClick: () => setRecognizeOpen(true) },
             { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/deudas/edit/${debt.id}`) },
@@ -241,8 +247,25 @@ export default function DebtBillsPage() {
       {payTarget && (
         <DebtPayModal
           bill={payTarget}
+          debt={debt}
+          paymentInfo={paymentInfo}
+          symbol={symbol}
           onClose={() => setPayTarget(null)}
           onSuccess={load}
+          onConfigure={() => {
+            setPayTarget(null)
+            setPaymentInfoOpen(true)
+          }}
+        />
+      )}
+      {paymentInfoOpen && (
+        <DebtPaymentInformationModal
+          debt={debt}
+          paymentInfo={paymentInfo}
+          nextBill={bills.find((bill) => bill.status === 'pending') || null}
+          symbol={symbol}
+          onClose={() => setPaymentInfoOpen(false)}
+          onSaved={() => load(true)}
         />
       )}
       {contractOpen && (

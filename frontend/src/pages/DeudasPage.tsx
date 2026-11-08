@@ -165,6 +165,7 @@ export default function DeudasPage() {
 
   const createOptions = [
     { label: t('deudas.create'), icon: 'plus', onClick: () => navigate('/deudas/new') },
+    { label: t('deudas.templates_menu'), icon: 'copy', onClick: () => navigate('/deudas/plantillas') },
   ]
 
   const emptyMessage = debtView === 'pending'
@@ -284,7 +285,7 @@ export default function DeudasPage() {
     <div>
       <div className="flex items-center justify-between mb-4 sm:mb-5">
         <h2 className="text-xl sm:text-2xl font-bold">{t('deudas.title')}</h2>
-        <CreateMenu options={createOptions} />
+        <CreateMenu options={createOptions} title={t('app.actions')} />
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
