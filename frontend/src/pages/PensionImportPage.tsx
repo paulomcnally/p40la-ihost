@@ -639,7 +639,7 @@ export default function PensionImportPage() {
       )}
 
       {showReset && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
           <div className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-semibold mb-2">{t('pensionImport.reset_title')}</h3>
             <p className="text-sm text-text-secondary mb-4">{t('pensionImport.reset_message')}</p>
@@ -656,7 +656,7 @@ export default function PensionImportPage() {
       )}
 
       {showKeywords && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
           <div className="bg-card rounded-ios shadow-ios-lg w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 pt-4">
               <h3 className="text-base sm:text-lg font-semibold">{t('pensionImport.keywords')}</h3>
@@ -705,7 +705,7 @@ export default function PensionImportPage() {
       )}
 
       {createFor && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
           <div className="bg-card rounded-ios shadow-ios-lg w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 pt-4">
               <h3 className="text-base sm:text-lg font-semibold">{t('pensionImport.create_category')}</h3>

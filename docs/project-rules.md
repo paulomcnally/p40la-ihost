@@ -125,12 +125,12 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 
 - **Ningún modal se cierra al hacer click fuera del contenido.** El overlay NO debe tener `onClick` de cierre; el modal solo se cierra con los botones **Cancelar/Cerrar/Cancel** o la **X**.
 - **El overlay debe bloquear la interacción con la página de fondo**, incluidos los menús de 3 puntos (`z-50`) y cualquier otro control. Usar `z-[60]` o superior para el overlay del modal.
-- Los **modales de confirmación** (por ejemplo `DeleteModal`) deben quedar por encima del modal que los abre (`z-[70]` o superior).
-- **Todo modal debe tener siempre una acción visible de cierre** (Cancelar/Cerrar o X), incluso los selectores y los modales de solo lectura.
-- En el **modal de confirmación** (`DeleteModal`), el input de texto debe recibir **foco automáticamente** al abrirse, para que el usuario pueda escribir `confirmo` sin tocar el campo.
-- En el **modal de confirmación** (`DeleteModal`), escribir exactamente `confirmo` y presionar **Enter** debe ejecutar la acción de confirmación, igual que tocar el botón. Si el texto no es válido, Enter no hace nada.
-- Al crear o modificar un modal, verificar manualmente que el click fuera no cierra ni interactúa con el fondo, y que Enter confirma en el modal de confirmación cuando corresponde.
-- Precedente: SPEC-122 (modal de factura/comprobante y confirmación de borrado).
+- **Escala de capas**: menús/navegación `z-50`, modal base `z-[60]`, modal anidado o picker `z-[70]`, confirmación sobre modal anidado `z-[80]`, dropdown `Select` `z-[90]`, toasts `z-[100]`. Los modales de confirmación (por ejemplo `DeleteModal`) deben quedar por encima del modal que los abre.
+- **Todo modal debe tener siempre una acción visible de cierre** (Cancelar/Cerrar/Listo o X), incluso los selectores, los modales de solo lectura y los estados de `loading`/`saving` o de selección previa.
+- **Todo modal de confirmación por palabra** (por ejemplo `DeleteModal` con `confirmo`, reapertura de mes con `reabrir`/`reopen`, y cualquier futuro) debe enfocar el input automáticamente al abrirse y permitir confirmar con **Enter** cuando la palabra es válida y la acción está habilitada, ejecutando el mismo callback que el botón. Con texto inválido o una acción en curso, Enter no hace nada.
+- **El drawer del sidebar móvil no es un modal** y conserva su cierre por click fuera; no se le aplica la regla de overlay bloqueante de modales.
+- Al crear o modificar un modal, verificar manualmente que el click fuera no cierra ni interactúa con el fondo, que el cierre visible existe en todos los estados y que Enter confirma en los modales de confirmación por palabra cuando corresponde.
+- Precedentes: SPEC-122 (modal de factura/comprobante y confirmación de borrado) y SPEC-126 (regla general de modales, confirmación por palabra y escala de capas).
 
 ---
 

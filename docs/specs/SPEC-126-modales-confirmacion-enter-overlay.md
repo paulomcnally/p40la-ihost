@@ -1,7 +1,7 @@
 ---
 title: "Modales del proyecto: confirmación por palabra con Enter y overlay bloqueante sin cierre por click fuera"
 id: "SPEC-126"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-07"
 updated: "2026-11-07"
@@ -11,7 +11,7 @@ github_issue: 129
 # Modales del proyecto: confirmación por palabra con Enter y overlay bloqueante sin cierre por click fuera
 
 **ID**: SPEC-126
-**Estado**: draft
+**Estado**: in_progress
 **Autor**: opencode
 **Creado**: 2026-11-07
 **Actualizado**: 2026-11-07
@@ -133,10 +133,11 @@ Consideraciones de UI obligatorias:
   - `rg -n "<DeleteModal" frontend/src` → **23 usos en 19 archivos**.
   - `rg -n "confirmo|confirmWord|confirmText|reopenModalConfirmWord" frontend/src` → solo `DeleteModal.tsx` y `RegistrosPage.tsx`.
   - **Click fuera**: ningún modal de `main` tiene `onClick` de cierre en su overlay. El único overlay con cierre por click fuera es el drawer del sidebar (`DashboardLayout.tsx:58-59`), que no es un modal.
-  - **z-index**: 23 de 29 overlays de modales usan `z-50` o el default dinámico de `IconPickerModal` (`z-50`). Solo 6 ya están en `z-[60]`/`z-[70]`: `DebtDocumentModal`, `DeleteModal`, `ServicePickerModal`, `BudgetPage` (modales de grupo/categoría), `BudgetTransactionsPage` (modal de cuenta).
+  - **z-index**: 23 de 29 overlays de modales usan `z-50` o el default dinámico de `IconPickerModal` (`z-50`). Solo 6 ya están en `z-[60]`/`z-[70]`: `DebtDocumentModal`, `DeleteModal`, `ServicePickerModal`, `BudgetPage` (modales de grupo/categoría) y `BudgetTransactionsPage` (modal de cuenta). De esos 6, los formularios anidados y sus pickers requieren un nivel extra para mantener la jerarquía.
   - **Acción de cierre**: 3 modales no tienen una acción siempre visible: `AddInsuranceModal` (Cancelar condicionado a seleccionar servicio), `AddPolicyModal` (Cancelar condicionado a seleccionar auto) y `WebhookModal` (sin cierre durante `loading`).
   - **Dropdowns**: `Select` usa un portal con default `z-50`; si los modales pasan a `z-[60]`, los dropdowns dentro de modales quedarían detrás del overlay. Hay 52 usos de `Select`; solo 2 pasan `zIndex` explícito (en `BudgetPage`).
   - **Toasts**: `Toast` usa `z-50`; si los modales pasan a `z-[60]`, los mensajes quedarían detrás del overlay.
+  - **Menús de 3 puntos**: `CardMenu` renderiza su portal con `zIndex: 9999` inline, por encima de cualquier modal. Se normaliza a `z-50` para que el overlay de `z-[60]` lo bloquee.
 - **Estado del modal de reabrir mes**: `RegistrosPage.tsx` tiene `autoFocus` en el input (línea 768) y el botón deshabilitado por `busy || !isReopenValid`, pero **no tiene `onKeyDown`**. Por lo tanto, Enter no confirma.
 - **`DeleteModal.tsx`**: ya tiene `useEffect` para foco, handler de Enter y comparación `trim().toLowerCase() === 'confirmo'`. Se toma como referencia.
 - No se requiere investigación web: el comportamiento es de React/DOM y el patrón ya existe en el repo.
@@ -217,12 +218,12 @@ Regla práctica: si un modal se abre desde otro modal, su overlay debe ser **al 
 - **Ubicación**: `frontend/src/hooks/useConfirmWordInput.ts`.
 
 #### 4.2.2 `DeleteModal`
-- **Cambio**: reemplazar el estado y el handler locales por `useConfirmWordInput({ word: 'confirmo', onConfirm })`. Mantener `title`, `subtitle`, `onConfirm`, `onCancel`, el icono de advertencia, el botón rojo y el `z-[70]`.
+- **Cambio**: reemplazar el estado y el handler locales por `useConfirmWordInput({ word: 'confirmo', onConfirm: handleConfirm, disabled: submitting })`. Agregar un guard interno `submitting` + `useRef` para no disparar dos veces la misma acción (Enter o click) mientras la promesa de `onConfirm` está en curso, incluso antes del re-render. Mantener `title`, `subtitle`, `onConfirm`, `onCancel`, el icono de advertencia, el botón rojo y el `z-[70]`.
 - **Ubicación**: `frontend/src/components/DeleteModal.tsx`.
 
 #### 4.2.3 Modal de reabrir mes (`RegistrosPage`)
-- **Cambio**: usar `useConfirmWordInput({ word: confirmWord, onConfirm: handleReopenMonth, disabled: busy })`; reemplazar `autoFocus` por el `inputRef` del hook; el botón queda `disabled={busy || !isValid}`; al cerrar, llamar `reset()`.
-- **Ubicación**: `frontend/src/pages/RegistrosPage.tsx` (modal de reabrir mes, aproximadamente líneas 756-777).
+- **Cambio**: extraer el modal a un componente hijo `ReopenMonthModal`, que se monta solo cuando `showReopenModal` es true. Usar `useConfirmWordInput({ word: confirmWord, onConfirm, disabled: busy })`; reemplazar `autoFocus` por el `inputRef` del hook; el botón queda `disabled={busy || !isValid}`. El componente hijo garantiza que el `useEffect` de foco se ejecute al abrir el modal (no al montar la página).
+- **Ubicación**: `frontend/src/pages/RegistrosPage.tsx` (componente `ReopenMonthModal`).
 
 #### 4.2.4 Ajustes de capas y cierres
 
@@ -243,22 +244,24 @@ Rutas relativas a `frontend/src/`.
 | `components/InstitutionCategoriesModal.tsx:101` | `z-50` | X siempre | Subir a `z-[60]` |
 | `components/PayBillModal.tsx:55` | `z-50` | Cancelar siempre | Subir a `z-[60]` |
 | `components/RenewServiceModal.tsx:90` | `z-50` | Cancelar siempre | Subir a `z-[60]` |
-| `components/ServicePickerModal.tsx:54` | `z-[70]` | Botón Listo siempre | Sin cambios de capa |
+| `components/ServicePickerModal.tsx:54` | `z-[70]` | Botón Listo siempre | Subir a `z-[80]` para quedar sobre formularios anidados |
 | `components/UploadBillModal.tsx:213` | `z-50` | X siempre (disabled al guardar) | Subir a `z-[60]` |
 | `components/WebhookModal.tsx:62` | `z-50` | Condicional (sin cierre durante loading) | Subir a `z-[60]` y agregar X fija |
 | `pages/AutomationDetailPage.tsx:298` | `z-50` | Cerrar siempre | Subir a `z-[60]` |
 | `pages/BudgetPage.tsx:571` | `z-50` | X siempre | Subir a `z-[60]` |
 | `pages/BudgetPage.tsx:784` | `z-50` | X siempre | Subir a `z-[60]` |
-| `pages/BudgetPage.tsx:926` | `z-[60]` | Cancelar siempre | Sin cambios de capa |
-| `pages/BudgetPage.tsx:990` | `z-[60]` | Cancelar siempre | Sin cambios de capa |
+| `pages/BudgetPage.tsx:926` | `z-[60]` | Cancelar siempre | Añadir prop `zIndex` y pasar `z-[70]` desde `BudgetConfigModal` |
+| `pages/BudgetPage.tsx:990` | `z-[60]` | Cancelar siempre | Añadir prop `zIndex` y pasar `z-[70]` desde `BudgetConfigModal` |
 | `pages/BudgetTransactionsPage.tsx:436` | `z-50` | X siempre | Subir a `z-[60]` |
 | `pages/BudgetTransactionsPage.tsx:590` | `z-50` | X siempre | Subir a `z-[60]` |
-| `pages/BudgetTransactionsPage.tsx:702` | `z-[60]` | Cancelar siempre | Sin cambios de capa |
+| `pages/BudgetTransactionsPage.tsx:702` | `z-[60]` | Cancelar siempre | Subir a `z-[70]`: es un formulario anidado dentro de `AccountsModal` |
 | `pages/BudgetTransactionsPage.tsx:825` | `z-50` | X siempre | Subir a `z-[60]` |
 | `pages/PensionImportPage.tsx:642` | `z-50` | Cancelar siempre | Subir a `z-[60]` |
 | `pages/PensionImportPage.tsx:659` | `z-50` | X siempre | Subir a `z-[60]` |
 | `pages/PensionImportPage.tsx:708` | `z-50` | X y Cancelar siempre | Subir a `z-[60]` |
 | `pages/RegistrosPage.tsx:50` | `z-50` | X siempre | Subir a `z-[60]` |
+
+**Ajustes de anidamiento**: los formularios `GroupFormModal` y `CategoryFormModal` se usan tanto en la página como dentro de `BudgetConfigModal`; por eso reciben una prop `zIndex` (default `z-[60]`, `z-[70]` cuando se abren desde `BudgetConfigModal`). El `IconPickerModal` de ese contexto sube a `z-[80]`, el `ServicePickerModal` sube a `z-[80]` y el `AccountFormModal` de `BudgetTransactionsPage` sube a `z-[70]` porque siempre se abre dentro de `AccountsModal`.
 
 **Exclusión explícita**: `components/DashboardLayout.tsx:58` (`z-40`) es el overlay del drawer móvil del sidebar, no un modal. Conserva su cierre por click fuera y no se modifica.
 
@@ -269,7 +272,8 @@ Rutas relativas a `frontend/src/`.
 - `frontend/src/components/Select.tsx`: `zIndex = 'z-[90]'` por defecto. Los overrides explícitos (`z-[80]` en `BudgetPage`) se mantienen y siguen siendo válidos porque están dentro de modales `z-[60]`.
 - `frontend/src/components/Toast.tsx`: `z-[100]`.
 - `frontend/src/components/IconPickerModal.tsx`: default `z-[60]`; los usos con `zIndex="z-[70]"`/`z-[80]` se mantienen.
-- `frontend/src/components/CardMenu.tsx`, `CreateMenu.tsx`, `Sidebar.tsx` y header: se mantienen en `z-50` para quedar debajo de los modales.
+- `frontend/src/components/CardMenu.tsx`: el portal del menú de 3 puntos pasa de `zIndex: 9999` inline a `zIndex: 50`, para que el overlay del modal (`z-[60]`) lo bloquee.
+- `frontend/src/components/CreateMenu.tsx`, `Sidebar.tsx` y header: se mantienen en `z-50` para quedar debajo de los modales.
 
 #### 4.2.6 Documentación
 - **Cambio**: generalizar la redacción de ambas reglas en `AGENTS.md`, `docs/project-rules.md` §4.7, `docs/specs/templates/spec-template.md` y `.opencode/skills/spec-manager/SKILL.md` para que cubran cualquier palabra de confirmación, cualquier modal, y la escala de capas.
@@ -298,7 +302,7 @@ No aplica. No se agregan ni modifican endpoints. Las acciones siguen llamando a 
 - [ ] **CA-004**: Al abrir el modal de reabrir mes, el input recibe el foco automáticamente.
 - [ ] **CA-005**: En el modal de reabrir mes, escribir `reabrir` (es) o `reopen` (en) habilita el botón y presionar Enter ejecuta la reapertura; con un texto inválido, Enter no ejecuta nada.
 - [ ] **CA-006**: La comparación acepta mayúsculas/minúsculas y espacios al inicio/fin en ambos modales (`Confirmo`, ` confirmo `, `REABRIR`).
-- [ ] **CA-007**: Mientras la acción está en curso (`busy`), Enter no dispara una segunda ejecución y el botón permanece deshabilitado.
+- [ ] **CA-007**: Mientras la acción está en curso (`busy`/`submitting`), Enter no dispara una segunda ejecución y el botón permanece deshabilitado, tanto en `DeleteModal` como en el modal de reabrir mes.
 - [ ] **CA-008**: Presionar Enter en el input no provoca envío de formulario, navegación ni recarga de la página.
 - [ ] **CA-009**: Al reabrir un modal, el input aparece vacío (o el modal se remonta) y no conserva una palabra válida de una apertura anterior.
 - [ ] **CA-020**: **Ningún modal de `main` se cierra al hacer click fuera de su contenido.** Se verifica en los 29 overlays, incluidos los que se abren desde otro modal.
@@ -394,3 +398,5 @@ Estimación total: **~2.5 días**.
 |-------|-------|-------------|
 | 2026-11-07 | opencode | Creación inicial de la especificación (SPEC-126). Auditoría de modales de `main`: `DeleteModal` ya cumple; el modal de reabrir mes de `RegistrosPage` no maneja Enter. Se propone hook compartido y generalización de la regla documentada. |
 | 2026-11-07 | opencode | Alcance ampliado a pedido del usuario: la regla de overlay/click fuera se aplica a **todos** los modales de `main`. Auditoría de los 29 overlays: 23 en `z-50`, 3 sin cierre siempre visible y 0 con cierre por click fuera. Se agrega la escala de capas y los ajustes de `Select`/`Toast`/`IconPickerModal`. |
+| 2026-11-07 | opencode | Implementación: hook `useConfirmWordInput`, `DeleteModal` con guard de envío, `ReopenMonthModal` con foco/Enter, 23 overlays a `z-[60]`, formularios anidados a `z-[70]` y pickers a `z-[80]`, portal de `CardMenu` de `9999` a `50`, X fija en `AddInsuranceModal`/`AddPolicyModal`/`WebhookModal`, `Select` `z-[90]`, `Toast` `z-[100]`, `IconPickerModal` default `z-[60]` y documentación generalizada. `npm run build` y `npm run check:ui` OK. Pendiente validación manual del usuario. |
+| 2026-11-07 | opencode | Validación automatizada con Chrome headless: foco inicial, Enter, guard de doble Enter, click fuera que no cierra, texto inválido sin acción y normalización con espacios/mayúsculas OK en `DeleteModal` y en el modal de reabrir mes. Pendiente validación manual del usuario. |
