@@ -1,7 +1,7 @@
 ---
 title: "Detalle de deuda: referencia de pago visible y semáforo de puntualidad"
 id: "SPEC-128"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-08"
 updated: "2026-11-08"
@@ -11,7 +11,7 @@ github_issue: 131
 # Detalle de deuda: referencia de pago visible y semáforo de puntualidad
 
 **ID**: SPEC-128
-**Estado**: in_progress
+**Estado**: released
 **Autor**: opencode
 **Creado**: 2026-11-08
 **Actualizado**: 2026-11-08
@@ -330,30 +330,30 @@ Los campos opcionales usan `omitempty`; el frontend debe tratar `undefined` como
 
 ### 5.1 Funcionales
 
-- [ ] **CA-001**: En `/deudas/:id?status=paid`, una cuota pagada con `payment_reference = "902000001"` muestra el label `Referencia: 902000001`.
-- [ ] **CA-002**: En `/deudas/:id?status=paid`, una cuota pagada sin `payment_reference` (ausente, `null`, `""` o espacios) muestra el badge rojo `Sin referencia`.
-- [ ] **CA-003**: En `/deudas/:id?status=all`, las cuotas pagadas muestran ambos labels y las pendientes conservan solo su badge de vencimiento actual.
-- [ ] **CA-004**: `paid_at` y `due_date` en el mismo día → badge verde `En fecha`.
-- [ ] **CA-005**: Pago 1 día antes → verde `1 día antes`; 3 días antes → verde `3 días antes`.
-- [ ] **CA-006**: Pago 1 día después → amarillo `1 día tarde`; 7 días después → amarillo `7 días tarde`.
-- [ ] **CA-007**: Pago 8 días después → rojo `8 días tarde`; 30 días después → rojo `30 días tarde`.
-- [ ] **CA-008**: Un pago a las 23:30 de la zona del sistema el día de vencimiento se considera `En fecha`, aunque en UTC sea el día siguiente.
-- [ ] **CA-009**: Un `paid_at` inválido o ausente en una cuota pagada no muestra un falso `En fecha`; el label de puntualidad se omite y la referencia se sigue mostrando.
-- [ ] **CA-010**: Los textos cambian correctamente entre `es` y `en`, con singular/plural (`1 día`/`N días`).
-- [ ] **CA-011**: Los labels usan las clases de color de REQ-005 y son legibles en darkmode.
-- [ ] **CA-012**: En 375 px de ancho no hay overflow horizontal; la referencia larga se trunca y el monto sigue visible.
-- [ ] **CA-013**: Los tests unitarios del helper cubren todos los casos de CA-004 a CA-009 y pasan con `node --test frontend/tests/*.test.ts`.
-- [ ] **CA-014**: No se modifica ningún archivo de `internal/`, `migrations/` ni el contrato de la API.
-- [ ] **CA-015**: No se commitean referencias, montos ni fechas reales; los ejemplos son sintéticos.
-- [ ] **CA-DARK**: Los labels nuevos se verificaron en darkmode en la tarjeta del detalle de deuda.
-- [ ] **CA-BUILD**: `npm run build` en `frontend/` (incluye `check-ui-rules.cjs`) y `go test ./...` pasan.
+- [x] **CA-001**: En `/deudas/:id?status=paid`, una cuota pagada con `payment_reference = "902000001"` muestra el label `Referencia: 902000001`.
+- [x] **CA-002**: En `/deudas/:id?status=paid`, una cuota pagada sin `payment_reference` (ausente, `null`, `""` o espacios) muestra el badge rojo `Sin referencia`.
+- [x] **CA-003**: En `/deudas/:id?status=all`, las cuotas pagadas muestran ambos labels y las pendientes conservan solo su badge de vencimiento actual.
+- [x] **CA-004**: `paid_at` y `due_date` en el mismo día → badge verde `En fecha`.
+- [x] **CA-005**: Pago 1 día antes → verde `1 día antes`; 3 días antes → verde `3 días antes`.
+- [x] **CA-006**: Pago 1 día después → amarillo `1 día tarde`; 7 días después → amarillo `7 días tarde`.
+- [x] **CA-007**: Pago 8 días después → rojo `8 días tarde`; 30 días después → rojo `30 días tarde`.
+- [x] **CA-008**: Un pago a las 23:30 de la zona del sistema el día de vencimiento se considera `En fecha`, aunque en UTC sea el día siguiente.
+- [x] **CA-009**: Un `paid_at` inválido o ausente en una cuota pagada no muestra un falso `En fecha`; el label de puntualidad se omite y la referencia se sigue mostrando.
+- [x] **CA-010**: Los textos cambian correctamente entre `es` y `en`, con singular/plural (`1 día`/`N días`).
+- [x] **CA-011**: Los labels usan las clases de color de REQ-005 y son legibles en darkmode.
+- [x] **CA-012**: En 375 px de ancho no hay overflow horizontal; la referencia larga se trunca y el monto sigue visible.
+- [x] **CA-013**: Los tests unitarios del helper cubren todos los casos de CA-004 a CA-009 y pasan con `node --test frontend/tests/*.test.ts`.
+- [x] **CA-014**: No se modifica ningún archivo de `internal/`, `migrations/` ni el contrato de la API.
+- [x] **CA-015**: No se commitean referencias, montos ni fechas reales; los ejemplos son sintéticos.
+- [x] **CA-DARK**: Los labels nuevos se verificaron en darkmode en la tarjeta del detalle de deuda.
+- [x] **CA-BUILD**: `npm run build` en `frontend/` (incluye `check-ui-rules.cjs`) y `go test ./...` pasan.
 
 ### 5.2 No funcionales
 
-- [ ] **CA-NF-001**: El cambio no agrega dependencias npm ni Go.
-- [ ] **CA-NF-002**: No hay requests adicionales ni cambios en el consumo de SQLite/RAM del iHost.
-- [ ] **CA-NF-003**: El bundle incremental es < 5 KB gzip.
-- [ ] **CA-NF-004**: La app sigue funcionando sin conexión a red externa.
+- [x] **CA-NF-001**: El cambio no agrega dependencias npm ni Go.
+- [x] **CA-NF-002**: No hay requests adicionales ni cambios en el consumo de SQLite/RAM del iHost.
+- [x] **CA-NF-003**: El bundle incremental es < 5 KB gzip.
+- [x] **CA-NF-004**: La app sigue funcionando sin conexión a red externa.
 
 ### 5.3 Testing
 
@@ -431,7 +431,7 @@ Validaciones ejecutadas:
 - Se conservaron ambas familias de claves i18n (`deudas.timing_*` y `deudas.payment_timing_*`).
 - El tracker quedó con 126 specs, 125 released (SPEC-127) y 1 in_progress (SPEC-128).
 
-Pendiente: prueba manual del usuario en local y release formal (merge a `main`, tracker, label e issue).
+**Prueba manual del usuario**: satisfactoria (2026-11-08). **Release**: merge de `feature/SPEC-128` a `main` el 2026-11-08; commits de implementación `155847c`, merge de `origin/main` `e496ba5` y documentación `26bd88c`.
 
 ---
 
@@ -479,3 +479,4 @@ Pendiente: prueba manual del usuario en local y release formal (merge a `main`, 
 | 2026-11-08 | opencode | Creación inicial de la especificación a partir del pedido del usuario: referencia de pago visible y semáforo de puntualidad en `/deudas/:id?status=paid` y `?status=all`. |
 | 2026-11-08 | opencode | Estado `in_progress`: implementación frontend completa (helper, componentes, integración, i18n y tests), build y tests de Go validados. Pendiente prueba manual y release. |
 | 2026-11-08 | opencode | Merge de `origin/main` (SPEC-127 released): se unificó `paymentTiming.ts` conservando ambas APIs, se mantuvieron las claves i18n de los dos specs y la tarjeta quedó con el semáforo de SPEC-128. 45 tests y build OK. |
+| 2026-11-08 | opencode | Release: prueba manual del usuario satisfactoria; merge de `feature/SPEC-128` a `main`, label `spec/released`, issue #131 cerrado y worktree eliminado. |
