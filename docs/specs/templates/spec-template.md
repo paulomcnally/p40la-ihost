@@ -34,6 +34,13 @@ Consideraciones de UI obligatorias para specs que toquen formularios:
 Consideraciones de UI obligatorias para specs que creen páginas de detalle o formularios con lista padre:
 - La acción "volver a la lista" va en el header (flecha atrás que reemplaza la hamburguesa en móvil) vía el mapa `BACK_ROUTES` de `frontend/src/components/DashboardLayout.tsx`. Nunca crear links "← Título" dentro del contenido. Ver SPEC-063.
 
+Consideraciones de UI obligatorias para specs que creen o modifiquen modales:
+- Ningún modal se cierra al hacer click fuera del contenido: el overlay NO lleva `onClick` de cierre. Solo se cierra con los botones **Cancelar/Cerrar/Listo** o la **X**.
+- El overlay debe bloquear la interacción con el fondo (`z-[60]` o superior, por encima de menús `z-50`); los modales anidados usan `z-[70]`/`z-[80]`, `Select` usa `z-[90]` y los toasts `z-[100]`.
+- Todo modal debe tener siempre una acción visible de cierre, incluso en `loading`/`saving` y antes de seleccionar una entidad.
+- Todo modal de confirmación por palabra (por ejemplo `DeleteModal` con `confirmo`, o reapertura de mes con `reabrir`/`reopen`) debe enfocar el input automáticamente al abrirse y permitir confirmar con **Enter** cuando la palabra es válida y la acción está habilitada, ejecutando lo mismo que el botón. Ver SPEC-122, SPEC-126 y `docs/project-rules.md` §4.7.
+- El drawer del sidebar móvil no es un modal y conserva su cierre por click fuera.
+
 ## 2. Requerimientos
 
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
@@ -146,6 +153,7 @@ Entidad: [Nombre]
 - [ ] CA-001: Dado [contexto], cuando [acción], entonces [resultado esperado]
 - [ ] CA-002: Dado [contexto], cuando [acción], entonces [resultado esperado]
 - [ ] CA-DARK: Si la spec toca formularios/modales, los inputs usan tokens del tema (`bg-card`, `text-text`) y se verificó legibilidad en darkmode (texto y placeholders).
+- [ ] CA-MODAL: Si la spec crea o modifica modales, el click fuera no los cierra, el overlay bloquea la interacción con el fondo, el cierre es solo con Cancelar/Cerrar/Listo o la X (visible en todos los estados), se respeta la escala de capas (`z-[60]`/`z-[70]`/`z-[80]`/`z-[90]`/`z-[100]`) y todo modal de confirmación por palabra enfoca el input al abrirse y acepta Enter cuando la palabra es válida.
 - [ ] CA-BACK: Si la spec crea una página de detalle o formulario con lista padre, el retorno se hace con la flecha atrás del header (registrada en `BACK_ROUTES`) y NO existen links "← Título" dentro del contenido.
 
 ### 5.2 No funcionales

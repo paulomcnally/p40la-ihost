@@ -32,7 +32,7 @@ export default function Select({
   searchable = false,
   searchPlaceholder = 'Buscar...',
   emptyLabel = 'Sin resultados',
-  zIndex = 'z-50',
+  zIndex = 'z-[90]',
 }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
