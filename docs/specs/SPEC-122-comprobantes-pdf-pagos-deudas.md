@@ -1,7 +1,7 @@
 ---
 title: "Facturas y comprobantes PDF en pagos de deudas: upload, almacenamiento en volumen y visualización"
 id: "SPEC-122"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-07"
 updated: "2026-11-07"
@@ -11,7 +11,7 @@ github_issue: 125
 # Facturas y comprobantes PDF en pagos de deudas: upload, almacenamiento en volumen y visualización
 
 **ID**: SPEC-122
-**Estado**: in_progress
+**Estado**: released
 **Autor**: opencode
 **Creado**: 2026-11-07
 **Actualizado**: 2026-11-07
@@ -477,42 +477,42 @@ file: <PDF obligatorio>
 
 ### 5.1 Funcionales
 
-- [ ] **CA-001**: El modal de pago muestra dos áreas de upload independientes, "Factura" y "Comprobante", con drag & drop y botón de selección.
-- [ ] **CA-002**: Se puede pagar sin documentos, solo con factura, solo con comprobante o con ambos.
-- [ ] **CA-003**: Al pagar con ambos PDFs válidos se crean `{DATA_DIR}/documents/{debt_id}/invoice_{n}.pdf` y `receipt_{n}.pdf` (creando el directorio si no existe), la cuota queda `paid` con `has_invoice=true` y `has_receipt=true`.
-- [ ] **CA-004**: Al pagar solo con factura o solo con comprobante, se crea únicamente el archivo correspondiente y el otro flag queda `false`.
-- [ ] **CA-005**: Se rechaza con mensaje claro cualquier documento que no sea PDF, esté vacío o supere 10 MB; en esos casos la cuota no cambia de estado y no queda ningún archivo final ni temporal.
-- [ ] **CA-006**: `GET /api/debt-bills/{id}/invoice` y `GET /api/debt-bills/{id}/receipt` devuelven el PDF correcto con `Content-Type: application/pdf`; los iconos y opciones del menú abren el documento correspondiente en una pestaña nueva.
-- [ ] **CA-007**: Los iconos de factura (`bill`) y comprobante (`pdf`) aparecen por separado en el detalle de la deuda, el calendario (desktop y móvil) y el análisis (búsqueda y pagadas por adelantado). La tarjeta de deuda muestra un indicador si `has_documents=true`.
-- [ ] **CA-008**: El menú de 3 puntos de una cuota pagada muestra únicamente **"Factura"** y **"Comprobante"**; cada opción abre el modal del documento correspondiente. No existen textos "Adjuntar", "Reemplazar", "Ver factura" ni "Ver comprobante" en el menú.
-- [ ] **CA-009**: Re-subir una factura reemplaza solo `invoice_{n}.pdf` y no afecta el comprobante; re-subir un comprobante reemplaza solo `receipt_{n}.pdf`.
-- [ ] **CA-010**: El endpoint de pago sigue aceptando JSON (sin documentos) y devuelve ambos flags en `false`.
-- [ ] **CA-011**: `documents/` está dentro de `DATA_DIR` (`/app/data`), sobrevive a un reinicio del contenedor y no requiere un volumen nuevo.
-- [ ] **CA-012**: No se agregó ninguna migración ni columna a `debt_bills`; `PRAGMA table_info(debt_bills)` no cambia.
-- [ ] **CA-013**: Los archivos se sirven solo por los endpoints autenticados; no hay listado estático ni acceso directo por URL a `documents/`.
-- [ ] **CA-014**: Si se borra un archivo manualmente del volumen, solo su flag pasa a `false` y su endpoint devuelve 404; el otro documento sigue visible y descargable.
-- [ ] **CA-015**: El modal de documento permite subir el PDF si no existe; si existe, muestra los botones "Abrir" y "Remover". "Remover" abre el modal de confirmación que exige escribir "confirmo" y, al confirmar, elimina solo ese archivo.
-- [ ] **CA-018**: `DELETE /api/debt-bills/{id}/invoice` y `DELETE /api/debt-bills/{id}/receipt` remueven solo el archivo indicado, actualizan sus flags y dejan intacto el otro documento.
-- [ ] **CA-019**: Remover un documento inexistente devuelve `404`; remover en una cuota pendiente devuelve `400 not_paid`.
-- [ ] **CA-020**: Después de subir una factura o comprobante desde el modal, el modal permanece abierto y muestra los botones "Abrir" y "Remover" del documento recién subido.
-- [ ] **CA-021**: Hacer click fuera del modal de documento no lo cierra; solo lo cierran la X o los botones Cancelar/Cerrar.
-- [ ] **CA-022**: Mientras el modal de documento está abierto, el overlay bloquea los clicks en la página de fondo; el menú de 3 puntos y otros controles no responden.
-- [ ] **CA-023**: Ningún modal del proyecto (incluido `DeleteModal` y los modales existentes de formularios/selectores) se cierra al hacer click fuera; todos tienen Cancelar/Cerrar o X.
-- [ ] **CA-024**: En el modal de confirmación, escribir "confirmo" y presionar Enter ejecuta la acción de eliminar; con un texto inválido, Enter no hace nada.
-- [ ] **CA-025**: Al abrir el modal de confirmación, el input de texto recibe foco automáticamente.
-- [ ] **CA-016**: Con `?download=1`, ambos endpoints devuelven `Content-Disposition: attachment`.
-- [ ] **CA-017**: En el detalle de deuda, el menú de 3 puntos de cada cuota queda visible y clickeable sin superposición con el badge de estado ("Pendiente"/"Pagada") ni con el monto, en móvil y desktop.
-- [ ] **CA-DARK**: Las dos áreas de upload, los nombres de archivo y los textos de ayuda usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode.
-- [ ] **CA-I18N**: Las claves nuevas existen en `frontend/public/i18n/es.json` y `en.json`, y `npm run build` las copia a `public/i18n/`.
-- [ ] **CA-BUILD**: `go test ./...`, `go vet ./...` y `npm run build` (que ejecuta `check-ui-rules.cjs`) pasan sin errores.
+- [x] **CA-001**: El modal de pago muestra dos áreas de upload independientes, "Factura" y "Comprobante", con drag & drop y botón de selección.
+- [x] **CA-002**: Se puede pagar sin documentos, solo con factura, solo con comprobante o con ambos.
+- [x] **CA-003**: Al pagar con ambos PDFs válidos se crean `{DATA_DIR}/documents/{debt_id}/invoice_{n}.pdf` y `receipt_{n}.pdf` (creando el directorio si no existe), la cuota queda `paid` con `has_invoice=true` y `has_receipt=true`.
+- [x] **CA-004**: Al pagar solo con factura o solo con comprobante, se crea únicamente el archivo correspondiente y el otro flag queda `false`.
+- [x] **CA-005**: Se rechaza con mensaje claro cualquier documento que no sea PDF, esté vacío o supere 10 MB; en esos casos la cuota no cambia de estado y no queda ningún archivo final ni temporal.
+- [x] **CA-006**: `GET /api/debt-bills/{id}/invoice` y `GET /api/debt-bills/{id}/receipt` devuelven el PDF correcto con `Content-Type: application/pdf`; los iconos y opciones del menú abren el documento correspondiente en una pestaña nueva.
+- [x] **CA-007**: Los iconos de factura (`bill`) y comprobante (`pdf`) aparecen por separado en el detalle de la deuda, el calendario (desktop y móvil) y el análisis (búsqueda y pagadas por adelantado). La tarjeta de deuda muestra un indicador si `has_documents=true`.
+- [x] **CA-008**: El menú de 3 puntos de una cuota pagada muestra únicamente **"Factura"** y **"Comprobante"**; cada opción abre el modal del documento correspondiente. No existen textos "Adjuntar", "Reemplazar", "Ver factura" ni "Ver comprobante" en el menú.
+- [x] **CA-009**: Re-subir una factura reemplaza solo `invoice_{n}.pdf` y no afecta el comprobante; re-subir un comprobante reemplaza solo `receipt_{n}.pdf`.
+- [x] **CA-010**: El endpoint de pago sigue aceptando JSON (sin documentos) y devuelve ambos flags en `false`.
+- [x] **CA-011**: `documents/` está dentro de `DATA_DIR` (`/app/data`), sobrevive a un reinicio del contenedor y no requiere un volumen nuevo.
+- [x] **CA-012**: No se agregó ninguna migración ni columna a `debt_bills`; `PRAGMA table_info(debt_bills)` no cambia.
+- [x] **CA-013**: Los archivos se sirven solo por los endpoints autenticados; no hay listado estático ni acceso directo por URL a `documents/`.
+- [x] **CA-014**: Si se borra un archivo manualmente del volumen, solo su flag pasa a `false` y su endpoint devuelve 404; el otro documento sigue visible y descargable.
+- [x] **CA-015**: El modal de documento permite subir el PDF si no existe; si existe, muestra los botones "Abrir" y "Remover". "Remover" abre el modal de confirmación que exige escribir "confirmo" y, al confirmar, elimina solo ese archivo.
+- [x] **CA-018**: `DELETE /api/debt-bills/{id}/invoice` y `DELETE /api/debt-bills/{id}/receipt` remueven solo el archivo indicado, actualizan sus flags y dejan intacto el otro documento.
+- [x] **CA-019**: Remover un documento inexistente devuelve `404`; remover en una cuota pendiente devuelve `400 not_paid`.
+- [x] **CA-020**: Después de subir una factura o comprobante desde el modal, el modal permanece abierto y muestra los botones "Abrir" y "Remover" del documento recién subido.
+- [x] **CA-021**: Hacer click fuera del modal de documento no lo cierra; solo lo cierran la X o los botones Cancelar/Cerrar.
+- [x] **CA-022**: Mientras el modal de documento está abierto, el overlay bloquea los clicks en la página de fondo; el menú de 3 puntos y otros controles no responden.
+- [x] **CA-023**: Ningún modal del proyecto (incluido `DeleteModal` y los modales existentes de formularios/selectores) se cierra al hacer click fuera; todos tienen Cancelar/Cerrar o X.
+- [x] **CA-024**: En el modal de confirmación, escribir "confirmo" y presionar Enter ejecuta la acción de eliminar; con un texto inválido, Enter no hace nada.
+- [x] **CA-025**: Al abrir el modal de confirmación, el input de texto recibe foco automáticamente.
+- [x] **CA-016**: Con `?download=1`, ambos endpoints devuelven `Content-Disposition: attachment`.
+- [x] **CA-017**: En el detalle de deuda, el menú de 3 puntos de cada cuota queda visible y clickeable sin superposición con el badge de estado ("Pendiente"/"Pagada") ni con el monto, en móvil y desktop.
+- [x] **CA-DARK**: Las dos áreas de upload, los nombres de archivo y los textos de ayuda usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode.
+- [x] **CA-I18N**: Las claves nuevas existen en `frontend/public/i18n/es.json` y `en.json`, y `npm run build` las copia a `public/i18n/`.
+- [x] **CA-BUILD**: `go test ./...`, `go vet ./...` y `npm run build` (que ejecuta `check-ui-rules.cjs`) pasan sin errores.
 
 ### 5.2 No funcionales
 
-- [ ] **CA-NF-001**: El upload de dos PDFs de 10 MB no supera ~2 MB de RAM adicional en el server (streaming a disco).
-- [ ] **CA-NF-002**: El listado de cuotas de una deuda con 60 cuotas responde en < 300 ms en el iHost (con `os.Stat` por cuota y tipo).
-- [ ] **CA-NF-003**: No quedan archivos `.tmp` visibles tras un upload exitoso.
-- [ ] **CA-NF-004**: Los endpoints de descarga envían `X-Content-Type-Options: nosniff` y solo sirven archivos con firma `%PDF-`.
-- [ ] **CA-NF-005**: Las rutas finales no contienen ningún componente provisto por el usuario; `debt_id` e `installment_number` se formatean como enteros y el tipo es un enum.
+- [x] **CA-NF-001**: El upload de dos PDFs de 10 MB no supera ~2 MB de RAM adicional en el server (streaming a disco).
+- [x] **CA-NF-002**: El listado de cuotas de una deuda con 60 cuotas responde en < 300 ms en el iHost (con `os.Stat` por cuota y tipo).
+- [x] **CA-NF-003**: No quedan archivos `.tmp` visibles tras un upload exitoso.
+- [x] **CA-NF-004**: Los endpoints de descarga envían `X-Content-Type-Options: nosniff` y solo sirven archivos con firma `%PDF-`.
+- [x] **CA-NF-005**: Las rutas finales no contienen ningún componente provisto por el usuario; `debt_id` e `installment_number` se formatean como enteros y el tipo es un enum.
 
 ### 5.3 Testing
 
@@ -624,3 +624,4 @@ file: <PDF obligatorio>
 | 2026-11-07 | opencode | Regla aplicada a todos los modales del proyecto: sin cierre por click fuera, overlay bloqueante y cierre solo con Cancelar/Cerrar o X. Documentada en `AGENTS.md`, `docs/project-rules.md` §4.7, el template de specs y la skill. |
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: en `DeleteModal`, escribir "confirmo" y presionar Enter ejecuta la confirmación. Regla agregada a las reglas internas y al template. |
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: al abrir `DeleteModal`, el input recibe foco automáticamente. Regla agregada a las reglas internas y al template. |
+| 2026-11-07 | opencode | Release: validación manual satisfactoria del usuario; spec liberada y tracker actualizado. |
