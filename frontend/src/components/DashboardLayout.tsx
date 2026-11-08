@@ -7,12 +7,28 @@ import { usePageTitleStore } from '../stores/pageTitleStore'
 import { Icon } from '../components/Icons'
 import Sidebar from '../components/Sidebar'
 
-const BACK_ROUTES: { pattern: RegExp; to: string }[] = [
+const BACK_ROUTES: { pattern: RegExp; to: string | ((pathname: string) => string); desktopBack?: boolean }[] = [
   { pattern: /^\/deudas\/\d+$/, to: '/deudas' },
   { pattern: /^\/deudas\/(new|edit\/\d+)$/, to: '/deudas' },
   { pattern: /^\/services\/bills\/\d+$/, to: '/services' },
   { pattern: /^\/services\/(new|edit\/\d+)$/, to: '/services' },
   { pattern: /^\/bills\/(new|edit\/\d+)$/, to: '/services' },
+  {
+    pattern: /^\/autos\/\d+\/maintenances\/\d+$/,
+    desktopBack: true,
+    to: (pathname) => {
+      const autoId = pathname.split('/')[2]
+      return `/autos/${autoId}?tab=mantenimientos`
+    },
+  },
+  {
+    pattern: /^\/autos\/\d+\/inspections\/\d+$/,
+    desktopBack: true,
+    to: (pathname) => {
+      const autoId = pathname.split('/')[2]
+      return `/autos/${autoId}?tab=inspecciones`
+    },
+  },
   { pattern: /^\/autos\/\d+$/, to: '/autos' },
   { pattern: /^\/autos\/(new|edit\/\d+)$/, to: '/autos' },
   { pattern: /^\/home\/(new|edit\/\d+)$/, to: '/home' },
@@ -69,8 +85,8 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-2">
             {backRoute ? (
               <button
-                onClick={() => navigate(backRoute.to)}
-                className="lg:hidden w-10 h-10 rounded-full flex items-center justify-center hover:bg-bg transition-colors min-h-[44px]"
+                onClick={() => navigate(typeof backRoute.to === 'function' ? backRoute.to(location.pathname) : backRoute.to)}
+                className={`${backRoute.desktopBack ? '' : 'lg:hidden'} w-10 h-10 rounded-full flex items-center justify-center hover:bg-bg transition-colors min-h-[44px]`}
                 title={t('app.back')}
               >
                 <Icon name="back" className="w-5 h-5" />

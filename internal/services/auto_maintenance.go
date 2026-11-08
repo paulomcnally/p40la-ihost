@@ -1,0 +1,354 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/paulomcnally/p40la-ihost/internal/models"
+	"github.com/paulomcnally/p40la-ihost/internal/storage"
+)
+
+const (
+	institutionCategoryWorkshop             = "workshop"
+	institutionCategoryMechanicalInspection = "mechanical_inspection"
+)
+
+// AutoMaintenanceService contiene la lógica de negocio de los mantenimientos
+// por kilometraje (SPEC-124).
+type AutoMaintenanceService struct {
+	storage      *storage.AutoMaintenanceStorage
+	autos        *storage.AutoStorage
+	institutions *storage.InstitutionStorage
+	currencies   *storage.CurrencyStorage
+	attachments  *AutoAttachmentService
+	now          func() time.Time
+}
+
+// NewAutoMaintenanceService crea un nuevo AutoMaintenanceService.
+func NewAutoMaintenanceService(
+	st *storage.AutoMaintenanceStorage,
+	autos *storage.AutoStorage,
+	institutions *storage.InstitutionStorage,
+	currencies *storage.CurrencyStorage,
+	attachments *AutoAttachmentService,
+) *AutoMaintenanceService {
+	return &AutoMaintenanceService{
+		storage:      st,
+		autos:        autos,
+		institutions: institutions,
+		currencies:   currencies,
+		attachments:  attachments,
+		now:          time.Now,
+	}
+}
+
+// List devuelve los mantenimientos de un auto, el último kilometraje y los
+// totales por moneda.
+func (s *AutoMaintenanceService) List(ctx context.Context, autoID int64) (*models.AutoMaintenanceList, error) {
+	if _, err := s.requireAuto(ctx, autoID); err != nil {
+		return nil, err
+	}
+
+	items, err := s.storage.ListByAuto(ctx, autoID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.applyItemsGrouped(ctx, autoID, items); err != nil {
+		return nil, err
+	}
+	if err := s.attachFiles(ctx, autoID, items); err != nil {
+		return nil, err
+	}
+	latest, err := s.storage.LatestMileage(ctx, autoID)
+	if err != nil {
+		return nil, err
+	}
+	totals, err := s.storage.TotalsByCurrency(ctx, autoID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.AutoMaintenanceList{
+		Items:            items,
+		LatestMileage:    latest,
+		TotalsByCurrency: totals,
+	}, nil
+}
+
+// Get devuelve un mantenimiento con sus adjuntos.
+func (s *AutoMaintenanceService) Get(ctx context.Context, autoID, id int64) (*models.AutoMaintenanceDetail, error) {
+	if _, err := s.requireAuto(ctx, autoID); err != nil {
+		return nil, err
+	}
+	item, err := s.storage.GetByID(ctx, autoID, id)
+	if err != nil {
+		return nil, err
+	}
+	if item == nil {
+		return nil, ErrMaintenanceNotFound
+	}
+	if err := s.applyItemsOne(ctx, item); err != nil {
+		return nil, err
+	}
+	if err := s.attachOne(ctx, item); err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
+// Create registra un mantenimiento.
+func (s *AutoMaintenanceService) Create(ctx context.Context, autoID int64, input models.AutoMaintenanceInput) (*models.AutoMaintenanceDetail, error) {
+	auto, err := s.requireAuto(ctx, autoID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.validate(ctx, auto, &input); err != nil {
+		return nil, err
+	}
+
+	created, err := s.storage.Create(
+		ctx, autoID, input.PerformedAt, input.Mileage, input.InstitutionID,
+		input.Description, input.CurrencyID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return s.Get(ctx, autoID, created.ID)
+}
+
+// Update actualiza un mantenimiento.
+func (s *AutoMaintenanceService) Update(ctx context.Context, autoID, id int64, input models.AutoMaintenanceInput) (*models.AutoMaintenanceDetail, error) {
+	auto, err := s.requireAuto(ctx, autoID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.validate(ctx, auto, &input); err != nil {
+		return nil, err
+	}
+
+	exists, err := s.storage.Update(
+		ctx, autoID, id, input.PerformedAt, input.Mileage, input.InstitutionID,
+		input.Description, input.CurrencyID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, ErrMaintenanceNotFound
+	}
+	return s.Get(ctx, autoID, id)
+}
+
+// Delete elimina un mantenimiento y sus adjuntos.
+func (s *AutoMaintenanceService) Delete(ctx context.Context, autoID, id int64) error {
+	if _, err := s.requireAuto(ctx, autoID); err != nil {
+		return err
+	}
+	exists, err := s.storage.Delete(ctx, autoID, id)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrMaintenanceNotFound
+	}
+	return s.attachments.DeleteByOwner(ctx, autoID, models.AutoAttachmentOwnerMaintenance, id)
+}
+
+func (s *AutoMaintenanceService) validate(ctx context.Context, auto *models.Auto, input *models.AutoMaintenanceInput) error {
+	performedAt, err := parseDateOnly(strings.TrimSpace(input.PerformedAt))
+	if err != nil {
+		return err
+	}
+	if isFutureDate(performedAt, s.now()) {
+		return fmt.Errorf("la fecha del mantenimiento no puede ser futura")
+	}
+	if input.Mileage < 0 {
+		return fmt.Errorf("el kilometraje no puede ser negativo")
+	}
+	if input.CurrencyID <= 0 {
+		return ErrCurrencyNotFound
+	}
+	currency, err := s.currencies.GetByID(ctx, input.CurrencyID)
+	if err != nil {
+		return err
+	}
+	if currency == nil {
+		return ErrCurrencyNotFound
+	}
+
+	input.Description = strings.TrimSpace(input.Description)
+	input.PerformedAt = performedAt.Format("2006-01-02")
+
+	if input.InstitutionID <= 0 {
+		return fmt.Errorf("%w: el taller es requerido", ErrInstitutionNotFound)
+	}
+	institution, err := s.institutions.GetByID(ctx, input.InstitutionID)
+	if err != nil {
+		return err
+	}
+	if institution == nil {
+		return ErrInstitutionNotFound
+	}
+	key, exists, err := s.institutions.GetCategoryKey(ctx, input.InstitutionID)
+	if err != nil {
+		return err
+	}
+	if !exists || key != institutionCategoryWorkshop {
+		return fmt.Errorf("%w: se esperaba un taller mecánico", ErrInstitutionCategory)
+	}
+	return nil
+}
+
+// CreateItem agrega una línea de mano de obra o insumos al mantenimiento.
+func (s *AutoMaintenanceService) CreateItem(ctx context.Context, autoID, maintenanceID int64, input models.AutoMaintenanceItemInput) (*models.AutoMaintenanceItem, error) {
+	if err := s.requireMaintenance(ctx, autoID, maintenanceID); err != nil {
+		return nil, err
+	}
+	if err := validateMaintenanceItem(&input); err != nil {
+		return nil, err
+	}
+	return s.storage.CreateItem(ctx, maintenanceID, input)
+}
+
+// UpdateItem actualiza una línea de mano de obra o insumos.
+func (s *AutoMaintenanceService) UpdateItem(ctx context.Context, autoID, maintenanceID, itemID int64, input models.AutoMaintenanceItemInput) error {
+	if err := s.requireMaintenance(ctx, autoID, maintenanceID); err != nil {
+		return err
+	}
+	if err := validateMaintenanceItem(&input); err != nil {
+		return err
+	}
+	exists, err := s.storage.UpdateItem(ctx, maintenanceID, itemID, input)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrMaintenanceItemNotFound
+	}
+	return nil
+}
+
+// DeleteItem elimina una línea de mano de obra o insumos.
+func (s *AutoMaintenanceService) DeleteItem(ctx context.Context, autoID, maintenanceID, itemID int64) error {
+	if err := s.requireMaintenance(ctx, autoID, maintenanceID); err != nil {
+		return err
+	}
+	exists, err := s.storage.DeleteItem(ctx, maintenanceID, itemID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return ErrMaintenanceItemNotFound
+	}
+	return nil
+}
+
+func (s *AutoMaintenanceService) requireMaintenance(ctx context.Context, autoID, maintenanceID int64) error {
+	if _, err := s.requireAuto(ctx, autoID); err != nil {
+		return err
+	}
+	item, err := s.storage.GetByID(ctx, autoID, maintenanceID)
+	if err != nil {
+		return err
+	}
+	if item == nil {
+		return ErrMaintenanceNotFound
+	}
+	return nil
+}
+
+func validateMaintenanceItem(item *models.AutoMaintenanceItemInput) error {
+	item.Description = strings.TrimSpace(item.Description)
+	if item.ItemType != models.AutoMaintenanceItemLabor && item.ItemType != models.AutoMaintenanceItemSupplies {
+		return fmt.Errorf("el tipo de concepto debe ser labor o supplies")
+	}
+	if item.Description == "" {
+		return fmt.Errorf("la descripción del concepto es requerida")
+	}
+	if item.Amount < 0 {
+		return fmt.Errorf("el valor del concepto no puede ser negativo")
+	}
+	return nil
+}
+
+func (s *AutoMaintenanceService) requireAuto(ctx context.Context, autoID int64) (*models.Auto, error) {
+	auto, err := s.autos.GetByID(ctx, autoID)
+	if err != nil {
+		return nil, err
+	}
+	if auto == nil {
+		return nil, ErrAutoNotFound
+	}
+	return auto, nil
+}
+
+func (s *AutoMaintenanceService) applyItemsGrouped(ctx context.Context, autoID int64, items []models.AutoMaintenanceDetail) error {
+	grouped, err := s.storage.ListItemsByAuto(ctx, autoID)
+	if err != nil {
+		return err
+	}
+	for index := range items {
+		applyMaintenanceTotals(&items[index], grouped[items[index].ID])
+	}
+	return nil
+}
+
+func (s *AutoMaintenanceService) applyItemsOne(ctx context.Context, item *models.AutoMaintenanceDetail) error {
+	items, err := s.storage.ListItemsByMaintenance(ctx, item.ID)
+	if err != nil {
+		return err
+	}
+	applyMaintenanceTotals(item, items)
+	return nil
+}
+
+func applyMaintenanceTotals(item *models.AutoMaintenanceDetail, items []models.AutoMaintenanceItem) {
+	if items == nil {
+		items = []models.AutoMaintenanceItem{}
+	}
+	item.Items = items
+	item.LaborCost = 0
+	item.SuppliesCost = 0
+	for _, detail := range items {
+		switch detail.ItemType {
+		case models.AutoMaintenanceItemLabor:
+			item.LaborCost += detail.Amount
+		case models.AutoMaintenanceItemSupplies:
+			item.SuppliesCost += detail.Amount
+		}
+	}
+	item.TotalCost = item.LaborCost + item.SuppliesCost
+}
+
+func (s *AutoMaintenanceService) attachFiles(ctx context.Context, autoID int64, items []models.AutoMaintenanceDetail) error {
+	all, err := s.attachments.ListByAuto(ctx, autoID)
+	if err != nil {
+		return err
+	}
+	grouped := make(map[int64][]models.AutoAttachment)
+	for _, att := range all {
+		if att.OwnerType == models.AutoAttachmentOwnerMaintenance {
+			grouped[att.OwnerID] = append(grouped[att.OwnerID], att)
+		}
+	}
+	for index := range items {
+		if attachments, ok := grouped[items[index].ID]; ok {
+			items[index].Attachments = attachments
+		}
+	}
+	return nil
+}
+
+func (s *AutoMaintenanceService) attachOne(ctx context.Context, item *models.AutoMaintenanceDetail) error {
+	attachments, err := s.attachments.ListByOwner(ctx, models.AutoAttachmentOwnerMaintenance, item.ID)
+	if err != nil {
+		return err
+	}
+	if attachments == nil {
+		attachments = []models.AutoAttachment{}
+	}
+	item.Attachments = attachments
+	return nil
+}

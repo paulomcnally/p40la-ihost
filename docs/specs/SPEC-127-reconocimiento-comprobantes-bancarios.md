@@ -517,7 +517,7 @@ file: <PDF>
 
 Implementado en la rama `feature/SPEC-127`:
 
-- **Migración 0042**: tabla `document_recognitions` con hash único, estados, referencia, fecha, monto, moneda, cuota, concepto sanitizado, entidad destino, confianza, advertencias, rutas de inbox/final y timestamps. No se modificó el esquema de `debts`/`debt_bills`.
+- **Migración 0045**: tabla `document_recognitions` con hash único, estados, referencia, fecha, monto, moneda, cuota, concepto sanitizado, entidad destino, confianza, advertencias, rutas de inbox/final y timestamps. No se modificó el esquema de `debts`/`debt_bills`.
 - **Backend**:
   - `internal/recognizers/`: interfaz `ReceiptRecognizer`, registry project-level y `BankReceiptRecognizer` para nota de débito y confirmación de transferencia.
   - `internal/models/document_recognition.go`: modelos de reconocimiento, candidatos, confirmación y resultado.
@@ -538,7 +538,7 @@ Validaciones ejecutadas:
 - `go test ./...`: OK.
 - `go vet ./...`: OK.
 - `npm run build` (incluye `check:ui-rules.cjs`): OK.
-- Migración 0042 probada sobre una copia de la DB de producción (`/tmp`, eliminada al terminar): deudas 12 → 12, cuotas 702 → 702, `PRAGMA integrity_check = ok`.
+- Migración 0045 probada sobre una copia de la DB de producción (`/tmp`, eliminada al terminar): deudas 12 → 12, cuotas 702 → 702, `PRAGMA integrity_check = ok`.
 - Tests con PDFs sintéticos para ambos formatos, matching, `Detalle` repetido, duplicados, conflictos, PDF sin texto y PDF inválido.
 
 Pendiente: prueba manual del usuario en local y release formal (merge a `main`, tracker, label e issue).
