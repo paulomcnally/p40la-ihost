@@ -108,15 +108,21 @@ func newAutoRecordsFixture(t *testing.T) *autoRecordsFixture {
 	}
 }
 
+func testMaintenanceItems() []models.AutoMaintenanceItemInput {
+	return []models.AutoMaintenanceItemInput{
+		{ItemType: models.AutoMaintenanceItemLabor, Description: "Pintura", Amount: 45},
+		{ItemType: models.AutoMaintenanceItemSupplies, Description: "Tornillos", Amount: 80},
+	}
+}
+
 func (f *autoRecordsFixture) createMaintenance(t *testing.T, performedAt string, mileage int64) *models.AutoMaintenanceDetail {
 	t.Helper()
 	item, err := f.maintenance.Create(context.Background(), f.autoID, models.AutoMaintenanceInput{
 		PerformedAt:   performedAt,
 		Mileage:       mileage,
-		InstitutionID: &f.workshopID,
-		LaborCost:     45,
-		SuppliesCost:  80,
+		InstitutionID: f.workshopID,
 		CurrencyID:    f.currencyID,
+		Items:         testMaintenanceItems(),
 	})
 	if err != nil {
 		t.Fatalf("crear mantenimiento: %v", err)
@@ -144,26 +150,31 @@ func TestAutoMaintenanceServiceCreateListAndTotals(t *testing.T) {
 	ctx := context.Background()
 
 	first := f.createMaintenance(t, "2026-10-15", 42000)
-	if first.WorkshopName != "Taller Demo" {
-		t.Errorf("workshop_name autocompletado: esperado Taller Demo, got %q", first.WorkshopName)
+	if first.InstitutionID != f.workshopID || first.InstitutionName != "Taller Demo" {
+		t.Errorf("institución del mantenimiento inesperada: %+v", first.AutoMaintenance)
 	}
 	if first.TotalCost != 125 {
 		t.Errorf("total_cost: esperado 125, got %v", first.TotalCost)
 	}
+	if len(first.Items) != 2 || first.LaborCost != 45 || first.SuppliesCost != 80 {
+		t.Errorf("conceptos del mantenimiento inesperados: %+v", first.Items)
+	}
 
 	second, err := f.maintenance.Create(ctx, f.autoID, models.AutoMaintenanceInput{
-		PerformedAt:  "2026-10-20",
-		Mileage:      50000,
-		WorkshopName: "Otro Taller Demo",
-		LaborCost:    10,
-		SuppliesCost: 5,
-		CurrencyID:   f.currencyID,
+		PerformedAt:   "2026-10-20",
+		Mileage:       50000,
+		InstitutionID: f.workshopID,
+		CurrencyID:    f.currencyID,
+		Items: []models.AutoMaintenanceItemInput{
+			{ItemType: models.AutoMaintenanceItemLabor, Description: "Lijado", Amount: 10},
+			{ItemType: models.AutoMaintenanceItemSupplies, Description: "Pintura", Amount: 5},
+		},
 	})
 	if err != nil {
 		t.Fatalf("crear segundo mantenimiento: %v", err)
 	}
-	if second.InstitutionID != nil {
-		t.Errorf("institution_id debería ser nulo, got %v", *second.InstitutionID)
+	if second.InstitutionID != f.workshopID {
+		t.Errorf("institution_id: esperado %d, got %d", f.workshopID, second.InstitutionID)
 	}
 
 	list, err := f.maintenance.List(ctx, f.autoID)
@@ -181,12 +192,14 @@ func TestAutoMaintenanceServiceCreateListAndTotals(t *testing.T) {
 	}
 
 	updated, err := f.maintenance.Update(ctx, f.autoID, first.ID, models.AutoMaintenanceInput{
-		PerformedAt:  "2026-10-16",
-		Mileage:      43000,
-		WorkshopName: "Taller Demo",
-		LaborCost:    50,
-		SuppliesCost: 90,
-		CurrencyID:   f.currencyID,
+		PerformedAt:   "2026-10-16",
+		Mileage:       43000,
+		InstitutionID: f.workshopID,
+		CurrencyID:    f.currencyID,
+		Items: []models.AutoMaintenanceItemInput{
+			{ItemType: models.AutoMaintenanceItemLabor, Description: "Lijado", Amount: 50},
+			{ItemType: models.AutoMaintenanceItemSupplies, Description: "Pintura", Amount: 90},
+		},
 	})
 	if err != nil {
 		t.Fatalf("actualizar mantenimiento: %v", err)
@@ -207,24 +220,25 @@ func TestAutoMaintenanceServiceCreateListAndTotals(t *testing.T) {
 	}
 }
 
-func TestAutoMaintenanceServiceUsaNombreDeInstitucion(t *testing.T) {
+func TestAutoMaintenanceServiceUsaInstitucionComoTaller(t *testing.T) {
 	f := newAutoRecordsFixture(t)
 	ctx := context.Background()
 
 	item, err := f.maintenance.Create(ctx, f.autoID, models.AutoMaintenanceInput{
 		PerformedAt:   "2026-10-15",
 		Mileage:       1000,
-		InstitutionID: &f.workshopID,
-		WorkshopName:  "Nombre ingresado por el cliente",
-		LaborCost:     1,
-		SuppliesCost:  2,
+		InstitutionID: f.workshopID,
 		CurrencyID:    f.currencyID,
+		Items: []models.AutoMaintenanceItemInput{
+			{ItemType: models.AutoMaintenanceItemLabor, Description: "Pintura", Amount: 1},
+			{ItemType: models.AutoMaintenanceItemSupplies, Description: "Tornillos", Amount: 2},
+		},
 	})
 	if err != nil {
 		t.Fatalf("crear mantenimiento: %v", err)
 	}
-	if item.WorkshopName != "Taller Demo" {
-		t.Fatalf("workshop_name debería derivarse de la institución: got %q", item.WorkshopName)
+	if item.InstitutionID != f.workshopID || item.InstitutionName != "Taller Demo" {
+		t.Fatalf("el taller debe ser la institución asociada: %+v", item.AutoMaintenance)
 	}
 }
 
@@ -240,35 +254,63 @@ func TestAutoMaintenanceServiceValidaciones(t *testing.T) {
 		{
 			name: "taller requerido",
 			input: models.AutoMaintenanceInput{
-				PerformedAt: "2026-10-15", Mileage: 1000, CurrencyID: f.currencyID,
+				PerformedAt: "2026-10-15", Mileage: 1000, CurrencyID: f.currencyID, Items: testMaintenanceItems(),
 			},
+			wantErr: ErrInstitutionNotFound,
 		},
 		{
 			name: "kilometraje negativo",
 			input: models.AutoMaintenanceInput{
-				PerformedAt: "2026-10-15", Mileage: -1, WorkshopName: "Taller Demo", CurrencyID: f.currencyID,
+				PerformedAt: "2026-10-15", Mileage: -1, InstitutionID: f.workshopID, CurrencyID: f.currencyID, Items: testMaintenanceItems(),
 			},
 		},
 		{
 			name: "fecha futura",
 			input: models.AutoMaintenanceInput{
-				PerformedAt: "2026-12-01", Mileage: 1000, WorkshopName: "Taller Demo", CurrencyID: f.currencyID,
+				PerformedAt: "2026-12-01", Mileage: 1000, InstitutionID: f.workshopID, CurrencyID: f.currencyID, Items: testMaintenanceItems(),
 			},
 		},
 		{
 			name: "institución de categoría incorrecta",
 			input: models.AutoMaintenanceInput{
-				PerformedAt: "2026-10-15", Mileage: 1000, InstitutionID: &f.inspectionID,
-				WorkshopName: "Centro Demo", CurrencyID: f.currencyID,
+				PerformedAt: "2026-10-15", Mileage: 1000, InstitutionID: f.inspectionID, CurrencyID: f.currencyID, Items: testMaintenanceItems(),
 			},
 			wantErr: ErrInstitutionCategory,
 		},
 		{
 			name: "moneda inexistente",
 			input: models.AutoMaintenanceInput{
-				PerformedAt: "2026-10-15", Mileage: 1000, WorkshopName: "Taller Demo", CurrencyID: 999999,
+				PerformedAt: "2026-10-15", Mileage: 1000, InstitutionID: f.workshopID, CurrencyID: 999999, Items: testMaintenanceItems(),
 			},
 			wantErr: ErrCurrencyNotFound,
+		},
+		{
+			name: "sin conceptos",
+			input: models.AutoMaintenanceInput{
+				PerformedAt: "2026-10-15", Mileage: 1000, InstitutionID: f.workshopID, CurrencyID: f.currencyID,
+			},
+			wantErr: ErrMaintenanceItems,
+		},
+		{
+			name: "concepto sin descripción",
+			input: models.AutoMaintenanceInput{
+				PerformedAt: "2026-10-15", Mileage: 1000, InstitutionID: f.workshopID, CurrencyID: f.currencyID,
+				Items: []models.AutoMaintenanceItemInput{{ItemType: models.AutoMaintenanceItemLabor, Description: "  ", Amount: 10}},
+			},
+		},
+		{
+			name: "concepto con valor negativo",
+			input: models.AutoMaintenanceInput{
+				PerformedAt: "2026-10-15", Mileage: 1000, InstitutionID: f.workshopID, CurrencyID: f.currencyID,
+				Items: []models.AutoMaintenanceItemInput{{ItemType: models.AutoMaintenanceItemLabor, Description: "Pintura", Amount: -1}},
+			},
+		},
+		{
+			name: "tipo de concepto inválido",
+			input: models.AutoMaintenanceInput{
+				PerformedAt: "2026-10-15", Mileage: 1000, InstitutionID: f.workshopID, CurrencyID: f.currencyID,
+				Items: []models.AutoMaintenanceItemInput{{ItemType: "otro", Description: "Pintura", Amount: 1}},
+			},
 		},
 	}
 	for _, tc := range cases {

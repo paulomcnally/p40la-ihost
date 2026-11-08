@@ -106,10 +106,12 @@ func (a *autoRecordAPI) createMaintenance(t *testing.T) *models.AutoMaintenanceD
 	item, err := a.maintenanceService.Create(context.Background(), a.autoID, models.AutoMaintenanceInput{
 		PerformedAt:   "2026-10-15",
 		Mileage:       42000,
-		InstitutionID: &a.workshopID,
-		LaborCost:     45,
-		SuppliesCost:  80,
+		InstitutionID: a.workshopID,
 		CurrencyID:    a.currencyID,
+		Items: []models.AutoMaintenanceItemInput{
+			{ItemType: models.AutoMaintenanceItemLabor, Description: "Pintura", Amount: 45},
+			{ItemType: models.AutoMaintenanceItemSupplies, Description: "Tornillos", Amount: 80},
+		},
 	})
 	if err != nil {
 		t.Fatalf("crear mantenimiento: %v", err)
@@ -122,7 +124,11 @@ func TestAutoMaintenanceHandlerCreateAndList(t *testing.T) {
 
 	body := fmt.Sprintf(`{
 		"performed_at":"2026-10-15","mileage":42000,"institution_id":%d,
-		"labor_cost":45,"supplies_cost":80,"currency_id":%d
+		"currency_id":%d,
+		"items":[
+			{"item_type":"labor","description":"Pintura","amount":45},
+			{"item_type":"supplies","description":"Tornillos","amount":80}
+		]
 	}`, api.workshopID, api.currencyID)
 	req := httptest.NewRequest(http.MethodPost, "/api/autos/"+strconv.FormatInt(api.autoID, 10)+"/maintenances", bytes.NewBufferString(body))
 	req.AddCookie(api.cookie)
@@ -137,11 +143,14 @@ func TestAutoMaintenanceHandlerCreateAndList(t *testing.T) {
 	if err := json.Unmarshal(rr.Body.Bytes(), &created); err != nil {
 		t.Fatalf("decodificar mantenimiento: %v", err)
 	}
-	if created.WorkshopName != "Taller Demo" {
-		t.Errorf("workshop_name: esperado Taller Demo, got %q", created.WorkshopName)
+	if created.InstitutionName != "Taller Demo" {
+		t.Errorf("institution_name: esperado Taller Demo, got %q", created.InstitutionName)
 	}
 	if created.TotalCost != 125 {
 		t.Errorf("total_cost: esperado 125, got %v", created.TotalCost)
+	}
+	if len(created.Items) != 2 {
+		t.Errorf("items: esperado 2 conceptos, got %d", len(created.Items))
 	}
 
 	listReq := httptest.NewRequest(http.MethodGet, "/api/autos/"+strconv.FormatInt(api.autoID, 10)+"/maintenances", nil)

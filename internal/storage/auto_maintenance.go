@@ -9,7 +9,8 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 )
 
-// AutoMaintenanceStorage encapsula el acceso a auto_maintenances (SPEC-124).
+// AutoMaintenanceStorage encapsula el acceso a auto_maintenances y sus líneas
+// de detalle (SPEC-124).
 type AutoMaintenanceStorage struct {
 	db *sql.DB
 }
@@ -24,8 +25,7 @@ func (s *AutoMaintenanceStorage) ListByAuto(ctx context.Context, autoID int64) (
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT
 			m.id, m.auto_id, m.performed_at, m.mileage, m.institution_id,
-			m.workshop_name, m.description, m.labor_cost, m.supplies_cost,
-			m.currency_id, COALESCE(i.name, ''), COALESCE(c.code, ''),
+			m.description, m.currency_id, COALESCE(i.name, ''), COALESCE(c.code, ''),
 			m.created_at, m.updated_at
 		FROM auto_maintenances m
 		LEFT JOIN institutions i ON i.id = m.institution_id
@@ -44,6 +44,7 @@ func (s *AutoMaintenanceStorage) ListByAuto(ctx context.Context, autoID int64) (
 		if err != nil {
 			return nil, err
 		}
+		item.Items = []models.AutoMaintenanceItem{}
 		item.Attachments = []models.AutoAttachment{}
 		items = append(items, item)
 	}
@@ -55,8 +56,7 @@ func (s *AutoMaintenanceStorage) GetByID(ctx context.Context, autoID, id int64) 
 	row := s.db.QueryRowContext(ctx, `
 		SELECT
 			m.id, m.auto_id, m.performed_at, m.mileage, m.institution_id,
-			m.workshop_name, m.description, m.labor_cost, m.supplies_cost,
-			m.currency_id, COALESCE(i.name, ''), COALESCE(c.code, ''),
+			m.description, m.currency_id, COALESCE(i.name, ''), COALESCE(c.code, ''),
 			m.created_at, m.updated_at
 		FROM auto_maintenances m
 		LEFT JOIN institutions i ON i.id = m.institution_id
@@ -66,31 +66,38 @@ func (s *AutoMaintenanceStorage) GetByID(ctx context.Context, autoID, id int64) 
 
 	item, err := scanAutoMaintenanceRow(row)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
 	}
+	item.Items = []models.AutoMaintenanceItem{}
 	item.Attachments = []models.AutoAttachment{}
 	return item, nil
 }
 
-// Create inserta un mantenimiento.
+// Create inserta un mantenimiento y sus líneas de detalle en una transacción.
 func (s *AutoMaintenanceStorage) Create(
 	ctx context.Context,
 	autoID int64,
 	performedAt string,
 	mileage int64,
-	institutionID *int64,
-	workshopName, description string,
-	laborCost, suppliesCost float64,
+	institutionID int64,
+	description string,
 	currencyID int64,
+	items []models.AutoMaintenanceItemInput,
 ) (*models.AutoMaintenance, error) {
-	result, err := s.db.ExecContext(ctx, `
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("iniciar transacción de mantenimiento: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	result, err := tx.ExecContext(ctx, `
 		INSERT INTO auto_maintenances
-			(auto_id, performed_at, mileage, institution_id, workshop_name, description, labor_cost, supplies_cost, currency_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, autoID, performedAt, mileage, institutionID, workshopName, description, laborCost, suppliesCost, currencyID)
+			(auto_id, performed_at, mileage, institution_id, description, currency_id)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, autoID, performedAt, mileage, institutionID, description, currencyID)
 	if err != nil {
 		return nil, fmt.Errorf("crear mantenimiento: %w", err)
 	}
@@ -98,35 +105,38 @@ func (s *AutoMaintenanceStorage) Create(
 	if err != nil {
 		return nil, fmt.Errorf("obtener id de mantenimiento: %w", err)
 	}
-	item, err := s.GetByID(ctx, autoID, id)
-	if err != nil {
+	if err := insertAutoMaintenanceItems(ctx, tx, id, items); err != nil {
 		return nil, err
 	}
-	if item == nil {
-		return nil, fmt.Errorf("mantenimiento no encontrado después de crear")
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("confirmar mantenimiento: %w", err)
 	}
-	base := item.AutoMaintenance
-	return &base, nil
+	return s.getBase(ctx, autoID, id)
 }
 
-// Update actualiza un mantenimiento y devuelve si existía.
+// Update actualiza un mantenimiento y reemplaza sus líneas de detalle.
 func (s *AutoMaintenanceStorage) Update(
 	ctx context.Context,
 	autoID, id int64,
 	performedAt string,
 	mileage int64,
-	institutionID *int64,
-	workshopName, description string,
-	laborCost, suppliesCost float64,
+	institutionID int64,
+	description string,
 	currencyID int64,
+	items []models.AutoMaintenanceItemInput,
 ) (bool, error) {
-	result, err := s.db.ExecContext(ctx, `
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, fmt.Errorf("iniciar transacción de mantenimiento: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	result, err := tx.ExecContext(ctx, `
 		UPDATE auto_maintenances
-		SET performed_at = ?, mileage = ?, institution_id = ?, workshop_name = ?,
-			description = ?, labor_cost = ?, supplies_cost = ?, currency_id = ?,
-			updated_at = CURRENT_TIMESTAMP
+		SET performed_at = ?, mileage = ?, institution_id = ?, description = ?,
+			currency_id = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE auto_id = ? AND id = ?
-	`, performedAt, mileage, institutionID, workshopName, description, laborCost, suppliesCost, currencyID, autoID, id)
+	`, performedAt, mileage, institutionID, description, currencyID, autoID, id)
 	if err != nil {
 		return false, fmt.Errorf("actualizar mantenimiento: %w", err)
 	}
@@ -134,10 +144,24 @@ func (s *AutoMaintenanceStorage) Update(
 	if err != nil {
 		return false, fmt.Errorf("verificar actualización de mantenimiento: %w", err)
 	}
-	return affected > 0, nil
+	if affected == 0 {
+		return false, nil
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM auto_maintenance_items WHERE maintenance_id = ?`, id); err != nil {
+		return false, fmt.Errorf("limpiar conceptos del mantenimiento: %w", err)
+	}
+	if err := insertAutoMaintenanceItems(ctx, tx, id, items); err != nil {
+		return false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return false, fmt.Errorf("confirmar mantenimiento: %w", err)
+	}
+	return true, nil
 }
 
-// Delete elimina un mantenimiento y devuelve si existía.
+// Delete elimina un mantenimiento y devuelve si existía. Las líneas se
+// eliminan por ON DELETE CASCADE.
 func (s *AutoMaintenanceStorage) Delete(ctx context.Context, autoID, id int64) (bool, error) {
 	result, err := s.db.ExecContext(ctx, `
 		DELETE FROM auto_maintenances WHERE auto_id = ? AND id = ?
@@ -163,11 +187,12 @@ func (s *AutoMaintenanceStorage) LatestMileage(ctx context.Context, autoID int64
 	return mileage, nil
 }
 
-// TotalsByCurrency devuelve la suma de mano de obra e insumos por moneda.
+// TotalsByCurrency devuelve la suma de las líneas por moneda del mantenimiento.
 func (s *AutoMaintenanceStorage) TotalsByCurrency(ctx context.Context, autoID int64) ([]models.AutoMaintenanceCurrencyTotal, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT m.currency_id, COALESCE(c.code, ''), COALESCE(SUM(m.labor_cost + m.supplies_cost), 0)
+		SELECT m.currency_id, COALESCE(c.code, ''), COALESCE(SUM(i.amount), 0)
 		FROM auto_maintenances m
+		JOIN auto_maintenance_items i ON i.maintenance_id = m.id
 		LEFT JOIN currencies c ON c.id = m.currency_id
 		WHERE m.auto_id = ?
 		GROUP BY m.currency_id, c.code
@@ -189,25 +214,93 @@ func (s *AutoMaintenanceStorage) TotalsByCurrency(ctx context.Context, autoID in
 	return totals, rows.Err()
 }
 
+// ListItemsByAuto devuelve las líneas de todos los mantenimientos de un auto,
+// agrupadas por mantenimiento.
+func (s *AutoMaintenanceStorage) ListItemsByAuto(ctx context.Context, autoID int64) (map[int64][]models.AutoMaintenanceItem, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT i.id, i.maintenance_id, i.item_type, i.description, i.amount, i.created_at, i.updated_at
+		FROM auto_maintenance_items i
+		JOIN auto_maintenances m ON m.id = i.maintenance_id
+		WHERE m.auto_id = ?
+		ORDER BY i.maintenance_id, i.id
+	`, autoID)
+	if err != nil {
+		return nil, fmt.Errorf("listar conceptos de mantenimientos: %w", err)
+	}
+	defer rows.Close()
+
+	grouped := make(map[int64][]models.AutoMaintenanceItem)
+	for rows.Next() {
+		item, err := scanAutoMaintenanceItem(rows)
+		if err != nil {
+			return nil, err
+		}
+		grouped[item.MaintenanceID] = append(grouped[item.MaintenanceID], item)
+	}
+	return grouped, rows.Err()
+}
+
+// ListItemsByMaintenance devuelve las líneas de un mantenimiento.
+func (s *AutoMaintenanceStorage) ListItemsByMaintenance(ctx context.Context, maintenanceID int64) ([]models.AutoMaintenanceItem, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, maintenance_id, item_type, description, amount, created_at, updated_at
+		FROM auto_maintenance_items
+		WHERE maintenance_id = ?
+		ORDER BY id
+	`, maintenanceID)
+	if err != nil {
+		return nil, fmt.Errorf("listar conceptos del mantenimiento: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]models.AutoMaintenanceItem, 0)
+	for rows.Next() {
+		item, err := scanAutoMaintenanceItem(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *AutoMaintenanceStorage) getBase(ctx context.Context, autoID, id int64) (*models.AutoMaintenance, error) {
+	item, err := s.GetByID(ctx, autoID, id)
+	if err != nil {
+		return nil, err
+	}
+	if item == nil {
+		return nil, fmt.Errorf("mantenimiento no encontrado después de crear")
+	}
+	base := item.AutoMaintenance
+	return &base, nil
+}
+
+func insertAutoMaintenanceItems(ctx context.Context, tx *sql.Tx, maintenanceID int64, items []models.AutoMaintenanceItemInput) error {
+	for _, item := range items {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO auto_maintenance_items (maintenance_id, item_type, description, amount)
+			VALUES (?, ?, ?, ?)
+		`, maintenanceID, item.ItemType, item.Description, item.Amount); err != nil {
+			return fmt.Errorf("insertar concepto del mantenimiento: %w", err)
+		}
+	}
+	return nil
+}
+
 type autoMaintenanceScanner interface {
 	Scan(dest ...any) error
 }
 
 func scanAutoMaintenance(scanner autoMaintenanceScanner) (models.AutoMaintenanceDetail, error) {
 	var item models.AutoMaintenanceDetail
-	var institutionID sql.NullInt64
 	if err := scanner.Scan(
-		&item.ID, &item.AutoID, &item.PerformedAt, &item.Mileage, &institutionID,
-		&item.WorkshopName, &item.Description, &item.LaborCost, &item.SuppliesCost,
-		&item.CurrencyID, &item.InstitutionName, &item.CurrencyCode,
+		&item.ID, &item.AutoID, &item.PerformedAt, &item.Mileage, &item.InstitutionID,
+		&item.Description, &item.CurrencyID, &item.InstitutionName, &item.CurrencyCode,
 		&item.CreatedAt, &item.UpdatedAt,
 	); err != nil {
 		return item, fmt.Errorf("escanear mantenimiento: %w", err)
 	}
-	if institutionID.Valid {
-		item.InstitutionID = &institutionID.Int64
-	}
-	item.TotalCost = item.LaborCost + item.SuppliesCost
 	return item, nil
 }
 
@@ -220,4 +313,15 @@ func scanAutoMaintenanceRow(row *sql.Row) (*models.AutoMaintenanceDetail, error)
 		return nil, err
 	}
 	return &item, nil
+}
+
+func scanAutoMaintenanceItem(scanner autoMaintenanceScanner) (models.AutoMaintenanceItem, error) {
+	var item models.AutoMaintenanceItem
+	if err := scanner.Scan(
+		&item.ID, &item.MaintenanceID, &item.ItemType, &item.Description,
+		&item.Amount, &item.CreatedAt, &item.UpdatedAt,
+	); err != nil {
+		return item, fmt.Errorf("escanear concepto de mantenimiento: %w", err)
+	}
+	return item, nil
 }

@@ -346,10 +346,30 @@ export default function AutoShowPage() {
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                     {item.mileage.toLocaleString()} km
                   </span>
-                  <span className="text-sm text-text-secondary break-words">{item.workshop_name}</span>
+                  <span className="text-sm text-text-secondary break-words">{item.institution_name}</span>
                 </div>
                 {item.description && (
                   <p className="text-sm text-text-secondary mt-1 break-words">{item.description}</p>
+                )}
+                {item.items.length > 0 && (
+                  <div className="mt-1 space-y-0.5 text-xs text-text-secondary">
+                    {(['labor', 'supplies'] as const).map((itemType) => {
+                      const detailItems = item.items.filter((detail) => detail.item_type === itemType)
+                      if (detailItems.length === 0) return null
+                      return (
+                        <p key={itemType} className="break-words">
+                          <span className="font-medium">
+                            {itemType === 'labor'
+                              ? t('autos.maintenances.labor_items')
+                              : t('autos.maintenances.supplies_items')}:
+                          </span>{' '}
+                          {detailItems
+                            .map((detail) => `${detail.description} (${formatMoney(detail.amount, currencyLabel(item.currency_id))})`)
+                            .join(' · ')}
+                        </p>
+                      )
+                    })}
+                  </div>
                 )}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-text-secondary">
                   <span>{t('autos.maintenances.labor_cost')}: {formatMoney(item.labor_cost, currencyLabel(item.currency_id))}</span>

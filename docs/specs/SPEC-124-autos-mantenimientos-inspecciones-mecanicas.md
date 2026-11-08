@@ -32,8 +32,8 @@ La implementación debe respetar las limitaciones del iHost: cero dependencias n
 
 ### 2.1 Requerimientos Funcionales (P0 - Obligatorios)
 
-1. **REQ-001**: Registrar mantenimientos por auto con los campos obligatorios: fecha de realización (`performed_at`), kilometraje (`mileage`), nombre del taller (`workshop_name`), mano de obra (`labor_cost`), insumos (`supplies_cost`) y moneda (`currency_id`). El total (`labor_cost + supplies_cost`) se calcula y se muestra, no se persiste.
-2. **REQ-002**: Permitir asociar un mantenimiento a una institución de categoría **Taller Mecánico**. La institución es opcional; si se elige, el nombre del taller se autocompleta con el nombre de la institución y sigue siendo editable. El campo `workshop_name` es obligatorio aun sin institución.
+1. **REQ-001**: Registrar mantenimientos por auto con los campos obligatorios: fecha de realización (`performed_at`), kilometraje (`mileage`), institución de categoría **Taller Mecánico** (`institution_id`) y moneda (`currency_id`). La mano de obra y los insumos se registran como líneas de detalle (`auto_maintenance_items`), cada una con tipo (`labor`/`supplies`), descripción y valor. Los totales de mano de obra, insumos y general se calculan sumando las líneas.
+2. **REQ-002**: El mantenimiento debe estar asociado a una institución de categoría **Taller Mecánico**. La institución es obligatoria; el nombre del taller se obtiene de la relación `institution_id` y no existe un campo de texto separado ni una columna `workshop_name`.
 3. **REQ-003**: Permitir descripción libre del trabajo realizado (`description`, opcional) y ordenar los mantenimientos por fecha descendente.
 4. **REQ-004**: Permitir subir **múltiples PDFs** por mantenimiento (0 a N, hasta el límite técnico definido en REQ-014), listarlos, descargarlos/abrirlos y eliminarlos individualmente.
 5. **REQ-005**: Registrar inspecciones mecánicas por auto con los campos obligatorios: fecha de realización (`performed_at`), año de la inspección (`inspection_year`), institución de categoría **Inspección Mecánica** y resultado (`approved`/`rejected`). `notes` es opcional.
@@ -66,7 +66,8 @@ La implementación debe respetar las limitaciones del iHost: cero dependencias n
 9. **REQ-033**: Mostrar en cada fila de mantenimiento e inspección una acción visible **Adjuntar PDF** que abra un modal dedicado para gestionar los comprobantes de un registro ya creado, sin tener que editar el resto de sus campos. El modal permite subir varios PDFs y eliminar los existentes, y el contador de la fila se actualiza al cerrar.
 10. **REQ-034**: Mostrar en cada fila de mantenimiento e inspección una acción visible **Editar** además del menú de 3 puntos. En el banner de inspecciones, cuando el estado es `overdue` o `due_soon`, incluir una acción directa **Registrar inspección de {año}** que abra el modal con el año pendiente preseleccionado. El estado “Vencida” es el resultado calculado del ciclo pendiente y no un registro editable: si no existe una inspección para ese año, el usuario debe crearla.
 11. **REQ-035**: Organizar los modales de crear/editar mantenimiento e inspección en dos tabs: **Información** y **Facturas**. Información contiene los campos del registro; Facturas contiene la gestión de PDFs (subir, abrir, eliminar y pendientes). El tab Facturas muestra el contador de adjuntos existentes más pendientes. Si se intenta guardar desde Facturas con datos obligatorios incompletos, el modal vuelve a Información y muestra el error.
-12. **REQ-036**: Evitar la duplicación del nombre del taller cuando hay una institución asociada. Si el mantenimiento tiene `institution_id`, el backend usa siempre el nombre de esa institución y el formulario no muestra el campo “Nombre del taller”; muestra solo una nota de que el nombre se toma de la institución. Si no hay institución, el campo de nombre libre es obligatorio.
+12. **REQ-036**: No almacenar el nombre del taller como columna. La migración `0043` elimina `workshop_name`, migra los talleres libres existentes a instituciones de categoría `workshop` y deja `institution_id` como `NOT NULL`. El formulario solo muestra el selector de taller y la API rechaza un mantenimiento sin `institution_id`.
+13. **REQ-037**: Registrar la mano de obra y los insumos como líneas únicas en `auto_maintenance_items` (`item_type`, `description`, `amount`), asociadas al mantenimiento. Un mantenimiento debe tener al menos una línea y cada línea debe tener descripción y valor no negativo. Los totales `labor_cost`, `supplies_cost` y `total_cost` se calculan en la respuesta y no se persisten. La migración `0044` crea la tabla, migra los escalares existentes a líneas “Mano de obra” e “Insumos” y elimina las columnas escalares.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -102,7 +103,7 @@ Se revisó el estado actual del repositorio (rama `main`, commit `ec19532`):
   - Comprobantes de pago de deudas (SPEC-122): `{DATA_DIR}/documents/{debt_id}/receipt_{installment}.pdf`, un archivo por cuota, 10 MB, validación `%PDF-`, escritura atómica con `os.CreateTemp` + `os.Rename`.
   - Contratos (SPEC-123): `{DATA_DIR}/contracts/...`, un archivo fijo `contract.pdf` por entidad.
   Ningún precedente soporta **múltiples archivos por registro**; esta spec introduce una tabla de metadatos y una carpeta por registro.
-- **Migraciones**: la última es `0041_create_pension_import`. La nueva migración es `0042_create_auto_maintenance_inspection`.
+- **Migraciones**: la última es `0041_create_pension_import`. Las nuevas migraciones son `0042_create_auto_maintenance_inspection`, `0043_auto_maintenance_institution_reference` (elimina `workshop_name` y hace `institution_id` obligatorio) y `0044_auto_maintenance_items` (líneas de mano de obra e insumos).
 - **UI**: el detalle del auto usa modales (`AddInsuranceModal`, `DeleteModal`) y `CardMenu`. No hay componente de tabs compartido; para no agregar rutas nuevas se mantienen secciones y modales.
 - **Moneda**: `currencies` (`0002`) y el selector `Select` con `api.currencies.list()`; los formularios de deuda y servicio inicializan con `currencies[0]`.
 - **i18n**: fuente de verdad `frontend/public/i18n/{es,en}.json`; el build copia y valida. SPEC-060/063/004/118 fijan las reglas de darkmode, flecha atrás y `Select`.
@@ -194,9 +195,9 @@ Se revisó el estado actual del repositorio (rama `main`, commit `ec19532`):
 
 ### 4.2 Componentes
 
-#### 4.2.1 Migración `0042_create_auto_maintenance_inspection`
-- **Responsabilidad**: crear las tablas, índices y categorías de institución.
-- **Ubicación**: `migrations/0042_create_auto_maintenance_inspection.up.sql` y `.down.sql`.
+#### 4.2.1 Migraciones `0042`, `0043` y `0044`
+- **Responsabilidad**: `0042` crea las tablas, índices y categorías de institución. `0043` migra los talleres libres existentes a instituciones, elimina la columna `workshop_name` y deja `institution_id` como `NOT NULL`. `0044` crea `auto_maintenance_items`, migra `labor_cost`/`supplies_cost` a líneas y elimina esas columnas escalares.
+- **Ubicación**: `migrations/0042_create_auto_maintenance_inspection.{up,down}.sql`, `migrations/0043_auto_maintenance_institution_reference.{up,down}.sql` y `migrations/0044_auto_maintenance_items.{up,down}.sql`.
 
 #### 4.2.2 Modelos
 - **Responsabilidad**: structs de dominio y DTOs de respuesta.
@@ -256,16 +257,13 @@ CREATE TABLE IF NOT EXISTS auto_maintenances (
     auto_id INTEGER NOT NULL,
     performed_at TEXT NOT NULL,              -- YYYY-MM-DD
     mileage INTEGER NOT NULL CHECK (mileage >= 0),
-    institution_id INTEGER,                  -- nullable, categoría workshop
-    workshop_name TEXT NOT NULL DEFAULT '',
+    institution_id INTEGER NOT NULL,         -- categoría workshop
     description TEXT NOT NULL DEFAULT '',
-    labor_cost REAL NOT NULL DEFAULT 0 CHECK (labor_cost >= 0),
-    supplies_cost REAL NOT NULL DEFAULT 0 CHECK (supplies_cost >= 0),
     currency_id INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (auto_id) REFERENCES autos(id) ON DELETE CASCADE,
-    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id),
     FOREIGN KEY (currency_id) REFERENCES currencies(id)
 );
 
@@ -273,6 +271,24 @@ CREATE INDEX IF NOT EXISTS idx_auto_maintenances_auto_date
     ON auto_maintenances(auto_id, performed_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_auto_maintenances_institution
     ON auto_maintenances(institution_id);
+```
+
+#### `auto_maintenance_items`
+
+```sql
+CREATE TABLE IF NOT EXISTS auto_maintenance_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    maintenance_id INTEGER NOT NULL,
+    item_type TEXT NOT NULL CHECK (item_type IN ('labor', 'supplies')),
+    description TEXT NOT NULL,
+    amount REAL NOT NULL DEFAULT 0 CHECK (amount >= 0),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (maintenance_id) REFERENCES auto_maintenances(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_auto_maintenance_items_maintenance
+    ON auto_maintenance_items(maintenance_id, item_type, id);
 ```
 
 #### `auto_inspections`
@@ -370,11 +386,13 @@ Todos los endpoints requieren sesión válida (401 sin sesión).
   "performed_at": "2026-10-15",
   "mileage": 42000,
   "institution_id": 12,
-  "workshop_name": "Taller Demo",
   "description": "Cambio de aceite y filtros",
-  "labor_cost": 45.0,
-  "supplies_cost": 80.0,
-  "currency_id": 1
+  "currency_id": 1,
+  "items": [
+    { "item_type": "labor", "description": "Pintura", "amount": 45.0 },
+    { "item_type": "supplies", "description": "Pintura", "amount": 50.0 },
+    { "item_type": "supplies", "description": "Tornillos", "amount": 30.0 }
+  ]
 }
 ```
 
@@ -388,13 +406,17 @@ Todos los endpoints requieren sesión válida (401 sin sesión).
   "mileage": 42000,
   "institution_id": 12,
   "institution_name": "Taller Demo",
-  "workshop_name": "Taller Demo",
   "description": "Cambio de aceite y filtros",
   "labor_cost": 45.0,
   "supplies_cost": 80.0,
   "total_cost": 125.0,
   "currency_id": 1,
   "currency_code": "NIO",
+  "items": [
+    { "id": 1, "maintenance_id": 1, "item_type": "labor", "description": "Pintura", "amount": 45.0 },
+    { "id": 2, "maintenance_id": 1, "item_type": "supplies", "description": "Pintura", "amount": 50.0 },
+    { "id": 3, "maintenance_id": 1, "item_type": "supplies", "description": "Tornillos", "amount": 30.0 }
+  ],
   "created_at": "2026-10-15T10:00:00Z",
   "updated_at": "2026-10-15T10:00:00Z",
   "attachments": [
@@ -536,9 +558,9 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 ### 5.1 Funcionales
 
 - [ ] CA-001: Dado un auto existente, cuando se crea un mantenimiento con fecha, kilometraje, taller, mano de obra, insumos y moneda válidos, entonces responde `201` y el registro aparece en la sección.
-- [ ] CA-002: Si falta `mileage`, `workshop_name`, la moneda o algún monto es negativo, la API responde `400` con un mensaje claro y no inserta nada.
-- [ ] CA-003: Al elegir una institución de categoría `workshop`, el campo `workshop_name` se autocompleta y sigue siendo editable; el selector solo muestra instituciones de esa categoría.
-- [ ] CA-004: El total mostrado es `labor_cost + supplies_cost`, con el formato de moneda configurado.
+- [ ] CA-002: Si falta `mileage`, `institution_id`, la moneda o algún monto es negativo, la API responde `400` con un mensaje claro y no inserta nada.
+- [ ] CA-003: El formulario exige una institución de categoría `workshop`; el nombre del taller mostrado y guardado se obtiene de esa institución, sin campo de texto editable.
+- [ ] CA-004: El total mostrado es la suma de las líneas de mano de obra e insumos, con el formato de moneda configurado.
 - [ ] CA-005: Se pueden subir al menos 3 PDFs al mismo mantenimiento, listarlos, abrirlos y eliminarlos individualmente.
 - [ ] CA-006: Un archivo que no es PDF, uno de 0 bytes, uno mayor a 10 MB o uno sin firma `%PDF-` se rechaza y no deja archivo en disco.
 - [ ] CA-007: Superar 20 adjuntos en un registro devuelve `409` y no escribe el archivo.
@@ -552,7 +574,7 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 - [ ] CA-015: Al eliminar un auto, se eliminan sus mantenimientos, inspecciones, adjuntos y el directorio `{DATA_DIR}/autos/{auto_id}` (si el borrado del auto es exitoso).
 - [ ] CA-016: Las categorías `workshop` y `mechanical_inspection` existen después de migrar y se muestran en el formulario de instituciones.
 - [ ] CA-017: Todos los endpoints nuevos responden `401` sin sesión y `404` cuando el auto, registro o adjunto no existe o no pertenece al auto de la ruta.
-- [ ] CA-018: La migración `0042` sube, baja y vuelve a subir sin errores (idempotente), y el `down` no falla si hay instituciones asociadas.
+- [ ] CA-018: Las migraciones `0042`, `0043` y `0044` suben, bajan y vuelven a subir sin errores, y el `down` de `0042` no falla si hay instituciones asociadas. `0043` migra un taller libre a una institución antes de eliminar `workshop_name`; `0044` migra los escalares a líneas antes de eliminarlos.
 - [ ] CA-019: Los formatos de fecha `YYYY-MM-DD` se validan; una fecha inválida o futura para un registro realizado se rechaza.
 - [ ] CA-020: La UI usa `Select` para institución, moneda, año y resultado; `npm run check:ui` pasa.
 - [ ] CA-021: Las claves nuevas existen en `es.json` y `en.json` y se sirven desde `/i18n/es.json` tras el build.
@@ -563,7 +585,8 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 - [ ] CA-023: Desde una inspección ya creada se puede usar la acción visible **Adjuntar PDF**, subir uno o más archivos y ver el contador actualizado al cerrar; el mismo comportamiento aplica a los mantenimientos.
 - [ ] CA-024: Cada fila de inspección/mantenimiento tiene una acción visible **Editar**. El banner de inspección con estado vencido/próximo muestra **Registrar inspección de {año}** y abre el modal con ese año preseleccionado; crear la inspección pendiente recalcula el cronograma.
 - [ ] CA-025: Los modales de crear/editar mantenimiento e inspección muestran tabs **Información** y **Facturas**. Facturas lista los PDFs existentes, permite subir varios y eliminar, y muestra el contador; guardar desde Facturas sin los datos obligatorios vuelve a Información con el error visible.
-- [ ] CA-026: Al elegir una institución en un mantenimiento, el formulario oculta “Nombre del taller” y el nombre mostrado/guardado es el de la institución. Al quitar la institución, aparece el campo libre y se exige un nombre. La API ignora `workshop_name` cuando recibe `institution_id`.
+- [ ] CA-026: `auto_maintenances` no tiene columna `workshop_name` y `institution_id` es `NOT NULL`. El formulario solo muestra el selector de taller; la API rechaza un mantenimiento sin institución. La migración `0043` migra talleres libres existentes a instituciones antes de eliminar la columna.
+- [ ] CA-027: Un mantenimiento se crea con una o más líneas de `auto_maintenance_items` de tipo `labor`/`supplies`, cada una con descripción y valor. La API rechaza listas vacías, descripciones vacías, tipos inválidos y valores negativos. Los totales por tipo y el total general se calculan sumando las líneas. La migración `0044` convierte los escalares existentes en líneas “Mano de obra” e “Insumos”.
 
 ### 5.2 No funcionales
 
@@ -582,7 +605,7 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 - **Integration tests**:
   - Storage CRUD + listados con adjuntos agrupados.
   - Handlers multipart: PDF válido, no PDF, 0 bytes, >10 MB, límite de 20, descarga inline/attachment, 401.
-  - Migración `0042` up/down/up.
+  - Migraciones `0042`, `0043` y `0044` up/down/up, incluida la migración de un taller libre a institución y de los escalares a líneas.
 - **E2E/manual**:
   - Auto 2026 → crear inspección 2028 → verificar próximo 2029.
   - Inspección rechazada → verificar que no avanza.
@@ -598,7 +621,7 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 
 | Fase | Descripción | Estimación | Dependencias |
 |------|-------------|------------|--------------|
-| 1 | Migración `0042` (tablas, índices, categorías) + modelos + tests de migración | 0.5 día | Ninguna |
+| 1 | Migraciones `0042` (tablas, índices, categorías), `0043` (referencia de institución) y `0044` (líneas de detalle) + modelos + tests de migración | 0.5 día | Ninguna |
 | 2 | Storage y services (validaciones, cronograma, adjuntos) + tests unitarios | 1.5 días | Fase 1 |
 | 3 | Handlers, rutas y wiring (JSON + multipart) + tests de API | 1 día | Fase 2 |
 | 4 | Frontend (secciones, modales, adjuntos, badge, API client, tipos) | 1.5 días | Fase 3 |
@@ -669,3 +692,5 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 | 2026-11-08 | opencode | Cambio iterativo: acciones visibles “Editar” en cada fila y CTA “Registrar inspección de {año}” en el banner de estado para crear el ciclo pendiente. Se agrega REQ-034 y CA-024. |
 | 2026-11-08 | opencode | Cambio iterativo: modales de crear/editar mantenimiento e inspección con tabs Información y Facturas. Se agrega REQ-035 y CA-025. |
 | 2026-11-08 | opencode | Cambio iterativo: eliminar la duplicación del nombre del taller. Con institución seleccionada se usa su nombre y se oculta el campo libre; sin institución se exige el nombre manual. Se agrega REQ-036 y CA-026. |
+| 2026-11-08 | opencode | Corrección de modelo: el taller es solo la referencia a la institución. Migración `0043` elimina la columna `workshop_name`, migra talleres libres a instituciones y deja `institution_id` `NOT NULL`. Se actualizan REQ-001/REQ-002/REQ-036 y CA-002/CA-003/CA-026. |
+| 2026-11-08 | opencode | Mano de obra e insumos como líneas de detalle en `auto_maintenance_items` (`item_type`, `description`, `amount`). Migración `0044`, totales calculados. Se agrega REQ-037 y CA-027; la moneda sigue en Información. |

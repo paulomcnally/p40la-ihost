@@ -10,6 +10,7 @@ import (
 var (
 	ErrAutoNotFound          = errors.New("el auto no existe")
 	ErrMaintenanceNotFound   = errors.New("el mantenimiento no existe")
+	ErrMaintenanceItems      = errors.New("el mantenimiento debe tener al menos un concepto")
 	ErrInspectionNotFound    = errors.New("la inspección no existe")
 	ErrInstitutionCategory   = errors.New("la institución no pertenece a la categoría requerida")
 	ErrInstitutionNotFound   = errors.New("la institución no existe")
