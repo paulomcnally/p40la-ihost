@@ -559,6 +559,7 @@ export default function AutoShowPage() {
           onCancel={() => {
             setShowMaintenanceModal(false)
             setEditMaintenance(null)
+            loadMaintenances()
           }}
         />
       )}
@@ -581,6 +582,7 @@ export default function AutoShowPage() {
           onCancel={() => {
             setShowInspectionModal(false)
             setEditInspection(null)
+            loadInspections()
           }}
         />
       )}

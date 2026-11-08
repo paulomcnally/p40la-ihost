@@ -60,6 +60,7 @@ export default function InspectionModal({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [activeFormTab, setActiveFormTab] = useState<'info' | 'invoices'>('info')
 
   useEffect(() => {
     Promise.all([api.institutions.list(), api.institutionCategories.list()])
@@ -103,10 +104,12 @@ export default function InspectionModal({
   const handleSubmit = async () => {
     setError('')
     if (!performedAt) {
+      setActiveFormTab('info')
       setError(t('autos.inspections.date_required'))
       return
     }
     if (!institutionId) {
+      setActiveFormTab('info')
       setError(t('autos.inspections.institution_required'))
       return
     }
@@ -165,10 +168,44 @@ export default function InspectionModal({
           </button>
         </div>
 
+        {!loading && (
+          <div className="px-4 pt-4">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveFormTab('info')}
+                aria-pressed={activeFormTab === 'info'}
+                className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] ${
+                  activeFormTab === 'info' ? 'bg-primary text-white' : 'bg-bg text-text-secondary hover:bg-border'
+                }`}
+              >
+                {t('autos.form_tabs.information')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFormTab('invoices')}
+                aria-pressed={activeFormTab === 'invoices'}
+                className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] ${
+                  activeFormTab === 'invoices' ? 'bg-primary text-white' : 'bg-bg text-text-secondary hover:bg-border'
+                }`}
+              >
+                {t('autos.form_tabs.invoices')}
+                <span
+                  className={`inline-flex items-center justify-center min-w-5 px-1.5 py-0.5 rounded-full text-[10px] ${
+                    activeFormTab === 'invoices' ? 'bg-white/20 text-white' : 'bg-card text-text-secondary'
+                  }`}
+                >
+                  {attachments.length + pendingFiles.length}
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
             <p className="text-text-secondary text-center py-6">{t('app.loading')}</p>
-          ) : (
+          ) : activeFormTab === 'info' ? (
             <>
               <div>
                 <label className="block text-sm font-medium mb-1">{t('autos.inspections.date')}</label>
@@ -236,7 +273,9 @@ export default function InspectionModal({
                   className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary placeholder:text-text-secondary"
                 />
               </div>
-
+            </>
+          ) : (
+            <>
               <AutoAttachmentsField
                 attachments={attachments}
                 attachmentUrl={(attachment) =>
@@ -267,10 +306,9 @@ export default function InspectionModal({
                   ))}
                 </div>
               )}
-
-              {error && <p className="text-sm text-danger">{error}</p>}
             </>
           )}
+          {!loading && error && <p className="text-sm text-danger">{error}</p>}
         </div>
 
         <div className="p-4 border-t border-border flex justify-end gap-3">
