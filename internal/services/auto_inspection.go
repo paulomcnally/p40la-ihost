@@ -64,6 +64,14 @@ func (s *AutoInspectionService) List(ctx context.Context, autoID int64) (*models
 	return &models.AutoInspectionList{Items: items, Schedule: schedule}, nil
 }
 
+// Get devuelve una inspección con sus adjuntos.
+func (s *AutoInspectionService) Get(ctx context.Context, autoID, id int64) (*models.AutoInspectionDetail, error) {
+	if _, err := s.requireAuto(ctx, autoID); err != nil {
+		return nil, err
+	}
+	return s.get(ctx, autoID, id)
+}
+
 // Create registra una inspección mecánica.
 func (s *AutoInspectionService) Create(ctx context.Context, autoID int64, input models.AutoInspectionInput) (*models.AutoInspectionDetail, error) {
 	auto, err := s.requireAuto(ctx, autoID)

@@ -3,10 +3,7 @@ import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from './Icons'
 import Select from './Select'
-import AutoAttachmentsField from './AutoAttachmentsField'
-import type { AutoAttachment, AutoInspection, AutoInspectionResult, Institution, InstitutionCategory } from '../types'
-
-const MAX_ATTACHMENTS = 20
+import type { AutoInspection, AutoInspectionResult, Institution, InstitutionCategory } from '../types'
 
 function todayISO(): string {
   const now = new Date()
@@ -54,13 +51,9 @@ export default function InspectionModal({
   const [institutionId, setInstitutionId] = useState<number | ''>(inspection?.institution_id ?? '')
   const [result, setResult] = useState<AutoInspectionResult>(inspection?.result ?? 'approved')
   const [notes, setNotes] = useState(inspection?.notes ?? '')
-  const [savedId, setSavedId] = useState<number | null>(inspection?.id ?? null)
-  const [attachments, setAttachments] = useState<AutoAttachment[]>(inspection?.attachments ?? [])
-  const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [activeFormTab, setActiveFormTab] = useState<'info' | 'invoices'>('info')
 
   useEffect(() => {
     Promise.all([api.institutions.list(), api.institutionCategories.list()])
@@ -84,38 +77,18 @@ export default function InspectionModal({
     { value: 'rejected', label: t('autos.inspections.result_rejected') },
   ]
 
-  const handleUpload = async (files: File[]) => {
-    if (!savedId) {
-      setPendingFiles((prev) => [...prev, ...files].slice(0, MAX_ATTACHMENTS - attachments.length))
-      return
-    }
-    for (const file of files) {
-      const attachment = await api.autos.uploadInspectionAttachment(autoId, savedId, file)
-      if (attachment) setAttachments((prev) => [...prev, attachment])
-    }
-  }
-
-  const handleDeleteAttachment = async (attachment: AutoAttachment) => {
-    if (!savedId) return
-    await api.autos.deleteInspectionAttachment(autoId, savedId, attachment.id)
-    setAttachments((prev) => prev.filter((item) => item.id !== attachment.id))
-  }
-
   const handleSubmit = async () => {
     setError('')
     if (!performedAt) {
-      setActiveFormTab('info')
       setError(t('autos.inspections.date_required'))
       return
     }
     if (!institutionId) {
-      setActiveFormTab('info')
       setError(t('autos.inspections.institution_required'))
       return
     }
 
     setSubmitting(true)
-    let savedRecord: AutoInspection | null = null
     try {
       const body = {
         performed_at: performedAt,
@@ -124,24 +97,12 @@ export default function InspectionModal({
         result,
         notes: notes.trim(),
       }
-      savedRecord = savedId
-        ? await api.autos.updateInspection(autoId, savedId, body)
+      const saved = isEditing && inspection
+        ? await api.autos.updateInspection(autoId, inspection.id, body)
         : await api.autos.createInspection(autoId, body)
-      if (!savedRecord) throw new Error(t('autos.inspections.save_error'))
-
-      setSavedId(savedRecord.id)
-      setAttachments(savedRecord.attachments ?? [])
-      for (const file of pendingFiles) {
-        const attachment = await api.autos.uploadInspectionAttachment(autoId, savedRecord.id, file)
-        if (attachment) setAttachments((prev) => [...prev, attachment])
-      }
-      setPendingFiles([])
+      if (!saved) throw new Error(t('autos.inspections.save_error'))
       onSaved()
     } catch (err) {
-      if (savedRecord) {
-        setSavedId(savedRecord.id)
-        setAttachments(savedRecord.attachments ?? [])
-      }
       setError(err instanceof Error ? err.message : t('autos.inspections.save_error'))
     } finally {
       setSubmitting(false)
@@ -168,44 +129,10 @@ export default function InspectionModal({
           </button>
         </div>
 
-        {!loading && (
-          <div className="px-4 pt-4">
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveFormTab('info')}
-                aria-pressed={activeFormTab === 'info'}
-                className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] ${
-                  activeFormTab === 'info' ? 'bg-primary text-white' : 'bg-bg text-text-secondary hover:bg-border'
-                }`}
-              >
-                {t('autos.form_tabs.information')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveFormTab('invoices')}
-                aria-pressed={activeFormTab === 'invoices'}
-                className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-ios-sm text-sm font-medium transition-colors min-h-[44px] ${
-                  activeFormTab === 'invoices' ? 'bg-primary text-white' : 'bg-bg text-text-secondary hover:bg-border'
-                }`}
-              >
-                {t('autos.form_tabs.invoices')}
-                <span
-                  className={`inline-flex items-center justify-center min-w-5 px-1.5 py-0.5 rounded-full text-[10px] ${
-                    activeFormTab === 'invoices' ? 'bg-white/20 text-white' : 'bg-card text-text-secondary'
-                  }`}
-                >
-                  {attachments.length + pendingFiles.length}
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
             <p className="text-text-secondary text-center py-6">{t('app.loading')}</p>
-          ) : activeFormTab === 'info' ? (
+          ) : (
             <>
               <div>
                 <label className="block text-sm font-medium mb-1">{t('autos.inspections.date')}</label>
@@ -273,51 +200,17 @@ export default function InspectionModal({
                   className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary placeholder:text-text-secondary"
                 />
               </div>
-            </>
-          ) : (
-            <>
-              <AutoAttachmentsField
-                attachments={attachments}
-                attachmentUrl={(attachment) =>
-                  savedId
-                    ? api.autos.inspectionAttachmentUrl(autoId, savedId, attachment.id)
-                    : '#'
-                }
-                onUpload={handleUpload}
-                onDelete={handleDeleteAttachment}
-                max={MAX_ATTACHMENTS}
-              />
-              {pendingFiles.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-xs text-text-secondary">{t('autos.attachments.pending')}</p>
-                  {pendingFiles.map((file, index) => (
-                    <div key={`${file.name}-${index}`} className="flex items-center gap-2 text-sm">
-                      <Icon name="pdf" className="w-4 h-4 text-danger flex-shrink-0" />
-                      <span className="flex-1 truncate">{file.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => setPendingFiles((prev) => prev.filter((_, i) => i !== index))}
-                        className="p-1.5 text-text-secondary hover:text-danger transition-colors rounded-full"
-                        aria-label={t('app.remove')}
-                      >
-                        <Icon name="delete" className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+
+              <p className="text-xs text-text-secondary">{t('autos.inspections.detail_hint')}</p>
+              {error && <p className="text-sm text-danger">{error}</p>}
             </>
           )}
-          {!loading && error && <p className="text-sm text-danger">{error}</p>}
         </div>
 
         <div className="p-4 border-t border-border flex justify-end gap-3">
           <button
             type="button"
-            onClick={() => {
-              if (savedId && savedId !== inspection?.id) onSaved()
-              else onCancel()
-            }}
+            onClick={onCancel}
             className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors min-h-[44px]"
           >
             {t('app.cancel')}

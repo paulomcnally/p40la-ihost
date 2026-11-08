@@ -263,6 +263,7 @@ export const api = {
     deleteMaintenanceAttachment: (id: number, maintenanceId: number, attachmentId: number) =>
       del(`/api/autos/${id}/maintenances/${maintenanceId}/attachments/${attachmentId}`),
     listInspections: (id: number) => get<AutoInspectionList>(`/api/autos/${id}/inspections`),
+    getInspection: (id: number, inspectionId: number) => get<AutoInspection>(`/api/autos/${id}/inspections/${inspectionId}`),
     createInspection: (id: number, body: Partial<AutoInspection>) => post<AutoInspection>(`/api/autos/${id}/inspections`, body),
     updateInspection: (id: number, inspectionId: number, body: Partial<AutoInspection>) => put<AutoInspection>(`/api/autos/${id}/inspections/${inspectionId}`, body),
     deleteInspection: (id: number, inspectionId: number) => del(`/api/autos/${id}/inspections/${inspectionId}`),

@@ -557,6 +557,10 @@
     },
     "inspections": {
       "title": "Mechanical inspections",
+      "detail_title": "Mechanical inspection",
+      "detail_hint": "After saving, attach the PDFs from the detail page.",
+      "not_found": "Inspection not found",
+      "not_found_hint": "The inspection does not exist or was deleted.",
       "add": "Add inspection",
       "edit": "Edit inspection",
       "empty": "No inspections recorded",
