@@ -295,7 +295,7 @@ function RevealModal({ accountId, onClose }: { accountId: number; onClose: () =>
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div
         className="bg-card rounded-ios shadow-ios-lg w-full max-w-md overflow-hidden"
         onClick={(e) => e.stopPropagation()}
