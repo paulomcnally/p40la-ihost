@@ -72,6 +72,7 @@ La implementación debe respetar las limitaciones del iHost: cero dependencias n
 15. **REQ-039**: Exponer CRUD de líneas de mantenimiento (`POST`, `PUT`, `DELETE` en `/api/autos/{id}/maintenances/{maintenance_id}/items[/{item_id}]`) y `GET /api/autos/{id}/maintenances/{maintenance_id}` para el detalle. Cada operación debe verificar que el mantenimiento y la línea pertenezcan al auto de la ruta.
 16. **REQ-040**: Aplicar las reglas de modales vigentes en `main` (SPEC-122, `docs/project-rules.md` §4.7): ningún modal se cierra al hacer click fuera; el overlay usa `z-[60]` o superior y bloquea la página de fondo; siempre hay X o Cancelar/Cerrar; `DeleteModal` usa `z-[70]`, enfoca el input al abrir y confirma con Enter cuando el texto es `confirmo`.
 17. **REQ-041**: Replicar en inspecciones el patrón de mantenimientos: en la lista, el menú de la fila muestra **Ver** y **Eliminar** (sin **Editar** ni acciones de adjuntar archivos). **Ver** abre `/autos/:id/inspections/:inspectionId`, con la información fija arriba (con Editar/Eliminar) y una sección de **Facturas** para subir, abrir y eliminar PDFs. El modal de crear/editar inspección queda solo con la información básica; los archivos se gestionan desde el detalle.
+18. **REQ-042**: En las páginas de detalle anidadas de mantenimiento e inspección, la flecha atrás del header debe mostrarse también en desktop (no solo en móvil) y volver al auto con el tab correspondiente (`?tab=mantenimientos` o `?tab=inspecciones`). No se agregan links “← Título” dentro del contenido.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -607,6 +608,7 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 - [ ] CA-028: El menú de la fila muestra **Ver** y **Eliminar** (sin **Editar**). **Ver** abre `/autos/:id/maintenances/:maintenanceId`. La información básica (con Editar/Eliminar) se muestra siempre arriba, fuera de los tabs. Debajo hay tabs **Mano de obra**, **Insumos** y **Facturas**, con el tab activo en `?tab=mano_obra|insumos|facturas`, contadores y solo el panel activo. Mano de obra e Insumos permiten agregar/editar/eliminar líneas; Facturas permite subir/eliminar PDFs. El modal de crear/editar solo contiene la información básica y la moneda. El header muestra la flecha atrás hacia `/autos/:id?tab=mantenimientos`.
 - [ ] CA-029: Los modales de mantenimiento, concepto e inspección no se cierran al hacer click fuera, usan overlay `z-[60]` y tienen X/Cancelar. `DeleteModal` usa `z-[70]`, enfoca el input y confirma con Enter cuando el texto es `confirmo`.
 - [ ] CA-030: El menú de una inspección en la lista muestra **Ver** y **Eliminar**, sin **Editar** ni adjuntar archivos. **Ver** abre `/autos/:id/inspections/:inspectionId`; la información se muestra siempre arriba y debajo está la sección Facturas para subir/abrir/eliminar PDFs. El modal de crear/editar solo contiene la información básica. La flecha atrás vuelve a `/autos/:id?tab=inspecciones`.
+- [ ] CA-031: En desktop y móvil, los detalles de mantenimiento e inspección muestran la flecha atrás en el header. Mantenimiento vuelve a `/autos/:id?tab=mantenimientos`; inspección vuelve a `/autos/:id?tab=inspecciones`. No hay links de retorno dentro del contenido.
 
 ### 5.2 No funcionales
 
@@ -720,3 +722,4 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 | 2026-11-08 | opencode | Aplicación de las reglas de modales de `main`/SPEC-122: sin cierre por click fuera, overlays `z-[60]`, cierre explícito y `DeleteModal` `z-[70]` con foco y Enter. Se agrega REQ-040 y CA-029. |
 | 2026-11-08 | opencode | Ajuste de UX: la información del mantenimiento queda siempre arriba; los tabs son solo Mano de obra, Insumos y Facturas (`?tab=`). Se actualizan REQ-038 y CA-028. |
 | 2026-11-08 | opencode | Inspecciones replican el patrón de mantenimientos: menú Ver/Eliminar, página de detalle con información fija y Facturas, modal solo con información básica. Se agrega REQ-041 y CA-030. |
+| 2026-11-08 | opencode | Retorno desde detalles anidados: la flecha atrás del header se muestra también en desktop y vuelve al auto con el tab correspondiente. Se agrega REQ-042 y CA-031. |
