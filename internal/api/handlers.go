@@ -20,6 +20,7 @@ type Handler struct {
 	bill                *BillHandlers
 	institution         *InstitutionHandlers
 	document            *DocumentHandlers
+	documentRecognition *DocumentRecognitionHandlers
 	auto                *AutoHandlers
 	autoService         *AutoServiceHandlers
 	autoMaintenance     *AutoMaintenanceHandlers
@@ -55,6 +56,7 @@ func NewHandler(
 	bill *BillHandlers,
 	institution *InstitutionHandlers,
 	document *DocumentHandlers,
+	documentRecognition *DocumentRecognitionHandlers,
 	auto *AutoHandlers,
 	autoService *AutoServiceHandlers,
 	autoMaintenance *AutoMaintenanceHandlers,
@@ -88,6 +90,7 @@ func NewHandler(
 		bill:                bill,
 		institution:         institution,
 		document:            document,
+		documentRecognition: documentRecognition,
 		auto:                auto,
 		autoService:         autoService,
 		autoMaintenance:     autoMaintenance,

@@ -102,6 +102,10 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("POST /api/services/{service_id}/bills/upload", authMiddleware(http.HandlerFunc(handler.document.UploadAndAnalyze)))
 	mux.Handle("POST /api/services/{service_id}/bills/from-extracted", authMiddleware(http.HandlerFunc(handler.document.CreateBillFromExtracted)))
 
+	// Reconocimiento de comprobantes bancarios a nivel proyecto (SPEC-127)
+	mux.Handle("POST /api/documents/recognize", authMiddleware(http.HandlerFunc(handler.documentRecognition.Recognize)))
+	mux.Handle("POST /api/documents/recognitions/{id}/confirm", authMiddleware(http.HandlerFunc(handler.documentRecognition.Confirm)))
+
 	// APIs de automation unificada (SPEC-110)
 	mux.Handle("GET /api/automation/accounts", authMiddleware(http.HandlerFunc(handler.automation.ListAccounts)))
 	mux.Handle("POST /api/automation/accounts", authMiddleware(http.HandlerFunc(handler.automation.CreateAccount)))
