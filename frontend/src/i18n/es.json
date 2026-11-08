@@ -730,6 +730,19 @@
   "settings": {
     "title": "Configuración",
     "subtitle": "Ajustes de la aplicación",
+    "app": {
+      "title": "Aplicación",
+      "subtitle": "Instalá p40la en tu teléfono para abrirla como app.",
+      "install": "Instalar app",
+      "installed": "App instalada",
+      "ios_how": "Cómo instalar en iOS",
+      "ios_step_1": "Abrí esta página en Safari.",
+      "ios_step_2": "Tocá Compartir y elegí «Añadir a pantalla de inicio».",
+      "ios_step_3": "Dejá activado «Abrir como app web» y tocá Agregar.",
+      "ios_hint": "En Chrome o Edge para iOS también está en el menú Compartir.",
+      "android_unavailable": "Abrí el menú de Chrome y elegí «Instalar app».",
+      "install_error": "No se pudo abrir el instalador."
+    },
     "section_general": "General",
     "section_currencies": "Monedas",
     "language": {

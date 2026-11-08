@@ -135,6 +135,11 @@ const icons: Record<string, React.ReactElement> = {
     createElement('polyline', { points: '17 8 12 3 7 8' }),
     createElement('line', { x1: 12, y1: 3, x2: 12, y2: 15 }),
   ),
+  download: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+    createElement('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+    createElement('polyline', { points: '7 10 12 15 17 10' }),
+    createElement('line', { x1: 12, y1: 3, x2: 12, y2: 15 }),
+  ),
   // Utilidades adicionales
   recycling: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
     createElement('path', { d: 'M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5' }),

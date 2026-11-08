@@ -295,9 +295,19 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("PUT /api/budget/transfers/{id}", authMiddleware(http.HandlerFunc(handler.budget.UpdateTransfer)))
 	mux.Handle("DELETE /api/budget/transfers/{id}", authMiddleware(http.HandlerFunc(handler.budget.DeleteTransfer)))
 
-	// Assets estáticos (JS/CSS bundles del build de Vite)
+	// Assets estáticos (JS/CSS bundles del build de Vite). Los nombres llevan
+	// hash, por lo que se pueden cachear de forma inmutable (SPEC-129).
 	assetsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "assets")))
-	mux.Handle("GET /assets/{file...}", http.StripPrefix("/assets/", assetsFS))
+	mux.Handle("GET /assets/{file...}", withCacheControl(pwaAssetsCacheControl, http.StripPrefix("/assets/", assetsFS)))
+
+	// Iconos PWA (manifest / apple-touch-icon). No llevan hash: caché corta.
+	iconsFS := http.FileServer(http.Dir(filepath.Join(staticDir, "icons")))
+	mux.Handle("GET /icons/{file...}", withCacheControl(pwaIconsCacheControl, http.StripPrefix("/icons/", iconsFS)))
+
+	// Manifest y service worker: rutas explícitas para que un archivo faltante
+	// devuelva 404 y no index.html con 200 (SPEC-129, REQ-006).
+	mux.Handle("GET /manifest.webmanifest", pwaManifestHandler(staticDir))
+	mux.Handle("GET /sw.js", pwaServiceWorkerHandler(staticDir))
 
 	// i18n JSON files
 	i18nFS := http.FileServer(http.Dir(filepath.Join(staticDir, "i18n")))
@@ -313,6 +323,11 @@ func spaHandler(staticDir string) http.HandlerFunc {
 	indexFile := filepath.Join(staticDir, "index.html")
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		// index.html y los archivos servidos por el fallback deben revalidarse
+		// para que un deploy nuevo se vea en la próxima carga (SPEC-129,
+		// REQ-008).
+		w.Header().Set("Cache-Control", "no-cache")
+
 		staticPath := filepath.Join(staticDir, r.URL.Path)
 		if info, err := os.Stat(staticPath); err == nil && !info.IsDir() {
 			http.ServeFile(w, r, staticPath)

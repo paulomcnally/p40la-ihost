@@ -158,7 +158,7 @@ func (h *Handler) Setup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, cookie)
+	setSessionCookie(w, r, cookie)
 	respondJSON(w, http.StatusCreated, authResponse{UserID: user.ID, Email: user.Email})
 }
 
@@ -182,13 +182,13 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, cookie)
+	setSessionCookie(w, r, cookie)
 	respondJSON(w, http.StatusOK, authResponse{Email: user.Email})
 }
 
 // Logout cierra la sesión actual.
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, h.auth.Logout())
+	setSessionCookie(w, r, h.auth.Logout())
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Sesión cerrada"})
 }
 

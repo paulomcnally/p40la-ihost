@@ -5,6 +5,7 @@ import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import SettingsNavRow from '../components/SettingsNavRow'
+import InstallAppCard from '../components/InstallAppCard'
 import type { StatusPillTone } from '../components/StatusPill'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
@@ -337,6 +338,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{t('settings.title')}</h2>
+
+      <InstallAppCard />
 
       <div className="relative mb-6">
         <Icon name="search" className="w-4 h-4 text-text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
