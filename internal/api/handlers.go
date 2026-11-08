@@ -22,6 +22,9 @@ type Handler struct {
 	document            *DocumentHandlers
 	auto                *AutoHandlers
 	autoService         *AutoServiceHandlers
+	autoMaintenance     *AutoMaintenanceHandlers
+	autoInspection      *AutoInspectionHandlers
+	autoAttachment      *AutoAttachmentHandlers
 	serviceCycle        *ServiceCycleHandlers
 	institutionCategory *InstitutionCategoryHandlers
 	notification        *NotificationHandlers
@@ -54,6 +57,9 @@ func NewHandler(
 	document *DocumentHandlers,
 	auto *AutoHandlers,
 	autoService *AutoServiceHandlers,
+	autoMaintenance *AutoMaintenanceHandlers,
+	autoInspection *AutoInspectionHandlers,
+	autoAttachment *AutoAttachmentHandlers,
 	serviceCycle *ServiceCycleHandlers,
 	institutionCategory *InstitutionCategoryHandlers,
 	notification *NotificationHandlers,
@@ -84,6 +90,9 @@ func NewHandler(
 		document:            document,
 		auto:                auto,
 		autoService:         autoService,
+		autoMaintenance:     autoMaintenance,
+		autoInspection:      autoInspection,
+		autoAttachment:      autoAttachment,
 		serviceCycle:        serviceCycle,
 		institutionCategory: institutionCategory,
 		notification:        notification,

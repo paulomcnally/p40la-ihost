@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
@@ -51,9 +52,20 @@ func normalizeAutoColor(color string) (string, error) {
 	return color, nil
 }
 
+// AutoFilesCleaner elimina los archivos asociados a un auto.
+type AutoFilesCleaner interface {
+	DeleteAutoFiles(autoID int64) error
+}
+
 // AutoService contiene la lógica de negocio para autos.
 type AutoService struct {
-	storage *storage.AutoStorage
+	storage      *storage.AutoStorage
+	filesCleaner AutoFilesCleaner
+}
+
+// SetFilesCleaner configura la limpieza de adjuntos al eliminar un auto.
+func (s *AutoService) SetFilesCleaner(cleaner AutoFilesCleaner) {
+	s.filesCleaner = cleaner
 }
 
 // NewAutoService crea un nuevo AutoService.
@@ -132,7 +144,15 @@ func (s *AutoService) Update(ctx context.Context, id int64, year int64, model, b
 	return s.storage.Update(ctx, id, year, model, brand, normalizedColor, icon, motor, chasis, vin, placa)
 }
 
-// Delete elimina un auto.
+// Delete elimina un auto y sus archivos adjuntos (SPEC-124).
 func (s *AutoService) Delete(ctx context.Context, id int64) error {
-	return s.storage.Delete(ctx, id)
+	if err := s.storage.Delete(ctx, id); err != nil {
+		return err
+	}
+	if s.filesCleaner != nil {
+		if err := s.filesCleaner.DeleteAutoFiles(id); err != nil {
+			slog.Warn("no se pudieron eliminar los adjuntos del auto", "auto_id", id, "error", err)
+		}
+	}
+	return nil
 }
