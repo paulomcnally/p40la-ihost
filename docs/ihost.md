@@ -110,6 +110,10 @@ En `http://ihost.local` → **Docker → Volume**:
    - **Restart Policy**: `unless-stopped`
 
    > **Importante**: el volumen de configuración va montado en `/srv` (la raíz de Filebrowser), no en un subdirectorio. Así `serve.json` queda en la raíz del volumen y Tailscale lo ve en `/config/serve.json` al montar el mismo volumen en `/config`. No uses el volumen de estado `tailscale` para Filebrowser.
+   >
+   > Si en la UI ves una fila `/srv` **sin nombre de volumen**, es un volumen anónimo vacío: seleccioná explícitamente `tailscale-config` en esa fila. Si ves `tailscale:/data/tailscalState` dentro de Filebrowser, está mal: ese es el estado de Tailscale, no la configuración.
+   >
+   > Filebrowser corre como UID/GID `1000`; si el volumen nuevo es propiedad de root y no te deja crear `serve.json`, cambiá temporalmente `UID=0` y `GID=0` en las variables de Filebrowser, o creá el archivo con el add-on SSH.
 3. Abrí `http://ihost.local:8081` (usuario/password por defecto: `admin` / `admin`). Deberías ver la raíz del volumen vacía o con `serve.json`.
 4. Creá el archivo `serve.json` con este contenido (también está en `deploy/tailscale/serve.json`):
 
@@ -142,7 +146,14 @@ En `http://ihost.local` → **Docker → Volume**:
 
 > **Seguridad**: Filebrowser viene con `admin`/`admin`. Cambiá la contraseña desde su configuración o detené el add-on después de editar `serve.json`. No lo expongas a Internet; solo debe ser accesible en la LAN.
 >
-> **Si no ves la carpeta**: verificá que el volumen `p40la-tailscale-config` esté mapeado exactamente a `/srv/p40la-tailscale-config` y que el add-on esté corriendo. Si el archivo no aparece en Tailscale, revisá que `TS_SERVE_CONFIG=/config/serve.json` esté en el contenedor Tailscale y que el volumen esté montado como directorio en `/config`.
+> **Si Filebrowser no carga o no muestra nada**:
+> - Verificá que el contenedor esté **running** y que el puerto host (`8081`) no esté ocupado por otro add-on.
+> - El volumen de configuración debe estar montado en **`/srv`**, no en `/srv/algo`.
+> - No montes el volumen de estado `tailscale` (`/data/tailscalState`) en Filebrowser: es de Tailscale y puede tener permisos restringidos.
+> - Revisá los **Logs** del add-on Filebrowser desde la UI de Docker. Si dice error de base de datos, agregá un volumen `filebrowser-data` → `/database`.
+> - Si la página abre pero el login `admin`/`admin` falla, revisá los logs o recreá el volumen `filebrowser-data`.
+>
+> Si `serve.json` no aparece en Tailscale, revisá que `TS_SERVE_CONFIG=/config/serve.json` esté en el contenedor Tailscale y que el mismo volumen esté montado como directorio en `/config`.
 
 #### 4. Ejecutar Tailscale en la UI de Docker
 
