@@ -551,7 +551,7 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 
 ### 9.3 Pendiente de validación manual
 
-- Configurar el contenedor `tailscale/tailscale` de la PWA en el iHost real (auth key, `TS_SERVE_CONFIG`, volúmenes, `Network: host`) y verificar `https://p40la-ihost.<tailnet>.ts.net`. El nodo `ihost.<tailnet>.ts.net` del add-on oficial no sirve para la PWA.
+- Reutilizar el nodo `ihost` existente del contenedor `tailscale/tailscale` (`tailscale` → `/data/tailscalState`) agregando `tailscale-config` → `/config` y `TS_SERVE_CONFIG=/config/serve.json`; verificar `https://ihost.<tailnet>.ts.net` y habilitar **HTTPS Certificates**. Si se usa un contenedor aparte, la URL será `https://p40la-ihost.<tailnet>.ts.net`.
 - Probar en Android real: Install habilitado, WebAPK en `chrome://webapks`, standalone, splash, login y offline.
 - Probar en iOS real: Safari → Compartir → Añadir a pantalla de inicio → Abrir como app web; login y reapertura.
 - Verificar consumo de RAM del contenedor Tailscale en el iHost y la persistencia tras reiniciar.
