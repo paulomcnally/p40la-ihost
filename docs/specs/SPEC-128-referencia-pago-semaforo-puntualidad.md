@@ -419,10 +419,17 @@ Implementado en la rama `feature/SPEC-128`:
 
 Validaciones ejecutadas:
 
-- `node --test frontend/tests/*.test.ts`: 38 tests OK (14 nuevos).
+- `node --test frontend/tests/*.test.ts`: 45 tests OK (14 nuevos de SPEC-128 + los existentes de SPEC-127).
 - `npm run build` (incluye `check-ui-rules.cjs`, `sync-i18n.cjs`, `tsc -b` y `vite build`): OK.
 - `go test ./...`: OK.
 - `go vet ./...`: OK.
+
+**Merge con `main` (SPEC-127 ya liberada)**: se integró `origin/main` (commit `b3766ad`) en `feature/SPEC-128`:
+
+- `frontend/src/utils/paymentTiming.ts` quedó como archivo único con ambas APIs: `paymentTiming()` de SPEC-127 (sin cambios, usada por `PaymentTimingLabel`, `DebtPayModal`, `DebtAnalysis` y `RecognizeDocumentModal`) y `getPaymentTiming()`/`paymentDateInTimeZone()` de SPEC-128 (zona horaria y semáforo verde/amarillo/rojo).
+- En la tarjeta de `DebtBillsPage` se usa `PaymentPunctualityBadge` (SPEC-128) para el semáforo; el `PaymentTimingLabel` de SPEC-127 se conserva en los demás contextos. La acción **Reconocer comprobante** y su modal de SPEC-127 se mantienen intactos.
+- Se conservaron ambas familias de claves i18n (`deudas.timing_*` y `deudas.payment_timing_*`).
+- El tracker quedó con 126 specs, 125 released (SPEC-127) y 1 in_progress (SPEC-128).
 
 Pendiente: prueba manual del usuario en local y release formal (merge a `main`, tracker, label e issue).
 
@@ -471,3 +478,4 @@ Pendiente: prueba manual del usuario en local y release formal (merge a `main`, 
 |-------|-------|-------------|
 | 2026-11-08 | opencode | Creación inicial de la especificación a partir del pedido del usuario: referencia de pago visible y semáforo de puntualidad en `/deudas/:id?status=paid` y `?status=all`. |
 | 2026-11-08 | opencode | Estado `in_progress`: implementación frontend completa (helper, componentes, integración, i18n y tests), build y tests de Go validados. Pendiente prueba manual y release. |
+| 2026-11-08 | opencode | Merge de `origin/main` (SPEC-127 released): se unificó `paymentTiming.ts` conservando ambas APIs, se mantuvieron las claves i18n de los dos specs y la tarjeta quedó con el semáforo de SPEC-128. 45 tests y build OK. |
