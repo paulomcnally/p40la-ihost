@@ -624,4 +624,4 @@ file: <PDF obligatorio>
 | 2026-11-07 | opencode | Regla aplicada a todos los modales del proyecto: sin cierre por click fuera, overlay bloqueante y cierre solo con Cancelar/Cerrar o X. Documentada en `AGENTS.md`, `docs/project-rules.md` §4.7, el template de specs y la skill. |
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: en `DeleteModal`, escribir "confirmo" y presionar Enter ejecuta la confirmación. Regla agregada a las reglas internas y al template. |
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: al abrir `DeleteModal`, el input recibe foco automáticamente. Regla agregada a las reglas internas y al template. |
-| 2026-11-07 | opencode | Release: validación manual satisfactoria del usuario; spec liberada y tracker actualizado. |
+| 2026-11-07 | opencode | Release: validación manual satisfactoria del usuario; spec liberada, merge a `main` (`0f2774e`) y push a `origin/main`. |
