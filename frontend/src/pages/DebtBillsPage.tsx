@@ -295,7 +295,7 @@ export default function DebtBillsPage() {
           {filteredBills.map((bill) => (
             <div
               key={bill.id}
-              className="bg-card rounded-ios shadow-ios p-4 relative flex items-center justify-between gap-3"
+              className="bg-card rounded-ios shadow-ios p-4 pr-14 relative flex items-center justify-between gap-3"
             >
               <CardMenu options={billMenuOptions(bill)} />
               <div className="min-w-0">
