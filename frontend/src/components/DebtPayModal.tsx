@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api'
 import { Icon } from './Icons'
+import PdfUploadField from './PdfUploadField'
 import { useI18nStore } from '../stores/i18nStore'
 import { useToast } from './Toast'
 import type { DebtBill } from '../types'
@@ -24,6 +25,8 @@ export default function DebtPayModal({ bill, onClose, onSuccess }: DebtPayModalP
   const { showToast } = useToast()
   const [paidAt, setPaidAt] = useState(todayISO())
   const [paymentReference, setPaymentReference] = useState('')
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
 
   const handleConfirm = async () => {
@@ -33,16 +36,28 @@ export default function DebtPayModal({ bill, onClose, onSuccess }: DebtPayModalP
     }
     setSaving(true)
     try {
-      await api.debts.payBill(bill.id, {
-        paid_at: paidAt,
-        payment_reference: paymentReference.trim() || undefined,
-      })
+      await api.debts.payBill(
+        bill.id,
+        {
+          paid_at: paidAt,
+          payment_reference: paymentReference.trim() || undefined,
+        },
+        invoiceFile || undefined,
+        receiptFile || undefined,
+      )
       showToast(t('deudas.pay_success'), 'success')
       onSuccess()
       onClose()
     } catch (err: unknown) {
-      const message = (err as { message?: string })?.message || t('errors.generic')
+      const e = err as { message?: string; code?: string }
+      const message = e?.message || t('errors.generic')
       showToast(message, 'error')
+      // La cuota quedó pagada pero algún documento no se pudo guardar: se
+      // refresca la deuda para reflejar el pago y se permite reintentar luego.
+      if (e?.code === 'document_save_failed') {
+        onSuccess()
+        onClose()
+      }
     } finally {
       setSaving(false)
     }
@@ -51,10 +66,9 @@ export default function DebtPayModal({ bill, onClose, onSuccess }: DebtPayModalP
   return (
     <div
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
     >
       <div
-        className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm overflow-hidden"
+        className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5">
@@ -88,6 +102,28 @@ export default function DebtPayModal({ bill, onClose, onSuccess }: DebtPayModalP
                 autoComplete="off"
               />
             </div>
+
+            <PdfUploadField
+              label={t('deudas.invoice')}
+              optionalLabel={t('deudas.optional')}
+              hint={t('deudas.upload_invoice_hint')}
+              formats={t('deudas.pdf_formats')}
+              file={invoiceFile}
+              disabled={saving}
+              onSelect={setInvoiceFile}
+              onRemove={() => setInvoiceFile(null)}
+            />
+
+            <PdfUploadField
+              label={t('deudas.receipt')}
+              optionalLabel={t('deudas.optional')}
+              hint={t('deudas.upload_receipt_hint')}
+              formats={t('deudas.pdf_formats')}
+              file={receiptFile}
+              disabled={saving}
+              onSelect={setReceiptFile}
+              onRemove={() => setReceiptFile(null)}
+            />
           </div>
         </div>
         <div className="flex gap-3 p-4 border-t border-border">
