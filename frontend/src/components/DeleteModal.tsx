@@ -1,27 +1,40 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useRef, useState } from 'react'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from './Icons'
+import { useConfirmWordInput } from '../hooks/useConfirmWordInput'
 
 export default function DeleteModal({ title, subtitle, onConfirm, onCancel }: {
   title: string
   subtitle: string
-  onConfirm: () => void
+  onConfirm: () => void | Promise<void>
   onCancel: () => void
 }) {
   const { t } = useI18nStore()
-  const [confirmText, setConfirmText] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-  const isValid = confirmText.trim().toLowerCase() === 'confirmo'
+  const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
 
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
-
-  const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && isValid) {
-      e.preventDefault()
-      onConfirm()
+  const handleConfirm = async () => {
+    // Guard síncrono: Enter/click repetidos antes del re-render de `submitting`.
+    if (submittingRef.current) return
+    submittingRef.current = true
+    setSubmitting(true)
+    try {
+      await onConfirm()
+    } finally {
+      submittingRef.current = false
+      setSubmitting(false)
     }
+  }
+
+  const { value, setValue, inputRef, isValid, handleKeyDown, reset } = useConfirmWordInput({
+    word: 'confirmo',
+    onConfirm: handleConfirm,
+    disabled: submitting,
+  })
+
+  const handleCancel = () => {
+    reset()
+    onCancel()
   }
 
   return (
@@ -45,9 +58,9 @@ export default function DeleteModal({ title, subtitle, onConfirm, onCancel }: {
             <input
               ref={inputRef}
               type="text"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              onKeyDown={handleInputKeyDown}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={handleKeyDown}
               className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
               placeholder="confirmo"
               autoComplete="off"
@@ -56,15 +69,15 @@ export default function DeleteModal({ title, subtitle, onConfirm, onCancel }: {
         </div>
         <div className="flex gap-3 p-4 border-t border-border">
           <button
-            onClick={onCancel}
+            onClick={handleCancel}
             className="flex-1 px-4 py-2.5 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center justify-center gap-2 min-h-[44px]"
           >
             <Icon name="cancel" className="w-4 h-4" />
             {t('app.cancel')}
           </button>
           <button
-            onClick={onConfirm}
-            disabled={!isValid}
+            onClick={handleConfirm}
+            disabled={!isValid || submitting}
             className="flex-1 px-4 py-2.5 bg-danger text-white rounded-ios-sm hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
           >
             <Icon name="delete" className="w-4 h-4" />
