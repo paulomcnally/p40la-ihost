@@ -51,7 +51,8 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
 2. **REQ-002**: Al seleccionar "Contrato" se abre un **modal reutilizable** (`ContractModal`) con dos estados:
    - **Sin contrato**: área de drag & drop, botón "Seleccionar PDF", nombre/tamaño del archivo elegido, botón para quitarlo antes de subir y botón "Subir contrato".
    - **Con contrato**: indicador de que el contrato existe y dos botones en una fila: **"Quitar"** a la izquierda (peligro) y **"Abrir"** a la derecha (primario).
-   No se crea ninguna página ni ruta nueva. Todo ocurre en el modal sobre la página actual. El modal se cierra con la **X del header**; no hay botón "Cerrar" en el pie.
+   No se crea ninguna página ni ruta nueva. Todo ocurre en el modal sobre la página actual. El modal se cierra con la **X del header** o con **Cancelar**; no hay botón "Cerrar" en el pie.
+   - El modal **no se cierra al hacer click fuera** del contenido. El overlay usa `z-[60]` y bloquea la interacción con la página de fondo (incluidos los menús de 3 puntos).
 3. **REQ-003**: Validar el archivo en frontend y backend:
    - Solo formato **PDF** (extensión `.pdf`, sin distinguir mayúsculas, y firma de contenido `%PDF-`).
    - Tamaño máximo **10 MB** (consistente con comprobantes de pensión, SPEC-051, y comprobantes de deuda, SPEC-122).
@@ -85,6 +86,7 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
    - **"Abrir"** abre el PDF en una pestaña nueva con `window.open(url, '_blank', 'noopener,noreferrer')`.
    - **"Quitar"** abre un segundo modal de confirmación reutilizando `frontend/src/components/DeleteModal.tsx`, que exige escribir exactamente `confirmo` para habilitar la eliminación. Al confirmar, se llama al `DELETE`, se muestra un toast de éxito y el modal vuelve al estado "sin contrato" o se cierra.
    - Los botones usan textos genéricos ("Quitar"/"Abrir"), sin repetir "contrato".
+   - El `DeleteModal` de confirmación queda **por encima** del modal de contrato (`z-[70]` frente a `z-[60]`), enfoca el input automáticamente al abrirse y permite confirmar con **Enter** cuando el texto es `confirmo`.
    - El texto del modal de confirmación debe dejar claro que el PDF se elimina del volumen y que la acción no se puede deshacer.
 8. **REQ-008**: Agregar las claves i18n en `frontend/public/i18n/es.json` y `frontend/public/i18n/en.json`: título del modal, textos de drag & drop, botón de selección, formatos/tamaño aceptados, errores de validación, "Abrir", "Quitar", "Contrato adjunto", "No hay contrato cargado", títulos/subtítulos de confirmación, éxitos y errores de red. La fuente de verdad es `frontend/public/i18n/`; nunca editar `public/i18n/` directamente.
 9. **REQ-009**: La opción "Contrato" debe estar disponible para **todas** las deudas y servicios, tengan o no contrato. El estado inicial del modal se determina con `has_contract`.
@@ -388,7 +390,8 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
   - "Quitar" monta `DeleteModal` con `title`, `subtitle`, `onConfirm`, `onCancel`.
   - "Abrir" → `window.open(api.contracts.url(owner, entityId), '_blank', 'noopener,noreferrer')`.
   - Confirmar eliminación → `api.contracts.remove(owner, entityId)`, toast de éxito, `localHasContract=false`, `onChanged()`, volver al estado "sin contrato" o cerrar el modal.
-- **Cierre**: solo la **X del header** (y click en el overlay/`Escape`), salvo mientras se está subiendo o eliminando. No existe botón "Cerrar" en el pie.
+- **Cierre**: solo la **X del header** o el botón **Cancelar** (estado sin contrato), salvo mientras se está subiendo o eliminando. **Click fuera del contenido y `Escape` NO cierran.** El overlay usa `z-[60]` y bloquea la interacción con la página de fondo.
+- **Confirmación**: `DeleteModal` se renderiza como hermano del overlay del contrato, usa `z-[70]`, enfoca el input al abrirse y confirma con **Enter** cuando el texto es `confirmo`.
 - **Accesibilidad**: `role="dialog"`, `aria-modal="true"`, `aria-labelledby`; la X tiene `aria-label`; el input de archivo es accesible vía el `label`.
 
 #### 4.2.6 Frontend — integración en páginas
@@ -594,6 +597,8 @@ Códigos:
 - [ ] **CA-014**: Si el archivo se borra manualmente del volumen, `has_contract` pasa a `false` y el `GET` devuelve 404 (sin errores 500).
 - [ ] **CA-015**: Si la deuda/servicio no existe o está eliminado, los tres endpoints devuelven 404 y no crean directorios.
 - [ ] **CA-016**: La subida reemplaza un contrato existente sin dejar temporales `.tmp` visibles.
+- [ ] **CA-017**: Hacer click fuera del modal **no** lo cierra; el overlay usa `z-[60]` y bloquea la interacción con la página de fondo y los menús de 3 puntos. El modal solo se cierra con la X o Cancelar.
+- [ ] **CA-018**: El modal de confirmación queda por encima (`z-[70]`), enfoca el input al abrirse y permite confirmar con Enter cuando el texto es exactamente `confirmo`.
 - [ ] **CA-DARK**: El área de drag & drop, el nombre del archivo, los textos de ayuda y los botones usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode (texto y placeholders legibles).
 - [ ] **CA-I18N**: Las claves nuevas existen en `frontend/public/i18n/es.json` y `en.json`, y `npm run build` las copia a `public/i18n/`.
 - [ ] **CA-BUILD**: `go test ./...`, `go vet ./...` y `npm run build` (que ejecuta `check-ui-rules.cjs`) pasan sin errores.
@@ -706,7 +711,7 @@ Códigos:
 
 - **P0 implementado**: `ContractStore`, validación PDF/10 MB, escritura atómica, endpoints `POST`/`GET`/`DELETE`, `has_contract` en deudas y servicios, `ContractModal` con drag & drop/abrir/quitar, confirmación con `confirmo`, integración en tarjetas y detalles de deudas/servicios, i18n es/en y tests unitarios/de handlers.
 - **P1 pendiente**: indicador PDF en tarjetas, metadatos del contrato (tamaño/fecha), `?download=1` desde la UI y limpieza de huérfanos al eliminar entidades.
-- **Validación local**: `go test ./...`, `go vet ./...` y `npm run build` pasan; flujo de upload/descarga/eliminación probado contra un `DATA_DIR` temporal con datos sintéticos.
+- **Validación local**: `go test ./...`, `go vet ./...` y `npm run build` pasan; flujo de upload/descarga/eliminación probado contra un `DATA_DIR` temporal con datos sintéticos. Reglas de modal verificadas en Chrome headless: click fuera no cierra, overlay `z-[60]`, confirmación `z-[70]`, foco automático en `confirmo` y Enter elimina.
 
 ### Fuera de alcance
 
@@ -728,3 +733,4 @@ Códigos:
 | 2026-11-07 | opencode | Inicio de implementación; estado `in_progress`. |
 | 2026-11-07 | opencode | Implementación P0: almacén de contratos, endpoints, `has_contract`, modal, integración en 4 páginas, i18n y tests. |
 | 2026-11-07 | opencode | Ajuste de UI solicitado: botones "Quitar" (izquierda) y "Abrir" (derecha), sin "contrato" en las etiquetas; se elimina el botón "Cerrar" del pie y se usa la X del header. |
+| 2026-11-07 | opencode | Regla global de modales: sin cierre por click fuera, overlay `z-[60]` bloqueante y `DeleteModal` en `z-[70]` con foco automático y confirmación con Enter. |
