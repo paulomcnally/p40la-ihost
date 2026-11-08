@@ -186,6 +186,25 @@ func (s *InstitutionStorage) GetAnalyzerOptions(ctx context.Context, institution
 	return options, rows.Err()
 }
 
+// GetCategoryKey devuelve la clave de la categoría de una institución. El
+// segundo valor indica si la institución existe (SPEC-124).
+func (s *InstitutionStorage) GetCategoryKey(ctx context.Context, id int64) (string, bool, error) {
+	var key string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT COALESCE(ic.key, '')
+		FROM institutions i
+		LEFT JOIN institution_categories ic ON ic.id = i.category_id
+		WHERE i.id = ?
+	`, id).Scan(&key)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", false, nil
+		}
+		return "", false, fmt.Errorf("obtener categoría de institución: %w", err)
+	}
+	return key, true, nil
+}
+
 func (s *InstitutionStorage) Count(ctx context.Context) (int64, error) {
 	var count int64
 	if err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM institutions").Scan(&count); err != nil {

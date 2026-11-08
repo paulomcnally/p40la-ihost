@@ -4,6 +4,8 @@ import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
+import DebtDocumentButtons from './DebtDocumentButtons'
+import PaymentTimingLabel from './PaymentTimingLabel'
 import LoadingSpinner from './LoadingSpinner'
 import DebtPayModal from './DebtPayModal'
 import Select from './Select'
@@ -285,10 +287,19 @@ export default function DebtAnalysis() {
                         {' · '}
                         {t('deudas.pay_date')} {(b.paid_at || '').slice(0, 10)}
                       </p>
+                      <PaymentTimingLabel
+                        paidDate={b.paid_at}
+                        dueDate={b.due_date}
+                        mode="paid"
+                        className="block text-xs mt-0.5"
+                      />
                     </div>
-                    <span className="text-sm font-semibold shrink-0">
-                      {b.currency_code || 'NIO'} {formatMoney(b.amount)}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <DebtDocumentButtons bill={b} />
+                      <span className="text-sm font-semibold">
+                        {b.currency_code || 'NIO'} {formatMoney(b.amount)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -398,6 +409,7 @@ export default function DebtAnalysis() {
                       <Icon name="chevron" className="w-4 h-4 text-text-secondary shrink-0" />
                     </button>
                     <div className="flex flex-col items-end gap-2 shrink-0">
+                      <DebtDocumentButtons bill={bill} />
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                         bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
                       }`}>

@@ -83,6 +83,7 @@ func TestDebtHistoryMonthlyCounts(t *testing.T) {
 		storage.NewDebtBillStorage(database),
 		storage.NewInstitutionStorage(database),
 		storage.NewCurrencyStorage(database),
+		t.TempDir(),
 	)
 
 	now := time.Date(2026, 10, 21, 12, 0, 0, 0, time.UTC)

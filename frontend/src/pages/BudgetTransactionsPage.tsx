@@ -433,7 +433,7 @@ function TransactionFormModal({ edit, accounts, categories, currencies, defaultD
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="font-bold">{edit ? t('app.edit') : t('budget.create_transaction')}</h3>
@@ -587,7 +587,7 @@ function AccountsModal({ accounts, currencies, onClose, onChanged }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-md max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="font-bold">{t('budget.accounts')}</h3>
@@ -699,7 +699,7 @@ function AccountFormModal({ edit, currencies, onClose, onSaved }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-sm p-4 space-y-4">
         <h3 className="font-bold">{edit.id ? t('budget.edit_account') : t('budget.create_account')}</h3>
 
@@ -822,7 +822,7 @@ function TransferFormModal({ edit, accounts, currencies, defaultDate, onClose, o
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="font-bold">{edit ? t('app.edit') : t('budget.create_transfer')}</h3>
