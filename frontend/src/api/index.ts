@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceItem, AutoMaintenanceItemInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse, DocumentRecognition, ConfirmRecognitionInput, AssociationResult } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceItem, AutoMaintenanceItemInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, DebtInformationTemplate, DebtInformationField, DebtPaymentInformation, DebtInformationToken, DebtInformationValue, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse, DocumentRecognition, ConfirmRecognitionInput, AssociationResult } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -412,6 +412,22 @@ salaries: {
     },
     removeInvoice: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/invoice`),
     removeReceipt: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/receipt`),
+  },
+  debtInformationTemplates: {
+    list: () => get<DebtInformationTemplate[]>('/api/debt-information-templates'),
+    get: (id: number) => get<DebtInformationTemplate>(`/api/debt-information-templates/${id}`),
+    create: (body: { name: string; description?: string; fields: DebtInformationField[] }) =>
+      post<DebtInformationTemplate>('/api/debt-information-templates', body),
+    update: (id: number, body: { name: string; description?: string; fields: DebtInformationField[] }) =>
+      put<DebtInformationTemplate>(`/api/debt-information-templates/${id}`, body),
+    delete: (id: number) => del(`/api/debt-information-templates/${id}`),
+    tokens: () => get<DebtInformationToken[]>('/api/debt-information-templates/tokens'),
+  },
+  debtPaymentInformation: {
+    get: (debtId: number) => get<DebtPaymentInformation>(`/api/debts/${debtId}/payment-information`),
+    save: (debtId: number, body: { template_id: number; values: Record<string, DebtInformationValue> }) =>
+      put<DebtPaymentInformation>(`/api/debts/${debtId}/payment-information`, body),
+    clear: (debtId: number) => del(`/api/debts/${debtId}/payment-information`),
   },
   documents: {
     recognize: (file: File) => {

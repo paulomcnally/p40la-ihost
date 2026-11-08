@@ -39,6 +39,7 @@ type Handler struct {
 	pensionDashboard    *PensionDashboardHandlers
 	pensionImport       *PensionImportHandlers
 	debt                *DebtHandlers
+	debtInformation     *DebtInformationHandlers
 	webhooks            *WebhookHandlers
 	budget              *BudgetHandlers
 	automation          *AutomationHandlers
@@ -75,6 +76,7 @@ func NewHandler(
 	pensionDashboard *PensionDashboardHandlers,
 	pensionImport *PensionImportHandlers,
 	debt *DebtHandlers,
+	debtInformation *DebtInformationHandlers,
 	webhooks *WebhookHandlers,
 	budget *BudgetHandlers,
 	automation *AutomationHandlers,
@@ -109,6 +111,7 @@ func NewHandler(
 		pensionDashboard:    pensionDashboard,
 		pensionImport:       pensionImport,
 		debt:                debt,
+		debtInformation:     debtInformation,
 		webhooks:            webhooks,
 		budget:              budget,
 		automation:          automation,
