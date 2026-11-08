@@ -561,6 +561,7 @@
     },
     "attachments": {
       "title": "Comprobantes PDF",
+      "add_pdf": "Adjuntar PDF",
       "pending": "Pendientes de subir",
       "attach": "Adjuntar PDF",
       "uploading": "Subiendo...",

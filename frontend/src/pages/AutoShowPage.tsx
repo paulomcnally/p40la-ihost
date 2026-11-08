@@ -13,6 +13,7 @@ import CardMenu from '../components/CardMenu'
 import MaintenanceModal from '../components/MaintenanceModal'
 import InspectionModal from '../components/InspectionModal'
 import InspectionStatusBadge from '../components/InspectionStatusBadge'
+import AutoAttachmentsModal from '../components/AutoAttachmentsModal'
 import type {
   Auto,
   AutoService,
@@ -59,6 +60,8 @@ export default function AutoShowPage() {
   const [showInspectionModal, setShowInspectionModal] = useState(false)
   const [editInspection, setEditInspection] = useState<AutoInspection | null>(null)
   const [deleteInspectionTarget, setDeleteInspectionTarget] = useState<AutoInspection | null>(null)
+  const [pdfMaintenanceTarget, setPdfMaintenanceTarget] = useState<AutoMaintenance | null>(null)
+  const [pdfInspectionTarget, setPdfInspectionTarget] = useState<AutoInspection | null>(null)
 
   const loadAuto = useCallback(async () => {
     const data = await api.autos.get(Number(id))
@@ -371,6 +374,19 @@ export default function AutoShowPage() {
                     ))}
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setPdfMaintenanceTarget(item)}
+                  className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border bg-card text-xs font-medium text-text-secondary hover:border-primary/50 hover:text-primary transition-colors min-h-[36px]"
+                >
+                  <Icon name="pdf" className="w-3.5 h-3.5 text-danger flex-shrink-0" />
+                  {t('autos.attachments.add_pdf')}
+                  {item.attachments.length > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-4 px-1 rounded-full bg-bg text-[10px]">
+                      {item.attachments.length}
+                    </span>
+                  )}
+                </button>
                 <CardMenu
                   options={[
                     { label: t('app.edit'), icon: 'edit', onClick: () => setEditMaintenance(item) },
@@ -454,6 +470,19 @@ export default function AutoShowPage() {
                     ))}
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setPdfInspectionTarget(item)}
+                  className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border bg-card text-xs font-medium text-text-secondary hover:border-primary/50 hover:text-primary transition-colors min-h-[36px]"
+                >
+                  <Icon name="pdf" className="w-3.5 h-3.5 text-danger flex-shrink-0" />
+                  {t('autos.attachments.add_pdf')}
+                  {item.attachments.length > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-4 px-1 rounded-full bg-bg text-[10px]">
+                      {item.attachments.length}
+                    </span>
+                  )}
+                </button>
                 <CardMenu
                   options={[
                     { label: t('app.edit'), icon: 'edit', onClick: () => setEditInspection(item) },
@@ -533,6 +562,40 @@ export default function AutoShowPage() {
           subtitle={t('autos.inspections.delete_subtitle').replace('{year}', String(deleteInspectionTarget.inspection_year))}
           onConfirm={handleRemoveInspection}
           onCancel={() => setDeleteInspectionTarget(null)}
+        />
+      )}
+
+      {pdfMaintenanceTarget && (
+        <AutoAttachmentsModal
+          title={t('autos.maintenances.title')}
+          attachments={pdfMaintenanceTarget.attachments}
+          attachmentUrl={(attachment) =>
+            api.autos.maintenanceAttachmentUrl(auto.id, pdfMaintenanceTarget.id, attachment.id)
+          }
+          upload={(file) => api.autos.uploadMaintenanceAttachment(auto.id, pdfMaintenanceTarget.id, file)}
+          remove={(attachment) => api.autos.deleteMaintenanceAttachment(auto.id, pdfMaintenanceTarget.id, attachment.id)}
+          onChanged={loadMaintenances}
+          onClose={() => {
+            setPdfMaintenanceTarget(null)
+            loadMaintenances()
+          }}
+        />
+      )}
+
+      {pdfInspectionTarget && (
+        <AutoAttachmentsModal
+          title={t('autos.inspections.title')}
+          attachments={pdfInspectionTarget.attachments}
+          attachmentUrl={(attachment) =>
+            api.autos.inspectionAttachmentUrl(auto.id, pdfInspectionTarget.id, attachment.id)
+          }
+          upload={(file) => api.autos.uploadInspectionAttachment(auto.id, pdfInspectionTarget.id, file)}
+          remove={(attachment) => api.autos.deleteInspectionAttachment(auto.id, pdfInspectionTarget.id, attachment.id)}
+          onChanged={loadInspections}
+          onClose={() => {
+            setPdfInspectionTarget(null)
+            loadInspections()
+          }}
         />
       )}
     </div>
