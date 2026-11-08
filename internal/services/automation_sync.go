@@ -85,7 +85,7 @@ func (s *AutomationService) FetchBills(ctx context.Context, accountID int64) ([]
 
 	bills, err := plugin.FetchBills(ctx, credentials, account.Identifier)
 	if err != nil {
-		s.persistFetchedBill(ctx, account, plugin, "error", err.Error(), "{}")
+		s.persistFetchedBill(ctx, account, plugin, "error", AutomationErrorMessage(err), automationErrorRaw(err))
 		return nil, err
 	}
 	for _, bill := range bills {
@@ -130,7 +130,7 @@ func (s *AutomationService) SyncAccount(ctx context.Context, accountID int64) (d
 
 	bills, err := s.FetchBills(ctx, accountID)
 	if err != nil {
-		s.logDelivery(ctx, account, "error", "{}", "error consultando facturas: "+err.Error())
+		s.logDelivery(ctx, account, "error", "{}", "error consultando facturas: "+AutomationErrorMessage(err))
 		return 0, 1, err
 	}
 

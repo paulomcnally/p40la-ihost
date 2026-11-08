@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/go-telegram/bot v1.27.0
 	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
-	github.com/paulomcnally/p40la-ihost-automation-plugins v1.1.0
+	github.com/paulomcnally/p40la-ihost-automation-plugins v1.1.1
 	golang.org/x/crypto v0.26.0
 	modernc.org/sqlite v1.32.0
 )

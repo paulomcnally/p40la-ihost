@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -153,12 +155,106 @@ func TestAutomationSyncAccountPluginError(t *testing.T) {
 	if len(bills) != 1 || bills[0].Status != "error" {
 		t.Errorf("factura de error = %+v", bills)
 	}
+	if bills[0].Error == nil || *bills[0].Error != "proveedor caído" {
+		t.Errorf("error persistido = %v, want texto original para errores genéricos", bills[0].Error)
+	}
+	if bills[0].ErrorCode != "" {
+		t.Errorf("error_code = %q, want vacío para error genérico", bills[0].ErrorCode)
+	}
 	logs, err := automation.ListWebhookLogs(context.Background(), 1, 10, 0)
 	if err != nil {
 		t.Fatalf("ListWebhookLogs: %v", err)
 	}
 	if len(logs) != 1 || logs[0].Status != "error" {
 		t.Errorf("logs = %+v", logs)
+	}
+}
+
+func TestAutomationErrorMessageClassified(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		code string
+		msg  string
+	}{
+		{
+			name: "portal migrado",
+			err:  fmt.Errorf("%w: login legacy redirige a /ni/MiAssan-NI/login", plugins.ErrPortalMigrated),
+			code: AutomationErrorPortalMigrated,
+			msg:  "El proveedor migró su portal de login y el acceso automático ya no es válido. Desactivá la consulta automática para evitar errores repetidos.",
+		},
+		{
+			name: "captcha",
+			err:  fmt.Errorf("%w: formulario nuevo", plugins.ErrCaptchaRequired),
+			code: AutomationErrorCaptchaRequired,
+			msg:  "El proveedor requiere CAPTCHA para iniciar sesión y el acceso automático no es posible. Desactivá la consulta automática.",
+		},
+		{
+			name: "sesión expirada",
+			err:  fmt.Errorf("%w: cookie vencida", plugins.ErrAuthExpired),
+			code: AutomationErrorAuthExpired,
+			msg:  "La sesión del proveedor expiró. Volvé a configurar la sesión.",
+		},
+		{
+			name: "genérico",
+			err:  errors.New("fallo de red"),
+			code: "",
+			msg:  "fallo de red",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := AutomationErrorCode(tc.err); got != tc.code {
+				t.Errorf("AutomationErrorCode = %q, want %q", got, tc.code)
+			}
+			if got := AutomationErrorMessage(tc.err); got != tc.msg {
+				t.Errorf("AutomationErrorMessage = %q, want %q", got, tc.msg)
+			}
+		})
+	}
+	if got := AutomationErrorMessage(nil); got != "" {
+		t.Errorf("AutomationErrorMessage(nil) = %q", got)
+	}
+}
+
+func TestAutomationSyncAccountClassifiedError(t *testing.T) {
+	plugin := &fakePlugin{err: fmt.Errorf("%w: demo-secret no debe persistirse", plugins.ErrPortalMigrated)}
+	automation := newAutomationSyncEnv(t, plugin)
+
+	delivered, failed, err := automation.SyncAccount(context.Background(), 1)
+	if !errors.Is(err, plugins.ErrPortalMigrated) {
+		t.Fatalf("SyncAccount err = %v, want ErrPortalMigrated", err)
+	}
+	if delivered != 0 || failed != 1 {
+		t.Errorf("delivered=%d failed=%d, esperado 0/1", delivered, failed)
+	}
+
+	bills, err := automation.ListBills(context.Background(), 1)
+	if err != nil {
+		t.Fatalf("ListBills: %v", err)
+	}
+	if len(bills) != 1 || bills[0].Status != "error" {
+		t.Fatalf("factura de error = %+v", bills)
+	}
+	if bills[0].ErrorCode != AutomationErrorPortalMigrated {
+		t.Errorf("error_code = %q, want %q", bills[0].ErrorCode, AutomationErrorPortalMigrated)
+	}
+	if bills[0].Error == nil || *bills[0].Error != AutomationErrorMessage(plugin.err) {
+		t.Errorf("error persistido = %v, want mensaje accionable", bills[0].Error)
+	}
+	if bills[0].Error != nil && strings.Contains(*bills[0].Error, "demo-secret") {
+		t.Errorf("error persistido filtra el detalle del plugin: %q", *bills[0].Error)
+	}
+	if !strings.Contains(bills[0].Raw, `"error_code":"portal_migrated"`) {
+		t.Errorf("raw sin metadata de error: %q", bills[0].Raw)
+	}
+
+	logs, err := automation.ListWebhookLogs(context.Background(), 1, 10, 0)
+	if err != nil {
+		t.Fatalf("ListWebhookLogs: %v", err)
+	}
+	if len(logs) != 1 || strings.Contains(logs[0].Response, "demo-secret") {
+		t.Errorf("log filtra el detalle del plugin: %+v", logs)
 	}
 }
 

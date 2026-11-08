@@ -111,6 +111,11 @@ func (s *AutomationService) ListBills(ctx context.Context, accountID int64) ([]m
 	if bills == nil {
 		bills = []models.AutomationBill{}
 	}
+	for i := range bills {
+		if bills[i].Error != nil {
+			bills[i].ErrorCode = automationErrorCodeFromRaw(bills[i].Raw)
+		}
+	}
 	return bills, nil
 }
 
