@@ -85,8 +85,14 @@ En `http://ihost.local` → **Docker → Volume → Add**:
 2. **Run** con esta configuración:
    - **Network**: `bridge`
    - **Port**: host `8081` → container `80` (elegí un puerto libre; no uses el 80 del iHost)
-   - **Volume**: `p40la-tailscale-config` → `/srv/p40la-tailscale-config`
+   - **Volumes**:
+     | Volume | Container path | Para qué |
+     |---|---|---|
+     | `p40la-tailscale-config` | `/srv/p40la-tailscale-config` | Ver/editar `serve.json` (obligatorio) |
+     | `filebrowser-data` (nuevo) | `/database` | Persistir usuarios/config de Filebrowser (opcional) |
    - **Restart Policy**: `unless-stopped`
+
+   > Si la UI del iHost te obliga a mapear un volumen a `/srv`, creá `filebrowser-data` y mapealo a `/srv`; el volumen `p40la-tailscale-config` va igual a `/srv/p40la-tailscale-config`.
 3. Abrí `http://ihost.local:8081` (usuario/password por defecto: `admin` / `admin`) y entrá a la carpeta `p40la-tailscale-config`.
 4. Creá el archivo `serve.json` con este contenido (también está en `deploy/tailscale/serve.json`):
 
