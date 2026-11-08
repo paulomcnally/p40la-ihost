@@ -227,6 +227,16 @@ export default function DeudasPage() {
               {t('deudas.closed_on')} {closedDate}
             </span>
           )}
+          {debt.has_receipts && (
+            <span
+              role="img"
+              aria-label={t('deudas.has_receipts')}
+              title={t('deudas.has_receipts')}
+              className="inline-flex items-center text-primary"
+            >
+              <Icon name="pdf" className="w-4 h-4" />
+            </span>
+          )}
         </div>
 
         {closed ? (

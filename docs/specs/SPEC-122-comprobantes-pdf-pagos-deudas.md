@@ -1,7 +1,7 @@
 ---
 title: "Comprobantes PDF en pagos de deudas: upload, almacenamiento en volumen y visualización"
 id: "SPEC-122"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-07"
 updated: "2026-11-07"
@@ -11,7 +11,7 @@ github_issue: 125
 # Comprobantes PDF en pagos de deudas: upload, almacenamiento en volumen y visualización
 
 **ID**: SPEC-122  
-**Estado**: draft  
+**Estado**: in_progress
 **Autor**: opencode  
 **Creado**: 2026-11-07  
 **Actualizado**: 2026-11-07
@@ -212,12 +212,15 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
       dataDir string,
   ) *DebtService
 
-  func (s *DebtService) PayBill(ctx context.Context, id int64, paidAt time.Time, paymentReference string, receipt *ReceiptUpload) (*models.DebtBill, error)
+  func (s *DebtService) PayBill(ctx context.Context, id int64, paidAt time.Time, paymentReference string) (*models.DebtBill, error) // compatibilidad
+  func (s *DebtService) PayBillWithReceipt(ctx context.Context, id int64, paidAt time.Time, paymentReference string, receipt *ReceiptUpload) (*models.DebtBill, error)
   func (s *DebtService) SaveReceipt(ctx context.Context, id int64, receipt ReceiptUpload) (*models.DebtBill, error) // P1
   func (s *DebtService) ReceiptPath(ctx context.Context, id int64) (filePath, fileName string, err error)
   func (s *DebtService) ListBills(ctx context.Context, debtID int64) ([]models.DebtBill, error)
   func (s *DebtService) ListBillsByMonth(ctx context.Context, year, month int) ([]models.DebtBill, error)
   ```
+
+  Errores centinela: `ErrReceiptAfterPayment` (la cuota quedó pagada pero falló el guardado del PDF) y `ErrReceiptNotFound` (la cuota no tiene comprobante). `PayBill` se conserva como wrapper de `PayBillWithReceipt(..., nil)` para no romper llamadas existentes.
 - **Dependencias**: `storage`, `os`, `path/filepath`, `io`, `bytes`, `strconv`, `time`.
 - **Ubicación**: `internal/services/debt.go`.
 
@@ -237,8 +240,10 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
   ```go
   // internal/models/debt_bill.go
   HasReceipt bool `json:"has_receipt"`
+  // internal/models/debt.go
+  HasReceipts bool `json:"has_receipts"`
   ```
-- **Nota**: no se agrega ninguna columna a `debt_bills` ni migración.
+- **Nota**: no se agrega ninguna columna a `debt_bills` ni migración. Ambos campos se calculan desde el filesystem.
 
 #### 4.2.4 Frontend — `DebtPayModal`
 
@@ -253,11 +258,13 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
 
 #### 4.2.5 Frontend — indicadores y menú
 
-- `frontend/src/pages/DebtBillsPage.tsx`: agregar icono PDF y opción "Comprobante" en `billMenuOptions`.
+- `frontend/src/pages/DebtBillsPage.tsx`: icono PDF, opción "Comprobante" y opción "Adjuntar/Reemplazar comprobante" en `billMenuOptions`.
+- `frontend/src/pages/DeudasPage.tsx`: indicador PDF en la tarjeta si `has_receipts=true`.
 - `frontend/src/components/DebtCalendar.tsx`: icono PDF en `BillRow` (grilla desktop y agenda móvil).
 - `frontend/src/components/DebtAnalysis.tsx`: icono PDF en resultados de búsqueda y en la lista de cuotas pagadas por adelantado.
-- `frontend/src/api/index.ts`: `payBill` con `FormData` cuando hay archivo; `receiptUrl(id)`; `uploadReceipt(id, file)` (P1).
-- `frontend/src/types/index.ts`: `DebtBill.has_receipt?: boolean`.
+- `frontend/src/utils/receiptFile.ts`: constantes y validación compartida de PDF/tamaño.
+- `frontend/src/api/index.ts`: `payBill` con `FormData`; `receiptUrl(id)`; `uploadReceipt(id, file)` (P1).
+- `frontend/src/types/index.ts`: `DebtBill.has_receipt?: boolean` y `Debt.has_receipts?: boolean`.
 - i18n: `frontend/public/i18n/es.json` y `en.json`.
 
 ### 4.3 Modelo de datos
@@ -357,6 +364,8 @@ X-Content-Type-Options: nosniff
 <bytes del PDF>
 ```
 
+Con `?download=1` el `Content-Disposition` pasa a `attachment` (fallback para Safari/iOS, REQ-015).
+
 **Response Error**:
 ```json
 {
@@ -430,17 +439,18 @@ file: <PDF obligatorio>
 ### 5.3 Testing
 
 - **Unit tests** (`internal/services/debt_receipt_test.go`):
-  - `receiptPath` genera `documents/1/payment_1.pdf` para deuda 1, cuota 1.
-  - Validación: archivo vacío, no PDF, PDF válido, tamaño > 10 MB (usar `bytes.NewReader` con datos sintéticos).
-  - `SaveReceipt` crea directorios, escribe el archivo y devuelve `has_receipt=true`.
+  - Pago con PDF crea `documents/{debt_id}/payment_1.pdf` y devuelve `has_receipt=true`.
+  - Validación: archivo vacío, extensión no PDF, contenido sin firma `%PDF-` y tamaño > 10 MB.
+  - `SaveReceipt` solo permite cuotas pagadas, crea directorios y devuelve `has_receipt=true`.
   - Reemplazo sobrescribe el archivo anterior.
-  - `ReceiptPath` devuelve 404-like error si no existe.
-- **Integration tests** (`internal/api/debt_handlers_test.go` o similar):
+  - `ReceiptPath` y `has_receipt` reflejan la ausencia del archivo en disco.
+  - `List` y `GetByID` calculan `has_receipts`.
+- **Integration tests** (`internal/api/debt_receipt_test.go`):
   - `PUT /pay` con JSON sigue funcionando.
   - `PUT /pay` con multipart + PDF crea el archivo y marca `paid`.
-  - `GET /receipt` devuelve 200, `application/pdf` y los bytes correctos.
+  - `GET /receipt` devuelve 200, `application/pdf`, `nosniff` y los bytes correctos.
   - `GET /receipt` sin archivo devuelve 404.
-  - `POST /receipt` (P1) rechaza cuotas pendientes.
+  - `POST /receipt` (P1) adjunta a una cuota pagada y rechaza cuotas pendientes.
   - Usar `t.TempDir()` como `DATA_DIR` y PDFs sintéticos generados en el test (nunca archivos reales).
 - **Frontend**:
   - `npm run check:ui` (no `<select>` nativo).
@@ -522,3 +532,4 @@ file: <PDF obligatorio>
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-07 | opencode | Creación inicial de la especificación (SPEC-122). |
+| 2026-11-07 | opencode | Implementación completa P0 + P1: backend (almacenamiento atómico, multipart, descarga, `has_receipt`/`has_receipts`), frontend (drag & drop, iconos, menú Comprobante, adjuntar/reemplazar), tests unitarios, de integración y build. Pendiente validación manual del usuario. |

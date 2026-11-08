@@ -37,6 +37,9 @@ export default function DebtAnalysis() {
   const { t } = useI18nStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const now = new Date()
+  const openReceipt = (bill: DebtBill) => {
+    window.open(api.debts.receiptUrl(bill.id), '_blank', 'noopener,noreferrer')
+  }
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [bills, setBills] = useState<DebtBill[]>([])
@@ -286,9 +289,21 @@ export default function DebtAnalysis() {
                         {t('deudas.pay_date')} {(b.paid_at || '').slice(0, 10)}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold shrink-0">
-                      {b.currency_code || 'NIO'} {formatMoney(b.amount)}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {b.has_receipt && (
+                        <button
+                          onClick={() => openReceipt(b)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"
+                          title={t('deudas.view_receipt')}
+                          aria-label={t('deudas.view_receipt')}
+                        >
+                          <Icon name="pdf" className="w-4 h-4" />
+                        </button>
+                      )}
+                      <span className="text-sm font-semibold">
+                        {b.currency_code || 'NIO'} {formatMoney(b.amount)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -398,6 +413,16 @@ export default function DebtAnalysis() {
                       <Icon name="chevron" className="w-4 h-4 text-text-secondary shrink-0" />
                     </button>
                     <div className="flex flex-col items-end gap-2 shrink-0">
+                      {bill.has_receipt && (
+                        <button
+                          onClick={() => openReceipt(bill)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"
+                          title={t('deudas.view_receipt')}
+                          aria-label={t('deudas.view_receipt')}
+                        >
+                          <Icon name="pdf" className="w-4 h-4" />
+                        </button>
+                      )}
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                         bill.status === 'paid' ? 'bg-success/20 text-green-800 dark:text-green-400' : 'bg-warning/20 text-yellow-800 dark:text-yellow-400'
                       }`}>

@@ -150,7 +150,7 @@ func main() {
 	telegramBotService := services.NewTelegramBotService(systemSettingsService, billStorage, debtBillStorage, serviceStorage, automationService, categoryGroupService, accountService, currencyService, budgetTransactionService)
 	pensionNotificationService := services.NewPensionNotificationService(notificationStorage, emailService, alertService, systemSettingsService, supportRecordStorage, salaryPaymentStorage, telegramBotService)
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
-	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage)
+	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage, cfg.DataDir)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {

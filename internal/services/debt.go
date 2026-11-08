@@ -1,9 +1,15 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"math"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,37 +24,80 @@ const (
 	DebtStatusFinished = "finalizada"
 )
 
+// MaxDebtReceiptBytes es el tamaño máximo permitido para un comprobante de
+// pago de deuda (SPEC-122).
+const MaxDebtReceiptBytes int64 = 10 * 1024 * 1024
+
+var (
+	// ErrReceiptAfterPayment indica que la cuota quedó pagada pero el
+	// comprobante no pudo guardarse en disco. El usuario puede reintentar con
+	// SaveReceipt.
+	ErrReceiptAfterPayment = errors.New("la cuota quedó pagada pero no se pudo guardar el comprobante")
+	// ErrReceiptNotFound indica que la cuota no tiene un comprobante en disco.
+	ErrReceiptNotFound = errors.New("la cuota no tiene comprobante")
+)
+
+// ReceiptUpload representa un comprobante PDF en tránsito (SPEC-122).
+type ReceiptUpload struct {
+	FileName string
+	Reader   io.Reader
+}
+
 // DebtService contiene la lógica de negocio para deudas (SPEC-054).
 type DebtService struct {
 	debts        *storage.DebtStorage
 	debtBills    *storage.DebtBillStorage
 	institutions *storage.InstitutionStorage
 	currencies   *storage.CurrencyStorage
+	dataDir      string
+	receiptsDir  string
 }
 
-// NewDebtService crea un nuevo DebtService.
+// NewDebtService crea un nuevo DebtService. dataDir es el mismo directorio
+// donde vive app.db; los comprobantes se guardan en dataDir/documents
+// (SPEC-122).
 func NewDebtService(
 	debts *storage.DebtStorage,
 	debtBills *storage.DebtBillStorage,
 	institutions *storage.InstitutionStorage,
 	currencies *storage.CurrencyStorage,
+	dataDir string,
 ) *DebtService {
+	if strings.TrimSpace(dataDir) == "" {
+		dataDir = "."
+	}
 	return &DebtService{
 		debts:        debts,
 		debtBills:    debtBills,
 		institutions: institutions,
 		currencies:   currencies,
+		dataDir:      dataDir,
+		receiptsDir:  filepath.Join(dataDir, "documents"),
 	}
 }
 
 // List devuelve todas las deudas.
 func (s *DebtService) List(ctx context.Context) ([]models.Debt, error) {
-	return s.debts.List(ctx)
+	debts, err := s.debts.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range debts {
+		debts[i].HasReceipts = s.hasAnyReceipt(debts[i].ID)
+	}
+	return debts, nil
 }
 
 // GetByID busca una deuda por ID.
 func (s *DebtService) GetByID(ctx context.Context, id int64) (*models.Debt, error) {
-	return s.debts.GetByID(ctx, id)
+	debt, err := s.debts.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if debt != nil {
+		debt.HasReceipts = s.hasAnyReceipt(debt.ID)
+	}
+	return debt, nil
 }
 
 // Create crea una deuda y genera su serie completa de cuotas si está activa.
@@ -110,8 +159,9 @@ func (s *DebtService) Update(ctx context.Context, debt *models.Debt) (*models.De
 	if err := s.ensureDebtBills(ctx, updated); err != nil {
 		return nil, err
 	}
-	// Releer para devolver el resumen de cuotas actualizado (SPEC-104).
-	return s.debts.GetByID(ctx, debt.ID)
+	// Releer para devolver el resumen de cuotas actualizado (SPEC-104) y el
+	// indicador de comprobantes (SPEC-122).
+	return s.GetByID(ctx, debt.ID)
 }
 
 // Delete elimina lógicamente una deuda y sus cuotas.
@@ -124,17 +174,35 @@ func (s *DebtService) Delete(ctx context.Context, id int64) error {
 
 // ListBills devuelve las cuotas de una deuda.
 func (s *DebtService) ListBills(ctx context.Context, debtID int64) ([]models.DebtBill, error) {
-	return s.debtBills.ListByDebt(ctx, debtID)
+	bills, err := s.debtBills.ListByDebt(ctx, debtID)
+	if err != nil {
+		return nil, err
+	}
+	s.attachReceiptFlags(bills)
+	return bills, nil
 }
 
 // ListBillsByMonth devuelve las cuotas cuyo vencimiento cae en un mes
 // (vista Calendario).
 func (s *DebtService) ListBillsByMonth(ctx context.Context, year, month int) ([]models.DebtBill, error) {
-	return s.debtBills.ListByMonth(ctx, year, month)
+	bills, err := s.debtBills.ListByMonth(ctx, year, month)
+	if err != nil {
+		return nil, err
+	}
+	s.attachReceiptFlags(bills)
+	return bills, nil
 }
 
-// PayBill marca una cuota como pagada.
+// PayBill marca una cuota como pagada. Se mantiene por compatibilidad con las
+// llamadas existentes; para adjuntar un comprobante usar PayBillWithReceipt.
 func (s *DebtService) PayBill(ctx context.Context, id int64, paidAt time.Time, paymentReference string) (*models.DebtBill, error) {
+	return s.PayBillWithReceipt(ctx, id, paidAt, paymentReference, nil)
+}
+
+// PayBillWithReceipt marca una cuota como pagada y, opcionalmente, guarda su
+// comprobante PDF en {DATA_DIR}/documents/{debt_id}/payment_{n}.pdf
+// (SPEC-122).
+func (s *DebtService) PayBillWithReceipt(ctx context.Context, id int64, paidAt time.Time, paymentReference string, receipt *ReceiptUpload) (*models.DebtBill, error) {
 	bill, err := s.debtBills.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -145,15 +213,233 @@ func (s *DebtService) PayBill(ctx context.Context, id int64, paidAt time.Time, p
 	if bill.Status == "paid" {
 		return nil, fmt.Errorf("la cuota ya está pagada")
 	}
+
+	var staged *stagedReceipt
+	if receipt != nil {
+		staged, err = s.stageReceipt(bill, *receipt)
+		if err != nil {
+			return nil, err
+		}
+		defer staged.cleanup()
+	}
+
 	paid, err := s.debtBills.Pay(ctx, id, paidAt, paymentReference)
 	if err != nil {
 		return nil, err
 	}
+
+	if staged != nil {
+		if err := staged.commit(); err != nil {
+			// La cuota ya quedó pagada; se finaliza la deuda y se devuelve un
+			// error específico para que el usuario pueda reintentar el
+			// comprobante con SaveReceipt (SPEC-122 REQ-013).
+			_, _ = s.debtBills.FinalizeIfCompleted(ctx, bill.DebtID)
+			return nil, fmt.Errorf("%w: %v", ErrReceiptAfterPayment, err)
+		}
+	}
+
 	// SPEC-104 REQ-001: si era la última cuota pendiente, la deuda queda finalizada.
 	if _, err := s.debtBills.FinalizeIfCompleted(ctx, bill.DebtID); err != nil {
 		return nil, err
 	}
+	if paid != nil {
+		paid.HasReceipt = s.hasReceipt(paid)
+	}
 	return paid, nil
+}
+
+// SaveReceipt adjunta o reemplaza el comprobante de una cuota ya pagada
+// (SPEC-122 REQ-013).
+func (s *DebtService) SaveReceipt(ctx context.Context, id int64, receipt ReceiptUpload) (*models.DebtBill, error) {
+	bill, err := s.debtBills.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if bill == nil {
+		return nil, fmt.Errorf("la cuota no existe")
+	}
+	if bill.Status != "paid" {
+		return nil, fmt.Errorf("la cuota debe estar pagada para adjuntar un comprobante")
+	}
+
+	staged, err := s.stageReceipt(bill, receipt)
+	if err != nil {
+		return nil, err
+	}
+	defer staged.cleanup()
+	if err := staged.commit(); err != nil {
+		return nil, err
+	}
+
+	updated, err := s.debtBills.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if updated != nil {
+		updated.HasReceipt = true
+	}
+	return updated, nil
+}
+
+// ReceiptPath devuelve la ruta física y el nombre de descarga del comprobante
+// de una cuota (SPEC-122).
+func (s *DebtService) ReceiptPath(ctx context.Context, id int64) (filePath, fileName string, err error) {
+	bill, err := s.debtBills.GetByID(ctx, id)
+	if err != nil {
+		return "", "", err
+	}
+	if bill == nil || bill.Status != "paid" {
+		return "", "", ErrReceiptNotFound
+	}
+
+	path := s.receiptPath(bill.DebtID, bill.InstallmentNumber)
+	info, statErr := os.Stat(path)
+	if statErr != nil || info.IsDir() {
+		return "", "", ErrReceiptNotFound
+	}
+	return path, filepath.Base(path), nil
+}
+
+// receiptDir devuelve el directorio del comprobante de una deuda.
+func (s *DebtService) receiptDir(debtID int64) string {
+	return filepath.Join(s.receiptsDir, strconv.FormatInt(debtID, 10))
+}
+
+// receiptPath construye la ruta determinística del comprobante. Solo usa
+// enteros de la base de datos, nunca nombres provistos por el usuario.
+func (s *DebtService) receiptPath(debtID int64, installment int) string {
+	return filepath.Join(s.receiptDir(debtID), fmt.Sprintf("payment_%d.pdf", installment))
+}
+
+// attachReceiptFlags completa HasReceipt para una lista de cuotas.
+func (s *DebtService) attachReceiptFlags(bills []models.DebtBill) {
+	for i := range bills {
+		bills[i].HasReceipt = s.hasReceipt(&bills[i])
+	}
+}
+
+// hasReceipt verifica si existe el PDF de una cuota pagada.
+func (s *DebtService) hasReceipt(bill *models.DebtBill) bool {
+	if bill == nil || bill.Status != "paid" {
+		return false
+	}
+	info, err := os.Stat(s.receiptPath(bill.DebtID, bill.InstallmentNumber))
+	return err == nil && !info.IsDir()
+}
+
+// hasAnyReceipt verifica si el directorio de una deuda contiene al menos un
+// comprobante (SPEC-122 REQ-014).
+func (s *DebtService) hasAnyReceipt(debtID int64) bool {
+	entries, err := os.ReadDir(s.receiptDir(debtID))
+	if err != nil {
+		return false
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := strings.ToLower(entry.Name())
+		if strings.HasPrefix(name, "payment_") && strings.HasSuffix(name, ".pdf") {
+			return true
+		}
+	}
+	return false
+}
+
+// stagedReceipt representa un comprobante escrito en un temporal, listo para
+// renombrarse de forma atómica al path final.
+type stagedReceipt struct {
+	tmpPath   string
+	finalPath string
+}
+
+// stageReceipt valida el PDF y lo copia en streaming a un temporal dentro del
+// directorio destino, sin cargarlo completo en memoria.
+func (s *DebtService) stageReceipt(bill *models.DebtBill, upload ReceiptUpload) (*stagedReceipt, error) {
+	if upload.Reader == nil {
+		return nil, fmt.Errorf("el archivo está vacío")
+	}
+	if strings.ToLower(filepath.Ext(upload.FileName)) != ".pdf" {
+		return nil, fmt.Errorf("el comprobante debe ser un archivo PDF")
+	}
+
+	dir := s.receiptDir(bill.DebtID)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, fmt.Errorf("crear directorio de comprobantes: %w", err)
+	}
+
+	tmp, err := os.CreateTemp(dir, ".payment-*.tmp")
+	if err != nil {
+		return nil, fmt.Errorf("crear comprobante temporal: %w", err)
+	}
+	tmpPath := tmp.Name()
+	cleanup := func() { _ = os.Remove(tmpPath) }
+
+	written, err := io.Copy(tmp, io.LimitReader(upload.Reader, MaxDebtReceiptBytes+1))
+	if err != nil {
+		_ = tmp.Close()
+		cleanup()
+		return nil, fmt.Errorf("guardar comprobante: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		cleanup()
+		return nil, fmt.Errorf("cerrar comprobante: %w", err)
+	}
+	if written == 0 {
+		cleanup()
+		return nil, fmt.Errorf("el archivo está vacío")
+	}
+	if written > MaxDebtReceiptBytes {
+		cleanup()
+		return nil, fmt.Errorf("el comprobante no puede superar los 10 MB")
+	}
+	if err := validatePDF(tmpPath); err != nil {
+		cleanup()
+		return nil, err
+	}
+	if err := os.Chmod(tmpPath, 0o644); err != nil {
+		cleanup()
+		return nil, fmt.Errorf("aplicar permisos al comprobante: %w", err)
+	}
+
+	return &stagedReceipt{
+		tmpPath:   tmpPath,
+		finalPath: s.receiptPath(bill.DebtID, bill.InstallmentNumber),
+	}, nil
+}
+
+// commit mueve el temporal al nombre final de forma atómica.
+func (r *stagedReceipt) commit() error {
+	if err := os.Rename(r.tmpPath, r.finalPath); err != nil {
+		return fmt.Errorf("guardar comprobante: %w", err)
+	}
+	r.tmpPath = ""
+	return nil
+}
+
+// cleanup borra el temporal si todavía existe.
+func (r *stagedReceipt) cleanup() {
+	if r.tmpPath != "" {
+		_ = os.Remove(r.tmpPath)
+	}
+}
+
+// validatePDF verifica la firma de un archivo PDF.
+func validatePDF(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("validar comprobante: %w", err)
+	}
+	defer file.Close()
+
+	header := make([]byte, 5)
+	if _, err := io.ReadFull(file, header); err != nil {
+		return fmt.Errorf("el comprobante no es un PDF válido")
+	}
+	if !bytes.Equal(header, []byte("%PDF-")) {
+		return fmt.Errorf("el comprobante no es un PDF válido")
+	}
+	return nil
 }
 
 // ReconcileDebtBills genera las cuotas faltantes de todas las deudas activas

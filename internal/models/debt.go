@@ -21,14 +21,17 @@ type Debt struct {
 	StartDate         string  `json:"start_date"`
 	Status            string  `json:"status"`
 	// Resumen calculado de cuotas (SPEC-104). No se persiste.
-	PendingCount  int        `json:"pending_count"`
-	PendingAmount float64    `json:"pending_amount"`
-	PaidCount     int        `json:"paid_count"`
-	PaidAmount    float64    `json:"paid_amount"`
-	NextDueDate   string     `json:"next_due_date,omitempty"`
-	LastDueDate   string     `json:"last_due_date,omitempty"`
-	LastPaidAt    string     `json:"last_paid_at,omitempty"`
-	DeletedAt     *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	PendingCount  int     `json:"pending_count"`
+	PendingAmount float64 `json:"pending_amount"`
+	PaidCount     int     `json:"paid_count"`
+	PaidAmount    float64 `json:"paid_amount"`
+	NextDueDate   string  `json:"next_due_date,omitempty"`
+	LastDueDate   string  `json:"last_due_date,omitempty"`
+	LastPaidAt    string  `json:"last_paid_at,omitempty"`
+	// HasReceipts indica si la deuda tiene al menos un comprobante de pago
+	// (SPEC-122). No se persiste.
+	HasReceipts bool       `json:"has_receipts"`
+	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
