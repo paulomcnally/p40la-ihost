@@ -127,7 +127,8 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - **El overlay debe bloquear la interacción con la página de fondo**, incluidos los menús de 3 puntos (`z-50`) y cualquier otro control. Usar `z-[60]` o superior para el overlay del modal.
 - Los **modales de confirmación** (por ejemplo `DeleteModal`) deben quedar por encima del modal que los abre (`z-[70]` o superior).
 - **Todo modal debe tener siempre una acción visible de cierre** (Cancelar/Cerrar o X), incluso los selectores y los modales de solo lectura.
-- Al crear o modificar un modal, verificar manualmente que el click fuera no cierra ni interactúa con el fondo.
+- En el **modal de confirmación** (`DeleteModal`), escribir exactamente `confirmo` y presionar **Enter** debe ejecutar la acción de confirmación, igual que tocar el botón. Si el texto no es válido, Enter no hace nada.
+- Al crear o modificar un modal, verificar manualmente que el click fuera no cierra ni interactúa con el fondo, y que Enter confirma en el modal de confirmación cuando corresponde.
 - Precedente: SPEC-122 (modal de factura/comprobante y confirmación de borrado).
 
 ---
