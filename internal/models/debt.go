@@ -28,10 +28,10 @@ type Debt struct {
 	NextDueDate   string  `json:"next_due_date,omitempty"`
 	LastDueDate   string  `json:"last_due_date,omitempty"`
 	LastPaidAt    string  `json:"last_paid_at,omitempty"`
-	// HasReceipts indica si la deuda tiene al menos un comprobante de pago
-	// (SPEC-122). No se persiste.
-	HasReceipts bool       `json:"has_receipts"`
-	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	// HasDocuments indica si la deuda tiene al menos una factura o comprobante
+	// PDF (SPEC-122). No se persiste.
+	HasDocuments bool       `json:"has_documents"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }

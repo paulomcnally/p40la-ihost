@@ -353,14 +353,21 @@ salaries: {
     delete: (id: number) => del(`/api/debts/${id}`),
     listBills: (debtId: number) => get<DebtBill[]>(`/api/debts/${debtId}/bills`),
     billsByMonth: (year: number, month: number) => get<DebtBill[]>(`/api/debt-bills?year=${year}&month=${month}`),
-    payBill: (id: number, body: { paid_at: string; payment_reference?: string }, file?: File) => {
+    payBill: (id: number, body: { paid_at: string; payment_reference?: string }, invoice?: File, receipt?: File) => {
       const form = new FormData()
       form.append('paid_at', body.paid_at)
       if (body.payment_reference) form.append('payment_reference', body.payment_reference)
-      if (file) form.append('file', file)
+      if (invoice) form.append('invoice', invoice)
+      if (receipt) form.append('receipt', receipt)
       return multipartRequest<DebtBill>(`/api/debt-bills/${id}/pay`, form, 'PUT')
     },
+    invoiceUrl: (id: number) => `/api/debt-bills/${id}/invoice`,
     receiptUrl: (id: number) => `/api/debt-bills/${id}/receipt`,
+    uploadInvoice: (id: number, file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return multipartRequest<DebtBill>(`/api/debt-bills/${id}/invoice`, form, 'POST')
+    },
     uploadReceipt: (id: number, file: File) => {
       const form = new FormData()
       form.append('file', file)
