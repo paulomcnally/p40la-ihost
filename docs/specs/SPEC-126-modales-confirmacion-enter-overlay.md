@@ -1,20 +1,20 @@
 ---
 title: "Modales del proyecto: confirmación por palabra con Enter y overlay bloqueante sin cierre por click fuera"
 id: "SPEC-126"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-07"
-updated: "2026-11-07"
+updated: "2026-11-08"
 github_issue: 129
 ---
 
 # Modales del proyecto: confirmación por palabra con Enter y overlay bloqueante sin cierre por click fuera
 
 **ID**: SPEC-126
-**Estado**: in_progress
+**Estado**: released
 **Autor**: opencode
 **Creado**: 2026-11-07
-**Actualizado**: 2026-11-07
+**Actualizado**: 2026-11-08
 
 ---
 
@@ -25,7 +25,7 @@ SPEC-122 dejó documentadas y aplicadas parcialmente dos reglas de modales que d
 1. **Confirmación por palabra**: todo modal que habilita una acción destructiva o irreversible escribiendo una palabra (`confirmo`, `reabrir`/`reopen`, etc.) debe enfocar el input automáticamente al abrirse y permitir confirmar con **Enter** cuando la palabra es válida, ejecutando exactamente lo mismo que el botón.
 2. **Overlay y cierre explícito**: ningún modal se cierra al hacer click fuera de su contenido; el overlay debe bloquear la interacción con la página de fondo (incluidos los menús de 3 puntos) y el cierre debe ser siempre una acción visible (X o Cancelar/Cerrar/Listo).
 
-La auditoría de `main` (commit `21ef61c`, release de SPEC-122) muestra que la regla de confirmación por palabra se cumple en `DeleteModal` (23 usos en 19 archivos), pero **no** en el modal de reabrir mes de `RegistrosPage`, que tiene `autoFocus` pero no maneja Enter. Por otro lado, **ningún modal de `main` se cierra al hacer click fuera** (solo el drawer móvil del sidebar, que no es un modal), pero **23 de los 29 overlays de modales usan `z-50`** y podrían quedar al mismo nivel que los menús de 3 puntos, y **3 modales no tienen una acción de cierre siempre visible** (`AddInsuranceModal`, `AddPolicyModal` y `WebhookModal`).
+La auditoría de `main` (commit `21ef61c`, release de SPEC-122) muestra que la regla de confirmación por palabra se cumple en `DeleteModal` (23 usos en 19 archivos), pero **no** en el modal de reabrir mes de `RegistrosPage`, que tiene `autoFocus` pero no maneja Enter. Por otro lado, **ningún modal de `main` se cierra al hacer click fuera** (solo el drawer móvil del sidebar, que no es un modal), pero **23 de los 30 overlays de modales usan `z-50`** y podrían quedar al mismo nivel que los menús de 3 puntos, y **3 modales no tienen una acción de cierre siempre visible** (`AddInsuranceModal`, `AddPolicyModal` y `WebhookModal`). El modal de contratos incorporado por SPEC-123 (`ContractModal`) ya cumple las reglas.
 
 Esta spec completa la aplicación de ambas reglas en todos los modales existentes de `main`, centraliza la confirmación por palabra en un hook reutilizable y define una escala de capas (`z-index`) para que los overlays, los dropdowns `Select` y los toasts sigan funcionando correctamente. Es un cambio exclusivamente de frontend: no toca API, base de datos, migraciones ni variables de entorno. En el iHost el impacto es nulo en memoria y almacenamiento porque no se agregan dependencias ni procesos; el bundle solo crece por un hook liviano y ajustes de clases.
 
@@ -73,7 +73,7 @@ Consideraciones de UI obligatorias:
    - `z-[80]`: confirmación por encima de un modal que ya está en `z-[70]` o dropdown explícito dentro de un modal anidado.
    - `z-[90]`: dropdown del componente `Select` (portal), para que nunca quede detrás del overlay.
    - `z-[100]`: toasts globales, para que sigan visibles por encima de cualquier modal.
-5. **REQ-024**: Auditar y corregir **los 29 overlays de modales de `main`**. Los 23 que hoy usan `z-50` (o el default dinámico de `IconPickerModal`) deben pasar a `z-[60]` o superior. Los 6 que ya están en `z-[60]`/`z-[70]` se mantienen.
+5. **REQ-024**: Auditar y corregir **los 30 overlays de modales de `main`**. Los 23 que hoy usan `z-50` (o el default dinámico de `IconPickerModal`) deben pasar a `z-[60]` o superior. Los 7 que ya están en `z-[60]`/`z-[70]` se mantienen; entre ellos `ContractModal` (SPEC-123).
 6. **REQ-025**: Ajustar las capas globales para evitar regresiones:
    - `frontend/src/components/Select.tsx`: cambiar el default de `zIndex` de `z-50` a `z-[90]` (los overrides explícitos existentes se conservan).
    - `frontend/src/components/Toast.tsx`: cambiar `z-50` a `z-[100]`.
@@ -129,11 +129,11 @@ Consideraciones de UI obligatorias:
 - **`AGENTS.md`** y **`docs/project-rules.md` §4.7** ya documentan ambas reglas, pero la redacción está acotada a `DeleteModal`/`confirmo` y no menciona la escala de capas.
 - **`docs/specs/templates/spec-template.md`** y **`.opencode/skills/spec-manager/SKILL.md`** repiten la misma redacción acotada a `DeleteModal`.
 - **Auditoría de `main`**:
-  - `rg -n "fixed inset-0" frontend/src` → **30 ocurrencias** en 22 archivos: **29 overlays de modales** en 21 archivos + **1 overlay del sidebar móvil** (`DashboardLayout.tsx`, fuera de alcance).
+  - `rg -n "fixed inset-0" frontend/src` → **31 ocurrencias** en 23 archivos: **30 overlays de modales** en 22 archivos + **1 overlay del sidebar móvil** (`DashboardLayout.tsx`, fuera de alcance). El modal de contratos de SPEC-123 (`ContractModal.tsx`) se incorporó al inventario y ya cumple.
   - `rg -n "<DeleteModal" frontend/src` → **23 usos en 19 archivos**.
   - `rg -n "confirmo|confirmWord|confirmText|reopenModalConfirmWord" frontend/src` → solo `DeleteModal.tsx` y `RegistrosPage.tsx`.
   - **Click fuera**: ningún modal de `main` tiene `onClick` de cierre en su overlay. El único overlay con cierre por click fuera es el drawer del sidebar (`DashboardLayout.tsx:58-59`), que no es un modal.
-  - **z-index**: 23 de 29 overlays de modales usan `z-50` o el default dinámico de `IconPickerModal` (`z-50`). Solo 6 ya están en `z-[60]`/`z-[70]`: `DebtDocumentModal`, `DeleteModal`, `ServicePickerModal`, `BudgetPage` (modales de grupo/categoría) y `BudgetTransactionsPage` (modal de cuenta). De esos 6, los formularios anidados y sus pickers requieren un nivel extra para mantener la jerarquía.
+  - **z-index**: 23 de 30 overlays de modales usan `z-50` o el default dinámico de `IconPickerModal` (`z-50`). Siete ya están en `z-[60]`/`z-[70]`: `DebtDocumentModal`, `DeleteModal`, `ServicePickerModal`, `ContractModal`, `BudgetPage` (modales de grupo/categoría) y `BudgetTransactionsPage` (modal de cuenta). De esos 7, los formularios anidados y sus pickers requieren un nivel extra para mantener la jerarquía.
   - **Acción de cierre**: 3 modales no tienen una acción siempre visible: `AddInsuranceModal` (Cancelar condicionado a seleccionar servicio), `AddPolicyModal` (Cancelar condicionado a seleccionar auto) y `WebhookModal` (sin cierre durante `loading`).
   - **Dropdowns**: `Select` usa un portal con default `z-50`; si los modales pasan a `z-[60]`, los dropdowns dentro de modales quedarían detrás del overlay. Hay 52 usos de `Select`; solo 2 pasan `zIndex` explícito (en `BudgetPage`).
   - **Toasts**: `Toast` usa `z-50`; si los modales pasan a `z-[60]`, los mensajes quedarían detrás del overlay.
@@ -147,7 +147,7 @@ Consideraciones de UI obligatorias:
 | Opción | Pros | Contras | Decisión |
 |--------|------|---------|----------|
 | A. Corregir solo `RegistrosPage` y dejar los `z-50` | Cambio mínimo | No cumple el pedido de aplicar la regla a todo el proyecto; los overlays quedan al mismo nivel que los menús | ❌ Rechazada |
-| B. Hook compartido + auditoría de los 29 modales + escala de capas documentada | Regla única, cero dependencias, correcciones acotadas y verificables | Requiere tocar varios archivos y validar dropdowns/toasts | ✅ Seleccionada |
+| B. Hook compartido + auditoría de los 30 modales + escala de capas documentada | Regla única, cero dependencias, correcciones acotadas y verificables | Requiere tocar varios archivos y validar dropdowns/toasts | ✅ Seleccionada |
 | C. Componente genérico `Modal` que reemplace todos los modales | Unifica toda la UI y evita divergencias futuras | Refactor grande y riesgoso: cada modal tiene layouts, tamaños, iconos y flujos distintos; excede el pedido | ❌ Rechazada para esta spec |
 | D. Solo documentar la regla sin tocar código | Cero riesgo | Los modales siguen sin cumplirla | ❌ Rechazada |
 
@@ -174,7 +174,7 @@ Consideraciones de UI obligatorias:
 - **Consecuencias**: un solo lugar que corregir; `DeleteModal` conserva su API y estilos; el hook es trivial y no impacta el runtime del iHost.
 
 **ADR-005**: No crear un componente genérico de modal en esta spec.
-- **Contexto**: hay 29 overlays con estructuras y flujos distintos.
+- **Contexto**: hay 30 overlays con estructuras y flujos distintos.
 - **Decisión**: corregir capas y cierres in situ; dejar la unificación como deuda futura si aparece una necesidad concreta.
 - **Consecuencias**: menor riesgo de regresión; la regla queda documentada y con guardrail opcional.
 
@@ -235,6 +235,7 @@ Rutas relativas a `frontend/src/`.
 | `components/AddPolicyModal.tsx:73` | `z-50` | Condicional (solo tras elegir auto) | Subir a `z-[60]` y agregar X fija |
 | `components/AnalyzerPickerModal.tsx:47` | `z-50` | Botón Listo siempre | Subir a `z-[60]` |
 | `components/BillHistoryModal.tsx:69` | `z-50` | X siempre | Subir a `z-[60]` |
+| `components/ContractModal.tsx:123` | `z-[60]` | X y Cancelar siempre | Sin cambios de capa (SPEC-123 ya cumple) |
 | `components/DebtDocumentModal.tsx:83` | `z-[60]` | X siempre | Sin cambios de capa |
 | `components/DebtPayModal.tsx:68` | `z-50` | Cancelar siempre | Subir a `z-[60]` |
 | `components/DeleteModal.tsx:29` | `z-[70]` | Cancelar siempre | Sin cambios de capa |
@@ -296,41 +297,41 @@ No aplica. No se agregan ni modifican endpoints. Las acciones siguen llamando a 
 
 ### 5.1 Funcionales
 
-- [ ] **CA-001**: El inventario de la spec coincide con `main`: 29 overlays de modales en 21 archivos, 23 usos de `<DeleteModal>` en 19 archivos y un único modal adicional de confirmación por palabra (`RegistrosPage`, reabrir mes).
-- [ ] **CA-002**: Al abrir cualquier `DeleteModal`, el input de confirmación recibe el foco automáticamente (`document.activeElement` es el input).
-- [ ] **CA-003**: En `DeleteModal`, escribir `confirmo` habilita el botón y presionar Enter ejecuta la misma acción que el botón; con un texto inválido, Enter no ejecuta nada.
-- [ ] **CA-004**: Al abrir el modal de reabrir mes, el input recibe el foco automáticamente.
-- [ ] **CA-005**: En el modal de reabrir mes, escribir `reabrir` (es) o `reopen` (en) habilita el botón y presionar Enter ejecuta la reapertura; con un texto inválido, Enter no ejecuta nada.
-- [ ] **CA-006**: La comparación acepta mayúsculas/minúsculas y espacios al inicio/fin en ambos modales (`Confirmo`, ` confirmo `, `REABRIR`).
-- [ ] **CA-007**: Mientras la acción está en curso (`busy`/`submitting`), Enter no dispara una segunda ejecución y el botón permanece deshabilitado, tanto en `DeleteModal` como en el modal de reabrir mes.
-- [ ] **CA-008**: Presionar Enter en el input no provoca envío de formulario, navegación ni recarga de la página.
-- [ ] **CA-009**: Al reabrir un modal, el input aparece vacío (o el modal se remonta) y no conserva una palabra válida de una apertura anterior.
-- [ ] **CA-020**: **Ningún modal de `main` se cierra al hacer click fuera de su contenido.** Se verifica en los 29 overlays, incluidos los que se abren desde otro modal.
-- [ ] **CA-021**: El overlay de cada modal bloquea la interacción con la página de fondo: no se puede clickear un menú de 3 puntos, un `CreateMenu`, el sidebar ni un botón de la página mientras el modal está abierto.
-- [ ] **CA-022**: Todos los modales tienen una acción de cierre visible **siempre**: X o Cancelar/Cerrar/Listo, incluso en estado `loading`, durante `saving` y antes de seleccionar una entidad. En particular, `AddInsuranceModal`, `AddPolicyModal` y `WebhookModal` dejan de depender de una selección o de un estado para mostrar el cierre.
-- [ ] **CA-023**: Los 29 overlays de modales usan `z-[60]` o superior; los anidados usan `z-[70]`/`z-[80]` según la escala. No queda ningún modal en `z-50`.
-- [ ] **CA-024**: Los dropdowns de `Select` dentro de modales se ven por encima del overlay (`z-[90]`) y los toasts se ven por encima de los modales (`z-[100]`).
-- [ ] **CA-025**: El drawer móvil del sidebar (`DashboardLayout`) conserva su cierre por click fuera y no se ve afectado por la escala de modales.
-- [ ] **CA-026**: Los modales conservan las reglas de SPEC-122: el cierre es solo con Cancelar/Cerrar o X, la confirmación queda por encima del modal que la abre y no hay cierre por click fuera.
-- [ ] **CA-027**: No se agregaron dependencias a `frontend/package.json` ni cambios de backend, API, DB o migraciones.
-- [ ] **CA-028**: `AGENTS.md`, `docs/project-rules.md` §4.7, `docs/specs/templates/spec-template.md` y `.opencode/skills/spec-manager/SKILL.md` describen ambas reglas generales y la escala de capas, con la exclusión del sidebar.
-- [ ] **CA-DARK**: Los inputs de ambos modales usan tokens del tema (`bg-card`, `text-text`) y se verificó legibilidad en darkmode (texto y placeholder).
-- [ ] **CA-MODAL**: Se verificó manualmente que el click fuera no cierra ni interactúa con el fondo, que el cierre es solo con Cancelar/Cerrar o X, y que Enter confirma cuando el texto es válido.
-- [ ] **CA-BACK**: No aplica (no se crean páginas de detalle ni formularios con lista padre).
+- [x] **CA-001**: El inventario de la spec coincide con `main`: 30 overlays de modales en 22 archivos, 23 usos de `<DeleteModal>` en 19 archivos y un único modal adicional de confirmación por palabra (`RegistrosPage`, reabrir mes).
+- [x] **CA-002**: Al abrir cualquier `DeleteModal`, el input de confirmación recibe el foco automáticamente (`document.activeElement` es el input).
+- [x] **CA-003**: En `DeleteModal`, escribir `confirmo` habilita el botón y presionar Enter ejecuta la misma acción que el botón; con un texto inválido, Enter no ejecuta nada.
+- [x] **CA-004**: Al abrir el modal de reabrir mes, el input recibe el foco automáticamente.
+- [x] **CA-005**: En el modal de reabrir mes, escribir `reabrir` (es) o `reopen` (en) habilita el botón y presionar Enter ejecuta la reapertura; con un texto inválido, Enter no ejecuta nada.
+- [x] **CA-006**: La comparación acepta mayúsculas/minúsculas y espacios al inicio/fin en ambos modales (`Confirmo`, ` confirmo `, `REABRIR`).
+- [x] **CA-007**: Mientras la acción está en curso (`busy`/`submitting`), Enter no dispara una segunda ejecución y el botón permanece deshabilitado, tanto en `DeleteModal` como en el modal de reabrir mes.
+- [x] **CA-008**: Presionar Enter en el input no provoca envío de formulario, navegación ni recarga de la página.
+- [x] **CA-009**: Al reabrir un modal, el input aparece vacío (o el modal se remonta) y no conserva una palabra válida de una apertura anterior.
+- [x] **CA-020**: **Ningún modal de `main` se cierra al hacer click fuera de su contenido.** Se verifica en los 30 overlays, incluidos los que se abren desde otro modal.
+- [x] **CA-021**: El overlay de cada modal bloquea la interacción con la página de fondo: no se puede clickear un menú de 3 puntos, un `CreateMenu`, el sidebar ni un botón de la página mientras el modal está abierto.
+- [x] **CA-022**: Todos los modales tienen una acción de cierre visible **siempre**: X o Cancelar/Cerrar/Listo, incluso en estado `loading`, durante `saving` y antes de seleccionar una entidad. En particular, `AddInsuranceModal`, `AddPolicyModal` y `WebhookModal` dejan de depender de una selección o de un estado para mostrar el cierre.
+- [x] **CA-023**: Los 30 overlays de modales usan `z-[60]` o superior; los anidados usan `z-[70]`/`z-[80]` según la escala. No queda ningún modal en `z-50`.
+- [x] **CA-024**: Los dropdowns de `Select` dentro de modales se ven por encima del overlay (`z-[90]`) y los toasts se ven por encima de los modales (`z-[100]`).
+- [x] **CA-025**: El drawer móvil del sidebar (`DashboardLayout`) conserva su cierre por click fuera y no se ve afectado por la escala de modales.
+- [x] **CA-026**: Los modales conservan las reglas de SPEC-122: el cierre es solo con Cancelar/Cerrar o X, la confirmación queda por encima del modal que la abre y no hay cierre por click fuera.
+- [x] **CA-027**: No se agregaron dependencias a `frontend/package.json` ni cambios de backend, API, DB o migraciones.
+- [x] **CA-028**: `AGENTS.md`, `docs/project-rules.md` §4.7, `docs/specs/templates/spec-template.md` y `.opencode/skills/spec-manager/SKILL.md` describen ambas reglas generales y la escala de capas, con la exclusión del sidebar.
+- [x] **CA-DARK**: Los inputs de ambos modales usan tokens del tema (`bg-card`, `text-text`) y se verificó legibilidad en darkmode (texto y placeholder).
+- [x] **CA-MODAL**: Se verificó manualmente que el click fuera no cierra ni interactúa con el fondo, que el cierre es solo con Cancelar/Cerrar o X, y que Enter confirma cuando el texto es válido.
+- [x] **CA-BACK**: No aplica (no se crean páginas de detalle ni formularios con lista padre).
 
 ### 5.2 No funcionales
 
-- [ ] **CA-NF-001**: `npm run build` en `frontend/` pasa sin errores (incluye `check-ui-rules.cjs`, `tsc -b` y Vite).
-- [ ] **CA-NF-002**: `npm run check:ui` pasa sin offenders.
-- [ ] **CA-NF-003**: El bundle no incorpora dependencias nuevas; el hook compartido no agrega listeners globales ni timers.
-- [ ] **CA-NF-004**: Prueba manual en desktop y en viewport móvil (o dispositivo iOS/Safari) del foco, escritura, Enter, overlay y cierre de ambos modales.
-- [ ] **CA-NF-005**: No se observan regresiones visuales en los 29 modales (posición, scroll interno, dropdowns y toasts).
+- [x] **CA-NF-001**: `npm run build` en `frontend/` pasa sin errores (incluye `check-ui-rules.cjs`, `tsc -b` y Vite).
+- [x] **CA-NF-002**: `npm run check:ui` pasa sin offenders.
+- [x] **CA-NF-003**: El bundle no incorpora dependencias nuevas; el hook compartido no agrega listeners globales ni timers.
+- [x] **CA-NF-004**: Prueba manual en desktop y en viewport móvil (o dispositivo iOS/Safari) del foco, escritura, Enter, overlay y cierre de ambos modales.
+- [x] **CA-NF-005**: No se observan regresiones visuales en los 30 modales (posición, scroll interno, dropdowns y toasts).
 
 ### 5.3 Testing
 
 - **Unit tests**: no hay runner de tests en `frontend/` al momento de esta spec. Si se incorpora uno, cubrir `normalizeConfirmWord`/`isValid` y el handler de Enter con texto válido, inválido y `disabled`.
 - **Integration tests**: no aplica (no hay suite E2E en el repo).
-- **E2E/manual**: abrir un `DeleteModal` desde una página de listado, confirmar con Enter; abrir el modal de reabrir mes, confirmar con Enter; probar texto inválido, mayúsculas/espacios, `busy` y darkmode; abrir los 29 modales y verificar click fuera, overlay, cierre visible y capas.
+- **E2E/manual**: abrir un `DeleteModal` desde una página de listado, confirmar con Enter; abrir el modal de reabrir mes, confirmar con Enter; probar texto inválido, mayúsculas/espacios, `busy` y darkmode; abrir los 30 modales y verificar click fuera, overlay, cierre visible y capas.
 - **Carga/Performance**: no aplica; cambio de UI sin impacto medible en iHost.
 
 ## 6. Plan de Implementación
@@ -345,7 +346,7 @@ No aplica. No se agregan ni modifican endpoints. Las acciones siguen llamando a 
 | 4 | Corregir capas de los 23 overlays en `z-50` y ajustar `Select`/`Toast`/`IconPickerModal` | 0.5 días | Fase 1 |
 | 5 | Agregar X fija a `AddInsuranceModal`, `AddPolicyModal` y `WebhookModal` | 0.25 días | Fase 1 |
 | 6 | Generalizar la documentación de ambas reglas y la escala de capas | 0.25 días | Fases 2-5 |
-| 7 | Build, `check:ui` y QA manual desktop/móvil/darkmode de los 29 modales | 0.5 días | Fases 2-6 |
+| 7 | Build, `check:ui` y QA manual desktop/móvil/darkmode de los 30 modales | 0.5 días | Fases 2-6 |
 
 Estimación total: **~2.5 días**.
 
@@ -385,7 +386,7 @@ Estimación total: **~2.5 días**.
   - `frontend/src/components/Select.tsx`
   - `frontend/src/components/Toast.tsx`
   - `frontend/src/components/IconPickerModal.tsx`
-  - Los 29 overlays listados en §4.2.4.
+  - Los 30 overlays listados en §4.2.4.
 - Comandos de auditoría:
   - `rg -n "confirmo|confirmWord|confirmText|reopenModalConfirmWord" frontend/src`
   - `rg -n "<DeleteModal" frontend/src`
@@ -400,3 +401,5 @@ Estimación total: **~2.5 días**.
 | 2026-11-07 | opencode | Alcance ampliado a pedido del usuario: la regla de overlay/click fuera se aplica a **todos** los modales de `main`. Auditoría de los 29 overlays: 23 en `z-50`, 3 sin cierre siempre visible y 0 con cierre por click fuera. Se agrega la escala de capas y los ajustes de `Select`/`Toast`/`IconPickerModal`. |
 | 2026-11-07 | opencode | Implementación: hook `useConfirmWordInput`, `DeleteModal` con guard de envío, `ReopenMonthModal` con foco/Enter, 23 overlays a `z-[60]`, formularios anidados a `z-[70]` y pickers a `z-[80]`, portal de `CardMenu` de `9999` a `50`, X fija en `AddInsuranceModal`/`AddPolicyModal`/`WebhookModal`, `Select` `z-[90]`, `Toast` `z-[100]`, `IconPickerModal` default `z-[60]` y documentación generalizada. `npm run build` y `npm run check:ui` OK. Pendiente validación manual del usuario. |
 | 2026-11-07 | opencode | Validación automatizada con Chrome headless: foco inicial, Enter, guard de doble Enter, click fuera que no cierra, texto inválido sin acción y normalización con espacios/mayúsculas OK en `DeleteModal` y en el modal de reabrir mes. Pendiente validación manual del usuario. |
+| 2026-11-08 | opencode | Merge con `origin/main` (SPEC-123): se incorpora `ContractModal` al inventario (30 overlays en 22 archivos) y se verifica que ya cumple `z-[60]`, sin cierre por click fuera y con X/Cancelar visibles. `npm run build` y `check:ui` OK. |
+| 2026-11-08 | opencode | Release: validación manual del usuario satisfactoria; spec liberada (implementación `cf592d5`, versión `0.5.4`), README actualizado, merge a `main` y push a `origin/main`. |
