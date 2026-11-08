@@ -58,11 +58,12 @@ type DebtService struct {
 	institutions *storage.InstitutionStorage
 	currencies   *storage.CurrencyStorage
 	documentsDir string
+	contracts    *ContractStore
 }
 
 // NewDebtService crea un nuevo DebtService. dataDir es el mismo directorio
 // donde vive app.db; las facturas y comprobantes se guardan en
-// dataDir/documents (SPEC-122).
+// dataDir/documents (SPEC-122) y los contratos en dataDir/contracts (SPEC-123).
 func NewDebtService(
 	debts *storage.DebtStorage,
 	debtBills *storage.DebtBillStorage,
@@ -79,6 +80,7 @@ func NewDebtService(
 		institutions: institutions,
 		currencies:   currencies,
 		documentsDir: filepath.Join(dataDir, "documents"),
+		contracts:    NewContractStore(dataDir),
 	}
 }
 
@@ -89,6 +91,7 @@ func (s *DebtService) List(ctx context.Context) ([]models.Debt, error) {
 		return nil, err
 	}
 	for i := range debts {
+		s.decorateContract(&debts[i])
 		debts[i].HasDocuments = s.hasAnyDocument(debts[i].ID)
 	}
 	return debts, nil
@@ -101,9 +104,61 @@ func (s *DebtService) GetByID(ctx context.Context, id int64) (*models.Debt, erro
 		return nil, err
 	}
 	if debt != nil {
+		s.decorateContract(debt)
 		debt.HasDocuments = s.hasAnyDocument(debt.ID)
 	}
 	return debt, nil
+}
+
+// SetContractStore inyecta el almacén de contratos (SPEC-123). El constructor
+// ya lo inicializa con dataDir; el setter queda para tests o wiring alternativo.
+func (s *DebtService) SetContractStore(store *ContractStore) {
+	s.contracts = store
+}
+
+// SaveContract valida que la deuda exista y guarda su contrato PDF.
+func (s *DebtService) SaveContract(ctx context.Context, id int64, fileName string, r io.Reader) error {
+	debt, err := s.debts.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if debt == nil {
+		return ErrContractEntityNotFound
+	}
+	if s.contracts == nil {
+		return fmt.Errorf("almacén de contratos no configurado")
+	}
+	return s.contracts.Save(ContractOwnerDebt, id, fileName, r)
+}
+
+// ContractPath devuelve la ruta del contrato de una deuda existente.
+func (s *DebtService) ContractPath(ctx context.Context, id int64) (string, error) {
+	debt, err := s.debts.GetByID(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	if debt == nil {
+		return "", ErrContractEntityNotFound
+	}
+	if s.contracts == nil {
+		return "", ErrContractNotFound
+	}
+	return s.contracts.Path(ContractOwnerDebt, id)
+}
+
+// DeleteContract elimina el contrato de una deuda existente.
+func (s *DebtService) DeleteContract(ctx context.Context, id int64) error {
+	debt, err := s.debts.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if debt == nil {
+		return ErrContractEntityNotFound
+	}
+	if s.contracts == nil {
+		return ErrContractNotFound
+	}
+	return s.contracts.Delete(ContractOwnerDebt, id)
 }
 
 // Create crea una deuda y genera su serie completa de cuotas si está activa.
@@ -123,6 +178,7 @@ func (s *DebtService) Create(ctx context.Context, debt *models.Debt) (*models.De
 	if err := s.ensureDebtBills(ctx, created); err != nil {
 		return nil, err
 	}
+	s.decorateContract(created)
 	return created, nil
 }
 
@@ -165,8 +221,8 @@ func (s *DebtService) Update(ctx context.Context, debt *models.Debt) (*models.De
 	if err := s.ensureDebtBills(ctx, updated); err != nil {
 		return nil, err
 	}
-	// Releer para devolver el resumen de cuotas actualizado (SPEC-104) y el
-	// indicador de comprobantes (SPEC-122).
+	// Releer para devolver el resumen de cuotas actualizado (SPEC-104),
+	// el indicador de comprobantes (SPEC-122) y el de contrato (SPEC-123).
 	return s.GetByID(ctx, debt.ID)
 }
 
@@ -622,6 +678,14 @@ func dueDateForInstallment(start time.Time, k, paymentDay int) string {
 		day = last
 	}
 	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+}
+
+// decorateContract completa el campo calculado has_contract (SPEC-123).
+func (s *DebtService) decorateContract(debt *models.Debt) {
+	if debt == nil {
+		return
+	}
+	debt.HasContract = s.contracts != nil && s.contracts.Exists(ContractOwnerDebt, debt.ID)
 }
 
 func (s *DebtService) validate(ctx context.Context, debt *models.Debt) error {
