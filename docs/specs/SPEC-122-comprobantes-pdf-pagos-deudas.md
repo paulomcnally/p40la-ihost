@@ -102,6 +102,7 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
     - El overlay del modal **bloquea la interacción con la página de fondo**, incluidos los menús de 3 puntos y otros controles.
     - Esta regla aplica a **todos los modales del proyecto**, no solo al modal de documento (ver `AGENTS.md` y `docs/project-rules.md` §4.7).
     - **"Remover"** abre un segundo modal de confirmación (reutilizar `DeleteModal`) que exige escribir **"confirmo"** para habilitar la acción. Al confirmar, se elimina solo ese archivo y se actualizan los flags.
+    - En ese modal de confirmación, escribir **"confirmo"** y presionar **Enter** ejecuta la eliminación, igual que tocar el botón. Si el texto no es válido, Enter no hace nada.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -497,6 +498,7 @@ file: <PDF obligatorio>
 - [ ] **CA-021**: Hacer click fuera del modal de documento no lo cierra; solo lo cierran la X o los botones Cancelar/Cerrar.
 - [ ] **CA-022**: Mientras el modal de documento está abierto, el overlay bloquea los clicks en la página de fondo; el menú de 3 puntos y otros controles no responden.
 - [ ] **CA-023**: Ningún modal del proyecto (incluido `DeleteModal` y los modales existentes de formularios/selectores) se cierra al hacer click fuera; todos tienen Cancelar/Cerrar o X.
+- [ ] **CA-024**: En el modal de confirmación, escribir "confirmo" y presionar Enter ejecuta la acción de eliminar; con un texto inválido, Enter no hace nada.
 - [ ] **CA-016**: Con `?download=1`, ambos endpoints devuelven `Content-Disposition: attachment`.
 - [ ] **CA-017**: En el detalle de deuda, el menú de 3 puntos de cada cuota queda visible y clickeable sin superposición con el badge de estado ("Pendiente"/"Pagada") ni con el monto, en móvil y desktop.
 - [ ] **CA-DARK**: Las dos áreas de upload, los nombres de archivo y los textos de ayuda usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode.
@@ -619,3 +621,4 @@ file: <PDF obligatorio>
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: el modal de documento no se cierra al hacer click fuera; solo con la X o los botones Cancelar/Cerrar. |
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: el overlay del modal bloquea la página de fondo (incluido el menú de 3 puntos); la confirmación de borrado queda por encima del modal. |
 | 2026-11-07 | opencode | Regla aplicada a todos los modales del proyecto: sin cierre por click fuera, overlay bloqueante y cierre solo con Cancelar/Cerrar o X. Documentada en `AGENTS.md`, `docs/project-rules.md` §4.7, el template de specs y la skill. |
+| 2026-11-07 | opencode | Ajuste solicitado en pruebas: en `DeleteModal`, escribir "confirmo" y presionar Enter ejecuta la confirmación. Regla agregada a las reglas internas y al template. |
