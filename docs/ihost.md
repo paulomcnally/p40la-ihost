@@ -221,6 +221,7 @@ En Chrome o Edge para iOS el camino también está en el menú Compartir, pero n
 - El service worker no cachea `/api/*` ni PDFs; solo el shell, los assets con hash, los íconos y el i18n.
 - Para verificar el service worker y el manifest: DevTools → Application → Service Workers / Manifest. Lighthouse ya no tiene categoría PWA.
 - Si Tailscale no emite el certificado, revisá que MagicDNS y **HTTPS Certificates** estén habilitados y que el nodo esté conectado. En los logs del add-on Tailscale, `serve proxy: ... not able to issue TLS certs` significa que falta habilitar HTTPS Certificates; después de habilitarlo, reiniciá el add-on.
+- Si Chrome dice **“Este sitio no admite una conexión segura”** al abrir `https://ihost.<tailnet>.ts.net`, el nodo no está sirviendo TLS en 443: casi siempre es porque **HTTPS Certificates** no está habilitado o el add-on no se reinició después de habilitarlo. Verificá el admin de Tailscale, reiniciá el add-on y revisá los logs por `serve-config` y errores de `cert`/`acme`.
 
 ## Solución de problemas
 
