@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 119 |
-| **En draft** | 0 🟡 |
+| **Total de specs** | 120 |
+| **En draft** | 1 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 119 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-120 |
+| **Último ID usado** | SPEC-124 |
 
 ---
 
@@ -140,6 +140,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-118 | Autos: campos opcionales y color predefinido | released | 2026-10-21 | opencode |
 | SPEC-119 | Importador mensual de gastos escolares y pensión por palabras clave | released | 2026-11-03 | opencode |
 | SPEC-120 | Home de Servicios con Análisis, Calendario y Gráfica (espejo de Deudas) | released | 2026-11-03 | opencode |
+| SPEC-124 | Autos: mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs | draft | 2026-11-07 | opencode |
 
 ---
 
@@ -209,4 +210,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-11-03 — SPEC-120 released (home de Servicios con tabs Análisis, Calendario, Servicios y Gráfica, estado en querystring y proyección multi-moneda); 2026-11-03 — SPEC-119 released (importador mensual de gastos escolares y pensión con matching por palabras clave, reparto por categoría y validación todo-o-nada); 2026-10-21 — SPEC-118 released (autos con campos opcionales, color predefinido con buscador y guardrail de dropdowns); SPEC-116 released (página de vista y tabs de instituciones); SPEC-117 released (menú Editar en el detalle del auto); SPEC-115 released (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
+*Última actualización de este tracker: 2026-11-07 — SPEC-124 draft (mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs en Autos); 2026-11-03 — SPEC-120 released (home de Servicios con tabs Análisis, Calendario, Servicios y Gráfica, estado en querystring y proyección multi-moneda); 2026-11-03 — SPEC-119 released (importador mensual de gastos escolares y pensión con matching por palabras clave, reparto por categoría y validación todo-o-nada); 2026-10-21 — SPEC-118 released (autos con campos opcionales, color predefinido con buscador y guardrail de dropdowns); SPEC-116 released (página de vista y tabs de instituciones); SPEC-117 released (menú Editar en el detalle del auto); SPEC-115 released (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
