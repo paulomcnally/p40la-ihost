@@ -52,7 +52,7 @@ export default function HousePickerModal({ isOpen, homes, selectedHomeId, onSele
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
       <div ref={modalRef} className="bg-card rounded-ios shadow-ios w-full max-w-sm sm:max-w-lg mx-4 max-h-[80vh] flex flex-col">
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between gap-2 mb-3">

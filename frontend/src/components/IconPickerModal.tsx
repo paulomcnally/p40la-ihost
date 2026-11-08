@@ -11,7 +11,7 @@ interface IconPickerModalProps {
   zIndex?: string
 }
 
-export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClose, zIndex = 'z-50' }: IconPickerModalProps) {
+export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClose, zIndex = 'z-[60]' }: IconPickerModalProps) {
   const { t } = useI18nStore()
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string>('')

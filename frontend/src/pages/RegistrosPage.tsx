@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { useConfirmWordInput } from '../hooks/useConfirmWordInput'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
@@ -47,7 +48,7 @@ function ModalShell({ title, onClose, children, wide }: {
   wide?: boolean
 }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
       <div
         className={`bg-card rounded-ios shadow-ios-lg w-full ${wide ? 'max-w-lg' : 'max-w-md'} max-h-[90vh] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
@@ -166,7 +167,7 @@ export default function RegistrosPage() {
   const [rejectReason, setRejectReason] = useState('')
 
   // Reopen modal state
-  const [reopenWord, setReopenWord] = useState('')
+  const reopenBusyRef = useRef(false)
 
   // Generación mensual (SPEC-051)
   const [generating, setGenerating] = useState(false)
@@ -434,22 +435,24 @@ export default function RegistrosPage() {
   }
 
   const handleReopenMonth = async () => {
+    // Guard contra doble Enter antes del re-render de `busy` (SPEC-126).
+    if (reopenBusyRef.current) return
+    reopenBusyRef.current = true
     setBusy(true)
     try {
       await api.pensionClosing.reopen(year, month)
       showToast(t('closing.reopenSuccess'), 'success')
       setShowReopenModal(false)
-      setReopenWord('')
       loadData()
     } catch (err: any) {
       showToast(err?.message || t('registros.save_error'), 'error')
     } finally {
+      reopenBusyRef.current = false
       setBusy(false)
     }
   }
 
   const confirmWord = t('closing.reopenModalConfirmWord')
-  const isReopenValid = reopenWord.trim().toLowerCase() === confirmWord.toLowerCase()
 
   const menuOptions = [
     { label: t('registros.create_manual'), icon: 'plus', onClick: openCreateForm },
@@ -753,32 +756,59 @@ export default function RegistrosPage() {
         </ModalShell>
       )}
 
-      {/* Modal reabrir mes (confirmación por palabra) */}
+      {/* Modal reabrir mes (confirmación por palabra, SPEC-126) */}
       {showReopenModal && (
-        <ModalShell title={t('closing.reopenModalTitle')} onClose={() => { setShowReopenModal(false); setReopenWord('') }}>
-          <p className="text-text-secondary text-sm mb-4">{t('closing.reopenModalMessage').replace('{period}', periodLabel)}</p>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">{t('closing.reopenModalInstruction').replace('{word}', confirmWord)}</label>
-            <input
-              type="text"
-              value={reopenWord}
-              onChange={(e) => setReopenWord(e.target.value)}
-              className={inputCls}
-              placeholder={confirmWord}
-              autoFocus
-            />
-          </div>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => { setShowReopenModal(false); setReopenWord('') }} className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors min-h-[44px]">
-              {t('app.cancel')}
-            </button>
-            <button onClick={handleReopenMonth} disabled={busy || !isReopenValid} className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors min-h-[44px]">
-              {busy ? t('app.loading') : t('registros.reopen_month')}
-            </button>
-          </div>
-        </ModalShell>
+        <ReopenMonthModal
+          periodLabel={periodLabel}
+          confirmWord={confirmWord}
+          busy={busy}
+          onConfirm={handleReopenMonth}
+          onClose={() => setShowReopenModal(false)}
+        />
       )}
     </div>
+  )
+}
+
+function ReopenMonthModal({ periodLabel, confirmWord, busy, onConfirm, onClose }: {
+  periodLabel: string
+  confirmWord: string
+  busy: boolean
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  const { t } = useI18nStore()
+  const { value, setValue, inputRef, isValid, handleKeyDown } = useConfirmWordInput({
+    word: confirmWord,
+    onConfirm,
+    disabled: busy,
+  })
+
+  return (
+    <ModalShell title={t('closing.reopenModalTitle')} onClose={onClose}>
+      <p className="text-text-secondary text-sm mb-4">{t('closing.reopenModalMessage').replace('{period}', periodLabel)}</p>
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">{t('closing.reopenModalInstruction').replace('{word}', confirmWord)}</label>
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className={inputCls}
+          placeholder={confirmWord}
+          autoComplete="off"
+        />
+      </div>
+      <div className="flex justify-end gap-3">
+        <button onClick={onClose} className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors min-h-[44px]">
+          {t('app.cancel')}
+        </button>
+        <button onClick={onConfirm} disabled={busy || !isValid} className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors min-h-[44px]">
+          {busy ? t('app.loading') : t('registros.reopen_month')}
+        </button>
+      </div>
+    </ModalShell>
   )
 }
 
