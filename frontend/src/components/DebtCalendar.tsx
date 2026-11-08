@@ -3,6 +3,7 @@ import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { Icon } from './Icons'
+import DebtDocumentButtons from './DebtDocumentButtons'
 import DebtPayModal from './DebtPayModal'
 import { isPaidAhead } from '../utils/debtMonthlyAggregation'
 import type { DebtBill } from '../types'
@@ -33,6 +34,7 @@ function BillRow({ bill, onPay }: { bill: DebtBill; onPay: (b: DebtBill) => void
       </div>
       <div className="flex flex-col items-end gap-2 shrink-0 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          <DebtDocumentButtons bill={bill} />
           {isPaidAhead(bill) && (
             <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary whitespace-nowrap">
               {t('deudas.paid_ahead_short')}

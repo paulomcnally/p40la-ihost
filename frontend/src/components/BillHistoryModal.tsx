@@ -67,7 +67,6 @@ export default function BillHistoryModal({ bill, currency, onClose }: BillHistor
   return (
     <div
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
     >
       <div
         className="bg-card rounded-ios shadow-ios-lg w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"

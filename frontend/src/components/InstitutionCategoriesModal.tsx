@@ -98,16 +98,26 @@ export default function InstitutionCategoriesModal({ isOpen, onClose }: Institut
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b border-border flex items-center justify-between">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <h3 className="text-lg font-bold">Categorías de instituciones</h3>
-          {!showForm && (
-            <button onClick={handleCreate} className="px-3 py-1.5 bg-primary text-white rounded-ios-sm text-sm font-medium flex items-center gap-1.5 min-h-[36px]">
-              <Icon name="plus" className="w-4 h-4" />
-              Nueva
+          <div className="flex items-center gap-2 shrink-0">
+            {!showForm && (
+              <button onClick={handleCreate} className="px-3 py-1.5 bg-primary text-white rounded-ios-sm text-sm font-medium flex items-center gap-1.5 min-h-[36px]">
+                <Icon name="plus" className="w-4 h-4" />
+                Nueva
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:bg-bg transition-colors"
+              title="Cerrar"
+              aria-label="Cerrar"
+            >
+              <Icon name="cancel" className="w-4 h-4" />
             </button>
-          )}
+          </div>
         </div>
 
         {showForm ? (
