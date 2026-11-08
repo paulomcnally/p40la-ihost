@@ -140,7 +140,7 @@ Cuando el usuario menciona que una spec cambió de estado:
 
 - **Sin datos privados**: las specs NUNCA incluyen PII, secretos, DBs, PDFs ni exports de producción. Los ejemplos usan datos sintéticos (`demo-account-001`, `demo@example.com`, `demo-api-key`). Ver `docs/project-rules.md` §8.
 - **Si la spec toca formularios o selectores**, DEBE exigir el componente `Select` (`frontend/src/components/Select.tsx`) y prohibir `<select>` nativo (SPEC-118). El build falla con `frontend/scripts/check-ui-rules.cjs` si se agrega uno.
-- **Si la spec crea o modifica modales**, DEBE exigir que el click fuera no los cierre, que el overlay bloquee la interacción con el fondo, que el cierre sea solo con Cancelar/Cerrar o la X y que el modal de confirmación acepte **Enter** cuando el texto `confirmo` es válido (SPEC-122, `docs/project-rules.md` §4.7).
+- **Si la spec crea o modifica modales**, DEBE exigir que el click fuera no los cierre, que el overlay bloquee la interacción con el fondo, que el cierre sea solo con Cancelar/Cerrar o la X, y que el modal de confirmación enfoque el input al abrirse y acepte **Enter** cuando el texto `confirmo` es válido (SPEC-122, `docs/project-rules.md` §4.7).
 
 Cada archivo de spec DEBE incluir:
 

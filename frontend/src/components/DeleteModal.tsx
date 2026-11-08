@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from './Icons'
 
@@ -10,7 +10,12 @@ export default function DeleteModal({ title, subtitle, onConfirm, onCancel }: {
 }) {
   const { t } = useI18nStore()
   const [confirmText, setConfirmText] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
   const isValid = confirmText.trim().toLowerCase() === 'confirmo'
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
 
   const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && isValid) {
@@ -38,6 +43,7 @@ export default function DeleteModal({ title, subtitle, onConfirm, onCancel }: {
           <div>
             <label className="block text-sm font-medium mb-1">Escribe "confirmo" para eliminar</label>
             <input
+              ref={inputRef}
               type="text"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}

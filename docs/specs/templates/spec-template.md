@@ -37,7 +37,7 @@ Consideraciones de UI obligatorias para specs que creen páginas de detalle o fo
 Consideraciones de UI obligatorias para specs que creen o modifiquen modales:
 - Ningún modal se cierra al hacer click fuera del contenido: el overlay NO lleva `onClick` de cierre. Solo se cierra con los botones **Cancelar/Cerrar** o la **X**.
 - El overlay debe bloquear la interacción con el fondo (`z-[60]` o superior, por encima de menús `z-50`); la confirmación de borrado va por encima del modal que la abre (`z-[70]`).
-- Todo modal debe tener siempre una acción visible de cierre. En el modal de confirmación (`DeleteModal`), escribir `confirmo` y presionar **Enter** debe confirmar la acción. Ver SPEC-122 y `docs/project-rules.md` §4.7.
+- Todo modal debe tener siempre una acción visible de cierre. En el modal de confirmación (`DeleteModal`), el input debe recibir foco automáticamente al abrirse; escribir `confirmo` y presionar **Enter** debe confirmar la acción. Ver SPEC-122 y `docs/project-rules.md` §4.7.
 
 ## 2. Requerimientos
 
@@ -151,7 +151,7 @@ Entidad: [Nombre]
 - [ ] CA-001: Dado [contexto], cuando [acción], entonces [resultado esperado]
 - [ ] CA-002: Dado [contexto], cuando [acción], entonces [resultado esperado]
 - [ ] CA-DARK: Si la spec toca formularios/modales, los inputs usan tokens del tema (`bg-card`, `text-text`) y se verificó legibilidad en darkmode (texto y placeholders).
-- [ ] CA-MODAL: Si la spec crea o modifica modales, el click fuera no los cierra, el overlay bloquea la interacción con el fondo, el cierre es solo con Cancelar/Cerrar o la X y el modal de confirmación acepta Enter con el texto `confirmo` válido.
+- [ ] CA-MODAL: Si la spec crea o modifica modales, el click fuera no los cierra, el overlay bloquea la interacción con el fondo, el cierre es solo con Cancelar/Cerrar o la X, y el modal de confirmación enfoca el input al abrirse y acepta Enter con el texto `confirmo` válido.
 - [ ] CA-BACK: Si la spec crea una página de detalle o formulario con lista padre, el retorno se hace con la flecha atrás del header (registrada en `BACK_ROUTES`) y NO existen links "← Título" dentro del contenido.
 
 ### 5.2 No funcionales
