@@ -713,32 +713,15 @@ func (s *DocumentRecognitionService) stageFinalFile(inboxPath, finalPath string,
 	}
 
 	commit := &recognitionFileCommit{finalPath: finalPath}
-	if info, err := os.Stat(finalPath); err == nil {
-		if info.IsDir() {
-			return nil, ErrRecognitionFileExists
-		}
-		if !overwrite {
-			return nil, ErrRecognitionFileExists
-		}
-		backupPath := finalPath + ".bak-" + strconv.FormatInt(time.Now().UnixNano(), 10)
-		if err := os.Rename(finalPath, backupPath); err != nil {
-			return nil, fmt.Errorf("respaldar comprobante existente: %w", err)
-		}
-		commit.backupPath = backupPath
-	} else if !os.IsNotExist(err) {
-		return nil, fmt.Errorf("verificar comprobante existente: %w", err)
-	}
 
 	source, err := os.Open(inboxPath)
 	if err != nil {
-		commit.restoreBackup()
 		return nil, fmt.Errorf("abrir comprobante temporal: %w", err)
 	}
 	defer source.Close()
 
 	tmp, err := os.CreateTemp(filepath.Dir(finalPath), ".receipt-*.tmp")
 	if err != nil {
-		commit.restoreBackup()
 		return nil, fmt.Errorf("crear comprobante temporal: %w", err)
 	}
 	tmpPath := tmp.Name()
@@ -748,34 +731,51 @@ func (s *DocumentRecognitionService) stageFinalFile(inboxPath, finalPath string,
 	closeErr := tmp.Close()
 	if copyErr != nil {
 		cleanupTmp()
-		commit.restoreBackup()
 		return nil, fmt.Errorf("copiar comprobante: %w", copyErr)
 	}
 	if closeErr != nil {
 		cleanupTmp()
-		commit.restoreBackup()
 		return nil, fmt.Errorf("cerrar comprobante: %w", closeErr)
 	}
 	if written == 0 {
 		cleanupTmp()
-		commit.restoreBackup()
 		return nil, ErrRecognitionInvalidFile
 	}
 	if written > MaxRecognitionDocumentBytes {
 		cleanupTmp()
-		commit.restoreBackup()
 		return nil, ErrRecognitionTooLarge
 	}
 	if err := validatePDF(tmpPath); err != nil {
 		cleanupTmp()
-		commit.restoreBackup()
 		return nil, fmt.Errorf("%w: %v", ErrRecognitionInvalidFile, err)
 	}
 	if err := os.Chmod(tmpPath, 0o644); err != nil {
 		cleanupTmp()
-		commit.restoreBackup()
 		return nil, fmt.Errorf("aplicar permisos al comprobante: %w", err)
 	}
+
+	// El temporal ya está listo: recién ahora se aparta el comprobante
+	// existente para que la ventana sin archivo final sea mínima.
+	if info, statErr := os.Stat(finalPath); statErr == nil {
+		if info.IsDir() {
+			cleanupTmp()
+			return nil, ErrRecognitionFileExists
+		}
+		if !overwrite {
+			cleanupTmp()
+			return nil, ErrRecognitionFileExists
+		}
+		backupPath := finalPath + ".bak-" + strconv.FormatInt(time.Now().UnixNano(), 10)
+		if err := os.Rename(finalPath, backupPath); err != nil {
+			cleanupTmp()
+			return nil, fmt.Errorf("respaldar comprobante existente: %w", err)
+		}
+		commit.backupPath = backupPath
+	} else if !os.IsNotExist(statErr) {
+		cleanupTmp()
+		return nil, fmt.Errorf("verificar comprobante existente: %w", statErr)
+	}
+
 	if err := os.Rename(tmpPath, finalPath); err != nil {
 		cleanupTmp()
 		commit.restoreBackup()
