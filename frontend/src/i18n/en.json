@@ -473,6 +473,10 @@
       "maintenances": "Maintenance",
       "inspections": "Inspections"
     },
+    "form_tabs": {
+      "information": "Information",
+      "invoices": "Invoices"
+    },
     "icons": {
       "van": "Van",
       "truck": "Truck",
