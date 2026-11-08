@@ -105,12 +105,12 @@ En `http://ihost.local` → **Docker → Volume**:
    - **Volumes**:
      | Volume | Container path | Para qué |
      |---|---|---|
-     | `p40la-tailscale-config` (o el nombre real que uses) | `/srv/p40la-tailscale-config` | Ver/editar `serve.json` (obligatorio) |
+     | `tailscale-config` (o el nombre real que uses) | `/srv` | Ver/editar `serve.json` (obligatorio; es la raíz de Filebrowser) |
      | `filebrowser-data` (nuevo) | `/database` | Persistir usuarios/config de Filebrowser (opcional) |
    - **Restart Policy**: `unless-stopped`
 
-   > Si la UI del iHost te obliga a mapear un volumen a `/srv`, creá `filebrowser-data` y mapealo a `/srv`; el volumen `p40la-tailscale-config` va igual a `/srv/p40la-tailscale-config`.
-3. Abrí `http://ihost.local:8081` (usuario/password por defecto: `admin` / `admin`) y entrá a la carpeta `p40la-tailscale-config`.
+   > **Importante**: el volumen de configuración va montado en `/srv` (la raíz de Filebrowser), no en un subdirectorio. Así `serve.json` queda en la raíz del volumen y Tailscale lo ve en `/config/serve.json` al montar el mismo volumen en `/config`. No uses el volumen de estado `tailscale` para Filebrowser.
+3. Abrí `http://ihost.local:8081` (usuario/password por defecto: `admin` / `admin`). Deberías ver la raíz del volumen vacía o con `serve.json`.
 4. Creá el archivo `serve.json` con este contenido (también está en `deploy/tailscale/serve.json`):
 
    ```json
