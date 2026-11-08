@@ -34,9 +34,9 @@ export default function DebtBillsPage() {
   const [documentModal, setDocumentModal] = useState<{ bill: DebtBill; kind: 'invoice' | 'receipt' } | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!id) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     const [debtData, billList] = await Promise.all([
       api.debts.get(Number(id)),
       api.debts.listBills(Number(id)),
@@ -289,7 +289,7 @@ export default function DebtBillsPage() {
           bill={documentModal.bill}
           kind={documentModal.kind}
           onClose={() => setDocumentModal(null)}
-          onChanged={load}
+          onChanged={() => load(true)}
         />
       )}
     </div>

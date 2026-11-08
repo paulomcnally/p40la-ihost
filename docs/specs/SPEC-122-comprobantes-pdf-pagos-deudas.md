@@ -97,6 +97,7 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
 13. **REQ-020**: Al tocar "Factura" o "Comprobante" en el menú de 3 puntos se abre un **modal de documento**:
     - Si el documento no existe: mostrar un área de upload (`PdfUploadField`) y un botón **"Subir"**.
     - Si el documento existe: mostrar el nombre `invoice_{n}.pdf`/`receipt_{n}.pdf`, un botón **"Abrir"** y un botón **"Remover"**.
+    - Después de subir un documento, el modal **permanece abierto** y pasa al estado "Abrir"/"Remover" sin cerrarse.
     - **"Remover"** abre un segundo modal de confirmación (reutilizar `DeleteModal`) que exige escribir **"confirmo"** para habilitar la acción. Al confirmar, se elimina solo ese archivo y se actualizan los flags.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
@@ -489,6 +490,7 @@ file: <PDF obligatorio>
 - [ ] **CA-015**: El modal de documento permite subir el PDF si no existe; si existe, muestra los botones "Abrir" y "Remover". "Remover" abre el modal de confirmación que exige escribir "confirmo" y, al confirmar, elimina solo ese archivo.
 - [ ] **CA-018**: `DELETE /api/debt-bills/{id}/invoice` y `DELETE /api/debt-bills/{id}/receipt` remueven solo el archivo indicado, actualizan sus flags y dejan intacto el otro documento.
 - [ ] **CA-019**: Remover un documento inexistente devuelve `404`; remover en una cuota pendiente devuelve `400 not_paid`.
+- [ ] **CA-020**: Después de subir una factura o comprobante desde el modal, el modal permanece abierto y muestra los botones "Abrir" y "Remover" del documento recién subido.
 - [ ] **CA-016**: Con `?download=1`, ambos endpoints devuelven `Content-Disposition: attachment`.
 - [ ] **CA-017**: En el detalle de deuda, el menú de 3 puntos de cada cuota queda visible y clickeable sin superposición con el badge de estado ("Pendiente"/"Pagada") ni con el monto, en móvil y desktop.
 - [ ] **CA-DARK**: Las dos áreas de upload, los nombres de archivo y los textos de ayuda usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode.
@@ -607,3 +609,4 @@ file: <PDF obligatorio>
 | 2026-11-07 | opencode | Cambio de alcance a pedido del usuario: dos documentos independientes por pago, **factura** (`invoice_{n}.pdf`) y **comprobante** (`receipt_{n}.pdf`), con upload, iconos y acciones separadas. |
 | 2026-11-07 | opencode | Fix de UI solicitado en pruebas: la fila de cuota reserva espacio a la derecha (`pr-14`) para que el badge de estado no tape el menú de 3 puntos. |
 | 2026-11-07 | opencode | Cambio de UX a pedido del usuario: el menú solo muestra "Factura" y "Comprobante", que abren un modal con Subir (si falta), Abrir y Remover. Remover exige confirmar escribiendo "confirmo" en un segundo modal. Se agregaron endpoints DELETE. |
+| 2026-11-07 | opencode | Ajuste solicitado en pruebas: después de subir un documento, el modal permanece abierto en el estado Abrir/Remover; el refresco de datos es silencioso para no desmontarlo. |
