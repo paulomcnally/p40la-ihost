@@ -15,7 +15,11 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import DebtPayModal from '../components/DebtPayModal'
 import DebtPayoffSummary from '../components/DebtPayoffSummary'
 import DueDateBadge from '../components/DueDateBadge'
+import PaymentPunctualityBadge from '../components/PaymentPunctualityBadge'
+import PaymentReferenceBadge from '../components/PaymentReferenceBadge'
 import { isPaidAhead } from '../utils/debtMonthlyAggregation'
+import { getSystemTimeZone } from '../utils/date'
+import { paymentDateInTimeZone } from '../utils/paymentTiming'
 import type { Debt, DebtBill } from '../types'
 
 type BillFilter = 'all' | 'pending' | 'paid'
@@ -35,6 +39,7 @@ export default function DebtBillsPage() {
   const [contractOpen, setContractOpen] = useState(false)
   const [documentModal, setDocumentModal] = useState<{ bill: DebtBill; kind: 'invoice' | 'receipt' } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [timeZone, setTimeZone] = useState<string | undefined>(undefined)
 
   const load = useCallback(async (silent = false) => {
     if (!id) return
@@ -63,6 +68,20 @@ export default function DebtBillsPage() {
       loadCurrencies().catch(() => undefined)
     }
   }, [currencies.length, loadCurrencies])
+
+  // SPEC-128: la fecha de pago y los días de diferencia se calculan en la
+  // zona horaria configurada del sistema, no en UTC.
+  useEffect(() => {
+    let cancelled = false
+    getSystemTimeZone()
+      .then((tz) => {
+        if (!cancelled) setTimeZone(tz)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   usePageTitle(debt?.description ?? null)
 
@@ -178,8 +197,18 @@ export default function DebtBillsPage() {
                 <p className="text-sm text-text-secondary">{bill.due_date}</p>
                 {bill.status === 'paid' && bill.paid_at && (
                   <p className="text-xs text-text-secondary mt-0.5">
-                    {t('deudas.pay_date')}: {bill.paid_at.slice(0, 10)}
+                    {t('deudas.pay_date')}: {paymentDateInTimeZone(bill.paid_at, timeZone) ?? '—'}
                   </p>
+                )}
+                {bill.status === 'paid' && (
+                  <div className="mt-1 flex flex-wrap items-center gap-2 min-w-0">
+                    <PaymentReferenceBadge reference={bill.payment_reference} />
+                    <PaymentPunctualityBadge
+                      paidAt={bill.paid_at}
+                      dueDate={bill.due_date}
+                      timeZone={timeZone}
+                    />
+                  </div>
                 )}
               </div>
               <div className="flex items-center gap-3 shrink-0">
