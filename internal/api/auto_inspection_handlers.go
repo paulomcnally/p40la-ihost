@@ -34,6 +34,26 @@ func (h *AutoInspectionHandlers) ListInspections(w http.ResponseWriter, r *http.
 	respondJSON(w, http.StatusOK, result)
 }
 
+// GetInspection responde con una inspección y sus adjuntos.
+func (h *AutoInspectionHandlers) GetInspection(w http.ResponseWriter, r *http.Request) {
+	autoID, err := parseAutoPathID(r)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+	inspectionID, err := parsePathID(r, "inspection_id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID de inspección inválido")
+		return
+	}
+	result, err := h.service.Get(r.Context(), autoID, inspectionID)
+	if err != nil {
+		respondAutoRecordError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, result)
+}
+
 // CreateInspection registra una inspección mecánica.
 func (h *AutoInspectionHandlers) CreateInspection(w http.ResponseWriter, r *http.Request) {
 	autoID, err := parseAutoPathID(r)

@@ -20,6 +20,13 @@ const BACK_ROUTES: { pattern: RegExp; to: string | ((pathname: string) => string
       return `/autos/${autoId}?tab=mantenimientos`
     },
   },
+  {
+    pattern: /^\/autos\/\d+\/inspections\/\d+$/,
+    to: (pathname) => {
+      const autoId = pathname.split('/')[2]
+      return `/autos/${autoId}?tab=inspecciones`
+    },
+  },
   { pattern: /^\/autos\/\d+$/, to: '/autos' },
   { pattern: /^\/autos\/(new|edit\/\d+)$/, to: '/autos' },
   { pattern: /^\/home\/(new|edit\/\d+)$/, to: '/home' },

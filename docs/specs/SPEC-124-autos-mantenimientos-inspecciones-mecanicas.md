@@ -71,6 +71,7 @@ La implementación debe respetar las limitaciones del iHost: cero dependencias n
 14. **REQ-038**: Tener una página de detalle por mantenimiento en `/autos/:id/maintenances/:maintenanceId`, accesible desde la opción **Ver** del menú de 3 puntos de la fila. En la lista, el menú de la fila muestra **Ver** y **Eliminar**; la edición se hace desde el detalle. La **información básica se muestra siempre arriba**, fuera de los tabs. Debajo hay tres tabs —**Mano de obra**, **Insumos** y **Facturas**— con el tab activo en `?tab=mano_obra|insumos|facturas` (por defecto `mano_obra`). Permite editar la información básica, agregar/editar/eliminar líneas y subir/eliminar PDFs. El modal de crear/editar mantenimiento queda solo con la información básica (fecha, kilometraje, taller, descripción y moneda), sin conceptos ni archivos.
 15. **REQ-039**: Exponer CRUD de líneas de mantenimiento (`POST`, `PUT`, `DELETE` en `/api/autos/{id}/maintenances/{maintenance_id}/items[/{item_id}]`) y `GET /api/autos/{id}/maintenances/{maintenance_id}` para el detalle. Cada operación debe verificar que el mantenimiento y la línea pertenezcan al auto de la ruta.
 16. **REQ-040**: Aplicar las reglas de modales vigentes en `main` (SPEC-122, `docs/project-rules.md` §4.7): ningún modal se cierra al hacer click fuera; el overlay usa `z-[60]` o superior y bloquea la página de fondo; siempre hay X o Cancelar/Cerrar; `DeleteModal` usa `z-[70]`, enfoca el input al abrir y confirma con Enter cuando el texto es `confirmo`.
+17. **REQ-041**: Replicar en inspecciones el patrón de mantenimientos: en la lista, el menú de la fila muestra **Ver** y **Eliminar** (sin **Editar** ni acciones de adjuntar archivos). **Ver** abre `/autos/:id/inspections/:inspectionId`, con la información fija arriba (con Editar/Eliminar) y una sección de **Facturas** para subir, abrir y eliminar PDFs. El modal de crear/editar inspección queda solo con la información básica; los archivos se gestionan desde el detalle.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -241,6 +242,7 @@ Se revisó el estado actual del repositorio (rama `main`, commit `ec19532`):
 - **Archivos**:
   - `frontend/src/pages/AutoShowPage.tsx`: tabs de Seguros/Mantenimientos/Inspecciones, listados y opción **Ver**.
   - `frontend/src/pages/AutoMaintenanceShowPage.tsx`: detalle de mantenimiento con información básica, líneas y archivos.
+  - `frontend/src/pages/AutoInspectionShowPage.tsx`: detalle de inspección con información básica y archivos.
   - `frontend/src/components/MaintenanceModal.tsx`: alta/edición de la información básica del mantenimiento.
   - `frontend/src/components/MaintenanceItemModal.tsx`: alta/edición de líneas de mano de obra e insumos.
   - `frontend/src/components/InspectionModal.tsx`: alta/edición de inspección con adjuntos.
@@ -464,6 +466,7 @@ Todos los endpoints requieren sesión válida (401 sin sesión).
 |---|---|---|
 | GET | `/api/autos/{id}/inspections` | Lista inspecciones + cronograma |
 | POST | `/api/autos/{id}/inspections` | Crea inspección |
+| GET | `/api/autos/{id}/inspections/{inspection_id}` | Detalle de la inspección |
 | PUT | `/api/autos/{id}/inspections/{inspection_id}` | Actualiza inspección |
 | DELETE | `/api/autos/{id}/inspections/{inspection_id}` | Elimina inspección + adjuntos |
 | POST | `/api/autos/{id}/inspections/{inspection_id}/attachments` | Sube un PDF (multipart `file`) |
@@ -603,6 +606,7 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 - [ ] CA-027: Un mantenimiento puede crearse con la información básica y luego agregar líneas de `auto_maintenance_items` de tipo `labor`/`supplies`, cada una con descripción y valor. La API de líneas rechaza descripciones vacías, tipos inválidos y valores negativos. Los totales por tipo y el total general se calculan sumando las líneas. La migración `0044` convierte los escalares existentes en líneas “Mano de obra” e “Insumos”.
 - [ ] CA-028: El menú de la fila muestra **Ver** y **Eliminar** (sin **Editar**). **Ver** abre `/autos/:id/maintenances/:maintenanceId`. La información básica (con Editar/Eliminar) se muestra siempre arriba, fuera de los tabs. Debajo hay tabs **Mano de obra**, **Insumos** y **Facturas**, con el tab activo en `?tab=mano_obra|insumos|facturas`, contadores y solo el panel activo. Mano de obra e Insumos permiten agregar/editar/eliminar líneas; Facturas permite subir/eliminar PDFs. El modal de crear/editar solo contiene la información básica y la moneda. El header muestra la flecha atrás hacia `/autos/:id?tab=mantenimientos`.
 - [ ] CA-029: Los modales de mantenimiento, concepto e inspección no se cierran al hacer click fuera, usan overlay `z-[60]` y tienen X/Cancelar. `DeleteModal` usa `z-[70]`, enfoca el input y confirma con Enter cuando el texto es `confirmo`.
+- [ ] CA-030: El menú de una inspección en la lista muestra **Ver** y **Eliminar**, sin **Editar** ni adjuntar archivos. **Ver** abre `/autos/:id/inspections/:inspectionId`; la información se muestra siempre arriba y debajo está la sección Facturas para subir/abrir/eliminar PDFs. El modal de crear/editar solo contiene la información básica. La flecha atrás vuelve a `/autos/:id?tab=inspecciones`.
 
 ### 5.2 No funcionales
 
@@ -715,3 +719,4 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 | 2026-11-08 | opencode | El menú de la fila de mantenimiento queda con **Ver** y **Eliminar**; **Editar** se mueve al detalle. Se actualizan REQ-038 y CA-028. |
 | 2026-11-08 | opencode | Aplicación de las reglas de modales de `main`/SPEC-122: sin cierre por click fuera, overlays `z-[60]`, cierre explícito y `DeleteModal` `z-[70]` con foco y Enter. Se agrega REQ-040 y CA-029. |
 | 2026-11-08 | opencode | Ajuste de UX: la información del mantenimiento queda siempre arriba; los tabs son solo Mano de obra, Insumos y Facturas (`?tab=`). Se actualizan REQ-038 y CA-028. |
+| 2026-11-08 | opencode | Inspecciones replican el patrón de mantenimientos: menú Ver/Eliminar, página de detalle con información fija y Facturas, modal solo con información básica. Se agrega REQ-041 y CA-030. |

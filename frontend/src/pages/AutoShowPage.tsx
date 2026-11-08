@@ -13,7 +13,6 @@ import CardMenu from '../components/CardMenu'
 import MaintenanceModal from '../components/MaintenanceModal'
 import InspectionModal from '../components/InspectionModal'
 import InspectionStatusBadge from '../components/InspectionStatusBadge'
-import AutoAttachmentsModal from '../components/AutoAttachmentsModal'
 import type {
   Auto,
   AutoService,
@@ -57,9 +56,9 @@ export default function AutoShowPage() {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
   const [deleteMaintenanceTarget, setDeleteMaintenanceTarget] = useState<AutoMaintenance | null>(null)
   const [showInspectionModal, setShowInspectionModal] = useState(false)
-  const [editInspection, setEditInspection] = useState<AutoInspection | null>(null)
+
   const [deleteInspectionTarget, setDeleteInspectionTarget] = useState<AutoInspection | null>(null)
-  const [pdfInspectionTarget, setPdfInspectionTarget] = useState<AutoInspection | null>(null)
+
 
   const loadAuto = useCallback(async () => {
     const data = await api.autos.get(Number(id))
@@ -115,7 +114,6 @@ export default function AutoShowPage() {
 
   const handleInspectionSaved = useCallback(() => {
     setShowInspectionModal(false)
-    setEditInspection(null)
     loadInspections()
   }, [loadInspections])
 
@@ -486,32 +484,13 @@ export default function AutoShowPage() {
                     ))}
                   </div>
                 )}
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditInspection(item)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border bg-card text-xs font-medium text-text-secondary hover:border-primary/50 hover:text-primary transition-colors min-h-[36px]"
-                  >
-                    <Icon name="edit" className="w-3.5 h-3.5 flex-shrink-0" />
-                    {t('app.edit')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPdfInspectionTarget(item)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border bg-card text-xs font-medium text-text-secondary hover:border-primary/50 hover:text-primary transition-colors min-h-[36px]"
-                  >
-                    <Icon name="pdf" className="w-3.5 h-3.5 text-danger flex-shrink-0" />
-                    {t('autos.attachments.add_pdf')}
-                    {item.attachments.length > 0 && (
-                      <span className="inline-flex items-center justify-center min-w-4 px-1 rounded-full bg-bg text-[10px]">
-                        {item.attachments.length}
-                      </span>
-                    )}
-                  </button>
-                </div>
                 <CardMenu
                   options={[
-                    { label: t('app.edit'), icon: 'edit', onClick: () => setEditInspection(item) },
+                    {
+                      label: t('app.view'),
+                      icon: 'info',
+                      onClick: () => navigate(`/autos/${auto.id}/inspections/${item.id}`),
+                    },
                     { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteInspectionTarget(item) },
                   ]}
                 />
@@ -565,18 +544,13 @@ export default function AutoShowPage() {
         />
       )}
 
-      {(showInspectionModal || editInspection) && (
+      {showInspectionModal && (
         <InspectionModal
           autoId={auto.id}
           autoYear={auto.year}
-          inspection={editInspection}
           nextDueYear={inspections?.schedule.next_due_year}
           onSaved={handleInspectionSaved}
-          onCancel={() => {
-            setShowInspectionModal(false)
-            setEditInspection(null)
-            loadInspections()
-          }}
+          onCancel={() => setShowInspectionModal(false)}
         />
       )}
       {deleteInspectionTarget && (
@@ -588,22 +562,7 @@ export default function AutoShowPage() {
         />
       )}
 
-      {pdfInspectionTarget && (
-        <AutoAttachmentsModal
-          title={t('autos.inspections.title')}
-          attachments={pdfInspectionTarget.attachments}
-          attachmentUrl={(attachment) =>
-            api.autos.inspectionAttachmentUrl(auto.id, pdfInspectionTarget.id, attachment.id)
-          }
-          upload={(file) => api.autos.uploadInspectionAttachment(auto.id, pdfInspectionTarget.id, file)}
-          remove={(attachment) => api.autos.deleteInspectionAttachment(auto.id, pdfInspectionTarget.id, attachment.id)}
-          onChanged={loadInspections}
-          onClose={() => {
-            setPdfInspectionTarget(null)
-            loadInspections()
-          }}
-        />
-      )}
+
     </div>
   )
 }

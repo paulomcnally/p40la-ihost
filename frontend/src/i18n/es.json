@@ -558,6 +558,10 @@
     },
     "inspections": {
       "title": "Inspecciones mecánicas",
+      "detail_title": "Inspección mecánica",
+      "detail_hint": "Después de guardar, adjuntá los PDFs desde el detalle.",
+      "not_found": "Inspección no encontrada",
+      "not_found_hint": "La inspección no existe o fue eliminada.",
       "add": "Agregar inspección",
       "edit": "Editar inspección",
       "empty": "No hay inspecciones registradas",
