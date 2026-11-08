@@ -469,6 +469,11 @@
     "created": "Auto creado",
     "updated": "Auto actualizado",
     "save_error": "Error al guardar",
+    "tabs": {
+      "insurance": "Seguros",
+      "maintenances": "Mantenimientos",
+      "inspections": "Inspecciones"
+    },
     "icons": {
       "van": "Van",
       "truck": "Camión",
