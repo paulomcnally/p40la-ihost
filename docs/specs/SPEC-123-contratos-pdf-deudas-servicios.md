@@ -1,7 +1,7 @@
 ---
 title: "Contratos PDF para deudas y servicios: upload, visualización y eliminación"
 id: "SPEC-123"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-07"
 updated: "2026-11-07"
@@ -11,7 +11,7 @@ github_issue: 126
 # Contratos PDF para deudas y servicios: upload, visualización y eliminación
 
 **ID**: SPEC-123  
-**Estado**: in_progress
+**Estado**: released
 **Autor**: opencode  
 **Creado**: 2026-11-07  
 **Actualizado**: 2026-11-07
@@ -140,7 +140,7 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
   - `internal/services/service.go`: `ServiceService` con `List`, `GetByID`, `Delete` (soft delete).
   - `frontend/src/pages/ServicesPage.tsx`: tarjetas con `CardMenu` (webhook/sync/editar/eliminar).
   - `frontend/src/pages/BillsPage.tsx`: header con `CreateMenu` (editar/subir factura/crear/renovar/webhook).
-- **Patrón de inyección existente**: el repo usa setters para dependencias opcionales, por ejemplo `billService.SetBillHistoryStorage(...)` y `categoryService.SetServiceStorage(...)`. Se adopta el mismo patrón para no romper los 17 call sites de `NewDebtService`/`NewServiceService` en tests.
+- **Patrón de inyección existente**: el repo usa setters para dependencias opcionales, por ejemplo `billService.SetBillHistoryStorage(...)` y `categoryService.SetServiceStorage(...)`. SPEC-122 ya cambió `NewDebtService` para recibir `dataDir`; esta spec inicializa el `ContractStore` en ese constructor y conserva el setter para tests. `ServiceService` mantiene su firma y usa `SetContractStore`.
 - **Modal de confirmación existente**: `frontend/src/components/DeleteModal.tsx` ya exige escribir `confirmo` para habilitar la eliminación. Se reutiliza tal cual; no se crea un modal de confirmación nuevo.
 - **Patrón de drag & drop existente**: `frontend/src/components/UploadBillModal.tsx` usa un `<input type="file" accept="application/pdf,.pdf" className="hidden">`, área con borde punteado y `onDrop`/`onDragOver`; no hay librería externa.
 - **i18n**: `frontend/public/i18n/es.json` y `en.json`; el build de Vite copia esa carpeta a `public/i18n/`.
@@ -174,10 +174,10 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
 - **Decisión**: Agregar `HasContract bool` al modelo `Debt` y `Service` (solo JSON, no DB) y completarlo en el service con `os.Stat` en las respuestas de list/get/create/update.
 - **Consecuencias**: Una llamada a `os.Stat` por entidad. Si el archivo falta, `has_contract=false` y el `GET` devuelve 404 (consistente con el disco). No hay migración.
 
-**ADR-003: Inyección del almacén de contratos con setter**
-- **Contexto**: `NewDebtService` y `NewServiceService` se usan en 17 lugares (producción y tests). Cambiar sus firmas obliga a tocar todos los tests aunque no prueben contratos.
-- **Decisión**: Crear `ContractStore` en `internal/services/contract.go` y agregar `SetContractStore(*ContractStore)` a `DebtService` y `ServiceService`. `cmd/server/main.go` lo inyecta una vez con `cfg.DataDir`. Si el store es `nil`, `has_contract` queda en `false` y los endpoints de contrato no se usan.
-- **Consecuencias**: Menos churn en tests; el patrón ya existe en el repo (`SetBillHistoryStorage`, `SetServiceStorage`). El store es compartido y sin estado mutable.
+**ADR-003: Inyección del almacén de contratos**
+- **Contexto**: `NewDebtService` ya recibe `dataDir` desde SPEC-122 para los comprobantes de pago. `NewServiceService` sigue con su firma original y se usa en varios tests.
+- **Decisión**: Crear `ContractStore` en `internal/services/contract.go`. `NewDebtService` inicializa `contracts: NewContractStore(dataDir)` junto con `documentsDir`; `ServiceService` usa `SetContractStore(*ContractStore)` desde `cmd/server/main.go`. Se conserva `SetContractStore` en `DebtService` para tests o wiring alternativo. Si el store es `nil`, `has_contract` queda en `false`.
+- **Consecuencias**: La integración con SPEC-122 no duplica la inyección de `dataDir`; `ServiceService` mantiene su firma y no se tocan sus call sites. El store es compartido y sin estado mutable.
 
 **ADR-004: Escritura atómica y streaming**
 - **Contexto**: Un corte de luz o un error a mitad de escritura no debe dejar un PDF corrupto. El iHost tiene RAM limitada.
@@ -288,10 +288,14 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
   // internal/services/debt.go
   type DebtService struct {
       // ...
-      contracts *ContractStore
+      documentsDir string
+      contracts    *ContractStore
   }
 
-  func (s *DebtService) SetContractStore(c *ContractStore)
+  // NewDebtService ya recibe dataDir por SPEC-122; inicializa ambos stores.
+  func NewDebtService(..., dataDir string) *DebtService
+
+  func (s *DebtService) SetContractStore(c *ContractStore) // tests/wiring alternativo
   func (s *DebtService) SaveContract(ctx context.Context, id int64, fileName string, r io.Reader) error
   func (s *DebtService) ContractPath(ctx context.Context, id int64) (string, error)
   func (s *DebtService) DeleteContract(ctx context.Context, id int64) error
@@ -343,7 +347,7 @@ Los archivos se guardan en el volumen Docker, con la misma raíz que usa la spec
   ```go
   contractStore := services.NewContractStore(cfg.DataDir)
   serviceService.SetContractStore(contractStore)
-  debtService.SetContractStore(contractStore)
+  debtService := services.NewDebtService(..., cfg.DataDir) // inicializa contracts
   ```
   No cambia la firma de `NewHandler` ni se agrega un handler nuevo al struct.
 
@@ -581,37 +585,37 @@ Códigos:
 
 ### 5.1 Funcionales
 
-- [ ] **CA-001**: La opción **"Contrato"** aparece en el menú de 3 puntos de las tarjetas de deudas y servicios, y en el menú de acciones del detalle de deuda y del detalle de servicio.
-- [ ] **CA-002**: Al abrir "Contrato" en una deuda/servicio **sin** contrato, se muestra un modal con drag & drop y botón "Seleccionar PDF"; se puede elegir un PDF, ver su nombre/tamaño, quitarlo antes de subir y subirlo.
-- [ ] **CA-003**: Al subir un PDF válido, se crea `{DATA_DIR}/contracts/debts/{id}/contract.pdf` o `{DATA_DIR}/contracts/services/{id}/contract.pdf`; el directorio se crea si no existe; la respuesta es `200 {"has_contract": true}`.
-- [ ] **CA-004**: El archivo se rechaza con mensaje claro si no es PDF, está vacío o supera 10 MB; en esos casos no se crea ni se reemplaza ningún archivo.
-- [ ] **CA-005**: Al abrir "Contrato" en una entidad **con** contrato, el modal muestra **"Quitar"** a la izquierda y **"Abrir"** a la derecha, sin el texto "contrato" en los botones; "Abrir" abre el PDF en una pestaña nueva.
-- [ ] **CA-006**: "Quitar" abre el modal de confirmación que exige escribir `confirmo`; al confirmar se elimina el archivo, se muestra un toast de éxito y `has_contract` pasa a `false`.
-- [ ] **CA-007**: Cancelar el modal de confirmación **no** elimina el archivo y vuelve al estado "con contrato".
-- [ ] **CA-008**: `GET /api/debts/{id}/contract` y `GET /api/services/{id}/contract` devuelven `application/pdf` con `X-Content-Type-Options: nosniff`; sin archivo devuelven 404.
-- [ ] **CA-009**: `DELETE` devuelve `204` y el archivo deja de existir en disco; una segunda llamada devuelve `404`.
-- [ ] **CA-010**: `has_contract` aparece en `GET /api/debts`, `GET /api/debts/{id}`, `GET /api/services`, `GET /api/services/{id}` y refleja la existencia real del archivo.
-- [ ] **CA-011**: No se agregó ninguna migración ni columna a `debts`/`services`; `PRAGMA table_info(debts)` y `PRAGMA table_info(services)` no cambian.
-- [ ] **CA-012**: Los endpoints están protegidos por sesión; sin login devuelven 401 y no sirven archivos.
-- [ ] **CA-013**: No hay listado estático ni acceso directo por URL a `contracts/`; el único acceso es por los endpoints autenticados.
-- [ ] **CA-014**: Si el archivo se borra manualmente del volumen, `has_contract` pasa a `false` y el `GET` devuelve 404 (sin errores 500).
-- [ ] **CA-015**: Si la deuda/servicio no existe o está eliminado, los tres endpoints devuelven 404 y no crean directorios.
-- [ ] **CA-016**: La subida reemplaza un contrato existente sin dejar temporales `.tmp` visibles.
-- [ ] **CA-017**: Hacer click fuera del modal **no** lo cierra; el overlay usa `z-[60]` y bloquea la interacción con la página de fondo y los menús de 3 puntos. El modal solo se cierra con la X o Cancelar.
-- [ ] **CA-018**: El modal de confirmación queda por encima (`z-[70]`), enfoca el input al abrirse y permite confirmar con Enter cuando el texto es exactamente `confirmo`.
-- [ ] **CA-DARK**: El área de drag & drop, el nombre del archivo, los textos de ayuda y los botones usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode (texto y placeholders legibles).
-- [ ] **CA-I18N**: Las claves nuevas existen en `frontend/public/i18n/es.json` y `en.json`, y `npm run build` las copia a `public/i18n/`.
-- [ ] **CA-BUILD**: `go test ./...`, `go vet ./...` y `npm run build` (que ejecuta `check-ui-rules.cjs`) pasan sin errores.
-- [ ] **CA-BACK**: No aplica: la funcionalidad es completamente modal, no crea páginas de detalle ni formularios con lista padre; no se modifica `BACK_ROUTES`.
+- [x] **CA-001**: La opción **"Contrato"** aparece en el menú de 3 puntos de las tarjetas de deudas y servicios, y en el menú de acciones del detalle de deuda y del detalle de servicio.
+- [x] **CA-002**: Al abrir "Contrato" en una deuda/servicio **sin** contrato, se muestra un modal con drag & drop y botón "Seleccionar PDF"; se puede elegir un PDF, ver su nombre/tamaño, quitarlo antes de subir y subirlo.
+- [x] **CA-003**: Al subir un PDF válido, se crea `{DATA_DIR}/contracts/debts/{id}/contract.pdf` o `{DATA_DIR}/contracts/services/{id}/contract.pdf`; el directorio se crea si no existe; la respuesta es `200 {"has_contract": true}`.
+- [x] **CA-004**: El archivo se rechaza con mensaje claro si no es PDF, está vacío o supera 10 MB; en esos casos no se crea ni se reemplaza ningún archivo.
+- [x] **CA-005**: Al abrir "Contrato" en una entidad **con** contrato, el modal muestra **"Quitar"** a la izquierda y **"Abrir"** a la derecha, sin el texto "contrato" en los botones; "Abrir" abre el PDF en una pestaña nueva.
+- [x] **CA-006**: "Quitar" abre el modal de confirmación que exige escribir `confirmo`; al confirmar se elimina el archivo, se muestra un toast de éxito y `has_contract` pasa a `false`.
+- [x] **CA-007**: Cancelar el modal de confirmación **no** elimina el archivo y vuelve al estado "con contrato".
+- [x] **CA-008**: `GET /api/debts/{id}/contract` y `GET /api/services/{id}/contract` devuelven `application/pdf` con `X-Content-Type-Options: nosniff`; sin archivo devuelven 404.
+- [x] **CA-009**: `DELETE` devuelve `204` y el archivo deja de existir en disco; una segunda llamada devuelve `404`.
+- [x] **CA-010**: `has_contract` aparece en `GET /api/debts`, `GET /api/debts/{id}`, `GET /api/services`, `GET /api/services/{id}` y refleja la existencia real del archivo.
+- [x] **CA-011**: No se agregó ninguna migración ni columna a `debts`/`services`; `PRAGMA table_info(debts)` y `PRAGMA table_info(services)` no cambian.
+- [x] **CA-012**: Los endpoints están protegidos por sesión; sin login devuelven 401 y no sirven archivos.
+- [x] **CA-013**: No hay listado estático ni acceso directo por URL a `contracts/`; el único acceso es por los endpoints autenticados.
+- [x] **CA-014**: Si el archivo se borra manualmente del volumen, `has_contract` pasa a `false` y el `GET` devuelve 404 (sin errores 500).
+- [x] **CA-015**: Si la deuda/servicio no existe o está eliminado, los tres endpoints devuelven 404 y no crean directorios.
+- [x] **CA-016**: La subida reemplaza un contrato existente sin dejar temporales `.tmp` visibles.
+- [x] **CA-017**: Hacer click fuera del modal **no** lo cierra; el overlay usa `z-[60]` y bloquea la interacción con la página de fondo y los menús de 3 puntos. El modal solo se cierra con la X o Cancelar.
+- [x] **CA-018**: El modal de confirmación queda por encima (`z-[70]`), enfoca el input al abrirse y permite confirmar con Enter cuando el texto es exactamente `confirmo`.
+- [x] **CA-DARK**: El área de drag & drop, el nombre del archivo, los textos de ayuda y los botones usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode (texto y placeholders legibles).
+- [x] **CA-I18N**: Las claves nuevas existen en `frontend/public/i18n/es.json` y `en.json`, y `npm run build` las copia a `public/i18n/`.
+- [x] **CA-BUILD**: `go test ./...`, `go vet ./...` y `npm run build` (que ejecuta `check-ui-rules.cjs`) pasan sin errores.
+- [x] **CA-BACK**: No aplica: la funcionalidad es completamente modal, no crea páginas de detalle ni formularios con lista padre; no se modifica `BACK_ROUTES`.
 
 ### 5.2 No funcionales
 
-- [ ] **CA-NF-001**: El upload de un PDF de 10 MB no supera ~2 MB de RAM adicional en el server (streaming a disco).
-- [ ] **CA-NF-002**: El listado de 100 deudas/servicios con `os.Stat` por entidad responde en < 300 ms en el iHost.
-- [ ] **CA-NF-003**: El PDF se escribe de forma atómica: no quedan archivos `.tmp` tras un upload exitoso ni tras un error.
-- [ ] **CA-NF-004**: El endpoint de descarga envía `X-Content-Type-Options: nosniff` y solo sirve archivos con firma `%PDF-`.
-- [ ] **CA-NF-005**: La ruta final no contiene ningún componente provisto por el usuario; `owner` es whitelist e `id` se formatea como entero.
-- [ ] **CA-NF-006**: `contracts/` está dentro de `DATA_DIR`, sobrevive a un reinicio del contenedor y no requiere un volumen nuevo.
+- [x] **CA-NF-001**: El upload de un PDF de 10 MB no supera ~2 MB de RAM adicional en el server (streaming a disco).
+- [x] **CA-NF-002**: El listado de 100 deudas/servicios con `os.Stat` por entidad responde en < 300 ms en el iHost.
+- [x] **CA-NF-003**: El PDF se escribe de forma atómica: no quedan archivos `.tmp` tras un upload exitoso ni tras un error.
+- [x] **CA-NF-004**: El endpoint de descarga envía `X-Content-Type-Options: nosniff` y solo sirve archivos con firma `%PDF-`.
+- [x] **CA-NF-005**: La ruta final no contiene ningún componente provisto por el usuario; `owner` es whitelist e `id` se formatea como entero.
+- [x] **CA-NF-006**: `contracts/` está dentro de `DATA_DIR`, sobrevive a un reinicio del contenedor y no requiere un volumen nuevo.
 
 ### 5.3 Testing
 
@@ -680,7 +684,7 @@ Códigos:
 | Safari/iOS no previsualiza PDF inline | Media | Bajo | P1: `?download=1` para forzar descarga; en el MVP se abre en pestaña nueva. |
 | `DATA_DIR` mal configurado en desarrollo (default `./data`) | Baja | Bajo | Usar `t.TempDir()` en tests; documentar que en Docker es `/app/data`; no crear directorios en startup. |
 | Error de permisos en el volumen al escribir | Baja | Alto | El contenedor corre como root; verificar en iHost con un PDF sintético antes del release; `MkdirAll` con 0755. |
-| Cambios en `NewDebtService`/`NewServiceService` rompen tests | Media | Medio | Usar setter injection (`SetContractStore`), no cambiar las firmas existentes; los tests sin store siguen funcionando con `has_contract=false`. |
+| Cambios en `NewDebtService`/`NewServiceService` rompen tests | Media | Medio | `DebtService` ya recibe `dataDir` por SPEC-122 e inicializa el store; `ServiceService` usa setter. Los tests sin store siguen funcionando con `has_contract=false`. |
 | SPEC-122 todavía está `in_progress` y su ruta puede cambiar | Media | Bajo | Esta spec solo reutiliza la raíz `DATA_DIR` y el patrón `documents/`; si SPEC-122 cambia la convención, revisar `contracts/` antes del release. La implementación de contratos no depende del código de comprobantes. |
 | El modal muestra un estado viejo si la lista no se refresca | Media | Bajo | `onChanged` recarga la lista/detalle después de subir o quitar; el modal mantiene un `localHasContract` para feedback inmediato. |
 | Texto `confirmo` hardcodeado en `DeleteModal` | Baja | Bajo | Se reutiliza el componente existente tal cual; si se internacionaliza en el futuro, esta spec se beneficia sin cambios. |
@@ -734,3 +738,5 @@ Códigos:
 | 2026-11-07 | opencode | Implementación P0: almacén de contratos, endpoints, `has_contract`, modal, integración en 4 páginas, i18n y tests. |
 | 2026-11-07 | opencode | Ajuste de UI solicitado: botones "Quitar" (izquierda) y "Abrir" (derecha), sin "contrato" en las etiquetas; se elimina el botón "Cerrar" del pie y se usa la X del header. |
 | 2026-11-07 | opencode | Regla global de modales: sin cierre por click fuera, overlay `z-[60]` bloqueante y `DeleteModal` en `z-[70]` con foco automático y confirmación con Enter. |
+| 2026-11-07 | opencode | Integración con `main`/SPEC-122: se conservan comprobantes, el layout con espacio para los 3 puntos (`pr-14`) y el badge "Pendiente"; `NewDebtService` recibe `dataDir` e inicializa documentos y contratos. |
+| 2026-11-07 | opencode | Release: validación manual satisfactoria del usuario; spec liberada y tracker actualizado. |
