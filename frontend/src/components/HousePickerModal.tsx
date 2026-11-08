@@ -52,10 +52,20 @@ export default function HousePickerModal({ isOpen, homes, selectedHomeId, onSele
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
       <div ref={modalRef} className="bg-card rounded-ios shadow-ios w-full max-w-sm sm:max-w-lg mx-4 max-h-[80vh] flex flex-col">
         <div className="p-4 border-b border-border">
-          <h3 className="text-base sm:text-lg font-bold mb-3">{t('services.homes')}</h3>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h3 className="text-base sm:text-lg font-bold">{t('services.homes')}</h3>
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:bg-bg transition-colors"
+              title={t('app.close')}
+              aria-label={t('app.close')}
+            >
+              <Icon name="cancel" className="w-4 h-4" />
+            </button>
+          </div>
           <input
             ref={inputRef}
             type="text"

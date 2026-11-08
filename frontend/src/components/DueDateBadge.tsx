@@ -1,47 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useI18nStore } from '../stores/i18nStore'
-import { api } from '../api'
-import { getBrowserTimeZone } from '../constants/timezones'
-
-let cachedTz: string | null = null
-let tzPromise: Promise<string> | null = null
-
-// Zona horaria configurada del sistema (SPEC-078) con fallback a la del
-// navegador. Se obtiene una sola vez y se cachea (SPEC-081, ADR-004).
-function getSystemTimeZone(): Promise<string> {
-  if (cachedTz) return Promise.resolve(cachedTz)
-  if (!tzPromise) {
-    tzPromise = api.systemSettings
-      .get()
-      .then((s) => (s?.timezone ? s.timezone : getBrowserTimeZone()))
-      .catch(() => getBrowserTimeZone())
-      .then((tz) => {
-        cachedTz = tz
-        return tz
-      })
-  }
-  return tzPromise
-}
-
-function todayInTimeZone(tz: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date())
-  const map: Record<string, string> = {}
-  for (const p of parts) map[p.type] = p.value
-  return `${map.year}-${map.month}-${map.day}`
-}
-
-// Días de calendario entre hoy (en la zona configurada) y dueDate (YYYY-MM-DD).
-// Negativo si ya venció. Math.round absorbe el desplazamiento de DST.
-export function daysUntilDue(dueDate: string, tz: string): number {
-  const today = todayInTimeZone(tz)
-  const ms = Date.parse(`${dueDate}T00:00:00`) - Date.parse(`${today}T00:00:00`)
-  return Math.round(ms / 86400000)
-}
+import { daysUntilDue, getSystemTimeZone } from '../utils/date'
 
 interface DueDateBadgeProps {
   dueDate?: string | null

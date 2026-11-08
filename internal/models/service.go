@@ -25,7 +25,10 @@ type Service struct {
 	LastWebhookRequest    *time.Time `json:"last_webhook_request,omitempty"`
 	AutomationAccountID   *int64     `json:"automation_account_id,omitempty"`
 	LatestBillStatus      *string    `json:"latest_bill_status"`
-	DeletedAt             *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt             time.Time  `json:"created_at"`
-	UpdatedAt             time.Time  `json:"updated_at"`
+	// HasContract indica si existe un contrato PDF en el volumen (SPEC-123).
+	// Es calculado, no se persiste.
+	HasContract bool       `json:"has_contract"`
+	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }

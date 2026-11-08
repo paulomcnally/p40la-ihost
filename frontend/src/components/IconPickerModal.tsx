@@ -11,7 +11,7 @@ interface IconPickerModalProps {
   zIndex?: string
 }
 
-export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClose, zIndex = 'z-50' }: IconPickerModalProps) {
+export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClose, zIndex = 'z-[60]' }: IconPickerModalProps) {
   const { t } = useI18nStore()
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string>('')
@@ -53,7 +53,17 @@ export default function IconPickerModal({ isOpen, selectedIcon, onSelect, onClos
     <div className={`fixed inset-0 ${zIndex} flex items-center justify-center bg-black/40`}>
       <div ref={modalRef} className="bg-card rounded-ios shadow-ios w-full max-w-sm sm:max-w-lg mx-4 max-h-[80vh] flex flex-col">
         <div className="p-4 border-b border-border">
-          <h3 className="text-base sm:text-lg font-bold mb-3">{t('services.select_icon')}</h3>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h3 className="text-base sm:text-lg font-bold">{t('services.select_icon')}</h3>
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:bg-bg transition-colors"
+              title={t('app.close')}
+              aria-label={t('app.close')}
+            >
+              <Icon name="cancel" className="w-4 h-4" />
+            </button>
+          </div>
           <input
             ref={inputRef}
             type="text"

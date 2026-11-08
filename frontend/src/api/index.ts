@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceItem, AutoMaintenanceItemInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse, DocumentRecognition, ConfirmRecognitionInput, AssociationResult } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -36,21 +36,26 @@ function postFormData<T>(path: string, file: File): Promise<T | null> {
   })
 }
 
-function postMultipart<T>(path: string, form: FormData): Promise<T | null> {
-  return fetch(path, { method: 'POST', body: form }).then(async (res) => {
+function multipartRequest<T>(path: string, form: FormData, method: 'POST' | 'PUT' = 'POST'): Promise<T | null> {
+  return fetch(path, { method, body: form }).then(async (res) => {
     if (res.status === 401) {
       window.location.href = '/login'
       return null
     }
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      const err = new Error(data.message || 'Request failed') as Error & { status?: number; validation?: unknown }
+      const err = new Error(data.message || 'Request failed') as Error & { status?: number; validation?: unknown; code?: string }
       err.status = res.status
       err.validation = data.validation
+      err.code = data.error
       throw err
     }
     return data
   })
+}
+
+function postMultipart<T>(path: string, form: FormData): Promise<T | null> {
+  return multipartRequest<T>(path, form, 'POST')
 }
 
 function periodParams(filters?: { year?: number; month?: number; id?: number }): string {
@@ -94,6 +99,14 @@ export const api = {
     renew: (id: number, body: { start_date: string; end_date: string; suggested_amount?: number }) =>
       post<{ service: Service; cycle: ServiceCycle }>(`/api/services/${id}/renew`, body),
     sync: (id: number) => post<{ delivered: number; failed: number }>(`/api/services/${id}/sync`, {}),
+  },
+  contracts: {
+    upload: (owner: 'debts' | 'services', id: number, file: File) =>
+      postFormData<{ has_contract: boolean }>(`/api/${owner}/${id}/contract`, file),
+    remove: (owner: 'debts' | 'services', id: number) =>
+      del(`/api/${owner}/${id}/contract`),
+    url: (owner: 'debts' | 'services', id: number) =>
+      `/api/${owner}/${id}/contract`,
   },
   webhooks: {
     getApiKey: () => get<{ api_key: string }>('/api/webhook/key'),
@@ -245,6 +258,35 @@ export const api = {
     updateService: (id: number, serviceId: number, body: { coverage_type: string; policy_number: string; certificate?: string; insurer_number: string }) => put(`/api/autos/${id}/services/${serviceId}`, body),
     removeService: (id: number, serviceId: number) => del(`/api/autos/${id}/services/${serviceId}`),
     availableServices: (id: number) => get<Service[]>(`/api/autos/${id}/available-services`),
+    listMaintenances: (id: number) => get<AutoMaintenanceList>(`/api/autos/${id}/maintenances`),
+    getMaintenance: (id: number, maintenanceId: number) => get<AutoMaintenance>(`/api/autos/${id}/maintenances/${maintenanceId}`),
+    createMaintenance: (id: number, body: AutoMaintenanceInput) => post<AutoMaintenance>(`/api/autos/${id}/maintenances`, body),
+    updateMaintenance: (id: number, maintenanceId: number, body: AutoMaintenanceInput) => put<AutoMaintenance>(`/api/autos/${id}/maintenances/${maintenanceId}`, body),
+    deleteMaintenance: (id: number, maintenanceId: number) => del(`/api/autos/${id}/maintenances/${maintenanceId}`),
+    createMaintenanceItem: (id: number, maintenanceId: number, body: AutoMaintenanceItemInput) =>
+      post<AutoMaintenanceItem>(`/api/autos/${id}/maintenances/${maintenanceId}/items`, body),
+    updateMaintenanceItem: (id: number, maintenanceId: number, itemId: number, body: AutoMaintenanceItemInput) =>
+      put(`/api/autos/${id}/maintenances/${maintenanceId}/items/${itemId}`, body),
+    deleteMaintenanceItem: (id: number, maintenanceId: number, itemId: number) =>
+      del(`/api/autos/${id}/maintenances/${maintenanceId}/items/${itemId}`),
+    uploadMaintenanceAttachment: (id: number, maintenanceId: number, file: File) =>
+      postFormData<AutoAttachment>(`/api/autos/${id}/maintenances/${maintenanceId}/attachments`, file),
+    maintenanceAttachmentUrl: (id: number, maintenanceId: number, attachmentId: number, download = false) =>
+      `/api/autos/${id}/maintenances/${maintenanceId}/attachments/${attachmentId}${download ? '?download=1' : ''}`,
+    deleteMaintenanceAttachment: (id: number, maintenanceId: number, attachmentId: number) =>
+      del(`/api/autos/${id}/maintenances/${maintenanceId}/attachments/${attachmentId}`),
+    listInspections: (id: number) => get<AutoInspectionList>(`/api/autos/${id}/inspections`),
+    getInspection: (id: number, inspectionId: number) => get<AutoInspection>(`/api/autos/${id}/inspections/${inspectionId}`),
+    createInspection: (id: number, body: Partial<AutoInspection>) => post<AutoInspection>(`/api/autos/${id}/inspections`, body),
+    updateInspection: (id: number, inspectionId: number, body: Partial<AutoInspection>) => put<AutoInspection>(`/api/autos/${id}/inspections/${inspectionId}`, body),
+    deleteInspection: (id: number, inspectionId: number) => del(`/api/autos/${id}/inspections/${inspectionId}`),
+    uploadInspectionAttachment: (id: number, inspectionId: number, file: File) =>
+      postFormData<AutoAttachment>(`/api/autos/${id}/inspections/${inspectionId}/attachments`, file),
+    inspectionAttachmentUrl: (id: number, inspectionId: number, attachmentId: number, download = false) =>
+      `/api/autos/${id}/inspections/${inspectionId}/attachments/${attachmentId}${download ? '?download=1' : ''}`,
+    deleteInspectionAttachment: (id: number, inspectionId: number, attachmentId: number) =>
+      del(`/api/autos/${id}/inspections/${inspectionId}/attachments/${attachmentId}`),
+    inspectionAlerts: () => get<AutoInspectionAlert[]>('/api/autos/inspection-alerts'),
   },
   notifications: {
     list: () => get<Notification[]>('/api/notifications'),
@@ -348,8 +390,37 @@ salaries: {
     delete: (id: number) => del(`/api/debts/${id}`),
     listBills: (debtId: number) => get<DebtBill[]>(`/api/debts/${debtId}/bills`),
     billsByMonth: (year: number, month: number) => get<DebtBill[]>(`/api/debt-bills?year=${year}&month=${month}`),
-    payBill: (id: number, body: { paid_at: string; payment_reference?: string }) =>
-      put<DebtBill>(`/api/debt-bills/${id}/pay`, body),
+    payBill: (id: number, body: { paid_at: string; payment_reference?: string }, invoice?: File, receipt?: File) => {
+      const form = new FormData()
+      form.append('paid_at', body.paid_at)
+      if (body.payment_reference) form.append('payment_reference', body.payment_reference)
+      if (invoice) form.append('invoice', invoice)
+      if (receipt) form.append('receipt', receipt)
+      return multipartRequest<DebtBill>(`/api/debt-bills/${id}/pay`, form, 'PUT')
+    },
+    invoiceUrl: (id: number) => `/api/debt-bills/${id}/invoice`,
+    receiptUrl: (id: number) => `/api/debt-bills/${id}/receipt`,
+    uploadInvoice: (id: number, file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return multipartRequest<DebtBill>(`/api/debt-bills/${id}/invoice`, form, 'POST')
+    },
+    uploadReceipt: (id: number, file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return multipartRequest<DebtBill>(`/api/debt-bills/${id}/receipt`, form, 'POST')
+    },
+    removeInvoice: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/invoice`),
+    removeReceipt: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/receipt`),
+  },
+  documents: {
+    recognize: (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return multipartRequest<DocumentRecognition>('/api/documents/recognize', form, 'POST')
+    },
+    confirm: (recognitionId: number, body: ConfirmRecognitionInput) =>
+      post<AssociationResult>(`/api/documents/recognitions/${recognitionId}/confirm`, body),
   },
   budget: {
     monthView: (year: number, month: number) => get<BudgetMonthView>(`/api/budget/months/${year}/${month}`),

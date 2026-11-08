@@ -6,13 +6,21 @@ import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
+import DebtDocumentButtons from '../components/DebtDocumentButtons'
+import DebtDocumentModal from '../components/DebtDocumentModal'
+import RecognizeDocumentModal from '../components/RecognizeDocumentModal'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import CreateMenu from '../components/CreateMenu'
+import ContractModal from '../components/ContractModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtPayModal from '../components/DebtPayModal'
-import DonutChart from '../components/DonutChart'
+import DebtPayoffSummary from '../components/DebtPayoffSummary'
 import DueDateBadge from '../components/DueDateBadge'
-import { debtClosedDate, isPaidAhead } from '../utils/debtMonthlyAggregation'
+import PaymentPunctualityBadge from '../components/PaymentPunctualityBadge'
+import PaymentReferenceBadge from '../components/PaymentReferenceBadge'
+import { isPaidAhead } from '../utils/debtMonthlyAggregation'
+import { getSystemTimeZone } from '../utils/date'
+import { paymentDateInTimeZone } from '../utils/paymentTiming'
 import type { Debt, DebtBill } from '../types'
 
 type BillFilter = 'all' | 'pending' | 'paid'
@@ -20,8 +28,8 @@ type BillFilter = 'all' | 'pending' | 'paid'
 export default function DebtBillsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { t } = useI18nStore()
-  const { currencies } = useAppStore()
+  const { t, lang } = useI18nStore()
+  const { currencies, loadCurrencies } = useAppStore()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [searchParams, setSearchParams] = useSearchParams()
   const rawFilter = searchParams.get('status')
@@ -29,11 +37,15 @@ export default function DebtBillsPage() {
   const [debt, setDebt] = useState<Debt | null>(null)
   const [bills, setBills] = useState<DebtBill[]>([])
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
+  const [contractOpen, setContractOpen] = useState(false)
+  const [recognizeOpen, setRecognizeOpen] = useState(false)
+  const [documentModal, setDocumentModal] = useState<{ bill: DebtBill; kind: 'invoice' | 'receipt' } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [timeZone, setTimeZone] = useState<string | undefined>(undefined)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!id) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     const [debtData, billList] = await Promise.all([
       api.debts.get(Number(id)),
       api.debts.listBills(Number(id)),
@@ -51,6 +63,28 @@ export default function DebtBillsPage() {
     load()
   }, [load])
 
+  // SPEC-125 / SPEC-113: al entrar directo por URL el catálogo puede estar
+  // vacío; se carga una vez para mostrar el símbolo en lugar del código ISO.
+  useEffect(() => {
+    if (currencies.length === 0) {
+      loadCurrencies().catch(() => undefined)
+    }
+  }, [currencies.length, loadCurrencies])
+
+  // SPEC-128: la fecha de pago y los días de diferencia se calculan en la
+  // zona horaria configurada del sistema, no en UTC.
+  useEffect(() => {
+    let cancelled = false
+    getSystemTimeZone()
+      .then((tz) => {
+        if (!cancelled) setTimeZone(tz)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   usePageTitle(debt?.description ?? null)
 
   const setBillFilter = (key: BillFilter) => {
@@ -62,47 +96,29 @@ export default function DebtBillsPage() {
     return bills.filter((b) => b.status === billFilter)
   }, [bills, billFilter])
 
-  const progress = useMemo(() => {
-    const paidBills = bills.filter((b) => b.status === 'paid')
-    const pendingBills = bills.filter((b) => b.status === 'pending')
-    const totalCount = debt?.installments_total ?? 0
-    const paidCount = paidBills.length
-    const pct = totalCount > 0 ? Math.round((paidCount / totalCount) * 100) : 0
-    const paidAmount = paidBills.reduce((s, b) => s + b.amount, 0)
-    const pendingAmount = pendingBills.reduce((s, b) => s + b.amount, 0)
-    return {
-      paidCount,
-      pendingCount: pendingBills.length,
-      totalCount,
-      pct,
-      paidAmount,
-      pendingAmount,
-      donutSegments: [
-        { label: t('deudas.progress_paid'), value: paidAmount, color: '#30d158' },
-        { label: t('deudas.progress_pending'), value: pendingAmount, color: '#ff9f0a' },
-      ],
-    }
-  }, [bills, debt, t])
-
   if (loading) return <LoadingSpinner />
 
   if (!debt) return <div className="text-center py-8 text-text-secondary">Loading...</div>
 
   const currency = currencies.find((c) => c.id === debt.currency_id)
   const symbol = currency?.symbol || debt.currency_code
-  const installmentLabel = (debt.installments_total === 1 ? t('deudas.installment') : t('deudas.installments')).toLowerCase()
-
-  const pctColorClass =
-    progress.pct === 100
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : progress.pct === 0
-      ? 'text-text-secondary'
-      : 'text-amber-600 dark:text-amber-400'
 
   const billMenuOptions = (bill: DebtBill): CardMenuOption[] => {
     const options: CardMenuOption[] = []
     if (bill.status === 'pending') {
       options.push({ label: t('deudas.pay'), icon: 'credit', onClick: () => setPayTarget(bill) })
+    }
+    if (bill.status === 'paid') {
+      options.push({
+        label: t('deudas.invoice'),
+        icon: 'bill',
+        onClick: () => setDocumentModal({ bill, kind: 'invoice' }),
+      })
+      options.push({
+        label: t('deudas.receipt'),
+        icon: 'pdf',
+        onClick: () => setDocumentModal({ bill, kind: 'receipt' }),
+      })
     }
     return options
   }
@@ -120,72 +136,23 @@ export default function DebtBillsPage() {
         <CreateMenu
           title={t('app.actions')}
           options={[
+            { label: t('contracts.menu'), icon: 'pdf', onClick: () => setContractOpen(true) },
+            { label: t('documents.recognize'), icon: 'pdf', onClick: () => setRecognizeOpen(true) },
             { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/deudas/edit/${debt.id}`) },
           ]}
         />
       </div>
 
-      <div className="bg-card rounded-ios shadow-ios p-4 sm:p-5 mb-4">
-        <div className="flex items-center gap-4">
-          <DonutChart
-            segments={progress.donutSegments}
-            size={104}
-            thickness={13}
-            centerValue={`${progress.pct}%`}
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-text-secondary mb-1">
-              {t('deudas.progress_label')}
-            </p>
-            <p className={`text-2xl sm:text-3xl font-bold ${pctColorClass}`}>
-              {progress.paidCount} {t('deudas.of')} {progress.totalCount} {installmentLabel}
-            </p>
-            <div className="h-2 rounded-full bg-border overflow-hidden mt-2">
-              <div
-                className="h-full rounded-full bg-success transition-all"
-                style={{ width: `${progress.pct}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3 mt-2 text-xs text-text-secondary">
-              <span className="flex items-center gap-1.5 min-w-0">
-                <span className="w-2.5 h-2.5 rounded-full bg-success shrink-0" />
-                <span className="truncate">
-                  {t('deudas.progress_paid')}: {formatMoney(progress.paidAmount, symbol)} ({progress.paidCount})
-                </span>
-              </span>
-              <span className="flex items-center gap-1.5 min-w-0">
-                <span className="w-2.5 h-2.5 rounded-full bg-warning shrink-0" />
-                <span className="truncate">
-                  {t('deudas.progress_pending')}: {formatMoney(progress.pendingAmount, symbol)} ({progress.pendingCount})
-                </span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DebtPayoffSummary debt={debt} bills={bills} symbol={symbol} lang={lang} />
 
       <div className="mb-4 flex items-center gap-2 flex-wrap text-sm text-text-secondary">
         <span className="bg-card rounded-ios-sm px-3 py-1 shadow-ios">
-          {t('deudas.total')}: {formatMoney(debt.total, currency?.symbol || debt.currency_code)}
-        </span>
-        <span className="bg-card rounded-ios-sm px-3 py-1 shadow-ios">
-          {progress.paidCount} {t('deudas.of')} {debt.installments_total} {installmentLabel}
+          {t('deudas.total_original')}: {formatMoney(debt.total, currency?.symbol || debt.currency_code)}
         </span>
         <span className="bg-card rounded-ios-sm px-3 py-1 shadow-ios">
           {t('deudas.payment_day')}: {debt.payment_day}
         </span>
       </div>
-
-      {debt.status === 'finalizada' && (
-        <div className="mb-4 flex items-center gap-2 rounded-ios bg-success/15 px-4 py-3 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-          <Icon name="check" className="w-4 h-4 shrink-0" />
-          <span>
-            {t('deudas.closed_on')} {debtClosedDate(debt)}
-            {' · '}
-            {t('deudas.total_paid')}: {formatMoney(debt.paid_amount, symbol)}
-          </span>
-        </div>
-      )}
 
       {bills.length > 0 && (
         <div className="flex gap-2 mb-4">
@@ -223,7 +190,7 @@ export default function DebtBillsPage() {
           {filteredBills.map((bill) => (
             <div
               key={bill.id}
-              className="bg-card rounded-ios shadow-ios p-4 relative flex items-center justify-between gap-3"
+              className="bg-card rounded-ios shadow-ios p-4 pr-14 relative flex items-center justify-between gap-3"
             >
               <CardMenu options={billMenuOptions(bill)} />
               <div className="min-w-0">
@@ -233,11 +200,22 @@ export default function DebtBillsPage() {
                 <p className="text-sm text-text-secondary">{bill.due_date}</p>
                 {bill.status === 'paid' && bill.paid_at && (
                   <p className="text-xs text-text-secondary mt-0.5">
-                    {t('deudas.pay_date')}: {bill.paid_at.slice(0, 10)}
+                    {t('deudas.pay_date')}: {paymentDateInTimeZone(bill.paid_at, timeZone) ?? '—'}
                   </p>
+                )}
+                {bill.status === 'paid' && (
+                  <div className="mt-1 flex flex-wrap items-center gap-2 min-w-0">
+                    <PaymentReferenceBadge reference={bill.payment_reference} />
+                    <PaymentPunctualityBadge
+                      paidAt={bill.paid_at}
+                      dueDate={bill.due_date}
+                      timeZone={timeZone}
+                    />
+                  </div>
                 )}
               </div>
               <div className="flex items-center gap-3 shrink-0">
+                <DebtDocumentButtons bill={bill} />
                 <p className="text-base font-semibold">
                   {formatMoney(bill.amount, currency?.symbol || bill.currency_code)}
                 </p>
@@ -265,6 +243,33 @@ export default function DebtBillsPage() {
           bill={payTarget}
           onClose={() => setPayTarget(null)}
           onSuccess={load}
+        />
+      )}
+      {contractOpen && (
+        <ContractModal
+          owner="debts"
+          entityId={debt.id}
+          entityName={debt.description}
+          hasContract={!!debt.has_contract}
+          onClose={() => setContractOpen(false)}
+          onChanged={() => load(true)}
+        />
+      )}
+      {recognizeOpen && (
+        <RecognizeDocumentModal
+          debt={debt}
+          bills={bills}
+          onClose={() => setRecognizeOpen(false)}
+          onChanged={() => load(true)}
+        />
+      )}
+
+      {documentModal && (
+        <DebtDocumentModal
+          bill={documentModal.bill}
+          kind={documentModal.kind}
+          onClose={() => setDocumentModal(null)}
+          onChanged={() => load(true)}
         />
       )}
     </div>
