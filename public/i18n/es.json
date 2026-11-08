@@ -507,6 +507,12 @@
       "title": "Mantenimientos",
       "detail_title": "Mantenimiento",
       "detail_hint": "Después de guardar, agregá mano de obra, insumos y archivos desde el detalle.",
+      "tabs": {
+        "information": "Información",
+        "labor": "Mano de obra",
+        "supplies": "Insumos",
+        "files": "Facturas"
+      },
       "not_found": "Mantenimiento no encontrado",
       "not_found_hint": "El mantenimiento no existe o fue eliminado.",
       "add": "Agregar mantenimiento",

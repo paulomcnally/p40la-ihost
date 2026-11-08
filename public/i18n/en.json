@@ -506,6 +506,12 @@
       "title": "Maintenance",
       "detail_title": "Maintenance",
       "detail_hint": "After saving, add labor, supplies and files from the detail page.",
+      "tabs": {
+        "information": "Information",
+        "labor": "Labor",
+        "supplies": "Supplies",
+        "files": "Invoices"
+      },
       "not_found": "Maintenance not found",
       "not_found_hint": "The maintenance does not exist or was deleted.",
       "add": "Add maintenance",

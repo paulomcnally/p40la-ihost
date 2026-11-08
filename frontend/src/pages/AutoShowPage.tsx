@@ -55,7 +55,6 @@ export default function AutoShowPage() {
   const [editInsurance, setEditInsurance] = useState<AutoService | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ serviceId: number; serviceName: string } | null>(null)
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
-  const [editMaintenance, setEditMaintenance] = useState<AutoMaintenance | null>(null)
   const [deleteMaintenanceTarget, setDeleteMaintenanceTarget] = useState<AutoMaintenance | null>(null)
   const [showInspectionModal, setShowInspectionModal] = useState(false)
   const [editInspection, setEditInspection] = useState<AutoInspection | null>(null)
@@ -104,15 +103,8 @@ export default function AutoShowPage() {
 
   const handleMaintenanceSaved = useCallback(() => {
     setShowMaintenanceModal(false)
-    setEditMaintenance(null)
     loadMaintenances()
   }, [loadMaintenances])
-
-  const handleInspectionSaved = useCallback(() => {
-    setShowInspectionModal(false)
-    setEditInspection(null)
-    loadInspections()
-  }, [loadInspections])
 
   const handleRemoveMaintenance = useCallback(async () => {
     if (!deleteMaintenanceTarget) return
@@ -120,6 +112,12 @@ export default function AutoShowPage() {
     setDeleteMaintenanceTarget(null)
     loadMaintenances()
   }, [deleteMaintenanceTarget, id, loadMaintenances])
+
+  const handleInspectionSaved = useCallback(() => {
+    setShowInspectionModal(false)
+    setEditInspection(null)
+    loadInspections()
+  }, [loadInspections])
 
   const handleRemoveInspection = useCallback(async () => {
     if (!deleteInspectionTarget) return
@@ -400,7 +398,6 @@ export default function AutoShowPage() {
                       icon: 'info',
                       onClick: () => navigate(`/autos/${auto.id}/maintenances/${item.id}`),
                     },
-                    { label: t('app.edit'), icon: 'edit', onClick: () => setEditMaintenance(item) },
                     { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteMaintenanceTarget(item) },
                   ]}
                 />
@@ -552,16 +549,11 @@ export default function AutoShowPage() {
         />
       )}
 
-      {(showMaintenanceModal || editMaintenance) && (
+      {showMaintenanceModal && (
         <MaintenanceModal
           autoId={auto.id}
-          maintenance={editMaintenance}
           onSaved={handleMaintenanceSaved}
-          onCancel={() => {
-            setShowMaintenanceModal(false)
-            setEditMaintenance(null)
-            loadMaintenances()
-          }}
+          onCancel={() => setShowMaintenanceModal(false)}
         />
       )}
       {deleteMaintenanceTarget && (

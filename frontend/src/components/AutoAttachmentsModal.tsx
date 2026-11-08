@@ -39,7 +39,7 @@ export default function AutoAttachmentsModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
       <div
         className="bg-card rounded-ios shadow-ios w-full max-w-lg max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}

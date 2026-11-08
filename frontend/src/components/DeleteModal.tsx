@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useI18nStore } from '../stores/i18nStore'
 import { Icon } from './Icons'
 
@@ -10,13 +10,22 @@ export default function DeleteModal({ title, subtitle, onConfirm, onCancel }: {
 }) {
   const { t } = useI18nStore()
   const [confirmText, setConfirmText] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
   const isValid = confirmText.trim().toLowerCase() === 'confirmo'
 
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && isValid) {
+      e.preventDefault()
+      onConfirm()
+    }
+  }
+
   return (
-    <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-      onClick={onCancel}
-    >
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] p-4">
       <div
         className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -32,9 +41,11 @@ export default function DeleteModal({ title, subtitle, onConfirm, onCancel }: {
           <div>
             <label className="block text-sm font-medium mb-1">Escribe "confirmo" para eliminar</label>
             <input
+              ref={inputRef}
               type="text"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
+              onKeyDown={handleInputKeyDown}
               className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
               placeholder="confirmo"
               autoComplete="off"
