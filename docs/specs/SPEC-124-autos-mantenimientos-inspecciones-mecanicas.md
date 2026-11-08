@@ -62,6 +62,7 @@ La implementación debe respetar las limitaciones del iHost: cero dependencias n
 5. **REQ-025**: Mostrar el costo total de mantenimientos por moneda en la sección de mantenimientos (suma de mano de obra e insumos de los registros mostrados).
 6. **REQ-026**: Permitir descargar un adjunto con nombre original y `?download=1`; por defecto abrirlo inline en una pestaña nueva.
 7. **REQ-027**: Al cambiar el año del auto, recalcular el cronograma de inspecciones. Si el nuevo año deja años de inspección registrados por debajo del mínimo (`auto.year + 2`), mostrar una advertencia y no borrar los registros existentes.
+8. **REQ-032**: Organizar el detalle del auto en tres tabs —**Seguros**, **Mantenimientos** e **Inspecciones**— para evitar una sola página con demasiada información. El tab activo se refleja en el querystring (`?tab=seguros|mantenimientos|inspecciones`), por defecto `seguros`. Cada tab muestra su contador y solo se renderiza el panel activo; el tab de inspecciones muestra un indicador de estado cuando está vencida o próxima.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -554,6 +555,7 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 - [ ] CA-DARK: Los inputs, selects y textareas de los modales usan `bg-card`/`text-text`/`text-text-secondary`; texto y placeholders son legibles en darkmode.
 - [ ] CA-BACK: No se crean páginas nuevas; el detalle del auto conserva su flecha atrás registrada en `BACK_ROUTES`. Si finalmente se agregan rutas, se registran en `BACK_ROUTES` y no se usan links "← Título".
 - [ ] CA-RESP: Los modales y secciones se ven correctamente en móvil (375 px) y desktop, sin overflow horizontal.
+- [ ] CA-022: El detalle del auto muestra tres tabs (Seguros, Mantenimientos, Inspecciones), el tab activo se conserva en `?tab=`, solo se renderiza el panel activo y el tab de inspecciones refleja el estado vencida/próxima.
 
 ### 5.2 No funcionales
 
@@ -654,3 +656,4 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 | 2026-11-07 | opencode | Creación inicial de la especificación (mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs). |
 | 2026-11-07 | opencode | Inicio de implementación: estado `in_progress`. |
 | 2026-11-08 | opencode | Implementación completa: migración `0042`, backend (storage/services/API), frontend (secciones, modales, adjuntos y badge), i18n es/en, tests Go y build del frontend. Migración validada sobre copia de producción: 3 autos y 16 instituciones; `up`/`down`/`up` idempotente e `integrity_check = ok`. |
+| 2026-11-08 | opencode | Cambio iterativo solicitado por el usuario durante la evaluación: organizar el detalle del auto en tabs Seguros, Mantenimientos e Inspecciones (`?tab=`), mostrando solo el panel activo. Se agrega REQ-032 y CA-022. |

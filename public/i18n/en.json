@@ -468,6 +468,11 @@
     "created": "Car created",
     "updated": "Car updated",
     "save_error": "Error saving",
+    "tabs": {
+      "insurance": "Insurance",
+      "maintenances": "Maintenance",
+      "inspections": "Inspections"
+    },
     "icons": {
       "van": "Van",
       "truck": "Truck",

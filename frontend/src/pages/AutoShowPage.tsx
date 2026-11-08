@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { useAppStore } from '../stores/appStore'
@@ -24,10 +24,21 @@ import type {
 import { resolveCurrency } from '../utils/currency'
 import { autoSubtitle } from '../utils/auto'
 
+type TabKey = 'seguros' | 'mantenimientos' | 'inspecciones'
+
 export default function AutoShowPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useI18nStore()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const tab: TabKey =
+    tabParam === 'mantenimientos' || tabParam === 'inspecciones' ? tabParam : 'seguros'
+  const setTab = (key: TabKey) => {
+    const next = new URLSearchParams(searchParams)
+    next.set('tab', key)
+    setSearchParams(next, { replace: false })
+  }
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const { currencies, loadCurrencies } = useAppStore()
   const currencyLabel = (currencyId: number) => {
@@ -157,9 +168,43 @@ export default function AutoShowPage() {
         </div>
       </div>
 
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {([
+          { key: 'seguros' as TabKey, label: t('autos.tabs.insurance'), icon: 'insurance', count: insurance.length },
+          { key: 'mantenimientos' as TabKey, label: t('autos.tabs.maintenances'), icon: 'wrench', count: maintenances?.items.length ?? 0 },
+          { key: 'inspecciones' as TabKey, label: t('autos.tabs.inspections'), icon: 'calendar', count: inspections?.items.length ?? 0 },
+        ]).map((item) => (
+          <button
+            key={item.key}
+            onClick={() => setTab(item.key)}
+            aria-pressed={tab === item.key}
+            className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 rounded-ios-sm text-[11px] sm:text-sm font-medium transition-colors min-h-[44px] ${
+              tab === item.key ? 'bg-primary text-white' : 'bg-card text-text-secondary hover:bg-border'
+            }`}
+          >
+            <Icon name={item.icon} className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">{item.label}</span>
+            <span
+              className={`hidden sm:inline-flex items-center justify-center min-w-5 px-1.5 py-0.5 rounded-full text-[10px] ${
+                tab === item.key ? 'bg-white/20 text-white' : 'bg-bg text-text-secondary'
+              }`}
+            >
+              {item.count}
+            </span>
+            {item.key === 'inspecciones' && inspections && inspections.schedule.status !== 'ok' && (
+              <span
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                  inspections.schedule.status === 'overdue' ? 'bg-danger' : 'bg-warning'
+                }`}
+              />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'seguros' && (
       <div className="bg-card rounded-ios shadow-ios p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">Seguros</h3>
+        <div className="flex justify-end mb-4">
           <button
             onClick={() => setShowAddModal(true)}
             className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover transition-colors flex items-center gap-2 text-sm min-h-[44px]"
@@ -251,16 +296,11 @@ export default function AutoShowPage() {
           </div>
         )}
       </div>
+      )}
 
-      <div className="bg-card rounded-ios shadow-ios p-4 sm:p-6 mt-6">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <Icon name="wrench" className="w-5 h-5 text-text-secondary flex-shrink-0" />
-            <h3 className="text-lg font-bold truncate">{t('autos.maintenances.title')}</h3>
-            <span className="text-xs bg-bg text-text-secondary px-2 py-0.5 rounded-full flex-shrink-0">
-              {maintenances?.items.length ?? 0}
-            </span>
-          </div>
+      {tab === 'mantenimientos' && (
+      <div className="bg-card rounded-ios shadow-ios p-4 sm:p-6">
+        <div className="flex justify-end mb-4">
           <button
             onClick={() => setShowMaintenanceModal(true)}
             className="px-3 sm:px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover transition-colors flex items-center gap-2 text-sm min-h-[44px] flex-shrink-0"
@@ -342,16 +382,11 @@ export default function AutoShowPage() {
           </div>
         )}
       </div>
+      )}
 
-      <div className="bg-card rounded-ios shadow-ios p-4 sm:p-6 mt-6">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <Icon name="calendar" className="w-5 h-5 text-text-secondary flex-shrink-0" />
-            <h3 className="text-lg font-bold truncate">{t('autos.inspections.title')}</h3>
-            <span className="text-xs bg-bg text-text-secondary px-2 py-0.5 rounded-full flex-shrink-0">
-              {inspections?.items.length ?? 0}
-            </span>
-          </div>
+      {tab === 'inspecciones' && (
+      <div className="bg-card rounded-ios shadow-ios p-4 sm:p-6">
+        <div className="flex justify-end mb-4">
           <button
             onClick={() => setShowInspectionModal(true)}
             className="px-3 sm:px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover transition-colors flex items-center gap-2 text-sm min-h-[44px] flex-shrink-0"
@@ -430,6 +465,7 @@ export default function AutoShowPage() {
           </div>
         )}
       </div>
+      )}
 
       {showAddModal && (
         <AddInsuranceModal
