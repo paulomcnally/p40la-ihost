@@ -10,6 +10,7 @@ import DebtDocumentButtons from '../components/DebtDocumentButtons'
 import DebtDocumentModal from '../components/DebtDocumentModal'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import CreateMenu from '../components/CreateMenu'
+import ContractModal from '../components/ContractModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtPayModal from '../components/DebtPayModal'
 import DonutChart from '../components/DonutChart'
@@ -31,6 +32,7 @@ export default function DebtBillsPage() {
   const [debt, setDebt] = useState<Debt | null>(null)
   const [bills, setBills] = useState<DebtBill[]>([])
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
+  const [contractOpen, setContractOpen] = useState(false)
   const [documentModal, setDocumentModal] = useState<{ bill: DebtBill; kind: 'invoice' | 'receipt' } | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -135,6 +137,7 @@ export default function DebtBillsPage() {
         <CreateMenu
           title={t('app.actions')}
           options={[
+            { label: t('contracts.menu'), icon: 'pdf', onClick: () => setContractOpen(true) },
             { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/deudas/edit/${debt.id}`) },
           ]}
         />
@@ -281,6 +284,16 @@ export default function DebtBillsPage() {
           bill={payTarget}
           onClose={() => setPayTarget(null)}
           onSuccess={load}
+        />
+      )}
+      {contractOpen && (
+        <ContractModal
+          owner="debts"
+          entityId={debt.id}
+          entityName={debt.description}
+          hasContract={!!debt.has_contract}
+          onClose={() => setContractOpen(false)}
+          onChanged={() => load(true)}
         />
       )}
 

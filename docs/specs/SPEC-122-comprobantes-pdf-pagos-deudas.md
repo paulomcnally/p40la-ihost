@@ -625,3 +625,4 @@ file: <PDF obligatorio>
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: en `DeleteModal`, escribir "confirmo" y presionar Enter ejecuta la confirmación. Regla agregada a las reglas internas y al template. |
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: al abrir `DeleteModal`, el input recibe foco automáticamente. Regla agregada a las reglas internas y al template. |
 | 2026-11-07 | opencode | Release: validación manual satisfactoria del usuario; spec liberada, merge a `main` (`0f2774e`) y push a `origin/main`. |
+| 2026-11-07 | opencode | Release Docker **v0.5.4**: tag `v0.5.4` (commit `c3b6fcb`), GitHub Actions run `42450557770` exitoso e imagen multi-arch publicada en Docker Hub (`amd64`, `arm/v7`, `arm64`). |
