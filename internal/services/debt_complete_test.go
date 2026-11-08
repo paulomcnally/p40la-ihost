@@ -29,6 +29,7 @@ func TestDebtCloseLifecycle(t *testing.T) {
 		storage.NewDebtBillStorage(database),
 		storage.NewInstitutionStorage(database),
 		storage.NewCurrencyStorage(database),
+		t.TempDir(),
 	)
 
 	debt, err := svc.Create(ctx, &models.Debt{

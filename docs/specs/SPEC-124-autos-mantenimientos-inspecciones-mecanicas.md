@@ -1,7 +1,7 @@
 ---
 title: "Autos: mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs"
 id: "SPEC-124"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-07"
 updated: "2026-11-07"
@@ -11,7 +11,7 @@ github_issue: 127
 # Autos: mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs
 
 **ID**: SPEC-124  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-07  
 **Actualizado**: 2026-11-07
@@ -723,3 +723,4 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 | 2026-11-08 | opencode | Ajuste de UX: la información del mantenimiento queda siempre arriba; los tabs son solo Mano de obra, Insumos y Facturas (`?tab=`). Se actualizan REQ-038 y CA-028. |
 | 2026-11-08 | opencode | Inspecciones replican el patrón de mantenimientos: menú Ver/Eliminar, página de detalle con información fija y Facturas, modal solo con información básica. Se agrega REQ-041 y CA-030. |
 | 2026-11-08 | opencode | Retorno desde detalles anidados: la flecha atrás del header se muestra también en desktop y vuelve al auto con el tab correspondiente. Se agrega REQ-042 y CA-031. |
+| 2026-11-08 | opencode | Release: merge de `feature/SPEC-124` a `main`, tracker actualizado y issue cerrado como `spec/released`. |

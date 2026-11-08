@@ -44,7 +44,7 @@ export default function AnalyzerPickerModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div
         ref={modalRef}
         className="bg-card rounded-ios shadow-ios w-full max-w-md mx-4 max-h-[80vh] flex flex-col"

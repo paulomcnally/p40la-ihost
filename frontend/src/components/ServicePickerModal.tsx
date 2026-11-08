@@ -51,7 +51,7 @@ export default function ServicePickerModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
         <div className="p-4 border-b border-border">
           <h3 className="text-lg font-bold">{title}</h3>
