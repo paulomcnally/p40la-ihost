@@ -47,6 +47,19 @@ export default function AutomationDetailPage() {
     setServices((serviceList || []).filter((svc) => svc.automation_account_id === accountId))
   }
 
+  const refreshHistory = async () => {
+    try {
+      const [billList, logList] = await Promise.all([
+        api.automation.bills(accountId),
+        api.automation.logs(accountId, 20, 0),
+      ])
+      setBills(billList || [])
+      setLogs(logList || [])
+    } catch {
+      // El toast ya informa el error principal.
+    }
+  }
+
   useEffect(() => {
     load().finally(() => setLoading(false))
   }, [accountId])
@@ -61,6 +74,7 @@ export default function AutomationDetailPage() {
       setBills(billList || [])
     } catch (err) {
       showToast(err instanceof Error ? err.message : t('automation.fetch_error'), 'error')
+      void refreshHistory()
     } finally {
       setFetching(false)
     }
@@ -80,6 +94,7 @@ export default function AutomationDetailPage() {
       }
     } catch (err) {
       showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
+      void refreshHistory()
     } finally {
       setSyncing(null)
     }
@@ -111,6 +126,10 @@ export default function AutomationDetailPage() {
       </div>
     )
   }
+
+  const latestErrorBill = bills[0]?.status === 'error' ? bills[0] : null
+  const latestErrorCode = latestErrorBill?.error_code || ''
+  const hasClassifiedError = ['portal_migrated', 'captcha_required', 'auth_expired'].includes(latestErrorCode)
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -150,6 +169,29 @@ export default function AutomationDetailPage() {
         </dl>
 
       </div>
+
+      {hasClassifiedError && (
+        <section className="bg-danger/10 border border-danger/30 rounded-ios p-4 sm:p-6">
+          <div className="flex items-start gap-3">
+            <Icon name="warning" className="w-5 h-5 text-danger shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-danger">
+                {t(`automation.error_${latestErrorCode}_title`)}
+              </h3>
+              <p className="text-sm text-text-secondary mt-1">
+                {t(`automation.error_${latestErrorCode}_desc`)}
+              </p>
+              <button
+                onClick={() => navigate(`/automation/edit/${account.id}`)}
+                className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-ios-sm bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors min-h-[40px]"
+              >
+                <Icon name="edit" className="w-4 h-4" />
+                {t('app.edit')}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="bg-card rounded-ios shadow-ios p-4 sm:p-6">
         <h3 className="font-semibold mb-3">{t('automation.linked_services')}</h3>

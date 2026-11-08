@@ -147,7 +147,7 @@ func (s *AutomationStorage) AccountExists(ctx context.Context, id int64) (bool, 
 func (s *AutomationStorage) ListBills(ctx context.Context, accountID int64) ([]models.AutomationBill, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, account_id, plugin_name, plugin_version, source, status,
-		       error, fetched_at, created_at
+		       error, raw, fetched_at, created_at
 		FROM automation_bills WHERE account_id = ? ORDER BY fetched_at DESC, id DESC`, accountID)
 	if err != nil {
 		return nil, fmt.Errorf("listar facturas de automation: %w", err)
@@ -161,7 +161,7 @@ func (s *AutomationStorage) ListBills(ctx context.Context, accountID int64) ([]m
 			errorText sql.NullString
 		)
 		if err := rows.Scan(&b.ID, &b.AccountID, &b.PluginName, &b.PluginVersion,
-			&b.Source, &b.Status, &errorText, &b.FetchedAt, &b.CreatedAt); err != nil {
+			&b.Source, &b.Status, &errorText, &b.Raw, &b.FetchedAt, &b.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan factura de automation: %w", err)
 		}
 		if errorText.Valid {

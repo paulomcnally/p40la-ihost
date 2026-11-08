@@ -1,20 +1,20 @@
 ---
 title: "ASSA: recuperar la automatización tras la migración del portal Mi ASSANET (reCAPTCHA)"
 id: "SPEC-121"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-03"
-updated: "2026-11-03"
+updated: "2026-11-08"
 github_issue: 124
 ---
 
 # ASSA: recuperar la automatización tras la migración del portal Mi ASSANET (reCAPTCHA)
 
 **ID**: SPEC-121  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-11-03  
-**Actualizado**: 2026-11-03
+**Actualizado**: 2026-11-08
 
 ---
 
@@ -36,6 +36,14 @@ El objetivo de esta spec es doble:
 Consideraciones de iHost: no se agregan dependencias pesadas ni un navegador; no se modifica el esquema SQLite; el trabajo nuevo es un tag del módulo privado de plugins, un bump de `go.mod` y una imagen multi-arch. La cookie de sesión se guarda en el campo `credentials` existente, se enmascara en la UI y nunca se loguea.
 
 Consideraciones de UI: el formulario de cuenta ya usa los tokens del tema y el componente `Select`; si se agrega el campo de cookie, debe verse bien en darkmode y mantener el patrón de credenciales existente. No se crean páginas de detalle nuevas, por lo que no aplica `BACK_ROUTES` salvo que el diseño cambie.
+
+### 1.1 Alcance de esta iteración (2026-11-08)
+
+Se implementa el **MVP P0** (Fase 1 y milestone 1): detección explícita de la migración y del CAPTCHA, errores centinela nuevos, mensaje accionable en backend/UI, tests de regresión y release del plugin como `v1.1.1`.
+
+La **Fase 2 (spike con sesión real) y la Fase 3 (sesión asistida + parsers del portal nuevo)** quedan bloqueadas por una dependencia externa: requieren que el usuario inicie sesión manualmente y aporte una cookie de sesión válida para mapear las rutas autenticadas. Sin esa evidencia no se escribe el scraping, tal como exigen REQ-005, REQ-008 y CA-008. Cuando el usuario provea la sesión, se retoma la spec.
+
+Consecuencia operativa del MVP: la cuenta ASSA deja de reportar un error engañoso ("la API cambió su formato") y pasa a reportar `portal migrado` o `CAPTCHA requerido`; el usuario puede desactivar el schedule sin perder configuración ni facturas históricas.
 
 ## 2. Requerimientos
 
@@ -262,7 +270,7 @@ No se agregan endpoints. Se reutilizan:
 ```json
 {
   "error": "automation_error",
-  "message": "ASSA migró su portal y ahora requiere CAPTCHA. Configurá una cookie de sesión o desactivá la automatización."
+  "message": "ASSA migró su portal y el acceso automático ya no es válido. Desactivá la automatización para evitar errores repetidos."
 }
 ```
 
@@ -354,3 +362,4 @@ Si la Fase 2 da "no-go", las fases 3–4 se reemplazan por la opción E (API ofi
 | Fecha | Autor | Descripción |
 |---|---|---|
 | 2026-11-03 | opencode | Creación inicial de la especificación. Se documenta la migración del portal ASSA, la causa raíz del error `login sin token var`, la evidencia del portal nuevo con reCAPTCHA y las opciones de recuperación (sesión asistida, API oficial, manual/PDF). |
+| 2026-11-08 | opencode | Estado `in_progress`. Se implementa el MVP P0: detección de migración/CAPTCHA, centinelas `ErrPortalMigrated`/`ErrCaptchaRequired`, mapeo de mensajes accionables en app/UI, tests de regresión y plugin `v1.1.1`. La Fase 2/3 (sesión asistida) queda bloqueada hasta validar con una sesión real. |
