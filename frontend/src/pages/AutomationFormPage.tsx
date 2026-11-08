@@ -404,6 +404,9 @@ export default function AutomationFormPage() {
                       placeholder={field.label}
                       autoComplete="new-password"
                     />
+                    {field.description && (
+                      <p className="text-xs text-text-secondary mt-1">{field.description}</p>
+                    )}
                   </div>
                 ))}
               </div>
