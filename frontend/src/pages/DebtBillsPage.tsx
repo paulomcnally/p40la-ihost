@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef, type ChangeEvent } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
@@ -7,8 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import DebtDocumentButtons from '../components/DebtDocumentButtons'
-import { useToast } from '../components/Toast'
-import { isPdfFile, MAX_RECEIPT_BYTES } from '../utils/pdfFile'
+import DebtDocumentModal from '../components/DebtDocumentModal'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import CreateMenu from '../components/CreateMenu'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -25,7 +24,6 @@ export default function DebtBillsPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
   const { currencies } = useAppStore()
-  const { showToast } = useToast()
   const formatMoney = useCurrencyFormatStore(s => s.formatMoney)
   const [searchParams, setSearchParams] = useSearchParams()
   const rawFilter = searchParams.get('status')
@@ -33,9 +31,7 @@ export default function DebtBillsPage() {
   const [debt, setDebt] = useState<Debt | null>(null)
   const [bills, setBills] = useState<DebtBill[]>([])
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
-  const [uploadingDocument, setUploadingDocument] = useState(false)
-  const documentInputRef = useRef<HTMLInputElement>(null)
-  const documentTargetRef = useRef<{ bill: DebtBill; kind: 'invoice' | 'receipt' } | null>(null)
+  const [documentModal, setDocumentModal] = useState<{ bill: DebtBill; kind: 'invoice' | 'receipt' } | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -106,74 +102,21 @@ export default function DebtBillsPage() {
       ? 'text-text-secondary'
       : 'text-amber-600 dark:text-amber-400'
 
-  const openDocument = (bill: DebtBill, kind: 'invoice' | 'receipt') => {
-    const url = kind === 'invoice' ? api.debts.invoiceUrl(bill.id) : api.debts.receiptUrl(bill.id)
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
-
-  const chooseDocument = (bill: DebtBill, kind: 'invoice' | 'receipt') => {
-    documentTargetRef.current = { bill, kind }
-    documentInputRef.current?.click()
-  }
-
-  const handleDocumentChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    const target = documentTargetRef.current
-    e.target.value = ''
-    if (!file || !target) return
-    if (!isPdfFile(file)) {
-      showToast(t('deudas.pdf_invalid_type'), 'error')
-      return
-    }
-    if (file.size === 0) {
-      showToast(t('deudas.pdf_empty'), 'error')
-      return
-    }
-    if (file.size > MAX_RECEIPT_BYTES) {
-      showToast(t('deudas.pdf_too_large'), 'error')
-      return
-    }
-
-    setUploadingDocument(true)
-    try {
-      if (target.kind === 'invoice') {
-        await api.debts.uploadInvoice(target.bill.id, file)
-        showToast(t('deudas.invoice_uploaded'), 'success')
-      } else {
-        await api.debts.uploadReceipt(target.bill.id, file)
-        showToast(t('deudas.receipt_uploaded'), 'success')
-      }
-      documentTargetRef.current = null
-      await load()
-    } catch (err: unknown) {
-      const message = (err as { message?: string })?.message || t('errors.generic')
-      showToast(message, 'error')
-    } finally {
-      setUploadingDocument(false)
-    }
-  }
-
   const billMenuOptions = (bill: DebtBill): CardMenuOption[] => {
     const options: CardMenuOption[] = []
     if (bill.status === 'pending') {
       options.push({ label: t('deudas.pay'), icon: 'credit', onClick: () => setPayTarget(bill) })
     }
-    if (bill.has_invoice) {
-      options.push({ label: t('deudas.view_invoice'), icon: 'bill', onClick: () => openDocument(bill, 'invoice') })
-    }
-    if (bill.has_receipt) {
-      options.push({ label: t('deudas.view_receipt'), icon: 'pdf', onClick: () => openDocument(bill, 'receipt') })
-    }
     if (bill.status === 'paid') {
       options.push({
-        label: bill.has_invoice ? t('deudas.replace_invoice') : t('deudas.attach_invoice'),
-        icon: 'upload',
-        onClick: () => chooseDocument(bill, 'invoice'),
+        label: t('deudas.invoice'),
+        icon: 'bill',
+        onClick: () => setDocumentModal({ bill, kind: 'invoice' }),
       })
       options.push({
-        label: bill.has_receipt ? t('deudas.replace_receipt') : t('deudas.attach_receipt'),
-        icon: 'upload',
-        onClick: () => chooseDocument(bill, 'receipt'),
+        label: t('deudas.receipt'),
+        icon: 'pdf',
+        onClick: () => setDocumentModal({ bill, kind: 'receipt' }),
       })
     }
     return options
@@ -333,20 +276,20 @@ export default function DebtBillsPage() {
         </div>
       )}
 
-      <input
-        ref={documentInputRef}
-        type="file"
-        accept="application/pdf,.pdf"
-        className="hidden"
-        disabled={uploadingDocument}
-        onChange={handleDocumentChange}
-      />
-
       {payTarget && (
         <DebtPayModal
           bill={payTarget}
           onClose={() => setPayTarget(null)}
           onSuccess={load}
+        />
+      )}
+
+      {documentModal && (
+        <DebtDocumentModal
+          bill={documentModal.bill}
+          kind={documentModal.kind}
+          onClose={() => setDocumentModal(null)}
+          onChanged={load}
         />
       )}
     </div>

@@ -325,6 +325,42 @@ func (h *DebtHandlers) downloadDebtDocument(w http.ResponseWriter, r *http.Reque
 	http.ServeFile(w, r, filePath)
 }
 
+// DeleteDebtInvoice remueve la factura de una cuota pagada (SPEC-122).
+func (h *DebtHandlers) DeleteDebtInvoice(w http.ResponseWriter, r *http.Request) {
+	h.deleteDebtDocument(w, r, services.DebtDocumentInvoice)
+}
+
+// DeleteDebtReceipt remueve el comprobante de una cuota pagada (SPEC-122).
+func (h *DebtHandlers) DeleteDebtReceipt(w http.ResponseWriter, r *http.Request) {
+	h.deleteDebtDocument(w, r, services.DebtDocumentReceipt)
+}
+
+func (h *DebtHandlers) deleteDebtDocument(w http.ResponseWriter, r *http.Request, kind services.DebtDocumentKind) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
+		return
+	}
+
+	bill, err := h.service.DeleteDocument(r.Context(), id, kind)
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrDocumentNotFound):
+			respondError(w, http.StatusNotFound, "not_found", err.Error())
+		case err.Error() == "la cuota no existe":
+			respondError(w, http.StatusNotFound, "not_found", err.Error())
+		case err.Error() == "la cuota debe estar pagada para remover un documento":
+			respondError(w, http.StatusBadRequest, "not_paid", err.Error())
+		case err.Error() == "tipo de documento inválido":
+			respondError(w, http.StatusBadRequest, "invalid_kind", err.Error())
+		default:
+			respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		}
+		return
+	}
+	respondJSON(w, http.StatusOK, bill)
+}
+
 // UploadDebtInvoice adjunta o reemplaza la factura de una cuota ya pagada.
 func (h *DebtHandlers) UploadDebtInvoice(w http.ResponseWriter, r *http.Request) {
 	h.uploadDebtDocument(w, r, services.DebtDocumentInvoice)

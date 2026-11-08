@@ -69,10 +69,12 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
    - `invoice` (opcional, PDF).
    - `receipt` (opcional, PDF).
    Mantener compatibilidad con el body JSON actual (`application/json`) para no romper clientes existentes ni tests.
-5. **REQ-005**: Agregar endpoints autenticados de descarga:
+5. **REQ-005**: Agregar endpoints autenticados:
    - `GET /api/debt-bills/{id}/invoice`
    - `GET /api/debt-bills/{id}/receipt`
-   Ambos devuelven el PDF con `Content-Type: application/pdf` y `Content-Disposition: inline; filename="<kind>_{n}.pdf"`. Si la cuota no existe, está eliminada o no tiene ese archivo → `404`. Con `?download=1` el `Content-Disposition` pasa a `attachment`.
+   - `DELETE /api/debt-bills/{id}/invoice`
+   - `DELETE /api/debt-bills/{id}/receipt`
+   Los `GET` devuelven el PDF con `Content-Type: application/pdf` y `Content-Disposition: inline; filename="<kind>_{n}.pdf"`. Si la cuota no existe, está eliminada o no tiene ese archivo → `404`. Con `?download=1` el `Content-Disposition` pasa a `attachment`. Los `DELETE` remueven solo el archivo indicado y devuelven la cuota con los flags actualizados.
 6. **REQ-006**: Exponer en las respuestas de cuotas los campos booleanos `has_invoice` y `has_receipt`:
    - `GET /api/debts/{id}/bills` (detalle de deuda).
    - `GET /api/debt-bills?year=&month=` (calendario).
@@ -84,21 +86,22 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
    - Análisis (`DebtAnalysis`): ambos iconos en resultados de búsqueda y en cuotas pagadas por adelantado.
    - Tarjeta de deuda (`DeudasPage`): indicador genérico si `has_documents=true`.
    Al hacer clic, abrir el PDF correspondiente en una pestaña nueva (`window.open(url, '_blank', 'noopener,noreferrer')`).
-8. **REQ-008**: En el menú de 3 puntos (`CardMenu`) del detalle de deuda, agregar:
-   - **"Factura"** (`deudas.view_invoice`) cuando `has_invoice=true`.
-   - **"Comprobante"** (`deudas.view_receipt`) cuando `has_receipt=true`.
-   Cada opción abre su PDF. La opción **"Pagar"** se mantiene para cuotas pendientes.
-9. **REQ-009**: Agregar las claves i18n en `frontend/public/i18n/es.json` y `frontend/public/i18n/en.json` para: factura, comprobante, textos de drag & drop, formatos, tamaño máximo, errores, nombres de archivo, acciones de ver/adjuntar/reemplazar y confirmaciones. La fuente de verdad del i18n es `frontend/public/i18n/`, nunca `public/i18n/`.
+8. **REQ-008**: En el menú de 3 puntos (`CardMenu`) del detalle de deuda, para cuotas pagadas mostrar **únicamente**:
+   - **"Factura"** (`deudas.invoice`).
+   - **"Comprobante"** (`deudas.receipt`).
+   Cada opción abre el modal de documento correspondiente. No usar textos "Adjuntar", "Reemplazar", "Ver factura" ni "Ver comprobante" en el menú. La opción **"Pagar"** se mantiene para cuotas pendientes.
+9. **REQ-009**: Agregar las claves i18n en `frontend/public/i18n/es.json` y `frontend/public/i18n/en.json` para: factura, comprobante, textos de drag & drop, formatos, tamaño máximo, errores, nombres de archivo, acciones Abrir/Subir/Remover y confirmaciones. La fuente de verdad del i18n es `frontend/public/i18n/`, nunca `public/i18n/`.
 10. **REQ-010**: Documentar que `documents/` forma parte del volumen Docker y debe incluirse en los respaldos junto con `app.db`. El respaldo del solo archivo SQLite no preserva los documentos. No crear un volumen adicional ni cambiar el `docker-compose.yml`.
 11. **REQ-011**: El guardado de cada archivo debe ser **atómico**: escribir primero en un archivo temporal dentro del mismo directorio y luego `os.Rename` al nombre final. Si el pago falla, eliminar todos los temporales. Si se sube una factura o un comprobante nuevo para una cuota que ya tenía ese documento, reemplazar solo ese archivo (última versión gana) sin dejar temporales ni duplicados.
 12. **REQ-012**: Nunca usar el nombre de archivo provisto por el usuario para construir la ruta. Los nombres finales se derivan exclusivamente de `debt_id`, `installment_number` y el tipo de documento (`invoice`/`receipt`), evitando path traversal.
+13. **REQ-020**: Al tocar "Factura" o "Comprobante" en el menú de 3 puntos se abre un **modal de documento**:
+    - Si el documento no existe: mostrar un área de upload (`PdfUploadField`) y un botón **"Subir"**.
+    - Si el documento existe: mostrar el nombre `invoice_{n}.pdf`/`receipt_{n}.pdf`, un botón **"Abrir"** y un botón **"Remover"**.
+    - **"Remover"** abre un segundo modal de confirmación (reutilizar `DeleteModal`) que exige escribir **"confirmo"** para habilitar la acción. Al confirmar, se elimina solo ese archivo y se actualizan los flags.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
-1. **REQ-013**: Permitir adjuntar o reemplazar cada documento **después** de pagar, mediante:
-   - `POST /api/debt-bills/{id}/invoice` (`multipart/form-data`, campo `file`).
-   - `POST /api/debt-bills/{id}/receipt` (`multipart/form-data`, campo `file`).
-   Solo para cuotas en estado `paid`. El menú de 3 puntos muestra "Adjuntar factura"/"Reemplazar factura" y "Adjuntar comprobante"/"Reemplazar comprobante" según corresponda.
+1. **REQ-013**: Los endpoints `POST /api/debt-bills/{id}/invoice` y `POST /api/debt-bills/{id}/receipt` (`multipart/form-data`, campo `file`) permiten subir el documento desde el modal cuando no existe. Solo para cuotas en estado `paid`. El menú de 3 puntos **no** muestra opciones de adjuntar ni reemplazar; el flujo de reemplazo es remover y volver a subir desde el modal.
 2. **REQ-014**: Mostrar en la tarjeta de deuda (`DeudasPage`) un indicador discreto si la deuda tiene al menos un documento (`has_documents`). No debe degradar el listado (máximo un `os.ReadDir` por deuda).
 3. **REQ-015**: Si el navegador no puede previsualizar el PDF inline (caso Safari/iOS), ofrecer un enlace de descarga alternativo (`?download=1`) en ambos endpoints.
 4. **REQ-019**: En el detalle de deuda, la fila de cada cuota debe reservar espacio a la derecha (`pr-14`) para que el menú de 3 puntos no se superponga con el badge de estado ni con el monto. El menú debe quedar visible y clickeable en móvil y desktop.
@@ -298,11 +301,15 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
 #### 4.2.5 Frontend — indicadores y menú
 
 - `frontend/src/components/DebtDocumentButtons.tsx`: botones compartidos con icono `bill` (factura) y `pdf` (comprobante), cada uno abre su endpoint.
-- `frontend/src/pages/DebtBillsPage.tsx`: usa `DebtDocumentButtons` en cada cuota; opciones "Factura"/"Comprobante" y adjuntar/reemplazar en `billMenuOptions`; un input oculto con target `{bill, kind}`.
+- `frontend/src/components/DebtDocumentModal.tsx`: modal único por tipo de documento.
+  - Sin archivo: muestra `PdfUploadField` y botón "Subir".
+  - Con archivo: muestra `invoice_{n}.pdf`/`receipt_{n}.pdf`, botón "Abrir" y botón "Remover".
+  - "Remover" abre `DeleteModal` como segundo modal; el usuario debe escribir "confirmo" para habilitar la eliminación.
+- `frontend/src/pages/DebtBillsPage.tsx`: usa `DebtDocumentButtons` en cada cuota. Para cuotas pagadas, `billMenuOptions` muestra solo "Factura" y "Comprobante", que abren `DebtDocumentModal`. No hay opciones "Adjuntar" ni "Reemplazar" en el menú.
 - `frontend/src/pages/DeudasPage.tsx`: indicador PDF si `has_documents=true`.
 - `frontend/src/components/DebtCalendar.tsx`: `DebtDocumentButtons` en `BillRow` (desktop y móvil).
 - `frontend/src/components/DebtAnalysis.tsx`: `DebtDocumentButtons` en resultados de búsqueda y cuotas pagadas por adelantado.
-- `frontend/src/api/index.ts`: `payBill(id, body, invoice?, receipt?)`; `invoiceUrl`, `receiptUrl`, `uploadInvoice`, `uploadReceipt`.
+- `frontend/src/api/index.ts`: `payBill(id, body, invoice?, receipt?)`; `invoiceUrl`, `receiptUrl`, `uploadInvoice`, `uploadReceipt`, `removeInvoice`, `removeReceipt`.
 - `frontend/src/types/index.ts`: `DebtBill.has_invoice?`, `DebtBill.has_receipt?`, `Debt.has_documents?`.
 - i18n: `frontend/public/i18n/es.json` y `en.json`.
 
@@ -419,7 +426,9 @@ X-Content-Type-Options: nosniff
 
 Con `?download=1` el `Content-Disposition` pasa a `attachment`.
 
-#### Endpoints: `POST /api/debt-bills/{id}/invoice` y `POST /api/debt-bills/{id}/receipt` (P1)
+#### Endpoints: `POST /api/debt-bills/{id}/invoice` y `POST /api/debt-bills/{id}/receipt`
+
+Se usan desde el modal de documento cuando falta el archivo.
 
 **Request multipart/form-data**:
 ```
@@ -430,11 +439,19 @@ file: <PDF obligatorio>
 
 **Errores**: `400 invalid_file`, `400 not_paid`, `404 not_found`.
 
+#### Endpoints: `DELETE /api/debt-bills/{id}/invoice` y `DELETE /api/debt-bills/{id}/receipt`
+
+**Request**: sin body.
+
+**Response 200**: `DebtBill` actualizado; el flag del documento removido queda en `false` y el otro no cambia.
+
+**Errores**: `400 not_paid`, `404 not_found` (la cuota o el documento no existe), `400 invalid_kind`.
+
 ### 4.5 Dependencias
 
 - **Internas**:
   - `internal/services/debt.go`, `internal/api/debt_handlers.go`, `internal/api/routes.go`, `internal/models/debt_bill.go`, `internal/models/debt.go`, `cmd/server/main.go`.
-  - Frontend: `DebtPayModal.tsx`, `PdfUploadField.tsx`, `DebtDocumentButtons.tsx`, `DebtBillsPage.tsx`, `DeudasPage.tsx`, `DebtCalendar.tsx`, `DebtAnalysis.tsx`, `api/index.ts`, `types/index.ts`, `utils/pdfFile.ts`, i18n.
+  - Frontend: `DebtPayModal.tsx`, `PdfUploadField.tsx`, `DebtDocumentButtons.tsx`, `DebtDocumentModal.tsx`, `DeleteModal.tsx`, `DebtBillsPage.tsx`, `DeudasPage.tsx`, `DebtCalendar.tsx`, `DebtAnalysis.tsx`, `api/index.ts`, `types/index.ts`, `utils/pdfFile.ts`, i18n.
 - **Externas**: ninguna nueva. Solo stdlib de Go y APIs nativas del navegador (`File`, `FormData`, `DragEvent`).
 
 ### 4.6 Manejo de errores y estados parciales
@@ -462,14 +479,16 @@ file: <PDF obligatorio>
 - [ ] **CA-005**: Se rechaza con mensaje claro cualquier documento que no sea PDF, esté vacío o supere 10 MB; en esos casos la cuota no cambia de estado y no queda ningún archivo final ni temporal.
 - [ ] **CA-006**: `GET /api/debt-bills/{id}/invoice` y `GET /api/debt-bills/{id}/receipt` devuelven el PDF correcto con `Content-Type: application/pdf`; los iconos y opciones del menú abren el documento correspondiente en una pestaña nueva.
 - [ ] **CA-007**: Los iconos de factura (`bill`) y comprobante (`pdf`) aparecen por separado en el detalle de la deuda, el calendario (desktop y móvil) y el análisis (búsqueda y pagadas por adelantado). La tarjeta de deuda muestra un indicador si `has_documents=true`.
-- [ ] **CA-008**: El menú de 3 puntos muestra **"Factura"** solo si `has_invoice=true` y **"Comprobante"** solo si `has_receipt=true`; para cuotas pagadas muestra además "Adjuntar/Reemplazar factura" y "Adjuntar/Reemplazar comprobante".
+- [ ] **CA-008**: El menú de 3 puntos de una cuota pagada muestra únicamente **"Factura"** y **"Comprobante"**; cada opción abre el modal del documento correspondiente. No existen textos "Adjuntar", "Reemplazar", "Ver factura" ni "Ver comprobante" en el menú.
 - [ ] **CA-009**: Re-subir una factura reemplaza solo `invoice_{n}.pdf` y no afecta el comprobante; re-subir un comprobante reemplaza solo `receipt_{n}.pdf`.
 - [ ] **CA-010**: El endpoint de pago sigue aceptando JSON (sin documentos) y devuelve ambos flags en `false`.
 - [ ] **CA-011**: `documents/` está dentro de `DATA_DIR` (`/app/data`), sobrevive a un reinicio del contenedor y no requiere un volumen nuevo.
 - [ ] **CA-012**: No se agregó ninguna migración ni columna a `debt_bills`; `PRAGMA table_info(debt_bills)` no cambia.
 - [ ] **CA-013**: Los archivos se sirven solo por los endpoints autenticados; no hay listado estático ni acceso directo por URL a `documents/`.
 - [ ] **CA-014**: Si se borra un archivo manualmente del volumen, solo su flag pasa a `false` y su endpoint devuelve 404; el otro documento sigue visible y descargable.
-- [ ] **CA-015**: (P1) Se puede adjuntar o reemplazar la factura y el comprobante de una cuota ya pagada desde el menú de 3 puntos.
+- [ ] **CA-015**: El modal de documento permite subir el PDF si no existe; si existe, muestra los botones "Abrir" y "Remover". "Remover" abre el modal de confirmación que exige escribir "confirmo" y, al confirmar, elimina solo ese archivo.
+- [ ] **CA-018**: `DELETE /api/debt-bills/{id}/invoice` y `DELETE /api/debt-bills/{id}/receipt` remueven solo el archivo indicado, actualizan sus flags y dejan intacto el otro documento.
+- [ ] **CA-019**: Remover un documento inexistente devuelve `404`; remover en una cuota pendiente devuelve `400 not_paid`.
 - [ ] **CA-016**: Con `?download=1`, ambos endpoints devuelven `Content-Disposition: attachment`.
 - [ ] **CA-017**: En el detalle de deuda, el menú de 3 puntos de cada cuota queda visible y clickeable sin superposición con el badge de estado ("Pendiente"/"Pagada") ni con el monto, en móvil y desktop.
 - [ ] **CA-DARK**: Las dos áreas de upload, los nombres de archivo y los textos de ayuda usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode.
@@ -493,6 +512,7 @@ file: <PDF obligatorio>
   - Si un documento es inválido, no se paga y no queda ningún archivo (limpieza de temporales del otro).
   - `SaveDocument` solo permite cuotas pagadas, crea directorios y devuelve el flag correcto.
   - Reemplazo de un documento no afecta al otro.
+  - `DELETE` remueve solo el documento indicado, actualiza flags y devuelve `ErrDocumentNotFound` si no existe.
   - `DocumentPath` y los flags reflejan la ausencia de un archivo.
   - `List` y `GetByID` calculan `has_documents`.
 - **Integration tests** (`internal/api/debt_receipt_test.go`):
@@ -501,11 +521,12 @@ file: <PDF obligatorio>
   - `GET /invoice` y `GET /receipt` devuelven 200, `application/pdf`, `nosniff` y los bytes correctos.
   - `GET` sin archivo devuelve 404 para cada tipo.
   - `POST /invoice` y `POST /receipt` adjuntan a una cuota pagada y rechazan cuotas pendientes.
+  - `DELETE /invoice` y `DELETE /receipt` remueven solo el documento indicado; repetir el delete devuelve 404.
   - Usar `t.TempDir()` como `DATA_DIR` y PDFs sintéticos generados en el test (nunca archivos reales).
 - **Frontend**:
   - `npm run check:ui` (no `<select>` nativo).
   - `npm run build`.
-  - Prueba manual en local: pagar con ambos, solo factura y solo comprobante; ver iconos separados; abrir cada PDF; reemplazar uno; recargar la página.
+  - Prueba manual en local: pagar con ambos, solo factura y solo comprobante; ver iconos separados; abrir cada PDF; abrir el modal Factura/Comprobante; subir si falta; remover con confirmación "confirmo"; recargar la página.
 - **iHost**:
   - Tras el deploy, subir PDFs sintéticos, verificar las rutas con SSH (`/app/data/documents/...`), reiniciar el contenedor y confirmar que los iconos y las descargas siguen funcionando.
   - Verificar que el respaldo del volumen incluya `documents/` (ver REQ-010).
@@ -520,9 +541,9 @@ file: <PDF obligatorio>
 | Fase | Descripción | Estimación | Dependencias |
 |------|-------------|------------|--------------|
 | 1 | Backend: rutas de factura/comprobante, validación PDF, staging atómico, flags y tests unitarios | 0.75 día | Ninguna |
-| 2 | API: multipart con `invoice`/`receipt`, endpoints de descarga y upload, tests de handlers | 0.5 día | Fase 1 |
-| 3 | Frontend: `PdfUploadField`, modal con dos áreas, API client y tipos | 0.5 día | Fase 2 |
-| 4 | Frontend: `DebtDocumentButtons`, menú Factura/Comprobante, tarjeta de deuda e i18n | 0.5 día | Fase 3 |
+| 2 | API: multipart con `invoice`/`receipt`, endpoints GET/POST/DELETE, tests de handlers | 0.5 día | Fase 1 |
+| 3 | Frontend: `PdfUploadField`, modal de pago con dos áreas, API client y tipos | 0.5 día | Fase 2 |
+| 4 | Frontend: `DebtDocumentButtons`, `DebtDocumentModal` con Abrir/Remover, menú Factura/Comprobante, tarjeta de deuda e i18n | 0.5 día | Fase 3 |
 | 5 | Validación local, build, pruebas manuales y documentación de respaldo | 0.25 día | Fases 3-4 |
 
 **Total estimado**: ~2.5 días de desarrollo + pruebas.
@@ -585,3 +606,4 @@ file: <PDF obligatorio>
 | 2026-11-07 | opencode | Implementación inicial con un único comprobante y renombre de `payment_{n}.pdf` a `receipt_{n}.pdf`. |
 | 2026-11-07 | opencode | Cambio de alcance a pedido del usuario: dos documentos independientes por pago, **factura** (`invoice_{n}.pdf`) y **comprobante** (`receipt_{n}.pdf`), con upload, iconos y acciones separadas. |
 | 2026-11-07 | opencode | Fix de UI solicitado en pruebas: la fila de cuota reserva espacio a la derecha (`pr-14`) para que el badge de estado no tape el menú de 3 puntos. |
+| 2026-11-07 | opencode | Cambio de UX a pedido del usuario: el menú solo muestra "Factura" y "Comprobante", que abren un modal con Subir (si falta), Abrir y Remover. Remover exige confirmar escribiendo "confirmo" en un segundo modal. Se agregaron endpoints DELETE. |
