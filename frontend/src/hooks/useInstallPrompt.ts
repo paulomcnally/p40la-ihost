@@ -14,7 +14,7 @@ type InstallSubscriber = (state: InstallState) => void
 
 // El evento beforeinstallprompt puede dispararse antes de que el usuario abra
 // Settings. Se captura a nivel de módulo para no perderlo y se notifica a los
-// componentes suscriptos (SPEC-129, REQ-009).
+// componentes suscriptos (SPEC-130, REQ-009).
 let installState: InstallState = { prompt: null, installed: false }
 const subscribers = new Set<InstallSubscriber>()
 
@@ -53,7 +53,7 @@ function detectStandalone(): boolean {
 }
 
 /**
- * SPEC-129: encapsula el ciclo de vida de la instalación PWA.
+ * SPEC-130: encapsula el ciclo de vida de la instalación PWA.
  * Android/Chrome expone beforeinstallprompt; iOS no tiene API y se resuelve
  * con instrucciones manuales.
  */

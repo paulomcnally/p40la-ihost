@@ -48,7 +48,7 @@ button {
   touch-action: manipulation;
 }
 
-/* SPEC-129: safe areas para la PWA en iOS standalone (viewport-fit=cover). */
+/* SPEC-130: safe areas para la PWA en iOS standalone (viewport-fit=cover). */
 .safe-top {
   padding-top: env(safe-area-inset-top);
 }

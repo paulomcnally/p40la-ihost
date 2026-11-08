@@ -28,7 +28,7 @@ func isSecureRequest(r *http.Request) bool {
 
 // setSessionCookie escribe la cookie de sesión marcándola Secure cuando la
 // request original fue HTTPS. En HTTP LAN se mantiene no-Secure para no romper
-// el acceso de respaldo (SPEC-129, REQ-011).
+// el acceso de respaldo (SPEC-130, REQ-011).
 func setSessionCookie(w http.ResponseWriter, r *http.Request, cookie *http.Cookie) {
 	if cookie == nil {
 		return

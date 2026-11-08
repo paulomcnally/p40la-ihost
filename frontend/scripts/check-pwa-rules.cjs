@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 //
-// SPEC-129: guardrail de PWA.
+// SPEC-130: guardrail de PWA.
 //
 // Valida que el manifest, los íconos y el service worker existan y cumplan
 // los requisitos mínimos de instalabilidad de Chrome Android. Se ejecuta en
@@ -107,7 +107,7 @@ if (!fs.existsSync(indexPath)) {
 if (errors.length > 0) {
   console.error('\n[check-pwa-rules] ERROR: la PWA no cumple los requisitos mínimos.\n')
   for (const error of errors) console.error(`  - ${error}`)
-  console.error('\nVer SPEC-129 y docs/ihost.md.\n')
+  console.error('\nVer SPEC-130 y docs/ihost.md.\n')
   process.exit(1)
 }
 
