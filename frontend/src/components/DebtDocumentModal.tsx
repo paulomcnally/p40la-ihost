@@ -18,11 +18,12 @@ export default function DebtDocumentModal({ bill, kind, onClose, onChanged }: De
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const [file, setFile] = useState<File | null>(null)
+  const [uploaded, setUploaded] = useState(false)
   const [saving, setSaving] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
 
   const isInvoice = kind === 'invoice'
-  const hasDocument = isInvoice ? Boolean(bill.has_invoice) : Boolean(bill.has_receipt)
+  const hasDocument = uploaded || (isInvoice ? Boolean(bill.has_invoice) : Boolean(bill.has_receipt))
   const title = isInvoice ? t('deudas.invoice') : t('deudas.receipt')
   const url = isInvoice ? api.debts.invoiceUrl(bill.id) : api.debts.receiptUrl(bill.id)
   const fileName = `${kind}_${bill.installment_number}.pdf`
@@ -44,8 +45,10 @@ export default function DebtDocumentModal({ bill, kind, onClose, onChanged }: De
         await api.debts.uploadReceipt(bill.id, file)
       }
       showToast(t(isInvoice ? 'deudas.invoice_uploaded' : 'deudas.receipt_uploaded'), 'success')
+      // Mantener el modal abierto y pasar al estado Abrir/Remover.
+      setUploaded(true)
+      setFile(null)
       onChanged()
-      onClose()
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message || t('errors.generic')
       showToast(message, 'error')
