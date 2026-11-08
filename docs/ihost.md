@@ -146,10 +146,12 @@ En `http://ihost.local` → **Docker → Volume**:
 
 > **Seguridad**: Filebrowser viene con `admin`/`admin`. Cambiá la contraseña desde su configuración o detené el add-on después de editar `serve.json`. No lo expongas a Internet; solo debe ser accesible en la LAN.
 >
-> **Si Filebrowser no carga o no muestra nada**:
+> **Si Filebrowser no carga, no muestra nada o dice `Forbidden`**:
 > - Verificá que el contenedor esté **running** y que el puerto host (`8081`) no esté ocupado por otro add-on.
 > - El volumen de configuración debe estar montado en **`/srv`**, no en `/srv/algo`.
-> - No montes el volumen de estado `tailscale` (`/data/tailscalState`) en Filebrowser: es de Tailscale y puede tener permisos restringidos.
+> - No montes el volumen de estado `tailscale` (`/data/tailscalState`) en Filebrowser: es de Tailscale y suele ser propiedad de root con permisos restringidos (causa `Forbidden`).
+> - Filebrowser corre como UID/GID `1000`; si el volumen nuevo es de root y no te deja escribir, cambiá temporalmente `UID=0` y `GID=0` en las variables de Filebrowser, o creá el archivo con el add-on SSH.
+> - Si la **UI del iHost** dice `Forbidden` al guardar los volúmenes, seguramente el contenedor está corriendo: detenelo y volvé a ejecutarlo. Si sigue, eliminá el contenedor Filebrowser (no los volúmenes) y recrealo con el mapeo correcto.
 > - Revisá los **Logs** del add-on Filebrowser desde la UI de Docker. Si dice error de base de datos, agregá un volumen `filebrowser-data` → `/database`.
 > - Si la página abre pero el login `admin`/`admin` falla, revisá los logs o recreá el volumen `filebrowser-data`.
 >
