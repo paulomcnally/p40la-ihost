@@ -101,7 +101,7 @@ En `http://ihost.local` → **Docker → Volume**:
 1. Docker → **+** → buscá `filebrowser/filebrowser` → **Add**.
 2. **Run** con esta configuración:
    - **Network**: `bridge`
-   - **Port**: host `8081` → container `80` (elegí un puerto libre; no uses el 80 del iHost)
+   - **Port**: host `8083` → container `80` (elegí un puerto libre; no uses el 80 del iHost. Si `8081` está ocupado por otro add-on, como `presence-ihost`, usá `8083`.)
    - **Volumes**:
      | Volume | Container path | Para qué |
      |---|---|---|
@@ -114,7 +114,7 @@ En `http://ihost.local` → **Docker → Volume**:
    > Si en la UI ves una fila `/srv` **sin nombre de volumen**, es un volumen anónimo vacío: seleccioná explícitamente `tailscale-config` en esa fila. Si ves `tailscale:/data/tailscalState` dentro de Filebrowser, está mal: ese es el estado de Tailscale, no la configuración.
    >
    > Filebrowser corre como UID/GID `1000`; si el volumen nuevo es propiedad de root y no te deja crear `serve.json`, cambiá temporalmente `UID=0` y `GID=0` en las variables de Filebrowser, o creá el archivo con el add-on SSH.
-3. Abrí `http://ihost.local:8081` (usuario/password por defecto: `admin` / `admin`). Deberías ver la raíz del volumen vacía o con `serve.json`.
+3. Abrí `http://ihost.local:8083`. Si la base de Filebrowser es nueva, puede generar una **password aleatoria** para `admin`; mirá los **Logs** del add-on. Si ya tenías una base de Filebrowser, usá tu password. Deberías ver la raíz del volumen `tailscale-config` vacía o con `serve.json`.
 4. Creá el archivo `serve.json` con este contenido (también está en `deploy/tailscale/serve.json`):
 
    ```json
