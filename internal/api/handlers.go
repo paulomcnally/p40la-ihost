@@ -23,6 +23,9 @@ type Handler struct {
 	documentRecognition *DocumentRecognitionHandlers
 	auto                *AutoHandlers
 	autoService         *AutoServiceHandlers
+	autoMaintenance     *AutoMaintenanceHandlers
+	autoInspection      *AutoInspectionHandlers
+	autoAttachment      *AutoAttachmentHandlers
 	serviceCycle        *ServiceCycleHandlers
 	institutionCategory *InstitutionCategoryHandlers
 	notification        *NotificationHandlers
@@ -56,6 +59,9 @@ func NewHandler(
 	documentRecognition *DocumentRecognitionHandlers,
 	auto *AutoHandlers,
 	autoService *AutoServiceHandlers,
+	autoMaintenance *AutoMaintenanceHandlers,
+	autoInspection *AutoInspectionHandlers,
+	autoAttachment *AutoAttachmentHandlers,
 	serviceCycle *ServiceCycleHandlers,
 	institutionCategory *InstitutionCategoryHandlers,
 	notification *NotificationHandlers,
@@ -87,6 +93,9 @@ func NewHandler(
 		documentRecognition: documentRecognition,
 		auto:                auto,
 		autoService:         autoService,
+		autoMaintenance:     autoMaintenance,
+		autoInspection:      autoInspection,
+		autoAttachment:      autoAttachment,
 		serviceCycle:        serviceCycle,
 		institutionCategory: institutionCategory,
 		notification:        notification,

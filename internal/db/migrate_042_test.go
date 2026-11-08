@@ -1,108 +1,103 @@
 package db
 
-import (
-	"database/sql"
-	"os"
-	"path/filepath"
-	"testing"
-)
+import "testing"
 
-func TestMigrate042DocumentRecognitions(t *testing.T) {
-	dir, err := os.MkdirTemp("", "mig042")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
+func TestMigrate042AutoMaintenanceInspection(t *testing.T) {
+	database := openMigrateTest(t, "mig042")
 
-	migrationsDir, err := filepath.Abs("../../migrations")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	dbPath := filepath.Join(dir, "test.db")
-	database, err := sql.Open("sqlite", "file:"+dbPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer database.Close()
-	if err := database.Ping(); err != nil {
-		t.Fatal(err)
-	}
-	if err := Migrate(database, migrationsDir); err != nil {
-		t.Fatal(err)
-	}
-
-	var tableCount int
-	if err := database.QueryRow(
-		"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='document_recognitions'",
-	).Scan(&tableCount); err != nil {
-		t.Fatal(err)
-	}
-	if tableCount != 1 {
-		t.Fatalf("tabla document_recognitions no encontrada, count=%d", tableCount)
-	}
-
-	for _, index := range []string{
-		"idx_document_recognitions_status",
-		"idx_document_recognitions_reference",
-		"idx_document_recognitions_entity",
+	// Deshacer 0044 y 0043 para volver al esquema que crea 0042.
+	for _, name := range []string{
+		"0044_auto_maintenance_items.down.sql",
+		"0043_auto_maintenance_institution_reference.down.sql",
 	} {
-		var count int
-		if err := database.QueryRow(
-			"SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name=?", index,
-		).Scan(&count); err != nil {
+		data, err := readMigrationFile(t, name)
+		if err != nil {
 			t.Fatal(err)
 		}
-		if count != 1 {
-			t.Errorf("índice %s no encontrado", index)
+		if _, err := database.Exec(string(data)); err != nil {
+			t.Fatalf("ejecutar %s: %v", name, err)
 		}
 	}
 
-	if _, err := database.Exec(`
-		INSERT INTO document_recognitions (document_hash, recognizer_id, document_type, status, reference)
-		VALUES ('demo-hash-001', 'bank_receipt_v1', 'nota_debito', 'recognized', '902000001')
-	`); err != nil {
-		t.Fatalf("insertar reconocimiento: %v", err)
+	assertTableColumns(t, database, "auto_maintenances", []string{
+		"id", "auto_id", "performed_at", "mileage", "institution_id",
+		"workshop_name", "description", "labor_cost", "supplies_cost",
+		"currency_id", "created_at", "updated_at",
+	})
+	assertTableColumns(t, database, "auto_inspections", []string{
+		"id", "auto_id", "performed_at", "inspection_year", "institution_id",
+		"result", "notes", "created_at", "updated_at",
+	})
+	assertTableColumns(t, database, "auto_attachments", []string{
+		"id", "auto_id", "owner_type", "owner_id", "file_name", "size_bytes", "created_at",
+	})
+
+	for _, key := range []string{"workshop", "mechanical_inspection"} {
+		var count int
+		if err := database.QueryRow(
+			"SELECT COUNT(*) FROM institution_categories WHERE key = ?", key,
+		).Scan(&count); err != nil {
+			t.Fatalf("buscar categoría %s: %v", key, err)
+		}
+		if count != 1 {
+			t.Fatalf("categoría %s: esperado 1, got %d", key, count)
+		}
 	}
 
-	if _, err := database.Exec(`
-		INSERT INTO document_recognitions (document_hash, recognizer_id, document_type, status, reference)
-		VALUES ('demo-hash-001', 'bank_receipt_v1', 'nota_debito', 'recognized', '902000002')
-	`); err == nil {
-		t.Fatal("el hash duplicado debería fallar por restricción única")
+	// Una institución asociada a la categoría debe sobrevivir al down sin FK rota.
+	var workshopID int64
+	if err := database.QueryRow("SELECT id FROM institution_categories WHERE key = 'workshop'").Scan(&workshopID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(
+		"INSERT INTO institutions (name, category_id) VALUES ('Taller Demo', ?)", workshopID,
+	); err != nil {
+		t.Fatalf("insertar institución: %v", err)
 	}
 
-	if _, err := database.Exec(`
-		INSERT INTO document_recognitions (document_hash, recognizer_id, document_type, status)
-		VALUES ('demo-hash-002', 'bank_receipt_v1', 'nota_debito', 'inventado')
-	`); err == nil {
-		t.Fatal("un estado inválido debería fallar por CHECK")
-	}
-
-	// Down: la tabla se elimina y no se tocan las tablas de deudas.
-	down, err := os.ReadFile(filepath.Join(migrationsDir, "0042_create_document_recognitions.down.sql"))
+	down, err := readMigrationFile(t, "0042_create_auto_maintenance_inspection.down.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := database.Exec(string(down)); err != nil {
-		t.Fatalf("down migration falló: %v", err)
-	}
-	if err := database.QueryRow(
-		"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='document_recognitions'",
-	).Scan(&tableCount); err != nil {
-		t.Fatal(err)
-	}
-	if tableCount != 0 {
-		t.Fatalf("la tabla document_recognitions debería haberse eliminado, count=%d", tableCount)
+		t.Fatalf("ejecutar migración 0042 down: %v", err)
 	}
 
-	var debtBillsCount int
-	if err := database.QueryRow(
-		"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='debt_bills'",
-	).Scan(&debtBillsCount); err != nil {
+	assertTableRemoved(t, database, "auto_maintenances")
+	assertTableRemoved(t, database, "auto_inspections")
+	assertTableRemoved(t, database, "auto_attachments")
+
+	var categoryID *int64
+	if err := database.QueryRow("SELECT category_id FROM institutions WHERE name = 'Taller Demo'").Scan(&categoryID); err != nil {
 		t.Fatal(err)
 	}
-	if debtBillsCount != 1 {
-		t.Fatalf("la tabla debt_bills no debería verse afectada, count=%d", debtBillsCount)
+	if categoryID != nil {
+		t.Fatalf("la categoría de la institución debería quedar NULL, got %d", *categoryID)
+	}
+
+	up, err := readMigrationFile(t, "0042_create_auto_maintenance_inspection.up.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(string(up)); err != nil {
+		t.Fatalf("re-ejecutar migración 0042 up: %v", err)
+	}
+	// Idempotencia: un segundo pase tampoco debe fallar.
+	if _, err := database.Exec(string(up)); err != nil {
+		t.Fatalf("segundo pase de la migración 0042: %v", err)
+	}
+
+	// Restaurar el esquema final.
+	for _, name := range []string{
+		"0043_auto_maintenance_institution_reference.up.sql",
+		"0044_auto_maintenance_items.up.sql",
+	} {
+		data, err := readMigrationFile(t, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := database.Exec(string(data)); err != nil {
+			t.Fatalf("ejecutar %s: %v", name, err)
+		}
 	}
 }

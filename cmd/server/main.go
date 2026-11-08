@@ -77,6 +77,9 @@ func main() {
 	institutionStorage := storage.NewInstitutionStorage(database)
 	autoStorage := storage.NewAutoStorage(database)
 	autoServiceStorage := storage.NewAutoServiceStorage(database)
+	autoMaintenanceStorage := storage.NewAutoMaintenanceStorage(database)
+	autoInspectionStorage := storage.NewAutoInspectionStorage(database)
+	autoAttachmentStorage := storage.NewAutoAttachmentStorage(database)
 	institutionCategoryStorage := storage.NewInstitutionCategoryStorage(database)
 	notificationStorage := storage.NewNotificationStorage(database)
 	childStorage := storage.NewChildStorage(database)
@@ -120,6 +123,10 @@ func main() {
 	documentService.SetBillHistoryStorage(billHistoryStorage)
 	autoService := services.NewAutoService(autoStorage)
 	autoInsuranceService := services.NewAutoServiceService(autoServiceStorage)
+	autoAttachmentService := services.NewAutoAttachmentService(autoAttachmentStorage, autoStorage, cfg.DataDir)
+	autoMaintenanceService := services.NewAutoMaintenanceService(autoMaintenanceStorage, autoStorage, institutionStorage, currencyStorage, autoAttachmentService)
+	autoInspectionService := services.NewAutoInspectionService(autoInspectionStorage, autoStorage, institutionStorage, autoAttachmentService)
+	autoService.SetFilesCleaner(autoAttachmentService)
 	serviceCycleService := services.NewServiceCycleService(serviceStorage, serviceCycleStorage)
 	institutionCategoryService := services.NewInstitutionCategoryService(institutionCategoryStorage)
 	notificationService := services.NewNotificationService(notificationStorage)
@@ -205,6 +212,9 @@ func main() {
 	documentRecognitionHandlers := api.NewDocumentRecognitionHandlers(documentRecognitionService)
 	autoHandlers := api.NewAutoHandlers(autoService)
 	autoServiceHandlers := api.NewAutoServiceHandlers(autoInsuranceService)
+	autoMaintenanceHandlers := api.NewAutoMaintenanceHandlers(autoMaintenanceService)
+	autoInspectionHandlers := api.NewAutoInspectionHandlers(autoInspectionService)
+	autoAttachmentHandlers := api.NewAutoAttachmentHandlers(autoAttachmentService)
 	serviceCycleHandlers := api.NewServiceCycleHandlers(serviceCycleService)
 	institutionCategoryHandlers := api.NewInstitutionCategoryHandlers(institutionCategoryService)
 	notificationHandlers := api.NewNotificationHandlers(notificationService)
@@ -222,7 +232,7 @@ func main() {
 	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService, transferService)
 	automationHandlers := api.NewAutomationHandlers(automationService, authService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, documentRecognitionHandlers, autoHandlers, autoServiceHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, pensionImportHandlers, debtHandlers, webhookHandlers, budgetHandlers, automationHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, documentRecognitionHandlers, autoHandlers, autoServiceHandlers, autoMaintenanceHandlers, autoInspectionHandlers, autoAttachmentHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, pensionImportHandlers, debtHandlers, webhookHandlers, budgetHandlers, automationHandlers)
 
 	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
 	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {
