@@ -36,21 +36,26 @@ function postFormData<T>(path: string, file: File): Promise<T | null> {
   })
 }
 
-function postMultipart<T>(path: string, form: FormData): Promise<T | null> {
-  return fetch(path, { method: 'POST', body: form }).then(async (res) => {
+function multipartRequest<T>(path: string, form: FormData, method: 'POST' | 'PUT' = 'POST'): Promise<T | null> {
+  return fetch(path, { method, body: form }).then(async (res) => {
     if (res.status === 401) {
       window.location.href = '/login'
       return null
     }
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      const err = new Error(data.message || 'Request failed') as Error & { status?: number; validation?: unknown }
+      const err = new Error(data.message || 'Request failed') as Error & { status?: number; validation?: unknown; code?: string }
       err.status = res.status
       err.validation = data.validation
+      err.code = data.error
       throw err
     }
     return data
   })
+}
+
+function postMultipart<T>(path: string, form: FormData): Promise<T | null> {
+  return multipartRequest<T>(path, form, 'POST')
 }
 
 function periodParams(filters?: { year?: number; month?: number; id?: number }): string {
@@ -356,8 +361,28 @@ salaries: {
     delete: (id: number) => del(`/api/debts/${id}`),
     listBills: (debtId: number) => get<DebtBill[]>(`/api/debts/${debtId}/bills`),
     billsByMonth: (year: number, month: number) => get<DebtBill[]>(`/api/debt-bills?year=${year}&month=${month}`),
-    payBill: (id: number, body: { paid_at: string; payment_reference?: string }) =>
-      put<DebtBill>(`/api/debt-bills/${id}/pay`, body),
+    payBill: (id: number, body: { paid_at: string; payment_reference?: string }, invoice?: File, receipt?: File) => {
+      const form = new FormData()
+      form.append('paid_at', body.paid_at)
+      if (body.payment_reference) form.append('payment_reference', body.payment_reference)
+      if (invoice) form.append('invoice', invoice)
+      if (receipt) form.append('receipt', receipt)
+      return multipartRequest<DebtBill>(`/api/debt-bills/${id}/pay`, form, 'PUT')
+    },
+    invoiceUrl: (id: number) => `/api/debt-bills/${id}/invoice`,
+    receiptUrl: (id: number) => `/api/debt-bills/${id}/receipt`,
+    uploadInvoice: (id: number, file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return multipartRequest<DebtBill>(`/api/debt-bills/${id}/invoice`, form, 'POST')
+    },
+    uploadReceipt: (id: number, file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return multipartRequest<DebtBill>(`/api/debt-bills/${id}/receipt`, form, 'POST')
+    },
+    removeInvoice: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/invoice`),
+    removeReceipt: (id: number) => del<DebtBill>(`/api/debt-bills/${id}/receipt`),
   },
   budget: {
     monthView: (year: number, month: number) => get<BudgetMonthView>(`/api/budget/months/${year}/${month}`),

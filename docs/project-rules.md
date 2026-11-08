@@ -121,6 +121,17 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - El build de `frontend/` ejecuta `frontend/scripts/check-ui-rules.cjs` **antes** de compilar y falla si detecta un `<select>` nativo. También se puede correr aislado con `npm run check:ui`.
 - Precedentes: SPEC-004 CA-022 (dropdowns custom, no el del OS), SPEC-111 CA-018 (frecuencia con `Select`), SPEC-118 (selector de color de autos y guardrail de build).
 
+### 4.7 Modales: cierre explícito y overlay bloqueante (obligatorio)
+
+- **Ningún modal se cierra al hacer click fuera del contenido.** El overlay NO debe tener `onClick` de cierre; el modal solo se cierra con los botones **Cancelar/Cerrar/Cancel** o la **X**.
+- **El overlay debe bloquear la interacción con la página de fondo**, incluidos los menús de 3 puntos (`z-50`) y cualquier otro control. Usar `z-[60]` o superior para el overlay del modal.
+- Los **modales de confirmación** (por ejemplo `DeleteModal`) deben quedar por encima del modal que los abre (`z-[70]` o superior).
+- **Todo modal debe tener siempre una acción visible de cierre** (Cancelar/Cerrar o X), incluso los selectores y los modales de solo lectura.
+- En el **modal de confirmación** (`DeleteModal`), el input de texto debe recibir **foco automáticamente** al abrirse, para que el usuario pueda escribir `confirmo` sin tocar el campo.
+- En el **modal de confirmación** (`DeleteModal`), escribir exactamente `confirmo` y presionar **Enter** debe ejecutar la acción de confirmación, igual que tocar el botón. Si el texto no es válido, Enter no hace nada.
+- Al crear o modificar un modal, verificar manualmente que el click fuera no cierra ni interactúa con el fondo, y que Enter confirma en el modal de confirmación cuando corresponde.
+- Precedente: SPEC-122 (modal de factura/comprobante y confirmación de borrado).
+
 ---
 
 ## 5. Convenciones de Código Go

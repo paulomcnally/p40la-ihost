@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func testPDF(body string) []byte {
+func contractTestPDF(body string) []byte {
 	return []byte("%PDF-1.4\n" + body + "\n%%EOF\n")
 }
 
@@ -56,7 +56,7 @@ func TestContractStoreSaveReplaceAndDelete(t *testing.T) {
 		t.Fatalf("Path sin archivo = %v, want ErrContractNotFound", err)
 	}
 
-	first := testPDF("primera versión")
+	first := contractTestPDF("primera versión")
 	if err := store.Save(ContractOwnerDebt, 1, "Contrato Original.PDF", bytes.NewReader(first)); err != nil {
 		t.Fatalf("Save inicial: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestContractStoreSaveReplaceAndDelete(t *testing.T) {
 		t.Error("el contenido guardado no coincide")
 	}
 
-	second := testPDF("segunda versión")
+	second := contractTestPDF("segunda versión")
 	if err := store.Save(ContractOwnerDebt, 1, "contrato.pdf", bytes.NewReader(second)); err != nil {
 		t.Fatalf("Save reemplazo: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestContractStoreRejectsInvalidFiles(t *testing.T) {
 		wantErr  error
 	}{
 		{name: "vacío", fileName: "contract.pdf", data: nil, wantErr: ErrContractInvalid},
-		{name: "extensión incorrecta", fileName: "contract.txt", data: testPDF("x"), wantErr: ErrContractInvalid},
+		{name: "extensión incorrecta", fileName: "contract.txt", data: contractTestPDF("x"), wantErr: ErrContractInvalid},
 		{name: "firma incorrecta", fileName: "contract.pdf", data: []byte("no es un pdf"), wantErr: ErrContractInvalid},
 		{name: "demasiado grande", fileName: "contract.pdf", data: append([]byte("%PDF-"), bytes.Repeat([]byte("A"), MaxContractSize)...), wantErr: ErrContractTooLarge},
 	}

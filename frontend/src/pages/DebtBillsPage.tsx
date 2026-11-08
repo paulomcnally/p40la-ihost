@@ -6,6 +6,8 @@ import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
+import DebtDocumentButtons from '../components/DebtDocumentButtons'
+import DebtDocumentModal from '../components/DebtDocumentModal'
 import CardMenu, { type CardMenuOption } from '../components/CardMenu'
 import CreateMenu from '../components/CreateMenu'
 import ContractModal from '../components/ContractModal'
@@ -31,11 +33,12 @@ export default function DebtBillsPage() {
   const [bills, setBills] = useState<DebtBill[]>([])
   const [payTarget, setPayTarget] = useState<DebtBill | null>(null)
   const [contractOpen, setContractOpen] = useState(false)
+  const [documentModal, setDocumentModal] = useState<{ bill: DebtBill; kind: 'invoice' | 'receipt' } | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!id) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     const [debtData, billList] = await Promise.all([
       api.debts.get(Number(id)),
       api.debts.listBills(Number(id)),
@@ -105,6 +108,18 @@ export default function DebtBillsPage() {
     const options: CardMenuOption[] = []
     if (bill.status === 'pending') {
       options.push({ label: t('deudas.pay'), icon: 'credit', onClick: () => setPayTarget(bill) })
+    }
+    if (bill.status === 'paid') {
+      options.push({
+        label: t('deudas.invoice'),
+        icon: 'bill',
+        onClick: () => setDocumentModal({ bill, kind: 'invoice' }),
+      })
+      options.push({
+        label: t('deudas.receipt'),
+        icon: 'pdf',
+        onClick: () => setDocumentModal({ bill, kind: 'receipt' }),
+      })
     }
     return options
   }
@@ -226,7 +241,7 @@ export default function DebtBillsPage() {
           {filteredBills.map((bill) => (
             <div
               key={bill.id}
-              className="bg-card rounded-ios shadow-ios p-4 relative flex items-center justify-between gap-3"
+              className="bg-card rounded-ios shadow-ios p-4 pr-14 relative flex items-center justify-between gap-3"
             >
               <CardMenu options={billMenuOptions(bill)} />
               <div className="min-w-0">
@@ -241,6 +256,7 @@ export default function DebtBillsPage() {
                 )}
               </div>
               <div className="flex items-center gap-3 shrink-0">
+                <DebtDocumentButtons bill={bill} />
                 <p className="text-base font-semibold">
                   {formatMoney(bill.amount, currency?.symbol || bill.currency_code)}
                 </p>
@@ -277,7 +293,16 @@ export default function DebtBillsPage() {
           entityName={debt.description}
           hasContract={!!debt.has_contract}
           onClose={() => setContractOpen(false)}
-          onChanged={load}
+          onChanged={() => load(true)}
+        />
+      )}
+
+      {documentModal && (
+        <DebtDocumentModal
+          bill={documentModal.bill}
+          kind={documentModal.kind}
+          onClose={() => setDocumentModal(null)}
+          onChanged={() => load(true)}
         />
       )}
     </div>

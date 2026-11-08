@@ -18,9 +18,13 @@ type DebtBill struct {
 	Status            string     `json:"status"`
 	PaidAt            *time.Time `json:"paid_at,omitempty"`
 	PaymentReference  string     `json:"payment_reference,omitempty"`
-	DeletedAt         *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt         time.Time  `json:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at"`
+	// HasInvoice y HasReceipt indican si existen los PDFs en disco (SPEC-122).
+	// No se persisten: se calculan desde {DATA_DIR}/documents/{debt_id}/.
+	HasInvoice bool       `json:"has_invoice"`
+	HasReceipt bool       `json:"has_receipt"`
+	DeletedAt  *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }
 
 // PendingDebtDetail detalla una cuota pendiente de una deuda con contexto
