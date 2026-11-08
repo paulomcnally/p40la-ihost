@@ -63,7 +63,7 @@ export default function CardMenu({ options }: { options: CardMenuOption[] }) {
         createPortal(
           <div
             ref={menuRef}
-            style={{ position: 'fixed', top: pos.top, left: pos.right, zIndex: 9999 }}
+            style={{ position: 'fixed', top: pos.top, left: pos.right, zIndex: 50 }}
             className="bg-card border border-border rounded-ios-sm shadow-ios-lg min-w-40 overflow-hidden"
           >
             {options.map((opt, i) => (

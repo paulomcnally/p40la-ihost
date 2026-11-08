@@ -140,7 +140,7 @@ Cuando el usuario menciona que una spec cambió de estado:
 
 - **Sin datos privados**: las specs NUNCA incluyen PII, secretos, DBs, PDFs ni exports de producción. Los ejemplos usan datos sintéticos (`demo-account-001`, `demo@example.com`, `demo-api-key`). Ver `docs/project-rules.md` §8.
 - **Si la spec toca formularios o selectores**, DEBE exigir el componente `Select` (`frontend/src/components/Select.tsx`) y prohibir `<select>` nativo (SPEC-118). El build falla con `frontend/scripts/check-ui-rules.cjs` si se agrega uno.
-- **Si la spec crea o modifica modales**, DEBE exigir que el click fuera no los cierre, que el overlay bloquee la interacción con el fondo, que el cierre sea solo con Cancelar/Cerrar o la X, y que el modal de confirmación enfoque el input al abrirse y acepte **Enter** cuando el texto `confirmo` es válido (SPEC-122, `docs/project-rules.md` §4.7).
+- **Si la spec crea o modifica modales**, DEBE exigir que el click fuera no los cierre, que el overlay bloquee la interacción con el fondo, que el cierre sea solo con Cancelar/Cerrar/Listo o la X (visible en todos los estados, incluidos `loading`/`saving`), que se respete la escala de capas (menús `z-50`, modal base `z-[60]`, anidado `z-[70]`, confirmación sobre anidado `z-[80]`, `Select` `z-[90]`, toasts `z-[100]`) y que **todo modal de confirmación por palabra** (no solo `DeleteModal` con `confirmo`) enfoque el input al abrirse y acepte **Enter** cuando la palabra es válida y la acción está habilitada. El drawer del sidebar móvil no es un modal y conserva su cierre por click fuera (SPEC-122, SPEC-126, `docs/project-rules.md` §4.7).
 
 Cada archivo de spec DEBE incluir:
 
