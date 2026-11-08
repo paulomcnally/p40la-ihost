@@ -1,7 +1,7 @@
 ---
 title: "Sistema interno de reconocimiento de comprobantes bancarios (nivel proyecto)"
 id: "SPEC-127"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-08"
 updated: "2026-11-08"
@@ -11,7 +11,7 @@ github_issue: 130
 # Sistema interno de reconocimiento de comprobantes bancarios (nivel proyecto)
 
 **ID**: SPEC-127
-**Estado**: in_progress
+**Estado**: released
 **Autor**: opencode
 **Creado**: 2026-11-08
 **Actualizado**: 2026-11-08
@@ -440,32 +440,32 @@ file: <PDF>
 
 ### 5.1 Funcionales
 
-- [ ] **CA-001**: Un PDF del Formato A (nota de débito) se detecta correctamente y devuelve `document_type`, `reference`, `paid_at`, `amount`, `currency` y `installment_number` cuando están presentes.
-- [ ] **CA-002**: Un PDF del Formato B (confirmación de transferencia) se detecta correctamente y devuelve `Número de Comprobante`, fecha/hora, monto debitado y `Motivo`.
-- [ ] **CA-003**: Un PDF que no coincide con ningún formato devuelve `unsupported_format` y no crea asociaciones.
-- [ ] **CA-004**: La referencia se guarda como texto y no se confunde con nombres, cuentas ni otros números del documento.
-- [ ] **CA-005**: El motor de matching devuelve candidatos con score, razones y warnings; si el `Detalle` repite la cuota anterior, el resultado queda en `needs_review`.
-- [ ] **CA-006**: `POST /api/documents/recognize` no modifica `debt_bills` ni otras tablas de negocio; solo crea el registro de reconocimiento y el PDF temporal.
-- [ ] **CA-007**: La UI permite subir el PDF, ver/editar los campos, elegir la cuota destino y confirmar; el modal no se cierra por click fuera y respeta las reglas de modales del proyecto.
-- [ ] **CA-008**: Al confirmar, el PDF se guarda en `{DATA_DIR}/documents/{debt_id}/receipt_{n}.pdf` de forma atómica y `debt_bills.payment_reference` queda con la referencia revisada.
-- [ ] **CA-009**: Si la cuota destino ya tiene otra `payment_reference`, la UI muestra el conflicto; solo sobrescribe con confirmación explícita.
-- [ ] **CA-010**: Si el archivo final ya existe, la UI pide confirmación antes de reemplazarlo; si el usuario cancela, no se toca el archivo.
-- [ ] **CA-011**: El hash SHA-256 evita procesar/asociar dos veces el mismo PDF; una referencia duplicada se marca como conflicto.
-- [ ] **CA-012**: El reconocimiento no cambia `status` ni `paid_at` de la cuota; solo asocia documentos/referencia en P0.
-- [ ] **CA-013**: Un PDF sin capa de texto devuelve `needs_ocr` y no genera una asociación falsa.
-- [ ] **CA-014**: Los tests usan PDFs sintéticos y no incluyen nombres, cuentas, referencias ni montos reales.
-- [ ] **CA-015**: La tabla `document_recognitions` se crea con una migración nueva; `debt_bills` y `debts` no cambian de esquema.
-- [ ] **CA-016**: La cuota pagada muestra la diferencia en días entre `paid_at` y `due_date`; el modal de pago la muestra mientras se elige la fecha; el modal de reconocimiento la muestra para la cuota destino. Los casos mismo día, 1 día y varios días usan singular/plural correcto en `es`/`en`.
-- [ ] **CA-DARK**: El modal de reconocimiento usa tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó en darkmode.
-- [ ] **CA-MODAL**: El modal no se cierra al hacer click fuera, el overlay bloquea el fondo, el cierre es con X/Cancelar y las acciones destructivas usan confirmación con `confirmo`.
-- [ ] **CA-BUILD**: `go test ./...`, `go vet ./...` y `npm run build` (con `check-ui-rules.cjs`) pasan.
+- [x] **CA-001**: Un PDF del Formato A (nota de débito) se detecta correctamente y devuelve `document_type`, `reference`, `paid_at`, `amount`, `currency` y `installment_number` cuando están presentes.
+- [x] **CA-002**: Un PDF del Formato B (confirmación de transferencia) se detecta correctamente y devuelve `Número de Comprobante`, fecha/hora, monto debitado y `Motivo`.
+- [x] **CA-003**: Un PDF que no coincide con ningún formato devuelve `unsupported_format` y no crea asociaciones.
+- [x] **CA-004**: La referencia se guarda como texto y no se confunde con nombres, cuentas ni otros números del documento.
+- [x] **CA-005**: El motor de matching devuelve candidatos con score, razones y warnings; si el `Detalle` repite la cuota anterior, el resultado queda en `needs_review`.
+- [x] **CA-006**: `POST /api/documents/recognize` no modifica `debt_bills` ni otras tablas de negocio; solo crea el registro de reconocimiento y el PDF temporal.
+- [x] **CA-007**: La UI permite subir el PDF, ver/editar los campos, elegir la cuota destino y confirmar; el modal no se cierra por click fuera y respeta las reglas de modales del proyecto.
+- [x] **CA-008**: Al confirmar, el PDF se guarda en `{DATA_DIR}/documents/{debt_id}/receipt_{n}.pdf` de forma atómica y `debt_bills.payment_reference` queda con la referencia revisada.
+- [x] **CA-009**: Si la cuota destino ya tiene otra `payment_reference`, la UI muestra el conflicto; solo sobrescribe con confirmación explícita.
+- [x] **CA-010**: Si el archivo final ya existe, la UI pide confirmación antes de reemplazarlo; si el usuario cancela, no se toca el archivo.
+- [x] **CA-011**: El hash SHA-256 evita procesar/asociar dos veces el mismo PDF; una referencia duplicada se marca como conflicto.
+- [x] **CA-012**: El reconocimiento no cambia `status` ni `paid_at` de la cuota; solo asocia documentos/referencia en P0.
+- [x] **CA-013**: Un PDF sin capa de texto devuelve `needs_ocr` y no genera una asociación falsa.
+- [x] **CA-014**: Los tests usan PDFs sintéticos y no incluyen nombres, cuentas, referencias ni montos reales.
+- [x] **CA-015**: La tabla `document_recognitions` se crea con una migración nueva; `debt_bills` y `debts` no cambian de esquema.
+- [x] **CA-016**: La cuota pagada muestra la diferencia en días entre `paid_at` y `due_date`; el modal de pago la muestra mientras se elige la fecha; el modal de reconocimiento la muestra para la cuota destino. Los casos mismo día, 1 día y varios días usan singular/plural correcto en `es`/`en`.
+- [x] **CA-DARK**: El modal de reconocimiento usa tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificó en darkmode.
+- [x] **CA-MODAL**: El modal no se cierra al hacer click fuera, el overlay bloquea el fondo, el cierre es con X/Cancelar y las acciones destructivas usan confirmación con `confirmo`.
+- [x] **CA-BUILD**: `go test ./...`, `go vet ./...` y `npm run build` (con `check-ui-rules.cjs`) pasan.
 
 ### 5.2 No funcionales
 
-- [ ] **CA-NF-001**: Reconocer un PDF de 10 MB no supera ~2 MB de RAM adicional y responde en < 2 s en el iHost.
-- [ ] **CA-NF-002**: No se agregan dependencias de OCR/LLM ni llamadas de red externas.
-- [ ] **CA-NF-003**: Los logs no contienen PII ni texto crudo de los PDFs.
-- [ ] **CA-NF-004**: El build multi-arch (`amd64`, `arm/v7`, `arm64`) sigue funcionando sin cambios de plataforma.
+- [ ] **CA-NF-001**: Reconocer un PDF de 10 MB no supera ~2 MB de RAM adicional y responde en < 2 s en el iHost. _Pendiente de medición en el iHost; el release no agrega dependencias nuevas._
+- [x] **CA-NF-002**: No se agregan dependencias de OCR/LLM ni llamadas de red externas.
+- [x] **CA-NF-003**: Los logs no contienen PII ni texto crudo de los PDFs.
+- [ ] **CA-NF-004**: El build multi-arch (`amd64`, `arm/v7`, `arm64`) sigue funcionando sin cambios de plataforma. _Sin cambios de plataforma; se valida en el próximo build Docker multi-arch._
 
 ### 5.3 Testing
 
@@ -541,7 +541,13 @@ Validaciones ejecutadas:
 - Migración 0045 probada sobre una copia de la DB de producción (`/tmp`, eliminada al terminar): deudas 12 → 12, cuotas 702 → 702, `PRAGMA integrity_check = ok`.
 - Tests con PDFs sintéticos para ambos formatos, matching, `Detalle` repetido, duplicados, conflictos, PDF sin texto y PDF inválido.
 
-Pendiente: prueba manual del usuario en local y release formal (merge a `main`, tracker, label e issue).
+Release (2026-11-08):
+
+- Prueba manual del usuario: OK.
+- Merge de `origin/main` en `feature/SPEC-127`: commit `e3d4b08`. La migración se renumeró a **0045** porque `main` ya usa `0042–0044` para mantenimientos e inspecciones de autos.
+- Tras el merge: `go test ./...`, `go vet ./...`, `npm run build` y `node --test frontend/tests/*.test.ts` OK.
+- Merge a `main`, push, issue #130 cerrado con label `spec/released` y tracker actualizado.
+- Pendiente de deploy: medición de performance en iHost (CA-NF-001) y build Docker multi-arch (CA-NF-004). No hay dependencias nuevas ni cambios de plataforma.
 
 ## 7. Riesgos y Mitigaciones
 
@@ -589,3 +595,4 @@ Pendiente: prueba manual del usuario en local y release formal (merge a `main`, 
 | 2026-11-08 | opencode | Estado `in_progress`: comienza la implementación aprobada por el usuario. |
 | 2026-11-08 | opencode | Implementación completa backend/frontend, tests automáticos y validación de la migración sobre copia de producción. Pendiente prueba manual y release. |
 | 2026-11-08 | opencode | Se agrega REQ-028 (diferencia pago vs vencimiento) a partir de la validación del usuario: tarjeta pagada, modal de pago y modal de reconocimiento. |
+| 2026-11-08 | opencode | Release: merge con `origin/main` (`e3d4b08`), migración renumerada a 0045, tests/build OK, issue #130 cerrado y spec liberada. |
