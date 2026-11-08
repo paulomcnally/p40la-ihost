@@ -560,6 +560,7 @@
     },
     "attachments": {
       "title": "PDF receipts",
+      "add_pdf": "Attach PDF",
       "pending": "Pending upload",
       "attach": "Attach PDF",
       "uploading": "Uploading...",
