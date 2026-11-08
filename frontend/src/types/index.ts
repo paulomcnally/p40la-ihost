@@ -892,6 +892,7 @@ export interface AutomationBill {
   source: string
   status: string
   error?: string | null
+  error_code?: string | null
   fetched_at: string
   created_at: string
 }

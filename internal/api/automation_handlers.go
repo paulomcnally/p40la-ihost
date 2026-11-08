@@ -313,7 +313,7 @@ func (h *AutomationHandlers) FetchBills(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusBadGateway, "plugin_error", err.Error())
+		respondError(w, http.StatusBadGateway, "plugin_error", services.AutomationErrorMessage(err))
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]any{"bills": bills})

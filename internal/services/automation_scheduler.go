@@ -86,7 +86,8 @@ func (s *AutomationScheduler) runDue() {
 		s.release(account.ID)
 		if err != nil {
 			slog.Warn("automation scheduler: job fallido",
-				"account_id", account.ID, "delivered", delivered, "failed", failed, "error", err)
+				"account_id", account.ID, "delivered", delivered, "failed", failed,
+				"error", AutomationErrorMessage(err))
 			continue
 		}
 		slog.Info("automation scheduler: job completado",
