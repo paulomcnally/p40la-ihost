@@ -6,12 +6,12 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 123 |
+| **Total de specs** | 124 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 123 🟢 |
+| **Released** | 124 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-126 |
 
@@ -143,6 +143,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-122 | Facturas y comprobantes PDF en pagos de deudas: upload, almacenamiento en volumen y visualización | released | 2026-11-07 | opencode |
 | SPEC-123 | Contratos PDF para deudas y servicios: upload, visualización y eliminación | released | 2026-11-07 | opencode |
 | SPEC-124 | Autos: mantenimientos por kilometraje e inspecciones mecánicas anuales con PDFs | released | 2026-11-07 | opencode |
+| SPEC-125 | Detalle de deuda: resumen humano de tiempo restante, último pago y fin estimado | released | 2026-11-07 | opencode |
 | SPEC-126 | Modales del proyecto: confirmación por palabra con Enter y overlay bloqueante sin cierre por click fuera | released | 2026-11-07 | opencode |
 
 ---
@@ -213,4 +214,4 @@ docs/specs/
 
 ---
 
-*Última actualización de este tracker: 2026-11-08 — SPEC-124 released (mantenimientos e inspecciones mecánicas en Autos: tabs, página de detalle, líneas de mano de obra e insumos con PDFs, reglas de modales y validación con copia de producción); 2026-11-08 — SPEC-126 released (confirmación por palabra con foco automático y Enter en todos los modales, overlay bloqueante sin cierre por click fuera, escala de capas y cierre visible en todos los estados); 2026-11-07 — SPEC-123 released (contratos PDF de deudas y servicios con upload drag & drop, modal Abrir/Quitar, almacenamiento en `contracts/` y reglas de modales); 2026-11-07 — SPEC-122 released (facturas y comprobantes PDF en pagos de deudas, upload con drag & drop, modal de documento con Abrir/Remover, reglas de modales y validación manual; release Docker v0.5.4 publicado); 2026-11-03 — SPEC-120 released (home de Servicios con tabs Análisis, Calendario, Servicios y Gráfica, estado en querystring y proyección multi-moneda); 2026-11-03 — SPEC-119 released (importador mensual de gastos escolares y pensión con matching por palabras clave, reparto por categoría y validación todo-o-nada); 2026-10-21 — SPEC-118 released (autos con campos opcionales, color predefinido con buscador y guardrail de dropdowns); SPEC-116 released (página de vista y tabs de instituciones); SPEC-117 released (menú Editar en el detalle del auto); SPEC-115 released (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
+*Última actualización de este tracker: 2026-11-08 — SPEC-125 released (resumen humano de tiempo restante, último pago y fin estimado en el detalle de deuda; implementación frontend, tests y validación local; commit ea8ae22); 2026-11-08 — SPEC-124 released (mantenimientos e inspecciones mecánicas en Autos: tabs, página de detalle, líneas de mano de obra e insumos con PDFs, reglas de modales y validación con copia de producción); 2026-11-08 — SPEC-126 released (confirmación por palabra con foco automático y Enter en todos los modales, overlay bloqueante sin cierre por click fuera, escala de capas y cierre visible en todos los estados); 2026-11-07 — SPEC-123 released (contratos PDF de deudas y servicios con upload drag & drop, modal Abrir/Quitar, almacenamiento en `contracts/` y reglas de modales); 2026-11-07 — SPEC-122 released (facturas y comprobantes PDF en pagos de deudas, upload con drag & drop, modal de documento con Abrir/Remover, reglas de modales y validación manual; release Docker v0.5.4 publicado); 2026-11-03 — SPEC-120 released (home de Servicios con tabs Análisis, Calendario, Servicios y Gráfica, estado en querystring y proyección multi-moneda); 2026-11-03 — SPEC-119 released (importador mensual de gastos escolares y pensión con matching por palabras clave, reparto por categoría y validación todo-o-nada); 2026-10-21 — SPEC-118 released (autos con campos opcionales, color predefinido con buscador y guardrail de dropdowns); SPEC-116 released (página de vista y tabs de instituciones); SPEC-117 released (menú Editar en el detalle del auto); SPEC-115 released (menú Editar en el detalle de deuda y estandarización de la etiqueta Editar).*
