@@ -8,6 +8,9 @@ import { Icon } from '../components/Icons'
 import Sidebar from '../components/Sidebar'
 
 const BACK_ROUTES: { pattern: RegExp; to: string | ((pathname: string) => string); desktopBack?: boolean }[] = [
+  { pattern: /^\/deudas\/plantillas$/, to: '/deudas' },
+  { pattern: /^\/deudas\/plantillas\/informacion$/, to: '/deudas/plantillas' },
+  { pattern: /^\/deudas\/plantillas\/informacion\/(new|edit\/\d+)$/, to: '/deudas/plantillas/informacion' },
   { pattern: /^\/deudas\/\d+$/, to: '/deudas' },
   { pattern: /^\/deudas\/(new|edit\/\d+)$/, to: '/deudas' },
   { pattern: /^\/services\/bills\/\d+$/, to: '/services' },

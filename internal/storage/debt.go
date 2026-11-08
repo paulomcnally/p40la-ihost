@@ -123,13 +123,28 @@ func (s *DebtStorage) Update(ctx context.Context, debt *models.Debt) (*models.De
 	return s.GetByID(ctx, debt.ID)
 }
 
-// SoftDelete marca una deuda como eliminada.
+// SoftDelete marca una deuda como eliminada y limpia su forma de pago
+// (SPEC-131). La deuda usa borrado lógico, así que la FK ON DELETE CASCADE no
+// se dispara; se limpia explícitamente en la misma transacción.
 func (s *DebtStorage) SoftDelete(ctx context.Context, id int64) error {
-	_, err := s.db.ExecContext(ctx, `
-		UPDATE debts SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL
-	`, id)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
+		return fmt.Errorf("iniciar transacción de borrado de deuda: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE debts SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL
+	`, id); err != nil {
 		return fmt.Errorf("eliminar deuda: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM debt_payment_information WHERE debt_id = ?
+	`, id); err != nil {
+		return fmt.Errorf("eliminar forma de pago de deuda: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("confirmar borrado de deuda: %w", err)
 	}
 	return nil
 }

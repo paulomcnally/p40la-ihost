@@ -609,6 +609,56 @@ export interface DebtBill {
   updated_at: string
 }
 
+// SPEC-131: plantillas de información y forma de pago por deuda.
+export type DebtInformationFieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'date'
+  | 'select'
+  | 'checkbox'
+  | 'computed'
+
+export interface DebtInformationField {
+  key: string
+  label: string
+  type: DebtInformationFieldType
+  required?: boolean
+  placeholder?: string
+  default_value?: string
+  help_text?: string
+  options?: string[]
+  value_template?: string
+}
+
+export interface DebtInformationTemplate {
+  id: number
+  name: string
+  description: string
+  fields?: DebtInformationField[]
+  field_count: number
+  usage_count: number
+  created_at: string
+  updated_at: string
+}
+
+export type DebtInformationValue = string | number | boolean
+
+export interface DebtPaymentInformation {
+  debt_id: number
+  template_id: number | null
+  template: DebtInformationTemplate | null
+  values: Record<string, DebtInformationValue>
+  created_at?: string
+  updated_at?: string
+}
+
+export interface DebtInformationToken {
+  key: string
+  label: string
+  example: string
+}
+
 // SPEC-127: reconocimiento de comprobantes bancarios.
 export interface RecognitionCandidate {
   entity_type: string
