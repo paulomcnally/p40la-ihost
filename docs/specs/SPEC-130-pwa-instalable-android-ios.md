@@ -1,7 +1,7 @@
 ---
 title: "PWA instalable en Android e iOS: HTTPS, manifest, íconos y service worker"
 id: "SPEC-130"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-08"
 updated: "2026-11-08"
@@ -11,7 +11,7 @@ github_issue: 133
 # PWA instalable en Android e iOS: HTTPS, manifest, íconos y service worker
 
 **ID**: SPEC-130  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-08  
 **Actualizado**: 2026-11-08
@@ -567,3 +567,4 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 | 2026-11-08 | opencode | Corrección del despliegue en iHost: **no se usa `docker exec`**. Serve se declara con `TS_SERVE_CONFIG=/config/serve.json` y un volumen `/config` (directorio) editado con el add-on Filebrowser desde la UI del iHost (`deploy/tailscale/serve.json`). Se aclara que `ihost.<tailnet>.ts.net` es el nodo del add-on oficial `tailscale/TailScale` del iHost y no la app; la PWA usa un contenedor `tailscale/tailscale` aparte con `TS_HOSTNAME=p40la-ihost` y URL `https://p40la-ihost.<tailnet>.ts.net`. |
 | 2026-11-08 | opencode | **Renumerada de SPEC-129 a SPEC-130** por colisión con la SPEC-129 (ASSA) ya existente en `main` (issue #132). Se renombró el archivo, se actualizaron frontmatter, cuerpo, issue #133, comentarios de código, documentación y referencias. |
 | 2026-11-08 | opencode | Configuración real en el iHost: se **reutilizó el nodo `ihost`** del contenedor `tailscale/tailscale` (volumen de estado `tailscale` → `/data/tailscalState`), se agregó `tailscale-config` → `/config` con `serve.json` y `TS_SERVE_CONFIG=/config/serve.json`. Filebrowser se movió al puerto 8083, con `tailscale-config` → `/srv`, `filebrowser-db` → `/database`, `UID/GID=0`; se detuvo después de crear el archivo. Serve se aplicó, pero la emisión del certificado quedó bloqueada hasta habilitar **HTTPS Certificates** en la tailnet. |
+| 2026-11-08 | opencode | **Released**. Merge `e109392`; tag `v0.5.7`; imagen Docker `0.5.7` multi-arch (amd64, armv7, arm64) publicada. Contenedor del iHost actualizado a `latest` y verificado por LAN: `/manifest.webmanifest` 200 `application/manifest+json`, `/sw.js` 200 `text/javascript`, íconos 200 y `/health` OK. Tailscale Serve configurado sobre el nodo `ihost` con `TS_SERVE_CONFIG=/config/serve.json`. Validación manual de instalación en Android/iOS a cargo del usuario. |
