@@ -44,16 +44,20 @@ type AutomationPlugin struct {
 
 // AutomationBill es una factura obtenida por un plugin.
 type AutomationBill struct {
-	ID            int64     `json:"id"`
-	AccountID     int64     `json:"account_id"`
-	PluginName    string    `json:"plugin_name"`
-	PluginVersion string    `json:"plugin_version"`
-	Source        string    `json:"source"`
-	Status        string    `json:"status"`
-	Error         *string   `json:"error,omitempty"`
-	Raw           string    `json:"-"`
-	FetchedAt     time.Time `json:"fetched_at"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID            int64   `json:"id"`
+	AccountID     int64   `json:"account_id"`
+	PluginName    string  `json:"plugin_name"`
+	PluginVersion string  `json:"plugin_version"`
+	Source        string  `json:"source"`
+	Status        string  `json:"status"`
+	Error         *string `json:"error,omitempty"`
+	// ErrorCode clasifica el fallo (portal_migrated, captcha_required,
+	// auth_expired) a partir de la metadata guardada en raw. No es una
+	// columna: se calcula al listar (SPEC-121).
+	ErrorCode string    `json:"error_code,omitempty"`
+	Raw       string    `json:"-"`
+	FetchedAt time.Time `json:"fetched_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // AutomationWebhookLog registra una entrega (o intento) al webhook.

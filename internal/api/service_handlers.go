@@ -226,7 +226,7 @@ func (h *ServiceHandlers) SyncService(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, services.ErrAutomationUnauthorized):
 			respondError(w, http.StatusUnauthorized, "automation_unauthorized", err.Error())
 		default:
-			respondError(w, http.StatusBadGateway, "automation_error", err.Error())
+			respondError(w, http.StatusBadGateway, "automation_error", services.AutomationErrorMessage(err))
 		}
 		return
 	}
