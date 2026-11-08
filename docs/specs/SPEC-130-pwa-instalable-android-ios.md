@@ -1,6 +1,6 @@
 ---
 title: "PWA instalable en Android e iOS: HTTPS, manifest, íconos y service worker"
-id: "SPEC-129"
+id: "SPEC-130"
 status: "in_progress"
 author: "opencode"
 created: "2026-11-08"
@@ -10,7 +10,7 @@ github_issue: 133
 
 # PWA instalable en Android e iOS: HTTPS, manifest, íconos y service worker
 
-**ID**: SPEC-129  
+**ID**: SPEC-130  
 **Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-11-08  
@@ -461,11 +461,11 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 
 ### 6.3 Orden de commits sugerido
 
-1. `SPEC-129: manifest, íconos y meta tags PWA`
-2. `SPEC-129: service worker, registro y headers de caché`
-3. `SPEC-129: UI de instalación Android/iOS e i18n`
-4. `SPEC-129: despliegue Tailscale Serve y documentación`
-5. `SPEC-129: criterios de aceptación y release`
+1. `SPEC-130: manifest, íconos y meta tags PWA`
+2. `SPEC-130: service worker, registro y headers de caché`
+3. `SPEC-130: UI de instalación Android/iOS e i18n`
+4. `SPEC-130: despliegue Tailscale Serve y documentación`
+5. `SPEC-130: criterios de aceptación y release`
 
 ---
 
@@ -565,3 +565,5 @@ No se agregan endpoints de negocio. Nuevos recursos estáticos:
 | 2026-11-08 | opencode | Decisión del usuario: **Tailscale Serve** como camino de HTTPS. Se actualizan ADR-001, REQ-001/REQ-011, tabla comparativa, §4.2.7 (contenedor, red, `serve`, clientes, cookies), configuración, criterios de aceptación, plan y riesgos. La PWA se instala desde `https://<nodo>.<tailnet>.ts.net`; `http://ihost.local:8088` queda como acceso LAN de respaldo. |
 | 2026-11-08 | opencode | Implementación completa de la spec: manifest, íconos, service worker v2, rutas/MIME/headers, cookie `Secure` por request, card de instalación Android/iOS, guardrail `check:pwa`, robustez offline y documentación de Tailscale Serve. Verificación local con `go test ./...`, `npm run build` y Chrome headless (`Page.getInstallabilityErrors` sin errores, SW y cachés OK). Pendiente: configurar Tailscale en el iHost y validar en dispositivos reales. |
 | 2026-11-08 | opencode | Corrección del despliegue en iHost: **no se usa `docker exec`**. Serve se declara con `TS_SERVE_CONFIG=/config/serve.json` y un volumen `/config` (directorio) editado con el add-on Filebrowser desde la UI del iHost (`deploy/tailscale/serve.json`). Se aclara que `ihost.<tailnet>.ts.net` es el nodo del add-on oficial `tailscale/TailScale` del iHost y no la app; la PWA usa un contenedor `tailscale/tailscale` aparte con `TS_HOSTNAME=p40la-ihost` y URL `https://p40la-ihost.<tailnet>.ts.net`. |
+| 2026-11-08 | opencode | **Renumerada de SPEC-129 a SPEC-130** por colisión con la SPEC-129 (ASSA) ya existente en `main` (issue #132). Se renombró el archivo, se actualizaron frontmatter, cuerpo, issue #133, comentarios de código, documentación y referencias. |
+| 2026-11-08 | opencode | Configuración real en el iHost: se **reutilizó el nodo `ihost`** del contenedor `tailscale/tailscale` (volumen de estado `tailscale` → `/data/tailscalState`), se agregó `tailscale-config` → `/config` con `serve.json` y `TS_SERVE_CONFIG=/config/serve.json`. Filebrowser se movió al puerto 8083, con `tailscale-config` → `/srv`, `filebrowser-db` → `/database`, `UID/GID=0`; se detuvo después de crear el archivo. Serve se aplicó, pero la emisión del certificado quedó bloqueada hasta habilitar **HTTPS Certificates** en la tailnet. |

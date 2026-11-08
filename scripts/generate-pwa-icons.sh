@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# SPEC-129: genera los íconos PWA a partir de frontend/public/favicon.svg.
+# SPEC-130: genera los íconos PWA a partir de frontend/public/favicon.svg.
 # Los PNG resultantes se commitean; este script es para regenerarlos.
 #
 # Requisitos: ImageMagick (convert). No se ejecuta en el build ni en runtime.

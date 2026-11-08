@@ -5,7 +5,7 @@ import { useToast } from './Toast'
 import { Icon } from './Icons'
 
 /**
- * SPEC-129: card de instalación de la PWA en Settings.
+ * SPEC-130: card de instalación de la PWA en Settings.
  * - Android/Chrome: botón "Instalar app" con beforeinstallprompt.
  * - iOS: instrucciones manuales (no existe API de instalación).
  * - Si ya corre en standalone, no se muestra.

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-// SPEC-129: la tabla MIME de Go (y la imagen distroless) no incluye
+// SPEC-130: la tabla MIME de Go (y la imagen distroless) no incluye
 // .webmanifest. Sin este registro el manifest se serviría como text/plain y
 // Chrome lo rechazaría.
 func init() {

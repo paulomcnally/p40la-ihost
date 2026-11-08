@@ -65,7 +65,7 @@ function App() {
 
   useEffect(() => {
     const init = async () => {
-      // SPEC-129: si una llamada falla (por ejemplo, sin conexión), la app
+      // SPEC-130: si una llamada falla (por ejemplo, sin conexión), la app
       // igual debe salir del estado "Loading..." y mostrar el shell cacheado.
       await Promise.allSettled([checkSetup(), checkSession(), load(lang)])
       setInitialized(true)

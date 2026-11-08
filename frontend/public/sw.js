@@ -1,4 +1,4 @@
-// SPEC-129: service worker hand-written, sin dependencias.
+// SPEC-130: service worker hand-written, sin dependencias.
 //
 // Estrategia:
 // - Navegación: network-first con fallback al app shell cacheado.
@@ -29,7 +29,7 @@ self.addEventListener('install', (event) => {
 })
 
 // Precarga el shell y los assets hasheados que referencia index.html, para
-// que la primera instalación ya funcione offline (SPEC-129, REQ-015).
+// que la primera instalación ya funcione offline (SPEC-130, REQ-015).
 async function precacheShell() {
   const cache = await caches.open(SHELL_CACHE)
   await cache.addAll(SHELL_URLS)
