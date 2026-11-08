@@ -18,9 +18,14 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
 )
 
-const testReceiptPDF = "%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n"
+const testDocumentPDF = "%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n"
 
-func setupDebtReceiptHandlers(t *testing.T) (*DebtHandlers, *services.DebtService, context.Context, string) {
+type multipartFile struct {
+	name    string
+	content []byte
+}
+
+func setupDebtDocumentHandlers(t *testing.T) (*DebtHandlers, *services.DebtService, context.Context) {
 	t.Helper()
 
 	database, err := db.OpenDB(":memory:", "../../migrations")
@@ -34,18 +39,17 @@ func setupDebtReceiptHandlers(t *testing.T) (*DebtHandlers, *services.DebtServic
 		t.Fatalf("insertar institución: %v", err)
 	}
 
-	dataDir := t.TempDir()
 	svc := services.NewDebtService(
 		storage.NewDebtStorage(database),
 		storage.NewDebtBillStorage(database),
 		storage.NewInstitutionStorage(database),
 		storage.NewCurrencyStorage(database),
-		dataDir,
+		t.TempDir(),
 	)
-	return NewDebtHandlers(svc), svc, ctx, dataDir
+	return NewDebtHandlers(svc), svc, ctx
 }
 
-func createTestDebt(t *testing.T, svc *services.DebtService, ctx context.Context, installments int) int64 {
+func createDocumentTestDebt(t *testing.T, svc *services.DebtService, ctx context.Context) int64 {
 	t.Helper()
 	debt, err := svc.Create(ctx, &models.Debt{
 		InstitutionID:     1,
@@ -54,7 +58,7 @@ func createTestDebt(t *testing.T, svc *services.DebtService, ctx context.Context
 		Total:             100,
 		Principal:         100,
 		CurrencyID:        1,
-		InstallmentsTotal: installments,
+		InstallmentsTotal: 1,
 		InstallmentAmount: 100,
 		PaymentDay:        5,
 		StartDate:         "2026-09-01",
@@ -66,7 +70,7 @@ func createTestDebt(t *testing.T, svc *services.DebtService, ctx context.Context
 	return debt.ID
 }
 
-func firstBillID(t *testing.T, svc *services.DebtService, ctx context.Context, debtID int64) int64 {
+func firstDocumentBillID(t *testing.T, svc *services.DebtService, ctx context.Context, debtID int64) int64 {
 	t.Helper()
 	bills, err := svc.ListBills(ctx, debtID)
 	if err != nil || len(bills) == 0 {
@@ -75,7 +79,7 @@ func firstBillID(t *testing.T, svc *services.DebtService, ctx context.Context, d
 	return bills[0].ID
 }
 
-func multipartReceiptBody(t *testing.T, fields map[string]string, fileName string, content []byte) (*bytes.Buffer, string) {
+func multipartDocumentBody(t *testing.T, fields map[string]string, files map[string]multipartFile) (*bytes.Buffer, string) {
 	t.Helper()
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
@@ -84,13 +88,16 @@ func multipartReceiptBody(t *testing.T, fields map[string]string, fileName strin
 			t.Fatalf("campo multipart %s: %v", key, err)
 		}
 	}
-	if fileName != "" {
-		part, err := writer.CreateFormFile("file", fileName)
-		if err != nil {
-			t.Fatalf("crear parte de archivo: %v", err)
+	for field, file := range files {
+		if file.name == "" {
+			continue
 		}
-		if _, err := part.Write(content); err != nil {
-			t.Fatalf("escribir archivo: %v", err)
+		part, err := writer.CreateFormFile(field, file.name)
+		if err != nil {
+			t.Fatalf("crear parte %s: %v", field, err)
+		}
+		if _, err := part.Write(file.content); err != nil {
+			t.Fatalf("escribir %s: %v", field, err)
 		}
 	}
 	if err := writer.Close(); err != nil {
@@ -99,15 +106,18 @@ func multipartReceiptBody(t *testing.T, fields map[string]string, fileName strin
 	return &buf, writer.FormDataContentType()
 }
 
-func TestPayDebtBillMultipartWithReceipt(t *testing.T) {
-	handler, svc, ctx, _ := setupDebtReceiptHandlers(t)
-	debtID := createTestDebt(t, svc, ctx, 1)
-	billID := firstBillID(t, svc, ctx, debtID)
+func TestPayDebtBillMultipartWithBothDocuments(t *testing.T) {
+	handler, svc, ctx := setupDebtDocumentHandlers(t)
+	debtID := createDocumentTestDebt(t, svc, ctx)
+	billID := firstDocumentBillID(t, svc, ctx, debtID)
 
-	body, contentType := multipartReceiptBody(t, map[string]string{
+	body, contentType := multipartDocumentBody(t, map[string]string{
 		"paid_at":           "2026-10-09",
 		"payment_reference": "demo-reference-001",
-	}, "comprobante.pdf", []byte(testReceiptPDF))
+	}, map[string]multipartFile{
+		"invoice": {name: "factura.pdf", content: []byte(testDocumentPDF)},
+		"receipt": {name: "comprobante.pdf", content: []byte(testDocumentPDF)},
+	})
 
 	req := httptest.NewRequest(http.MethodPut, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+"/pay", body)
 	req.Header.Set("Content-Type", contentType)
@@ -122,33 +132,41 @@ func TestPayDebtBillMultipartWithReceipt(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &paid); err != nil {
 		t.Fatalf("decodificar respuesta: %v", err)
 	}
-	if paid.Status != "paid" || !paid.HasReceipt {
+	if paid.Status != "paid" || !paid.HasInvoice || !paid.HasReceipt {
 		t.Fatalf("cuota pagada inesperada: %+v", paid)
 	}
 
-	downloadReq := httptest.NewRequest(http.MethodGet, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+"/receipt", nil)
-	downloadReq.SetPathValue("id", strconv.FormatInt(billID, 10))
-	downloadRec := httptest.NewRecorder()
-	handler.DownloadDebtReceipt(downloadRec, downloadReq)
+	for _, tc := range []struct {
+		path    string
+		handler func(http.ResponseWriter, *http.Request)
+	}{
+		{"/invoice", handler.DownloadDebtInvoice},
+		{"/receipt", handler.DownloadDebtReceipt},
+	} {
+		downloadReq := httptest.NewRequest(http.MethodGet, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+tc.path, nil)
+		downloadReq.SetPathValue("id", strconv.FormatInt(billID, 10))
+		downloadRec := httptest.NewRecorder()
+		tc.handler(downloadRec, downloadReq)
 
-	if downloadRec.Code != http.StatusOK {
-		t.Fatalf("DownloadDebtReceipt: status=%d body=%s", downloadRec.Code, downloadRec.Body.String())
-	}
-	if got := downloadRec.Header().Get("Content-Type"); got != "application/pdf" {
-		t.Errorf("Content-Type = %q", got)
-	}
-	if got := downloadRec.Header().Get("X-Content-Type-Options"); got != "nosniff" {
-		t.Errorf("X-Content-Type-Options = %q", got)
-	}
-	if !strings.Contains(downloadRec.Body.String(), "%PDF-") {
-		t.Errorf("respuesta no contiene el PDF: %q", downloadRec.Body.String())
+		if downloadRec.Code != http.StatusOK {
+			t.Fatalf("download %s: status=%d body=%s", tc.path, downloadRec.Code, downloadRec.Body.String())
+		}
+		if got := downloadRec.Header().Get("Content-Type"); got != "application/pdf" {
+			t.Errorf("Content-Type %s = %q", tc.path, got)
+		}
+		if got := downloadRec.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+			t.Errorf("X-Content-Type-Options %s = %q", tc.path, got)
+		}
+		if !strings.Contains(downloadRec.Body.String(), "%PDF-") {
+			t.Errorf("respuesta %s no contiene el PDF: %q", tc.path, downloadRec.Body.String())
+		}
 	}
 }
 
 func TestPayDebtBillJSONCompatibility(t *testing.T) {
-	handler, svc, ctx, _ := setupDebtReceiptHandlers(t)
-	debtID := createTestDebt(t, svc, ctx, 1)
-	billID := firstBillID(t, svc, ctx, debtID)
+	handler, svc, ctx := setupDebtDocumentHandlers(t)
+	debtID := createDocumentTestDebt(t, svc, ctx)
+	billID := firstDocumentBillID(t, svc, ctx, debtID)
 
 	req := httptest.NewRequest(http.MethodPut, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+"/pay",
 		strings.NewReader(`{"paid_at":"2026-10-09","payment_reference":"demo-reference-002"}`))
@@ -164,70 +182,92 @@ func TestPayDebtBillJSONCompatibility(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &paid); err != nil {
 		t.Fatalf("decodificar respuesta: %v", err)
 	}
-	if paid.Status != "paid" || paid.HasReceipt {
-		t.Fatalf("cuota pagada sin comprobante inesperada: %+v", paid)
+	if paid.Status != "paid" || paid.HasInvoice || paid.HasReceipt {
+		t.Fatalf("cuota pagada sin documentos inesperada: %+v", paid)
 	}
 }
 
-func TestUploadDebtReceiptAfterPayment(t *testing.T) {
-	handler, svc, ctx, _ := setupDebtReceiptHandlers(t)
-	debtID := createTestDebt(t, svc, ctx, 1)
-	billID := firstBillID(t, svc, ctx, debtID)
+func TestUploadDebtDocumentsAfterPayment(t *testing.T) {
+	handler, svc, ctx := setupDebtDocumentHandlers(t)
+	debtID := createDocumentTestDebt(t, svc, ctx)
+	billID := firstDocumentBillID(t, svc, ctx, debtID)
 
 	if _, err := svc.PayBill(ctx, billID, time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC), ""); err != nil {
 		t.Fatalf("PayBill: %v", err)
 	}
 
-	body, contentType := multipartReceiptBody(t, nil, "comprobante.pdf", []byte(testReceiptPDF))
-	req := httptest.NewRequest(http.MethodPost, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+"/receipt", body)
-	req.Header.Set("Content-Type", contentType)
-	req.SetPathValue("id", strconv.FormatInt(billID, 10))
-	rec := httptest.NewRecorder()
-	handler.UploadDebtReceipt(rec, req)
+	for _, tc := range []struct {
+		path        string
+		handler     func(http.ResponseWriter, *http.Request)
+		wantInvoice bool
+		wantReceipt bool
+	}{
+		{"/invoice", handler.UploadDebtInvoice, true, false},
+		{"/receipt", handler.UploadDebtReceipt, true, true},
+	} {
+		body, contentType := multipartDocumentBody(t, nil, map[string]multipartFile{
+			"file": {name: "documento.pdf", content: []byte(testDocumentPDF)},
+		})
+		req := httptest.NewRequest(http.MethodPost, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+tc.path, body)
+		req.Header.Set("Content-Type", contentType)
+		req.SetPathValue("id", strconv.FormatInt(billID, 10))
+		rec := httptest.NewRecorder()
+		tc.handler(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("UploadDebtReceipt: status=%d body=%s", rec.Code, rec.Body.String())
-	}
-	var updated models.DebtBill
-	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
-		t.Fatalf("decodificar respuesta: %v", err)
-	}
-	if !updated.HasReceipt {
-		t.Fatalf("UploadDebtReceipt no devolvió has_receipt: %+v", updated)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("upload %s: status=%d body=%s", tc.path, rec.Code, rec.Body.String())
+		}
+		var updated models.DebtBill
+		if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+			t.Fatalf("decodificar respuesta %s: %v", tc.path, err)
+		}
+		if updated.HasInvoice != tc.wantInvoice || updated.HasReceipt != tc.wantReceipt {
+			t.Fatalf("flags tras %s: %+v", tc.path, updated)
+		}
 	}
 }
 
-func TestUploadDebtReceiptRequiresPaidBill(t *testing.T) {
-	handler, svc, ctx, _ := setupDebtReceiptHandlers(t)
-	debtID := createTestDebt(t, svc, ctx, 1)
-	billID := firstBillID(t, svc, ctx, debtID)
+func TestUploadDebtDocumentRequiresPaidBill(t *testing.T) {
+	handler, svc, ctx := setupDebtDocumentHandlers(t)
+	debtID := createDocumentTestDebt(t, svc, ctx)
+	billID := firstDocumentBillID(t, svc, ctx, debtID)
 
-	body, contentType := multipartReceiptBody(t, nil, "comprobante.pdf", []byte(testReceiptPDF))
-	req := httptest.NewRequest(http.MethodPost, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+"/receipt", body)
+	body, contentType := multipartDocumentBody(t, nil, map[string]multipartFile{
+		"file": {name: "factura.pdf", content: []byte(testDocumentPDF)},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+"/invoice", body)
 	req.Header.Set("Content-Type", contentType)
 	req.SetPathValue("id", strconv.FormatInt(billID, 10))
 	rec := httptest.NewRecorder()
-	handler.UploadDebtReceipt(rec, req)
+	handler.UploadDebtInvoice(rec, req)
 
 	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("UploadDebtReceipt impaga: status=%d body=%s", rec.Code, rec.Body.String())
+		t.Fatalf("UploadDebtInvoice impaga: status=%d body=%s", rec.Code, rec.Body.String())
 	}
 	if !strings.Contains(rec.Body.String(), "not_paid") {
 		t.Errorf("se esperaba error not_paid: %s", rec.Body.String())
 	}
 }
 
-func TestDownloadDebtReceiptNotFound(t *testing.T) {
-	handler, svc, ctx, _ := setupDebtReceiptHandlers(t)
-	debtID := createTestDebt(t, svc, ctx, 1)
-	billID := firstBillID(t, svc, ctx, debtID)
+func TestDownloadDebtDocumentsNotFound(t *testing.T) {
+	handler, svc, ctx := setupDebtDocumentHandlers(t)
+	debtID := createDocumentTestDebt(t, svc, ctx)
+	billID := firstDocumentBillID(t, svc, ctx, debtID)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+"/receipt", nil)
-	req.SetPathValue("id", strconv.FormatInt(billID, 10))
-	rec := httptest.NewRecorder()
-	handler.DownloadDebtReceipt(rec, req)
+	for _, tc := range []struct {
+		path    string
+		handler func(http.ResponseWriter, *http.Request)
+	}{
+		{"/invoice", handler.DownloadDebtInvoice},
+		{"/receipt", handler.DownloadDebtReceipt},
+	} {
+		req := httptest.NewRequest(http.MethodGet, "/api/debt-bills/"+strconv.FormatInt(billID, 10)+tc.path, nil)
+		req.SetPathValue("id", strconv.FormatInt(billID, 10))
+		rec := httptest.NewRecorder()
+		tc.handler(rec, req)
 
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("DownloadDebtReceipt sin archivo: status=%d body=%s", rec.Code, rec.Body.String())
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("download %s sin archivo: status=%d body=%s", tc.path, rec.Code, rec.Body.String())
+		}
 	}
 }

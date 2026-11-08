@@ -60,116 +60,170 @@ func newDebtReceiptTestService(t *testing.T) (*DebtService, context.Context, int
 	return svc, ctx, debt.ID, dataDir
 }
 
-func TestDebtReceiptPayStoresPDF(t *testing.T) {
-	svc, ctx, debtID, dataDir := newDebtReceiptTestService(t)
-
+func firstBill(t *testing.T, svc *DebtService, ctx context.Context, debtID int64) models.DebtBill {
+	t.Helper()
 	bills, err := svc.ListBills(ctx, debtID)
 	if err != nil || len(bills) != 1 {
 		t.Fatalf("ListBills: got %d, err %v", len(bills), err)
 	}
-	if bills[0].HasReceipt {
-		t.Fatal("una cuota nueva no debería tener comprobante")
+	return bills[0]
+}
+
+func documentPathFor(dataDir string, debtID int64, name string) string {
+	return filepath.Join(dataDir, "documents", fmt.Sprintf("%d", debtID), name)
+}
+
+func TestDebtDocumentsPayStoresBothPDFs(t *testing.T) {
+	svc, ctx, debtID, dataDir := newDebtReceiptTestService(t)
+	bill := firstBill(t, svc, ctx, debtID)
+
+	if bill.HasInvoice || bill.HasReceipt {
+		t.Fatal("una cuota nueva no debería tener documentos")
 	}
 
-	paid, err := svc.PayBillWithReceipt(
+	paidAt := time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC)
+	paid, err := svc.PayBillWithDocuments(
 		ctx,
-		bills[0].ID,
-		time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC),
+		bill.ID,
+		paidAt,
 		"demo-reference-001",
-		&ReceiptUpload{FileName: "comprobante.pdf", Reader: bytes.NewReader([]byte(testPDF))},
+		&PDFUpload{FileName: "factura.pdf", Reader: bytes.NewReader([]byte(testPDF))},
+		&PDFUpload{FileName: "comprobante.pdf", Reader: bytes.NewReader([]byte(testPDF))},
 	)
 	if err != nil {
-		t.Fatalf("PayBillWithReceipt: %v", err)
+		t.Fatalf("PayBillWithDocuments: %v", err)
 	}
-	if paid.Status != "paid" || !paid.HasReceipt {
-		t.Fatalf("cuota pagada con comprobante: %+v", paid)
+	if paid.Status != "paid" || !paid.HasInvoice || !paid.HasReceipt {
+		t.Fatalf("cuota pagada con documentos inesperada: %+v", paid)
 	}
 
-	path := filepath.Join(dataDir, "documents", fmt.Sprintf("%d", debtID), "payment_1.pdf")
-	data, err := os.ReadFile(path)
+	for _, name := range []string{"invoice_1.pdf", "receipt_1.pdf"} {
+		data, err := os.ReadFile(documentPathFor(dataDir, debtID, name))
+		if err != nil {
+			t.Fatalf("leer %s: %v", name, err)
+		}
+		if !bytes.Equal(data, []byte(testPDF)) {
+			t.Errorf("contenido de %s inesperado: %q", name, data)
+		}
+	}
+
+	gotInvoicePath, gotInvoiceName, err := svc.DocumentPath(ctx, bill.ID, DebtDocumentInvoice)
 	if err != nil {
-		t.Fatalf("leer comprobante: %v", err)
+		t.Fatalf("DocumentPath invoice: %v", err)
 	}
-	if !bytes.Equal(data, []byte(testPDF)) {
-		t.Errorf("contenido del comprobante inesperado: %q", data)
+	if gotInvoiceName != "invoice_1.pdf" {
+		t.Errorf("nombre de factura = %q", gotInvoiceName)
 	}
-
-	gotPath, gotName, err := svc.ReceiptPath(ctx, bills[0].ID)
+	gotReceiptPath, gotReceiptName, err := svc.DocumentPath(ctx, bill.ID, DebtDocumentReceipt)
 	if err != nil {
-		t.Fatalf("ReceiptPath: %v", err)
+		t.Fatalf("DocumentPath receipt: %v", err)
 	}
-	if gotPath != path || gotName != "payment_1.pdf" {
-		t.Errorf("ReceiptPath = %q, %q", gotPath, gotName)
+	if gotReceiptName != "receipt_1.pdf" {
+		t.Errorf("nombre de comprobante = %q", gotReceiptName)
+	}
+	if gotInvoicePath == gotReceiptPath {
+		t.Error("factura y comprobante no deben compartir ruta")
 	}
 
-	// El listado debe calcular has_receipt desde el disco.
 	reloaded, err := svc.ListBills(ctx, debtID)
 	if err != nil || len(reloaded) != 1 {
 		t.Fatalf("ListBills recargado: got %d, err %v", len(reloaded), err)
 	}
-	if !reloaded[0].HasReceipt {
-		t.Error("ListBills debería devolver has_receipt=true")
+	if !reloaded[0].HasInvoice || !reloaded[0].HasReceipt {
+		t.Errorf("ListBills debería devolver ambos flags: %+v", reloaded[0])
 	}
 
 	debts, err := svc.List(ctx)
 	if err != nil || len(debts) != 1 {
 		t.Fatalf("List: got %d, err %v", len(debts), err)
 	}
-	if !debts[0].HasReceipts {
-		t.Error("List debería devolver has_receipts=true")
+	if !debts[0].HasDocuments {
+		t.Error("List debería devolver has_documents=true")
 	}
 	detail, err := svc.GetByID(ctx, debtID)
 	if err != nil || detail == nil {
 		t.Fatalf("GetByID: %v, %v", detail, err)
 	}
-	if !detail.HasReceipts {
-		t.Error("GetByID debería devolver has_receipts=true")
+	if !detail.HasDocuments {
+		t.Error("GetByID debería devolver has_documents=true")
 	}
 }
 
-func TestDebtReceiptRejectsInvalidFiles(t *testing.T) {
+func TestDebtDocumentsPayWithOnlyInvoice(t *testing.T) {
 	svc, ctx, debtID, dataDir := newDebtReceiptTestService(t)
+	bill := firstBill(t, svc, ctx, debtID)
 
-	bills, err := svc.ListBills(ctx, debtID)
-	if err != nil || len(bills) != 1 {
-		t.Fatalf("ListBills: got %d, err %v", len(bills), err)
+	paid, err := svc.PayBillWithDocuments(
+		ctx,
+		bill.ID,
+		time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC),
+		"",
+		&PDFUpload{FileName: "factura.pdf", Reader: bytes.NewReader([]byte(testPDF))},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("PayBillWithDocuments: %v", err)
 	}
+	if !paid.HasInvoice || paid.HasReceipt {
+		t.Fatalf("flags inesperados: %+v", paid)
+	}
+	if _, err := os.Stat(documentPathFor(dataDir, debtID, "invoice_1.pdf")); err != nil {
+		t.Errorf("falta invoice_1.pdf: %v", err)
+	}
+	if _, err := os.Stat(documentPathFor(dataDir, debtID, "receipt_1.pdf")); !os.IsNotExist(err) {
+		t.Errorf("no debería existir receipt_1.pdf: %v", err)
+	}
+	if _, _, err := svc.DocumentPath(ctx, bill.ID, DebtDocumentReceipt); !errors.Is(err, ErrDocumentNotFound) {
+		t.Errorf("DocumentPath receipt: got %v, want ErrDocumentNotFound", err)
+	}
+}
 
+func TestDebtDocumentsRejectInvalidFiles(t *testing.T) {
 	cases := []struct {
-		name string
-		file ReceiptUpload
+		name    string
+		invoice *PDFUpload
+		receipt *PDFUpload
 	}{
 		{
-			name: "extensión distinta de PDF",
-			file: ReceiptUpload{FileName: "comprobante.txt", Reader: bytes.NewReader([]byte(testPDF))},
+			name:    "factura con extensión distinta de PDF",
+			invoice: &PDFUpload{FileName: "factura.txt", Reader: bytes.NewReader([]byte(testPDF))},
 		},
 		{
-			name: "contenido sin firma PDF",
-			file: ReceiptUpload{FileName: "comprobante.pdf", Reader: bytes.NewReader([]byte("no es un pdf"))},
+			name:    "comprobante sin firma PDF",
+			receipt: &PDFUpload{FileName: "comprobante.pdf", Reader: bytes.NewReader([]byte("no es un pdf"))},
 		},
 		{
-			name: "archivo vacío",
-			file: ReceiptUpload{FileName: "comprobante.pdf", Reader: bytes.NewReader(nil)},
+			name:    "archivo vacío",
+			invoice: &PDFUpload{FileName: "factura.pdf", Reader: bytes.NewReader(nil)},
 		},
 		{
-			name: "archivo mayor a 10 MB",
-			file: ReceiptUpload{
-				FileName: "comprobante.pdf",
-				Reader:   bytes.NewReader(append([]byte("%PDF-"), bytes.Repeat([]byte("a"), int(MaxDebtReceiptBytes))...)),
+			name: "documento mayor a 10 MB",
+			invoice: &PDFUpload{
+				FileName: "factura.pdf",
+				Reader:   bytes.NewReader(append([]byte("%PDF-"), bytes.Repeat([]byte("a"), int(MaxDebtDocumentBytes))...)),
 			},
+		},
+		{
+			name:    "factura válida con comprobante inválido",
+			invoice: &PDFUpload{FileName: "factura.pdf", Reader: bytes.NewReader([]byte(testPDF))},
+			receipt: &PDFUpload{FileName: "comprobante.pdf", Reader: bytes.NewReader([]byte("no es un pdf"))},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := svc.PayBillWithReceipt(
+			svc, ctx, debtID, dataDir := newDebtReceiptTestService(t)
+			bill := firstBill(t, svc, ctx, debtID)
+
+			if _, err := svc.PayBillWithDocuments(
 				ctx,
-				bills[0].ID,
+				bill.ID,
 				time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC),
 				"",
-				&tc.file,
+				tc.invoice,
+				tc.receipt,
 			); err == nil {
-				t.Fatal("se esperaba error para un comprobante inválido")
+				t.Fatal("se esperaba error para un documento inválido")
 			}
 
 			current, err := svc.ListBills(ctx, debtID)
@@ -179,97 +233,97 @@ func TestDebtReceiptRejectsInvalidFiles(t *testing.T) {
 			if current[0].Status != "pending" {
 				t.Errorf("la cuota no debería haberse pagado, status=%q", current[0].Status)
 			}
-			if current[0].HasReceipt {
-				t.Error("no debería existir comprobante para una cuota impaga")
+			if current[0].HasInvoice || current[0].HasReceipt {
+				t.Errorf("no debería existir documento para una cuota impaga: %+v", current[0])
+			}
+			for _, name := range []string{"invoice_1.pdf", "receipt_1.pdf"} {
+				if _, err := os.Stat(documentPathFor(dataDir, debtID, name)); !os.IsNotExist(err) {
+					t.Errorf("no debería existir %s, err=%v", name, err)
+				}
 			}
 		})
 	}
-
-	path := filepath.Join(dataDir, "documents", fmt.Sprintf("%d", debtID), "payment_1.pdf")
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Errorf("no debería existir el archivo final, err=%v", err)
-	}
 }
 
-func TestDebtReceiptSaveAfterPayment(t *testing.T) {
+func TestDebtDocumentSaveAfterPayment(t *testing.T) {
 	svc, ctx, debtID, _ := newDebtReceiptTestService(t)
+	bill := firstBill(t, svc, ctx, debtID)
 
-	bills, err := svc.ListBills(ctx, debtID)
-	if err != nil || len(bills) != 1 {
-		t.Fatalf("ListBills: got %d, err %v", len(bills), err)
-	}
-
-	if _, err := svc.PayBill(ctx, bills[0].ID, time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC), ""); err != nil {
+	if _, err := svc.PayBill(ctx, bill.ID, time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC), ""); err != nil {
 		t.Fatalf("PayBill: %v", err)
 	}
 
-	updated, err := svc.SaveReceipt(ctx, bills[0].ID, ReceiptUpload{
+	invoice, err := svc.SaveDocument(ctx, bill.ID, DebtDocumentInvoice, PDFUpload{
+		FileName: "factura.pdf",
+		Reader:   bytes.NewReader([]byte(testPDF)),
+	})
+	if err != nil {
+		t.Fatalf("SaveDocument invoice: %v", err)
+	}
+	if invoice == nil || !invoice.HasInvoice || invoice.HasReceipt {
+		t.Fatalf("flags tras guardar factura: %+v", invoice)
+	}
+
+	withReceipt, err := svc.SaveDocument(ctx, bill.ID, DebtDocumentReceipt, PDFUpload{
 		FileName: "comprobante.pdf",
 		Reader:   bytes.NewReader([]byte(testPDF)),
 	})
 	if err != nil {
-		t.Fatalf("SaveReceipt: %v", err)
+		t.Fatalf("SaveDocument receipt: %v", err)
 	}
-	if updated == nil || !updated.HasReceipt {
-		t.Fatalf("SaveReceipt no devolvió has_receipt: %+v", updated)
+	if withReceipt == nil || !withReceipt.HasInvoice || !withReceipt.HasReceipt {
+		t.Fatalf("flags tras guardar comprobante: %+v", withReceipt)
 	}
 
-	// Reemplazar el comprobante debe sobrescribir el archivo.
+	// Reemplazar la factura debe sobrescribir solo ese archivo.
 	replaced := "%PDF-1.7\n%%EOF\n"
-	if _, err := svc.SaveReceipt(ctx, bills[0].ID, ReceiptUpload{
-		FileName: "comprobante.pdf",
+	if _, err := svc.SaveDocument(ctx, bill.ID, DebtDocumentInvoice, PDFUpload{
+		FileName: "factura.pdf",
 		Reader:   bytes.NewReader([]byte(replaced)),
 	}); err != nil {
-		t.Fatalf("SaveReceipt (reemplazo): %v", err)
+		t.Fatalf("SaveDocument (reemplazo): %v", err)
 	}
-	path, _, err := svc.ReceiptPath(ctx, bills[0].ID)
+	path, _, err := svc.DocumentPath(ctx, bill.ID, DebtDocumentInvoice)
 	if err != nil {
-		t.Fatalf("ReceiptPath: %v", err)
+		t.Fatalf("DocumentPath: %v", err)
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("leer comprobante reemplazado: %v", err)
+		t.Fatalf("leer factura reemplazada: %v", err)
 	}
 	if string(data) != replaced {
-		t.Errorf("el comprobante no fue reemplazado: %q", data)
+		t.Errorf("la factura no fue reemplazada: %q", data)
 	}
 }
 
-func TestDebtReceiptSaveRequiresPaidBill(t *testing.T) {
+func TestDebtDocumentSaveRequiresPaidBill(t *testing.T) {
 	svc, ctx, debtID, _ := newDebtReceiptTestService(t)
+	bill := firstBill(t, svc, ctx, debtID)
 
-	bills, err := svc.ListBills(ctx, debtID)
-	if err != nil || len(bills) != 1 {
-		t.Fatalf("ListBills: got %d, err %v", len(bills), err)
-	}
-
-	if _, err := svc.SaveReceipt(ctx, bills[0].ID, ReceiptUpload{
-		FileName: "comprobante.pdf",
+	if _, err := svc.SaveDocument(ctx, bill.ID, DebtDocumentInvoice, PDFUpload{
+		FileName: "factura.pdf",
 		Reader:   bytes.NewReader([]byte(testPDF)),
 	}); err == nil {
-		t.Fatal("se esperaba error al adjuntar comprobante a una cuota impaga")
+		t.Fatal("se esperaba error al adjuntar una factura a una cuota impaga")
 	}
 }
 
-func TestDebtReceiptMissingFile(t *testing.T) {
+func TestDebtDocumentMissingFile(t *testing.T) {
 	svc, ctx, debtID, dataDir := newDebtReceiptTestService(t)
+	bill := firstBill(t, svc, ctx, debtID)
 
-	bills, err := svc.ListBills(ctx, debtID)
-	if err != nil || len(bills) != 1 {
-		t.Fatalf("ListBills: got %d, err %v", len(bills), err)
-	}
-	if _, err := svc.PayBillWithReceipt(
+	if _, err := svc.PayBillWithDocuments(
 		ctx,
-		bills[0].ID,
+		bill.ID,
 		time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC),
 		"",
-		&ReceiptUpload{FileName: "comprobante.pdf", Reader: bytes.NewReader([]byte(testPDF))},
+		&PDFUpload{FileName: "factura.pdf", Reader: bytes.NewReader([]byte(testPDF))},
+		&PDFUpload{FileName: "comprobante.pdf", Reader: bytes.NewReader([]byte(testPDF))},
 	); err != nil {
-		t.Fatalf("PayBillWithReceipt: %v", err)
+		t.Fatalf("PayBillWithDocuments: %v", err)
 	}
 
-	path := filepath.Join(dataDir, "documents", fmt.Sprintf("%d", debtID), "payment_1.pdf")
-	if err := os.Remove(path); err != nil {
+	if err := os.Remove(documentPathFor(dataDir, debtID, "receipt_1.pdf")); err != nil {
 		t.Fatalf("borrar comprobante: %v", err)
 	}
 
@@ -277,10 +331,25 @@ func TestDebtReceiptMissingFile(t *testing.T) {
 	if err != nil || len(reloaded) != 1 {
 		t.Fatalf("ListBills: got %d, err %v", len(reloaded), err)
 	}
+	if !reloaded[0].HasInvoice {
+		t.Error("has_invoice debería seguir en true")
+	}
 	if reloaded[0].HasReceipt {
 		t.Error("has_receipt debería ser false si el archivo no existe")
 	}
-	if _, _, err := svc.ReceiptPath(ctx, bills[0].ID); !errors.Is(err, ErrReceiptNotFound) {
-		t.Errorf("ReceiptPath: got %v, want ErrReceiptNotFound", err)
+	if _, _, err := svc.DocumentPath(ctx, bill.ID, DebtDocumentReceipt); !errors.Is(err, ErrDocumentNotFound) {
+		t.Errorf("DocumentPath: got %v, want ErrDocumentNotFound", err)
+	}
+
+	// Sin ningún archivo, has_documents debe ser false.
+	if err := os.Remove(documentPathFor(dataDir, debtID, "invoice_1.pdf")); err != nil {
+		t.Fatalf("borrar factura: %v", err)
+	}
+	debts, err := svc.List(ctx)
+	if err != nil || len(debts) != 1 {
+		t.Fatalf("List: got %d, err %v", len(debts), err)
+	}
+	if debts[0].HasDocuments {
+		t.Error("has_documents debería ser false sin archivos")
 	}
 }

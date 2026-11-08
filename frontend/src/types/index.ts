@@ -475,7 +475,7 @@ export interface Debt {
   next_due_date?: string
   last_due_date?: string
   last_paid_at?: string
-  has_receipts?: boolean
+  has_documents?: boolean
   created_at: string
   updated_at: string
 }
@@ -494,6 +494,7 @@ export interface DebtBill {
   status: 'pending' | 'paid'
   paid_at?: string
   payment_reference?: string
+  has_invoice?: boolean
   has_receipt?: boolean
   created_at: string
   updated_at: string
