@@ -8,6 +8,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
+import ContractModal from '../components/ContractModal'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import DebtCalendar from '../components/DebtCalendar'
@@ -45,6 +46,7 @@ export default function DeudasPage() {
   const [debts, setDebts] = useState<Debt[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
+  const [contractTarget, setContractTarget] = useState<Debt | null>(null)
   const [loading, setLoading] = useState(true)
 
   const loadDebts = useCallback(async () => {
@@ -191,6 +193,7 @@ export default function DeudasPage() {
       >
         <CardMenu
           options={[
+            { label: t('contracts.menu'), icon: 'pdf', onClick: () => setContractTarget(debt) },
             { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/deudas/edit/${debt.id}`) },
             { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget({ id: debt.id, name: debt.description }) },
           ]}
@@ -389,6 +392,16 @@ export default function DeudasPage() {
           subtitle={`${t('deudas.title')}: ${deleteTarget.name}`}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+      {contractTarget && (
+        <ContractModal
+          owner="debts"
+          entityId={contractTarget.id}
+          entityName={contractTarget.description}
+          hasContract={!!contractTarget.has_contract}
+          onClose={() => setContractTarget(null)}
+          onChanged={loadDebts}
         />
       )}
     </div>

@@ -28,6 +28,9 @@ type Debt struct {
 	NextDueDate   string  `json:"next_due_date,omitempty"`
 	LastDueDate   string  `json:"last_due_date,omitempty"`
 	LastPaidAt    string  `json:"last_paid_at,omitempty"`
+	// HasContract indica si existe un contrato PDF en el volumen (SPEC-123).
+	// Es calculado, no se persiste.
+	HasContract bool `json:"has_contract"`
 	// HasDocuments indica si la deuda tiene al menos una factura o comprobante
 	// PDF (SPEC-122). No se persiste.
 	HasDocuments bool       `json:"has_documents"`

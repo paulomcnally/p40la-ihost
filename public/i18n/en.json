@@ -20,6 +20,28 @@
     "back": "Back",
     "actions": "Actions"
   },
+  "contracts": {
+    "menu": "Contract",
+    "title": "Contract",
+    "drop_hint": "Drag and drop a PDF or choose a file",
+    "only_pdf": "PDF only",
+    "max_size": "Maximum 10 MB",
+    "select_file": "Choose PDF",
+    "upload": "Upload",
+    "uploading": "Uploading...",
+    "document_attached": "Contract attached",
+    "document_missing": "No contract uploaded",
+    "open": "Open",
+    "remove_title": "Remove contract?",
+    "remove_subtitle": "The PDF will be deleted from the volume and this action cannot be undone. Type \"confirmo\" to continue.",
+    "upload_success": "Contract uploaded",
+    "remove_success": "Contract removed",
+    "upload_error": "Could not upload the contract",
+    "remove_error": "Could not remove the contract",
+    "invalid_type": "The file must be a PDF",
+    "empty_file": "The file is empty",
+    "file_too_large": "The file exceeds the 10 MB limit"
+  },
   "menu": {
     "home": "Home",
     "services": "Services",
