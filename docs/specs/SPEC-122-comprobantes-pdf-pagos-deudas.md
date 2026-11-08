@@ -101,6 +101,7 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
    Solo para cuotas en estado `paid`. El menú de 3 puntos muestra "Adjuntar factura"/"Reemplazar factura" y "Adjuntar comprobante"/"Reemplazar comprobante" según corresponda.
 2. **REQ-014**: Mostrar en la tarjeta de deuda (`DeudasPage`) un indicador discreto si la deuda tiene al menos un documento (`has_documents`). No debe degradar el listado (máximo un `os.ReadDir` por deuda).
 3. **REQ-015**: Si el navegador no puede previsualizar el PDF inline (caso Safari/iOS), ofrecer un enlace de descarga alternativo (`?download=1`) en ambos endpoints.
+4. **REQ-019**: En el detalle de deuda, la fila de cada cuota debe reservar espacio a la derecha (`pr-14`) para que el menú de 3 puntos no se superponga con el badge de estado ni con el monto. El menú debe quedar visible y clickeable en móvil y desktop.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -470,6 +471,7 @@ file: <PDF obligatorio>
 - [ ] **CA-014**: Si se borra un archivo manualmente del volumen, solo su flag pasa a `false` y su endpoint devuelve 404; el otro documento sigue visible y descargable.
 - [ ] **CA-015**: (P1) Se puede adjuntar o reemplazar la factura y el comprobante de una cuota ya pagada desde el menú de 3 puntos.
 - [ ] **CA-016**: Con `?download=1`, ambos endpoints devuelven `Content-Disposition: attachment`.
+- [ ] **CA-017**: En el detalle de deuda, el menú de 3 puntos de cada cuota queda visible y clickeable sin superposición con el badge de estado ("Pendiente"/"Pagada") ni con el monto, en móvil y desktop.
 - [ ] **CA-DARK**: Las dos áreas de upload, los nombres de archivo y los textos de ayuda usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode.
 - [ ] **CA-I18N**: Las claves nuevas existen en `frontend/public/i18n/es.json` y `en.json`, y `npm run build` las copia a `public/i18n/`.
 - [ ] **CA-BUILD**: `go test ./...`, `go vet ./...` y `npm run build` (que ejecuta `check-ui-rules.cjs`) pasan sin errores.
@@ -582,3 +584,4 @@ file: <PDF obligatorio>
 | 2026-11-07 | opencode | Creación inicial de la especificación (SPEC-122). |
 | 2026-11-07 | opencode | Implementación inicial con un único comprobante y renombre de `payment_{n}.pdf` a `receipt_{n}.pdf`. |
 | 2026-11-07 | opencode | Cambio de alcance a pedido del usuario: dos documentos independientes por pago, **factura** (`invoice_{n}.pdf`) y **comprobante** (`receipt_{n}.pdf`), con upload, iconos y acciones separadas. |
+| 2026-11-07 | opencode | Fix de UI solicitado en pruebas: la fila de cuota reserva espacio a la derecha (`pr-14`) para que el badge de estado no tape el menú de 3 puntos. |
