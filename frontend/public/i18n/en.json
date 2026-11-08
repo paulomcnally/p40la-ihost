@@ -729,6 +729,19 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Application settings",
+    "app": {
+      "title": "App",
+      "subtitle": "Install p40la on your phone to open it as an app.",
+      "install": "Install app",
+      "installed": "App installed",
+      "ios_how": "How to install on iOS",
+      "ios_step_1": "Open this page in Safari.",
+      "ios_step_2": "Tap Share and choose “Add to Home Screen”.",
+      "ios_step_3": "Keep “Open as Web App” on and tap Add.",
+      "ios_hint": "On Chrome or Edge for iOS it is also in the Share menu.",
+      "android_unavailable": "Open the Chrome menu and choose “Install app”.",
+      "install_error": "Could not open the installer."
+    },
     "section_general": "General",
     "section_currencies": "Currencies",
     "language": {
