@@ -1,7 +1,7 @@
 ---
 title: "Forma de pago por deuda y plantillas dinámicas de información"
 id: "SPEC-131"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-08"
 updated: "2026-11-08"
@@ -11,7 +11,7 @@ github_issue: 134
 # Forma de pago por deuda y plantillas dinámicas de información
 
 **ID**: SPEC-131
-**Estado**: pending_release
+**Estado**: released
 **Autor**: opencode
 **Creado**: 2026-11-08
 **Actualizado**: 2026-11-08
@@ -758,3 +758,4 @@ Agregar en `frontend/public/i18n/es.json` y `en.json`:
 | 2026-11-08 | opencode | Ajuste de navegación solicitado por el usuario: Deudas → menú de 3 puntos → **Plantillas** → hub → **Plantillas de información** → listado/constructor. |
 | 2026-11-08 | opencode | Implementación P0 completa: migración 0046, modelos/storage/servicio/handlers/rutas, hub/listado/constructor, modal de forma de pago, pestaña Información, i18n es/en, tests Go/frontend y build. Servidor local de prueba en `:8088` con DB sintética; pendiente validación manual del usuario. |
 | 2026-11-08 | opencode | Validación manual confirmada por el usuario. Se inicia el release: estado `pending_release`, merge a `main`, bump de versión e imagen Docker. |
+| 2026-11-08 | opencode | Release v0.5.8: implementación mergeada a `main` (commit `d461930`, merge `99b0093`, bump `78771bc`), imagen Docker multi-arch publicada (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) y spec cerrada. |
