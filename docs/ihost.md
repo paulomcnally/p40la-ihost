@@ -52,6 +52,17 @@ La app incluye manifest, íconos y service worker. Para que Chrome Android ofrez
 
 > **Si ya tenés el add-on oficial `tailscale/TailScale` de iHost:** el nodo `ihost.<tailnet>.ts.net` que ves en el admin de Tailscale es el iHost (UI de eWeLink CUBE), **no** es la app `p40la-ihost`. Ese add-on no publica el puerto `8088` con HTTPS ni permite configurar Serve desde su UI web. Para la PWA se instala **aparte** el contenedor `tailscale/tailscale` con `TS_SERVE_CONFIG` (nodo `p40la-ihost`); no reemplaza al add-on oficial y ambos pueden convivir en el iHost.
 
+### ¿Add-on oficial o contenedor `tailscale/tailscale`?
+
+| | Add-on oficial `tailscale/TailScale` | Contenedor `tailscale/tailscale` |
+|---|---|---|
+| Cómo se instala | Add-on/Docker → buscar `tailscale/TailScale` → Add | Docker → **+** → `tailscale/tailscale` → Add |
+| Seña particular | Botón **Go to TailScale**; nodo `ihost` | Variables `TS_AUTHKEY`, `TS_HOSTNAME`, `TS_SERVE_CONFIG`; nodo definido por vos |
+| ¿Publica la app en `:8088`? | **No** (solo la UI del iHost) | **Sí**, con `TS_SERVE_CONFIG` + volumen `/config` |
+| ¿Acepta `serve.json`? | **No** | **Sí** |
+
+Si tenés el add-on oficial, no lo borres: sirve para acceder a la UI del iHost. Para la PWA usá el contenedor aparte. Si en cambio ya tenés el contenedor `tailscale/tailscale`, solo falta agregarle el volumen `/config` con `serve.json` y la variable `TS_SERVE_CONFIG=/config/serve.json`.
+
 ### HTTPS con Tailscale Serve (todo desde la UI del iHost)
 
 Tailscale publica la app en `https://<nodo>.<tailnet>.ts.net` con certificado Let's Encrypt automático, sin abrir puertos a Internet. En el iHost **no hace falta `docker exec` ni una consola**: la UI de Docker permite definir variables de entorno y volúmenes antes de ejecutar cada add-on, y el `serve.json` se edita con el add-on **Filebrowser**. Tailscale aplica la configuración de Serve de forma declarativa con `TS_SERVE_CONFIG`.
