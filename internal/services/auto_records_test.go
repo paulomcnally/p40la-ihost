@@ -207,6 +207,27 @@ func TestAutoMaintenanceServiceCreateListAndTotals(t *testing.T) {
 	}
 }
 
+func TestAutoMaintenanceServiceUsaNombreDeInstitucion(t *testing.T) {
+	f := newAutoRecordsFixture(t)
+	ctx := context.Background()
+
+	item, err := f.maintenance.Create(ctx, f.autoID, models.AutoMaintenanceInput{
+		PerformedAt:   "2026-10-15",
+		Mileage:       1000,
+		InstitutionID: &f.workshopID,
+		WorkshopName:  "Nombre ingresado por el cliente",
+		LaborCost:     1,
+		SuppliesCost:  2,
+		CurrencyID:    f.currencyID,
+	})
+	if err != nil {
+		t.Fatalf("crear mantenimiento: %v", err)
+	}
+	if item.WorkshopName != "Taller Demo" {
+		t.Fatalf("workshop_name debería derivarse de la institución: got %q", item.WorkshopName)
+	}
+}
+
 func TestAutoMaintenanceServiceValidaciones(t *testing.T) {
 	f := newAutoRecordsFixture(t)
 	ctx := context.Background()

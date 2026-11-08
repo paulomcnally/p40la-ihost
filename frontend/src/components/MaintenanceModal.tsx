@@ -85,11 +85,11 @@ export default function MaintenanceModal({
 
   const handleInstitutionChange = (value: string | number) => {
     const nextId = value === '' ? '' : Number(value)
-    setInstitutionId(nextId)
-    if (nextId !== '') {
-      const selected = workshops.find((institution) => institution.id === nextId)
-      if (selected) setWorkshopName(selected.name)
+    if (nextId === '' && institutionId !== '') {
+      const previous = workshops.find((institution) => institution.id === institutionId)
+      if (previous) setWorkshopName(previous.name)
     }
+    setInstitutionId(nextId)
   }
 
   const handleUpload = async (files: File[]) => {
@@ -121,7 +121,7 @@ export default function MaintenanceModal({
       setError(t('autos.maintenances.mileage_required'))
       return
     }
-    if (!workshopName.trim()) {
+    if (institutionId === '' && !workshopName.trim()) {
       setActiveFormTab('info')
       setError(t('autos.maintenances.workshop_required'))
       return
@@ -139,7 +139,7 @@ export default function MaintenanceModal({
         performed_at: performedAt,
         mileage: trimNumber(mileage),
         institution_id: institutionId === '' ? undefined : Number(institutionId),
-        workshop_name: workshopName.trim(),
+        workshop_name: institutionId === '' ? workshopName.trim() : '',
         description: description.trim(),
         labor_cost: trimNumber(laborCost),
         supplies_cost: trimNumber(suppliesCost),
@@ -275,17 +275,21 @@ export default function MaintenanceModal({
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('autos.maintenances.workshop')}</label>
-                <input
-                  type="text"
-                  value={workshopName}
-                  onChange={(e) => setWorkshopName(e.target.value)}
-                  placeholder={t('autos.maintenances.workshop_placeholder')}
-                  className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] placeholder:text-text-secondary"
-                  required
-                />
-              </div>
+              {institutionId === '' ? (
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('autos.maintenances.workshop')}</label>
+                  <input
+                    type="text"
+                    value={workshopName}
+                    onChange={(e) => setWorkshopName(e.target.value)}
+                    placeholder={t('autos.maintenances.workshop_placeholder')}
+                    className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] placeholder:text-text-secondary"
+                    required
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-text-secondary">{t('autos.maintenances.institution_name_hint')}</p>
+              )}
 
               <div>
                 <label className="block text-sm font-medium mb-1">{t('autos.maintenances.description')}</label>
