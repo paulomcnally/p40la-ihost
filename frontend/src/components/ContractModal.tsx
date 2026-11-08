@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { api } from '../api'
 import { Icon } from './Icons'
 import DeleteModal from './DeleteModal'
@@ -42,14 +42,6 @@ export default function ContractModal({
   const [confirming, setConfirming] = useState(false)
 
   const busy = saving || confirming
-
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !busy) onClose()
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [busy, onClose])
 
   const validateFile = (selected: File): string | null => {
     if (!selected.name.toLowerCase().endsWith('.pdf')) return t('contracts.invalid_type')
@@ -127,19 +119,14 @@ export default function ContractModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-      onClick={() => {
-        if (!busy) onClose()
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="contract-modal-title"
-        className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm overflow-hidden"
-        onClick={(event) => event.stopPropagation()}
-      >
+    <>
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contract-modal-title"
+          className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm overflow-hidden"
+        >
         <div className="p-5">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="flex items-center gap-3 min-w-0">
@@ -271,15 +258,16 @@ export default function ContractModal({
           )}
         </div>
       </div>
-
-      {confirming && (
-        <DeleteModal
-          title={t('contracts.remove_title')}
-          subtitle={t('contracts.remove_subtitle')}
-          onConfirm={handleRemove}
-          onCancel={() => setConfirming(false)}
-        />
-      )}
     </div>
+
+    {confirming && (
+      <DeleteModal
+        title={t('contracts.remove_title')}
+        subtitle={t('contracts.remove_subtitle')}
+        onConfirm={handleRemove}
+        onCancel={() => setConfirming(false)}
+      />
+    )}
+    </>
   )
 }
