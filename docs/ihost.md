@@ -72,12 +72,14 @@ Tailscale publica la app en `https://<nodo>.<tailnet>.ts.net` con certificado Le
 1. En el admin de Tailscale, habilita **MagicDNS** y **HTTPS Certificates** para la tailnet.
 2. Crea un **auth key** (Settings → Keys). Guardalo como secreto; no lo commitees.
 
-#### 2. Crear los volúmenes en el iHost
+#### 2. Crear o identificar los volúmenes en el iHost
 
-En `http://ihost.local` → **Docker → Volume → Add**:
+> **Los nombres son ejemplos, no son obligatorios.** Si ya tenés Tailscale configurado, **no crees un volumen de estado nuevo**: usá el que ya tiene el contenedor. Para `serve.json` podés crear un volumen nuevo o reutilizar uno existente; lo importante es que Filebrowser y Tailscale monten **el mismo volumen** y que `TS_SERVE_CONFIG` apunte al archivo.
 
-- `p40la-tailscale-state` — estado del nodo (identidad, claves).
-- `p40la-tailscale-config` — configuración de Serve (`serve.json`).
+En `http://ihost.local` → **Docker → Volume**:
+
+- **Estado**: usá el volumen que ya tiene tu Tailscale (por ejemplo, el que está montado en `/var/lib/tailscale` o `/data/tailscalState`). Si estás instalando desde cero, creá uno, por ejemplo `p40la-tailscale-state`.
+- **Configuración de Serve**: creá un volumen nuevo, por ejemplo `p40la-tailscale-config`, o usá uno existente que puedas montar en `/config`. Ese volumen contendrá `serve.json`.
 
 #### 3. Crear `serve.json` con Filebrowser
 
@@ -122,6 +124,10 @@ En `http://ihost.local` → **Docker → Volume → Add**:
    - `AllowFunnel: false` mantiene la app privada (solo tailnet).
    - El archivo debe quedar dentro de una **carpeta montada**, no como archivo suelto: Tailscale detecta los cambios del directorio por fsnotify.
 5. Guardá el archivo. Podés dejar Filebrowser corriendo o detenerlo; no es necesario para que Tailscale funcione.
+
+> **Seguridad**: Filebrowser viene con `admin`/`admin`. Cambiá la contraseña desde su configuración o detené el add-on después de editar `serve.json`. No lo expongas a Internet; solo debe ser accesible en la LAN.
+>
+> **Si no ves la carpeta**: verificá que el volumen `p40la-tailscale-config` esté mapeado exactamente a `/srv/p40la-tailscale-config` y que el add-on esté corriendo. Si el archivo no aparece en Tailscale, revisá que `TS_SERVE_CONFIG=/config/serve.json` esté en el contenedor Tailscale y que el volumen esté montado como directorio en `/config`.
 
 #### 4. Ejecutar Tailscale en la UI de Docker
 
