@@ -100,6 +100,7 @@ Consideraciones iHost: no se agregan dependencias nuevas (solo `net/http`, `mime
     - Después de subir un documento, el modal **permanece abierto** y pasa al estado "Abrir"/"Remover" sin cerrarse.
     - El modal **no se cierra al hacer click fuera**; solo se cierra con la **X** o con los botones **Cancelar/Cerrar**.
     - El overlay del modal **bloquea la interacción con la página de fondo**, incluidos los menús de 3 puntos y otros controles.
+    - Esta regla aplica a **todos los modales del proyecto**, no solo al modal de documento (ver `AGENTS.md` y `docs/project-rules.md` §4.7).
     - **"Remover"** abre un segundo modal de confirmación (reutilizar `DeleteModal`) que exige escribir **"confirmo"** para habilitar la acción. Al confirmar, se elimina solo ese archivo y se actualizan los flags.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
@@ -495,6 +496,7 @@ file: <PDF obligatorio>
 - [ ] **CA-020**: Después de subir una factura o comprobante desde el modal, el modal permanece abierto y muestra los botones "Abrir" y "Remover" del documento recién subido.
 - [ ] **CA-021**: Hacer click fuera del modal de documento no lo cierra; solo lo cierran la X o los botones Cancelar/Cerrar.
 - [ ] **CA-022**: Mientras el modal de documento está abierto, el overlay bloquea los clicks en la página de fondo; el menú de 3 puntos y otros controles no responden.
+- [ ] **CA-023**: Ningún modal del proyecto (incluido `DeleteModal` y los modales existentes de formularios/selectores) se cierra al hacer click fuera; todos tienen Cancelar/Cerrar o X.
 - [ ] **CA-016**: Con `?download=1`, ambos endpoints devuelven `Content-Disposition: attachment`.
 - [ ] **CA-017**: En el detalle de deuda, el menú de 3 puntos de cada cuota queda visible y clickeable sin superposición con el badge de estado ("Pendiente"/"Pagada") ni con el monto, en móvil y desktop.
 - [ ] **CA-DARK**: Las dos áreas de upload, los nombres de archivo y los textos de ayuda usan tokens del tema (`bg-card`, `text-text`, `text-text-secondary`) y se verificaron en darkmode.
@@ -616,3 +618,4 @@ file: <PDF obligatorio>
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: después de subir un documento, el modal permanece abierto en el estado Abrir/Remover; el refresco de datos es silencioso para no desmontarlo. |
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: el modal de documento no se cierra al hacer click fuera; solo con la X o los botones Cancelar/Cerrar. |
 | 2026-11-07 | opencode | Ajuste solicitado en pruebas: el overlay del modal bloquea la página de fondo (incluido el menú de 3 puntos); la confirmación de borrado queda por encima del modal. |
+| 2026-11-07 | opencode | Regla aplicada a todos los modales del proyecto: sin cierre por click fuera, overlay bloqueante y cierre solo con Cancelar/Cerrar o X. Documentada en `AGENTS.md`, `docs/project-rules.md` §4.7, el template de specs y la skill. |
