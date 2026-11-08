@@ -103,20 +103,29 @@ func newAutoRecordAPI(t *testing.T) *autoRecordAPI {
 
 func (a *autoRecordAPI) createMaintenance(t *testing.T) *models.AutoMaintenanceDetail {
 	t.Helper()
-	item, err := a.maintenanceService.Create(context.Background(), a.autoID, models.AutoMaintenanceInput{
+	ctx := context.Background()
+	item, err := a.maintenanceService.Create(ctx, a.autoID, models.AutoMaintenanceInput{
 		PerformedAt:   "2026-10-15",
 		Mileage:       42000,
 		InstitutionID: a.workshopID,
 		CurrencyID:    a.currencyID,
-		Items: []models.AutoMaintenanceItemInput{
-			{ItemType: models.AutoMaintenanceItemLabor, Description: "Pintura", Amount: 45},
-			{ItemType: models.AutoMaintenanceItemSupplies, Description: "Tornillos", Amount: 80},
-		},
 	})
 	if err != nil {
 		t.Fatalf("crear mantenimiento: %v", err)
 	}
-	return item
+	for _, input := range []models.AutoMaintenanceItemInput{
+		{ItemType: models.AutoMaintenanceItemLabor, Description: "Pintura", Amount: 45},
+		{ItemType: models.AutoMaintenanceItemSupplies, Description: "Tornillos", Amount: 80},
+	} {
+		if _, err := a.maintenanceService.CreateItem(ctx, a.autoID, item.ID, input); err != nil {
+			t.Fatalf("crear concepto: %v", err)
+		}
+	}
+	detail, err := a.maintenanceService.Get(ctx, a.autoID, item.ID)
+	if err != nil {
+		t.Fatalf("obtener mantenimiento: %v", err)
+	}
+	return detail
 }
 
 func TestAutoMaintenanceHandlerCreateAndList(t *testing.T) {
@@ -124,11 +133,7 @@ func TestAutoMaintenanceHandlerCreateAndList(t *testing.T) {
 
 	body := fmt.Sprintf(`{
 		"performed_at":"2026-10-15","mileage":42000,"institution_id":%d,
-		"currency_id":%d,
-		"items":[
-			{"item_type":"labor","description":"Pintura","amount":45},
-			{"item_type":"supplies","description":"Tornillos","amount":80}
-		]
+		"currency_id":%d
 	}`, api.workshopID, api.currencyID)
 	req := httptest.NewRequest(http.MethodPost, "/api/autos/"+strconv.FormatInt(api.autoID, 10)+"/maintenances", bytes.NewBufferString(body))
 	req.AddCookie(api.cookie)
@@ -146,11 +151,24 @@ func TestAutoMaintenanceHandlerCreateAndList(t *testing.T) {
 	if created.InstitutionName != "Taller Demo" {
 		t.Errorf("institution_name: esperado Taller Demo, got %q", created.InstitutionName)
 	}
-	if created.TotalCost != 125 {
-		t.Errorf("total_cost: esperado 125, got %v", created.TotalCost)
+	if created.TotalCost != 0 || len(created.Items) != 0 {
+		t.Errorf("el mantenimiento recién creado no debería tener conceptos: %+v", created)
 	}
-	if len(created.Items) != 2 {
-		t.Errorf("items: esperado 2 conceptos, got %d", len(created.Items))
+
+	// Agregar los conceptos desde el detalle.
+	for _, itemBody := range []string{
+		`{"item_type":"labor","description":"Pintura","amount":45}`,
+		`{"item_type":"supplies","description":"Tornillos","amount":80}`,
+	} {
+		itemReq := httptest.NewRequest(http.MethodPost, "/api/autos/1/maintenances/1/items", bytes.NewBufferString(itemBody))
+		itemReq.AddCookie(api.cookie)
+		itemReq.SetPathValue("id", strconv.FormatInt(api.autoID, 10))
+		itemReq.SetPathValue("maintenance_id", strconv.FormatInt(created.ID, 10))
+		itemRR := httptest.NewRecorder()
+		AuthMiddleware(api.auth)(http.HandlerFunc(api.maintenance.CreateMaintenanceItem)).ServeHTTP(itemRR, itemReq)
+		if itemRR.Code != http.StatusCreated {
+			t.Fatalf("crear concepto: esperado 201, got %d: %s", itemRR.Code, itemRR.Body.String())
+		}
 	}
 
 	listReq := httptest.NewRequest(http.MethodGet, "/api/autos/"+strconv.FormatInt(api.autoID, 10)+"/maintenances", nil)
@@ -167,6 +185,69 @@ func TestAutoMaintenanceHandlerCreateAndList(t *testing.T) {
 	}
 	if len(list.Items) != 1 || list.LatestMileage != 42000 {
 		t.Errorf("lista inesperada: %+v", list)
+	}
+	if list.Items[0].TotalCost != 125 || len(list.Items[0].Items) != 2 {
+		t.Errorf("conceptos/totales inesperados: %+v", list.Items[0])
+	}
+
+	detailReq := httptest.NewRequest(http.MethodGet, "/api/autos/1/maintenances/1", nil)
+	detailReq.AddCookie(api.cookie)
+	detailReq.SetPathValue("id", strconv.FormatInt(api.autoID, 10))
+	detailReq.SetPathValue("maintenance_id", strconv.FormatInt(created.ID, 10))
+	detailRR := httptest.NewRecorder()
+	AuthMiddleware(api.auth)(http.HandlerFunc(api.maintenance.GetMaintenance)).ServeHTTP(detailRR, detailReq)
+	if detailRR.Code != http.StatusOK {
+		t.Fatalf("detalle: esperado 200, got %d: %s", detailRR.Code, detailRR.Body.String())
+	}
+	var detail models.AutoMaintenanceDetail
+	if err := json.Unmarshal(detailRR.Body.Bytes(), &detail); err != nil {
+		t.Fatalf("decodificar detalle: %v", err)
+	}
+	if detail.TotalCost != 125 || len(detail.Items) != 2 {
+		t.Errorf("detalle inesperado: %+v", detail)
+	}
+}
+
+func TestAutoMaintenanceItemHandlerCRUD(t *testing.T) {
+	api := newAutoRecordAPI(t)
+	maintenance := api.createMaintenance(t)
+
+	body := `{"item_type":"labor","description":"Lijado","amount":10}`
+	req := httptest.NewRequest(http.MethodPost, "/api/autos/1/maintenances/1/items", bytes.NewBufferString(body))
+	req.AddCookie(api.cookie)
+	req.SetPathValue("id", strconv.FormatInt(api.autoID, 10))
+	req.SetPathValue("maintenance_id", strconv.FormatInt(maintenance.ID, 10))
+	rr := httptest.NewRecorder()
+	AuthMiddleware(api.auth)(http.HandlerFunc(api.maintenance.CreateMaintenanceItem)).ServeHTTP(rr, req)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("crear concepto: esperado 201, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var item models.AutoMaintenanceItem
+	if err := json.Unmarshal(rr.Body.Bytes(), &item); err != nil {
+		t.Fatalf("decodificar concepto: %v", err)
+	}
+
+	updateBody := `{"item_type":"labor","description":"Lijado fino","amount":15}`
+	updateReq := httptest.NewRequest(http.MethodPut, "/api/autos/1/maintenances/1/items/1", bytes.NewBufferString(updateBody))
+	updateReq.AddCookie(api.cookie)
+	updateReq.SetPathValue("id", strconv.FormatInt(api.autoID, 10))
+	updateReq.SetPathValue("maintenance_id", strconv.FormatInt(maintenance.ID, 10))
+	updateReq.SetPathValue("item_id", strconv.FormatInt(item.ID, 10))
+	updateRR := httptest.NewRecorder()
+	AuthMiddleware(api.auth)(http.HandlerFunc(api.maintenance.UpdateMaintenanceItem)).ServeHTTP(updateRR, updateReq)
+	if updateRR.Code != http.StatusOK {
+		t.Fatalf("actualizar concepto: esperado 200, got %d: %s", updateRR.Code, updateRR.Body.String())
+	}
+
+	deleteReq := httptest.NewRequest(http.MethodDelete, "/api/autos/1/maintenances/1/items/1", nil)
+	deleteReq.AddCookie(api.cookie)
+	deleteReq.SetPathValue("id", strconv.FormatInt(api.autoID, 10))
+	deleteReq.SetPathValue("maintenance_id", strconv.FormatInt(maintenance.ID, 10))
+	deleteReq.SetPathValue("item_id", strconv.FormatInt(item.ID, 10))
+	deleteRR := httptest.NewRecorder()
+	AuthMiddleware(api.auth)(http.HandlerFunc(api.maintenance.DeleteMaintenanceItem)).ServeHTTP(deleteRR, deleteReq)
+	if deleteRR.Code != http.StatusOK {
+		t.Fatalf("eliminar concepto: esperado 200, got %d: %s", deleteRR.Code, deleteRR.Body.String())
 	}
 }
 

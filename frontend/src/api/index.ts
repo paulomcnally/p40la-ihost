@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceItem, AutoMaintenanceItemInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -246,9 +246,16 @@ export const api = {
     removeService: (id: number, serviceId: number) => del(`/api/autos/${id}/services/${serviceId}`),
     availableServices: (id: number) => get<Service[]>(`/api/autos/${id}/available-services`),
     listMaintenances: (id: number) => get<AutoMaintenanceList>(`/api/autos/${id}/maintenances`),
+    getMaintenance: (id: number, maintenanceId: number) => get<AutoMaintenance>(`/api/autos/${id}/maintenances/${maintenanceId}`),
     createMaintenance: (id: number, body: AutoMaintenanceInput) => post<AutoMaintenance>(`/api/autos/${id}/maintenances`, body),
     updateMaintenance: (id: number, maintenanceId: number, body: AutoMaintenanceInput) => put<AutoMaintenance>(`/api/autos/${id}/maintenances/${maintenanceId}`, body),
     deleteMaintenance: (id: number, maintenanceId: number) => del(`/api/autos/${id}/maintenances/${maintenanceId}`),
+    createMaintenanceItem: (id: number, maintenanceId: number, body: AutoMaintenanceItemInput) =>
+      post<AutoMaintenanceItem>(`/api/autos/${id}/maintenances/${maintenanceId}/items`, body),
+    updateMaintenanceItem: (id: number, maintenanceId: number, itemId: number, body: AutoMaintenanceItemInput) =>
+      put(`/api/autos/${id}/maintenances/${maintenanceId}/items/${itemId}`, body),
+    deleteMaintenanceItem: (id: number, maintenanceId: number, itemId: number) =>
+      del(`/api/autos/${id}/maintenances/${maintenanceId}/items/${itemId}`),
     uploadMaintenanceAttachment: (id: number, maintenanceId: number, file: File) =>
       postFormData<AutoAttachment>(`/api/autos/${id}/maintenances/${maintenanceId}/attachments`, file),
     maintenanceAttachmentUrl: (id: number, maintenanceId: number, attachmentId: number, download = false) =>

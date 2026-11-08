@@ -76,7 +76,7 @@ func (s *AutoMaintenanceStorage) GetByID(ctx context.Context, autoID, id int64) 
 	return item, nil
 }
 
-// Create inserta un mantenimiento y sus líneas de detalle en una transacción.
+// Create inserta un mantenimiento (solo información básica).
 func (s *AutoMaintenanceStorage) Create(
 	ctx context.Context,
 	autoID int64,
@@ -85,15 +85,8 @@ func (s *AutoMaintenanceStorage) Create(
 	institutionID int64,
 	description string,
 	currencyID int64,
-	items []models.AutoMaintenanceItemInput,
 ) (*models.AutoMaintenance, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("iniciar transacción de mantenimiento: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	result, err := tx.ExecContext(ctx, `
+	result, err := s.db.ExecContext(ctx, `
 		INSERT INTO auto_maintenances
 			(auto_id, performed_at, mileage, institution_id, description, currency_id)
 		VALUES (?, ?, ?, ?, ?, ?)
@@ -105,16 +98,10 @@ func (s *AutoMaintenanceStorage) Create(
 	if err != nil {
 		return nil, fmt.Errorf("obtener id de mantenimiento: %w", err)
 	}
-	if err := insertAutoMaintenanceItems(ctx, tx, id, items); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("confirmar mantenimiento: %w", err)
-	}
 	return s.getBase(ctx, autoID, id)
 }
 
-// Update actualiza un mantenimiento y reemplaza sus líneas de detalle.
+// Update actualiza la información básica de un mantenimiento.
 func (s *AutoMaintenanceStorage) Update(
 	ctx context.Context,
 	autoID, id int64,
@@ -123,15 +110,8 @@ func (s *AutoMaintenanceStorage) Update(
 	institutionID int64,
 	description string,
 	currencyID int64,
-	items []models.AutoMaintenanceItemInput,
 ) (bool, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return false, fmt.Errorf("iniciar transacción de mantenimiento: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	result, err := tx.ExecContext(ctx, `
+	result, err := s.db.ExecContext(ctx, `
 		UPDATE auto_maintenances
 		SET performed_at = ?, mileage = ?, institution_id = ?, description = ?,
 			currency_id = ?, updated_at = CURRENT_TIMESTAMP
@@ -144,20 +124,7 @@ func (s *AutoMaintenanceStorage) Update(
 	if err != nil {
 		return false, fmt.Errorf("verificar actualización de mantenimiento: %w", err)
 	}
-	if affected == 0 {
-		return false, nil
-	}
-
-	if _, err := tx.ExecContext(ctx, `DELETE FROM auto_maintenance_items WHERE maintenance_id = ?`, id); err != nil {
-		return false, fmt.Errorf("limpiar conceptos del mantenimiento: %w", err)
-	}
-	if err := insertAutoMaintenanceItems(ctx, tx, id, items); err != nil {
-		return false, err
-	}
-	if err := tx.Commit(); err != nil {
-		return false, fmt.Errorf("confirmar mantenimiento: %w", err)
-	}
-	return true, nil
+	return affected > 0, nil
 }
 
 // Delete elimina un mantenimiento y devuelve si existía. Las líneas se
@@ -276,16 +243,58 @@ func (s *AutoMaintenanceStorage) getBase(ctx context.Context, autoID, id int64) 
 	return &base, nil
 }
 
-func insertAutoMaintenanceItems(ctx context.Context, tx *sql.Tx, maintenanceID int64, items []models.AutoMaintenanceItemInput) error {
-	for _, item := range items {
-		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO auto_maintenance_items (maintenance_id, item_type, description, amount)
-			VALUES (?, ?, ?, ?)
-		`, maintenanceID, item.ItemType, item.Description, item.Amount); err != nil {
-			return fmt.Errorf("insertar concepto del mantenimiento: %w", err)
-		}
+// CreateItem inserta una línea de detalle en un mantenimiento.
+func (s *AutoMaintenanceStorage) CreateItem(ctx context.Context, maintenanceID int64, input models.AutoMaintenanceItemInput) (*models.AutoMaintenanceItem, error) {
+	result, err := s.db.ExecContext(ctx, `
+		INSERT INTO auto_maintenance_items (maintenance_id, item_type, description, amount)
+		VALUES (?, ?, ?, ?)
+	`, maintenanceID, input.ItemType, input.Description, input.Amount)
+	if err != nil {
+		return nil, fmt.Errorf("crear concepto del mantenimiento: %w", err)
 	}
-	return nil
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("obtener id de concepto: %w", err)
+	}
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, maintenance_id, item_type, description, amount, created_at, updated_at
+		FROM auto_maintenance_items
+		WHERE id = ? AND maintenance_id = ?
+	`, id, maintenanceID)
+	return scanAutoMaintenanceItemRow(row)
+}
+
+// UpdateItem actualiza una línea de detalle y devuelve si existía.
+func (s *AutoMaintenanceStorage) UpdateItem(ctx context.Context, maintenanceID, itemID int64, input models.AutoMaintenanceItemInput) (bool, error) {
+	result, err := s.db.ExecContext(ctx, `
+		UPDATE auto_maintenance_items
+		SET item_type = ?, description = ?, amount = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ? AND maintenance_id = ?
+	`, input.ItemType, input.Description, input.Amount, itemID, maintenanceID)
+	if err != nil {
+		return false, fmt.Errorf("actualizar concepto del mantenimiento: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("verificar actualización del concepto: %w", err)
+	}
+	return affected > 0, nil
+}
+
+// DeleteItem elimina una línea de detalle y devuelve si existía.
+func (s *AutoMaintenanceStorage) DeleteItem(ctx context.Context, maintenanceID, itemID int64) (bool, error) {
+	result, err := s.db.ExecContext(ctx, `
+		DELETE FROM auto_maintenance_items
+		WHERE id = ? AND maintenance_id = ?
+	`, itemID, maintenanceID)
+	if err != nil {
+		return false, fmt.Errorf("eliminar concepto del mantenimiento: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("verificar eliminación del concepto: %w", err)
+	}
+	return affected > 0, nil
 }
 
 type autoMaintenanceScanner interface {
@@ -324,4 +333,15 @@ func scanAutoMaintenanceItem(scanner autoMaintenanceScanner) (models.AutoMainten
 		return item, fmt.Errorf("escanear concepto de mantenimiento: %w", err)
 	}
 	return item, nil
+}
+
+func scanAutoMaintenanceItemRow(row *sql.Row) (*models.AutoMaintenanceItem, error) {
+	item, err := scanAutoMaintenanceItem(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, sql.ErrNoRows
+		}
+		return nil, err
+	}
+	return &item, nil
 }
