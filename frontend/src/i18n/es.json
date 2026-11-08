@@ -553,6 +553,7 @@
       "institution_required": "Seleccioná un centro de inspección",
       "save_error": "Error al guardar la inspección",
       "next_due": "Próxima inspección",
+      "register_pending": "Registrar inspección de {year}",
       "delete_title": "Eliminar inspección",
       "delete_subtitle": "¿Eliminar la inspección del año {year}?",
       "status_overdue": "Vencida",
