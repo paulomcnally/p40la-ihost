@@ -226,6 +226,8 @@ Regla práctica: si un modal se abre desde otro modal, su overlay debe ser **al 
 
 #### 4.2.4 Ajustes de capas y cierres
 
+Rutas relativas a `frontend/src/`.
+
 | Archivo:línea | z actual | Cierre visible | Acción |
 |---------------|----------|----------------|--------|
 | `components/AddInsuranceModal.tsx:69` | `z-50` | Condicional (solo tras elegir servicio) | Subir a `z-[60]` y agregar X fija |
