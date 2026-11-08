@@ -20,7 +20,7 @@ import type {
 } from '../types'
 import { resolveCurrency } from '../utils/currency'
 
-type TabKey = 'informacion' | 'mano_obra' | 'insumos' | 'facturas'
+type TabKey = 'mano_obra' | 'insumos' | 'facturas'
 
 export default function AutoMaintenanceShowPage() {
   const { id, maintenanceId } = useParams()
@@ -29,9 +29,7 @@ export default function AutoMaintenanceShowPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
   const tab: TabKey =
-    tabParam === 'mano_obra' || tabParam === 'insumos' || tabParam === 'facturas'
-      ? tabParam
-      : 'informacion'
+    tabParam === 'insumos' || tabParam === 'facturas' ? tabParam : 'mano_obra'
   const setTab = (key: TabKey) => {
     const next = new URLSearchParams(searchParams)
     next.set('tab', key)
@@ -166,37 +164,6 @@ export default function AutoMaintenanceShowPage() {
 
   return (
     <div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-        {([
-          { key: 'informacion' as TabKey, label: t('autos.maintenances.tabs.information'), icon: 'info', count: 0 },
-          { key: 'mano_obra' as TabKey, label: t('autos.maintenances.tabs.labor'), icon: 'wrench', count: laborCount },
-          { key: 'insumos' as TabKey, label: t('autos.maintenances.tabs.supplies'), icon: 'recycling', count: suppliesCount },
-          { key: 'facturas' as TabKey, label: t('autos.maintenances.tabs.files'), icon: 'pdf', count: maintenance.attachments.length },
-        ]).map((item) => (
-          <button
-            key={item.key}
-            onClick={() => setTab(item.key)}
-            aria-pressed={tab === item.key}
-            className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 rounded-ios-sm text-xs sm:text-sm font-medium transition-colors min-h-[44px] ${
-              tab === item.key ? 'bg-primary text-white' : 'bg-card text-text-secondary hover:bg-border'
-            }`}
-          >
-            <Icon name={item.icon} className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">{item.label}</span>
-            {item.count > 0 && (
-              <span
-                className={`inline-flex items-center justify-center min-w-5 px-1.5 py-0.5 rounded-full text-[10px] ${
-                  tab === item.key ? 'bg-white/20 text-white' : 'bg-bg text-text-secondary'
-                }`}
-              >
-                {item.count}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'informacion' && (
       <div className="relative bg-card rounded-ios shadow-ios p-4 sm:p-6 mb-6">
         <CardMenu
           options={[
@@ -230,7 +197,35 @@ export default function AutoMaintenanceShowPage() {
           </div>
         </div>
       </div>
-      )}
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {([
+          { key: 'mano_obra' as TabKey, label: t('autos.maintenances.tabs.labor'), icon: 'wrench', count: laborCount },
+          { key: 'insumos' as TabKey, label: t('autos.maintenances.tabs.supplies'), icon: 'recycling', count: suppliesCount },
+          { key: 'facturas' as TabKey, label: t('autos.maintenances.tabs.files'), icon: 'pdf', count: maintenance.attachments.length },
+        ]).map((item) => (
+          <button
+            key={item.key}
+            onClick={() => setTab(item.key)}
+            aria-pressed={tab === item.key}
+            className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 rounded-ios-sm text-xs sm:text-sm font-medium transition-colors min-h-[44px] ${
+              tab === item.key ? 'bg-primary text-white' : 'bg-card text-text-secondary hover:bg-border'
+            }`}
+          >
+            <Icon name={item.icon} className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">{item.label}</span>
+            {item.count > 0 && (
+              <span
+                className={`inline-flex items-center justify-center min-w-5 px-1.5 py-0.5 rounded-full text-[10px] ${
+                  tab === item.key ? 'bg-white/20 text-white' : 'bg-bg text-text-secondary'
+                }`}
+              >
+                {item.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
       {tab === 'mano_obra' && renderItems('labor')}
       {tab === 'insumos' && renderItems('supplies')}

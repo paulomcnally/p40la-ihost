@@ -508,7 +508,6 @@
       "detail_title": "Mantenimiento",
       "detail_hint": "Después de guardar, agregá mano de obra, insumos y archivos desde el detalle.",
       "tabs": {
-        "information": "Información",
         "labor": "Mano de obra",
         "supplies": "Insumos",
         "files": "Facturas"
