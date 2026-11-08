@@ -66,6 +66,7 @@ La implementación debe respetar las limitaciones del iHost: cero dependencias n
 9. **REQ-033**: Mostrar en cada fila de mantenimiento e inspección una acción visible **Adjuntar PDF** que abra un modal dedicado para gestionar los comprobantes de un registro ya creado, sin tener que editar el resto de sus campos. El modal permite subir varios PDFs y eliminar los existentes, y el contador de la fila se actualiza al cerrar.
 10. **REQ-034**: Mostrar en cada fila de mantenimiento e inspección una acción visible **Editar** además del menú de 3 puntos. En el banner de inspecciones, cuando el estado es `overdue` o `due_soon`, incluir una acción directa **Registrar inspección de {año}** que abra el modal con el año pendiente preseleccionado. El estado “Vencida” es el resultado calculado del ciclo pendiente y no un registro editable: si no existe una inspección para ese año, el usuario debe crearla.
 11. **REQ-035**: Organizar los modales de crear/editar mantenimiento e inspección en dos tabs: **Información** y **Facturas**. Información contiene los campos del registro; Facturas contiene la gestión de PDFs (subir, abrir, eliminar y pendientes). El tab Facturas muestra el contador de adjuntos existentes más pendientes. Si se intenta guardar desde Facturas con datos obligatorios incompletos, el modal vuelve a Información y muestra el error.
+12. **REQ-036**: Evitar la duplicación del nombre del taller cuando hay una institución asociada. Si el mantenimiento tiene `institution_id`, el backend usa siempre el nombre de esa institución y el formulario no muestra el campo “Nombre del taller”; muestra solo una nota de que el nombre se toma de la institución. Si no hay institución, el campo de nombre libre es obligatorio.
 
 ### 2.3 Requerimientos Funcionales (P2 - Deseables)
 
@@ -562,6 +563,7 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 - [ ] CA-023: Desde una inspección ya creada se puede usar la acción visible **Adjuntar PDF**, subir uno o más archivos y ver el contador actualizado al cerrar; el mismo comportamiento aplica a los mantenimientos.
 - [ ] CA-024: Cada fila de inspección/mantenimiento tiene una acción visible **Editar**. El banner de inspección con estado vencido/próximo muestra **Registrar inspección de {año}** y abre el modal con ese año preseleccionado; crear la inspección pendiente recalcula el cronograma.
 - [ ] CA-025: Los modales de crear/editar mantenimiento e inspección muestran tabs **Información** y **Facturas**. Facturas lista los PDFs existentes, permite subir varios y eliminar, y muestra el contador; guardar desde Facturas sin los datos obligatorios vuelve a Información con el error visible.
+- [ ] CA-026: Al elegir una institución en un mantenimiento, el formulario oculta “Nombre del taller” y el nombre mostrado/guardado es el de la institución. Al quitar la institución, aparece el campo libre y se exige un nombre. La API ignora `workshop_name` cuando recibe `institution_id`.
 
 ### 5.2 No funcionales
 
@@ -666,3 +668,4 @@ Códigos: `invalid_id`, `invalid_request`, `not_found`, `invalid_file`, `request
 | 2026-11-08 | opencode | Cambio iterativo: acción visible “Adjuntar PDF” por fila con modal dedicado para gestionar comprobantes después de crear el mantenimiento/inspección. Se agrega REQ-033 y CA-023. |
 | 2026-11-08 | opencode | Cambio iterativo: acciones visibles “Editar” en cada fila y CTA “Registrar inspección de {año}” en el banner de estado para crear el ciclo pendiente. Se agrega REQ-034 y CA-024. |
 | 2026-11-08 | opencode | Cambio iterativo: modales de crear/editar mantenimiento e inspección con tabs Información y Facturas. Se agrega REQ-035 y CA-025. |
+| 2026-11-08 | opencode | Cambio iterativo: eliminar la duplicación del nombre del taller. Con institución seleccionada se usa su nombre y se oculta el campo libre; sin institución se exige el nombre manual. Se agrega REQ-036 y CA-026. |

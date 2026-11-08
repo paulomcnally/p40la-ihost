@@ -514,6 +514,7 @@
       "mileage_required": "Enter a valid mileage",
       "institution": "Workshop (institution)",
       "select_institution": "Select workshop",
+      "institution_name_hint": "The workshop name comes from the selected institution.",
       "no_workshops": "No mechanical workshops registered.",
       "create_institution": "Create institution",
       "workshop": "Workshop name",

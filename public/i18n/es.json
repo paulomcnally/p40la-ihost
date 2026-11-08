@@ -515,6 +515,7 @@
       "mileage_required": "Ingresá un kilometraje válido",
       "institution": "Taller (institución)",
       "select_institution": "Seleccionar taller",
+      "institution_name_hint": "El nombre del taller se toma de la institución seleccionada.",
       "no_workshops": "No hay talleres mecánicos registrados.",
       "create_institution": "Crear institución",
       "workshop": "Nombre del taller",

@@ -197,9 +197,10 @@ func (s *AutoMaintenanceService) validate(ctx context.Context, auto *models.Auto
 		if !exists || key != institutionCategoryWorkshop {
 			return fmt.Errorf("%w: se esperaba un taller mecánico", ErrInstitutionCategory)
 		}
-		if input.WorkshopName == "" {
-			input.WorkshopName = institution.Name
-		}
+		// La institución es la fuente de verdad del nombre: si el registro tiene
+		// institution_id, el nombre del taller se deriva de la relación y no se
+		// duplica con un valor enviado por el cliente (SPEC-124 REQ-036).
+		input.WorkshopName = institution.Name
 	}
 	if input.WorkshopName == "" {
 		return fmt.Errorf("el nombre del taller es requerido")
