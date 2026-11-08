@@ -302,7 +302,7 @@ No se agregan endpoints. Se reutilizan:
 - [x] **CA-NF-001**: El plugin no incorpora navegador ni dependencias pesadas; solo agrega detección y centinelas.
 - [x] **CA-NF-002**: El scheduler conserva un intento por ejecución y el plugin tiene timeout de 15 s; no se agregaron reintentos.
 - [x] **CA-NF-003**: `go test ./...` del repo de la app y del módulo de plugins pasa.
-- [ ] **CA-NF-004**: La imagen se publica con los tres manifests (`linux/amd64`, `linux/arm/v7`, `linux/arm64`). Se verifica en el release.
+- [x] **CA-NF-004**: La imagen se publica con los tres manifests (`linux/amd64`, `linux/arm/v7`, `linux/arm64`). Verificado con `docker buildx imagetools inspect paulomcnally/p40la-ihost:0.5.5`.
 - [x] **CA-NF-005**: No se usaron datos reales: la validación local usó una DB temporal en `/tmp` y `data/app.db` no se tocó.
 - [x] **CA-NF-006**: `PRAGMA integrity_check` y `foreign_key_check` quedan OK en la DB temporal de validación.
 
@@ -364,4 +364,4 @@ Si la Fase 2 da "no-go", las fases 3–4 se reemplazan por la opción E (API ofi
 | Fecha | Autor | Descripción |
 |---|---|---|
 | 2026-11-03 | opencode | Creación inicial de la especificación. Se documenta la migración del portal ASSA, la causa raíz del error `login sin token var`, la evidencia del portal nuevo con reCAPTCHA y las opciones de recuperación (sesión asistida, API oficial, manual/PDF). |
-| 2026-11-08 | opencode | Estado `released` (MVP P0). Se libera la detección de migración/CAPTCHA, los centinelas `ErrPortalMigrated`/`ErrCaptchaRequired`, el mapeo de mensajes accionables en app/UI, los tests de regresión y el plugin `v1.1.1` (commit `6cb1ebb`, merge `b5b8bf6`, imagen `v0.5.5`). La Fase 2/3 (sesión asistida, parsers del portal MVC) queda cubierta por SPEC-129. |
+| 2026-11-08 | opencode | Estado `released` (MVP P0). Se libera la detección de migración/CAPTCHA, los centinelas `ErrPortalMigrated`/`ErrCaptchaRequired`, el mapeo de mensajes accionables en app/UI, los tests de regresión y el plugin `v1.1.1` (commit `6cb1ebb`, merge `b5b8bf6`, imagen `v0.5.5` con los tres manifests verificados). La Fase 2/3 (sesión asistida, parsers del portal MVC) queda cubierta por SPEC-129. |
