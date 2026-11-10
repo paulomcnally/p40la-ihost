@@ -9,7 +9,7 @@
 // Al cambiar assets o el shell, subir CACHE_VERSION para invalidar cachés.
 
 const CACHE_PREFIX = 'p40la-'
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3'
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`
 const ASSETS_CACHE = `${CACHE_PREFIX}assets-${CACHE_VERSION}`
 const I18N_CACHE = `${CACHE_PREFIX}i18n-${CACHE_VERSION}`

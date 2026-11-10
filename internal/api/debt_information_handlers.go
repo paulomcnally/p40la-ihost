@@ -124,6 +124,12 @@ func (h *DebtInformationHandlers) ListTokens(w http.ResponseWriter, r *http.Requ
 	respondJSON(w, http.StatusOK, h.service.Tokens())
 }
 
+// ListVariables responde con el catálogo de variables para valores por
+// defecto de campos text/textarea (SPEC-132).
+func (h *DebtInformationHandlers) ListVariables(w http.ResponseWriter, r *http.Request) {
+	respondJSON(w, http.StatusOK, h.service.Variables())
+}
+
 // GetDebtPaymentInformation responde con la forma de pago de una deuda.
 func (h *DebtInformationHandlers) GetDebtPaymentInformation(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)

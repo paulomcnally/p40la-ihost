@@ -415,3 +415,108 @@ func TestDebtInformationSoftDeleteCleansPaymentInformation(t *testing.T) {
 		t.Fatalf("DeleteTemplate después del borrado lógico: %v", err)
 	}
 }
+
+func TestDebtInformationDefaultValueVariables(t *testing.T) {
+	service, _ := setupDebtInformationTest(t)
+
+	t.Run("variable válida en texto", func(t *testing.T) {
+		input := validDebtInformationTemplate("Variables Demo")
+		input.Fields[2] = models.DebtInformationField{
+			Key:          "referencia",
+			Label:        "Referencia de pago",
+			Type:         models.DebtInformationFieldText,
+			DefaultValue: "Lote Demo 13 - Cuota {installment_number}",
+		}
+		if err := service.prepareTemplate(input); err != nil {
+			t.Fatalf("prepareTemplate: %v", err)
+		}
+	})
+
+	t.Run("variable válida en textarea", func(t *testing.T) {
+		input := validDebtInformationTemplate("Variables Demo")
+		input.Fields[2] = models.DebtInformationField{
+			Key:          "detalle",
+			Label:        "Detalle",
+			Type:         models.DebtInformationFieldTextarea,
+			DefaultValue: "Pago {debt_identifier} - {installment_progress}",
+		}
+		if err := service.prepareTemplate(input); err != nil {
+			t.Fatalf("prepareTemplate: %v", err)
+		}
+	})
+
+	t.Run("variable desconocida", func(t *testing.T) {
+		input := validDebtInformationTemplate("Variables Demo")
+		input.Fields[2] = models.DebtInformationField{
+			Key:          "referencia",
+			Label:        "Referencia",
+			Type:         models.DebtInformationFieldText,
+			DefaultValue: "Cuota {installment_numer}",
+		}
+		err := service.prepareTemplate(input)
+		var validation *DebtInformationValidationError
+		if !errors.As(err, &validation) || validation.Code != "invalid_variable" {
+			t.Fatalf("se esperaba invalid_variable, got %v", err)
+		}
+	})
+
+	t.Run("llaves dobles", func(t *testing.T) {
+		input := validDebtInformationTemplate("Variables Demo")
+		input.Fields[2] = models.DebtInformationField{
+			Key:          "referencia",
+			Label:        "Referencia",
+			Type:         models.DebtInformationFieldText,
+			DefaultValue: "Cuota {{installment_number}}",
+		}
+		err := service.prepareTemplate(input)
+		var validation *DebtInformationValidationError
+		if !errors.As(err, &validation) || validation.Code != "invalid_variable" {
+			t.Fatalf("se esperaba invalid_variable, got %v", err)
+		}
+	})
+
+	t.Run("variable mal formada", func(t *testing.T) {
+		input := validDebtInformationTemplate("Variables Demo")
+		input.Fields[2] = models.DebtInformationField{
+			Key:          "referencia",
+			Label:        "Referencia",
+			Type:         models.DebtInformationFieldText,
+			DefaultValue: "Cuota {installment_number",
+		}
+		err := service.prepareTemplate(input)
+		var validation *DebtInformationValidationError
+		if !errors.As(err, &validation) || validation.Code != "invalid_variable" {
+			t.Fatalf("se esperaba invalid_variable, got %v", err)
+		}
+	})
+
+	t.Run("variable en campo numérico", func(t *testing.T) {
+		input := validDebtInformationTemplate("Variables Demo")
+		input.Fields[2] = models.DebtInformationField{
+			Key:          "monto_cuota",
+			Label:        "Monto",
+			Type:         models.DebtInformationFieldNumber,
+			DefaultValue: "{installment_amount}",
+		}
+		err := service.prepareTemplate(input)
+		var validation *DebtInformationValidationError
+		if !errors.As(err, &validation) || validation.Code != "invalid_variable" {
+			t.Fatalf("se esperaba invalid_variable, got %v", err)
+		}
+	})
+
+	t.Run("catálogo de variables", func(t *testing.T) {
+		seen := map[string]bool{}
+		for _, variable := range service.Variables() {
+			seen[variable.Key] = true
+			if variable.Label == "" || variable.Example == "" {
+				t.Fatalf("variable incompleta: %+v", variable)
+			}
+		}
+		for _, key := range []string{"installment_number", "installment_amount", "installment_due_date", "debt_description", "debt_identifier", "institution_name", "currency_code", "payment_date"} {
+			if !seen[key] {
+				t.Fatalf("falta la variable %s en el catálogo", key)
+			}
+		}
+	})
+}

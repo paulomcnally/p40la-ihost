@@ -659,6 +659,57 @@ export interface DebtInformationToken {
   example: string
 }
 
+// SPEC-132: variables para valores por defecto de campos text/textarea.
+export interface DebtInformationVariable {
+  key: string
+  label: string
+  example: string
+  description?: string
+}
+
+// SPEC-133: bancos, cuentas y formatos de transferencia.
+export interface Bank {
+  id: number
+  name: string
+  short_code: string
+  country: string
+  notes: string
+  active: boolean
+  account_count: number
+  created_at: string
+  updated_at: string
+}
+
+export type BankAccountType = 'savings' | 'checking'
+export type BankTransferKind = 'transfer' | 'ach'
+
+export interface BankAccount {
+  id: number
+  bank_id: number
+  bank_name?: string
+  alias: string
+  account_number: string
+  account_type: BankAccountType
+  currency_id: number
+  currency_code?: string
+  currency_symbol?: string
+  beneficiary: string
+  notes: string
+  active: boolean
+  formats?: BankTransferFormat[]
+  created_at: string
+  updated_at: string
+}
+
+export interface BankTransferFormat {
+  id: number
+  bank_account_id: number
+  kind: BankTransferKind
+  fields: Record<string, string>
+  created_at: string
+  updated_at: string
+}
+
 // SPEC-127: reconocimiento de comprobantes bancarios.
 export interface RecognitionCandidate {
   entity_type: string

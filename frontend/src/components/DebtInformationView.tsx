@@ -5,8 +5,10 @@ import { useToast } from './Toast'
 import { Icon } from './Icons'
 import {
   buildDebtInformationContext,
+  buildDebtInformationVariableContext,
   debtInformationValueIsEmpty,
   resolveDebtInformationText,
+  resolveDebtInformationVariables,
 } from '../utils/debtInformation'
 import type {
   Debt,
@@ -51,6 +53,20 @@ export default function DebtInformationView({
     [debt, bill, symbol, lang, paidAt, formatMoney, t],
   )
 
+  const variableContext = useMemo(
+    () =>
+      buildDebtInformationVariableContext({
+        debt,
+        bill,
+        symbol,
+        lang,
+        paidAt,
+        statusLabel: t(bill.status === 'paid' ? 'bills.status_paid' : 'bills.status_pending'),
+        formatMoney,
+      }),
+    [debt, bill, symbol, lang, paidAt, formatMoney, t],
+  )
+
   const fields = template?.fields ?? []
   if (fields.length === 0) {
     return (
@@ -71,7 +87,7 @@ export default function DebtInformationView({
     if (field.type === 'checkbox') {
       return value === true ? t('app.yes') : t('app.no')
     }
-    return String(value)
+    return resolveDebtInformationVariables(String(value), variableContext)
   }
 
   const copyValue = async (value: string) => {

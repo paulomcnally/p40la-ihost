@@ -3,6 +3,7 @@ import type {
   DebtBill,
   DebtInformationField,
   DebtInformationValue,
+  DebtInformationVariable,
 } from '../types'
 
 // SPEC-131: utilidades puras de plantillas de información de deuda.
@@ -37,6 +38,33 @@ export const DEBT_INFORMATION_TOKEN_KEYS = [
 
 export const DEBT_INFORMATION_TOKEN_SET = new Set<string>(DEBT_INFORMATION_TOKEN_KEYS)
 
+// SPEC-132: variables para valores por defecto de campos text/textarea.
+// La clave se persiste en inglés; la etiqueta se sugiere en español.
+export const DEBT_INFORMATION_VARIABLE_FALLBACK: DebtInformationVariable[] = [
+  { key: 'installment_number', label: 'Número de cuota', example: '5', description: 'Número de la cuota que se está pagando' },
+  { key: 'installment_amount', label: 'Monto de la cuota (sin formato)', example: '100.00', description: 'Monto de la cuota sin símbolo ni separadores' },
+  { key: 'installment_amount_formatted', label: 'Monto de la cuota con moneda', example: '$100.00', description: 'Monto de la cuota formateado con el símbolo de la moneda' },
+  { key: 'installment_due_date', label: 'Vencimiento de la cuota (ISO)', example: '2026-12-15', description: 'Fecha de vencimiento en formato YYYY-MM-DD' },
+  { key: 'installment_due_date_formatted', label: 'Vencimiento de la cuota (localizado)', example: '15/12/2026', description: 'Fecha de vencimiento en formato local' },
+  { key: 'installment_status', label: 'Estado de la cuota', example: 'Pendiente', description: 'Pendiente o Pagada, según el idioma' },
+  { key: 'installment_progress', label: 'Progreso de cuotas', example: '5/12', description: 'Cuota actual sobre el total del plan' },
+  { key: 'installments_total', label: 'Total de cuotas del plan', example: '12', description: 'Cantidad total de cuotas de la deuda' },
+  { key: 'debt_description', label: 'Descripción de la deuda', example: 'Lote Demo 13', description: 'Descripción de la deuda' },
+  { key: 'debt_identifier', label: 'Identificador de la deuda', example: 'demo-account-001', description: 'Identificador o número de contrato' },
+  { key: 'institution_name', label: 'Institución o acreedor', example: 'Proveedor Demo', description: 'Nombre de la institución de la deuda' },
+  { key: 'currency_code', label: 'Código de moneda', example: 'USD', description: 'Código ISO de la moneda de la deuda' },
+  { key: 'currency_symbol', label: 'Símbolo de moneda', example: '$', description: 'Símbolo de la moneda de la deuda' },
+  { key: 'debt_total', label: 'Total de la deuda (sin formato)', example: '1200.00', description: 'Total de la deuda sin formato' },
+  { key: 'debt_total_formatted', label: 'Total de la deuda con moneda', example: '$1,200.00', description: 'Total de la deuda formateado' },
+  { key: 'payment_date', label: 'Fecha de pago (ISO)', example: '2026-12-10', description: 'Fecha de pago seleccionada, si ya se pagó' },
+  { key: 'payment_date_formatted', label: 'Fecha de pago (localizada)', example: '10/12/2026', description: 'Fecha de pago en formato local' },
+]
+
+export const DEBT_INFORMATION_VARIABLE_KEYS = DEBT_INFORMATION_VARIABLE_FALLBACK.map((variable) => variable.key)
+export const DEBT_INFORMATION_VARIABLE_SET = new Set<string>(DEBT_INFORMATION_VARIABLE_KEYS)
+
+const VARIABLE_RE = /\{\s*([a-z][a-z0-9_]*)\s*\}/g
+
 const TOKEN_RE = /\{\{\s*([a-z0-9_.]+)\s*\}\}/g
 
 export interface DebtInformationValidationIssue {
@@ -46,7 +74,7 @@ export interface DebtInformationValidationIssue {
 }
 
 export interface DebtInformationContextInput {
-  debt: Pick<Debt, 'description' | 'institution_name' | 'identifier' | 'currency_code' | 'total'>
+  debt: Pick<Debt, 'description' | 'institution_name' | 'identifier' | 'currency_code' | 'total' | 'installments_total'>
   bill: Pick<DebtBill, 'installment_number' | 'amount' | 'due_date' | 'status'>
   symbol?: string
   lang: string
@@ -79,6 +107,36 @@ export function resolveDebtInformationText(
 ): string {
   if (!template) return ''
   return template.replace(TOKEN_RE, (match, key: string) => context[key] ?? match)
+}
+
+/** Reemplaza variables `{clave}` por su valor. Los desconocidos quedan literales. */
+export function resolveDebtInformationVariables(
+  template: string,
+  context: Record<string, string>,
+): string {
+  if (!template) return ''
+  return template.replace(VARIABLE_RE, (match, key: string) => context[key] ?? match)
+}
+
+/** Devuelve las claves de variable presentes en un texto `{clave}`. */
+export function extractDebtInformationVariables(template: string): string[] {
+  if (!template) return []
+  const keys: string[] = []
+  for (const match of template.matchAll(VARIABLE_RE)) {
+    keys.push(match[1])
+  }
+  return keys
+}
+
+/** Contexto de ejemplo (catálogo) para previsualizar valores por defecto. */
+export function buildExampleVariableContext(
+  variables: DebtInformationVariable[],
+): Record<string, string> {
+  const context: Record<string, string> = {}
+  for (const variable of variables) {
+    context[variable.key] = variable.example
+  }
+  return context
 }
 
 /** Valida una fecha ISO YYYY-MM-DD real (rechaza 2026-02-31). */
@@ -124,6 +182,34 @@ export function buildDebtInformationContext(
     'pago.fecha': paidAt || '',
     'pago.fecha_formateada': formatDebtInformationDate(paidAt || '', lang),
     'sistema.moneda': symbol || '',
+  }
+}
+
+/** Contexto en inglés para resolver variables `{clave}` de SPEC-132. */
+export function buildDebtInformationVariableContext(
+  input: DebtInformationContextInput,
+): Record<string, string> {
+  const { debt, bill, symbol, lang, paidAt, statusLabel, formatMoney } = input
+  const installmentNumber = bill.installment_number == null ? '' : String(bill.installment_number)
+  const installmentsTotal = debt.installments_total == null ? '' : String(debt.installments_total)
+  return {
+    installment_number: installmentNumber,
+    installment_amount: bill.amount == null ? '' : String(bill.amount),
+    installment_amount_formatted: formatMoney(bill.amount || 0, symbol),
+    installment_due_date: bill.due_date || '',
+    installment_due_date_formatted: formatDebtInformationDate(bill.due_date || '', lang),
+    installment_status: statusLabel,
+    installment_progress: installmentNumber && installmentsTotal ? `${installmentNumber}/${installmentsTotal}` : installmentNumber,
+    installments_total: installmentsTotal,
+    debt_description: debt.description || '',
+    debt_identifier: debt.identifier || '',
+    institution_name: debt.institution_name || '',
+    currency_code: debt.currency_code || '',
+    currency_symbol: symbol || '',
+    debt_total: debt.total == null ? '' : String(debt.total),
+    debt_total_formatted: formatMoney(debt.total || 0, symbol),
+    payment_date: paidAt || '',
+    payment_date_formatted: formatDebtInformationDate(paidAt || '', lang),
   }
 }
 
@@ -180,6 +266,8 @@ export function validateDebtInformationTemplate(
           issues.push({ key: 'deudas.validation_token_malformed', fieldIndex: index })
         }
       }
+    } else if (field.default_value) {
+      validateDefaultValueVariables(field, index, issues)
     }
 
     if (field.type === 'select') {
@@ -196,9 +284,39 @@ export function validateDebtInformationTemplate(
   return issues
 }
 
+function validateDefaultValueVariables(
+  field: DebtInformationField,
+  index: number,
+  issues: DebtInformationValidationIssue[],
+): void {
+  const value = field.default_value || ''
+  if (field.type === 'text' || field.type === 'textarea') {
+    if (value.includes('{{') || value.includes('}}')) {
+      issues.push({ key: 'deudas.validation_variable_braces', fieldIndex: index })
+      return
+    }
+    for (const key of extractDebtInformationVariables(value)) {
+      if (!DEBT_INFORMATION_VARIABLE_SET.has(key)) {
+        issues.push({
+          key: 'deudas.validation_variable',
+          fieldIndex: index,
+          params: { token: key },
+        })
+      }
+    }
+    const rest = value.replace(VARIABLE_RE, '')
+    if (rest.includes('{') || rest.includes('}')) {
+      issues.push({ key: 'deudas.validation_variable_malformed', fieldIndex: index })
+    }
+    return
+  }
+  if (value.includes('{') || value.includes('}')) {
+    issues.push({ key: 'deudas.validation_variable_type', fieldIndex: index })
+  }
+}
+
 /** Valida los valores de una forma de pago contra su plantilla. */
-export function validateDebtInformationValues(
-  fields: DebtInformationField[],
+export function validateDebtInformationValues(  fields: DebtInformationField[],
   values: Record<string, DebtInformationValue>,
 ): DebtInformationValidationIssue[] {
   const issues: DebtInformationValidationIssue[] = []

@@ -13,6 +13,12 @@ const BACK_ROUTES: { pattern: RegExp; to: string | ((pathname: string) => string
   { pattern: /^\/deudas\/plantillas\/informacion\/(new|edit\/\d+)$/, to: '/deudas/plantillas/informacion' },
   { pattern: /^\/deudas\/\d+$/, to: '/deudas' },
   { pattern: /^\/deudas\/(new|edit\/\d+)$/, to: '/deudas' },
+  { pattern: /^\/bancos\/(new|edit\/\d+)$/, to: '/bancos' },
+  {
+    pattern: /^\/bancos\/\d+\/cuentas\/(new|\d+)$/,
+    to: (pathname) => `/bancos/${pathname.split('/')[2]}`,
+  },
+  { pattern: /^\/bancos\/\d+$/, to: '/bancos' },
   { pattern: /^\/services\/bills\/\d+$/, to: '/services' },
   { pattern: /^\/services\/(new|edit\/\d+)$/, to: '/services' },
   { pattern: /^\/bills\/(new|edit\/\d+)$/, to: '/services' },
