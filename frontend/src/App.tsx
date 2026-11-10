@@ -52,6 +52,10 @@ import DebtBillsPage from './pages/DebtBillsPage'
 import DebtTemplatesHubPage from './pages/DebtTemplatesHubPage'
 import DebtInformationTemplatesPage from './pages/DebtInformationTemplatesPage'
 import DebtInformationTemplateFormPage from './pages/DebtInformationTemplateFormPage'
+import BanksPage from './pages/BanksPage'
+import BankFormPage from './pages/BankFormPage'
+import BankDetailPage from './pages/BankDetailPage'
+import BankAccountFormPage from './pages/BankAccountFormPage'
 import BudgetPage from './pages/BudgetPage'
 import BudgetTransactionsPage from './pages/BudgetTransactionsPage'
 
@@ -158,6 +162,12 @@ function App() {
                   <Route path="deudas/plantillas/informacion/new" element={<DebtInformationTemplateFormPage />} />
                   <Route path="deudas/plantillas/informacion/edit/:id" element={<DebtInformationTemplateFormPage />} />
                   <Route path="deudas/:id" element={<DebtBillsPage />} />
+                  <Route path="bancos" element={<BanksPage />} />
+                  <Route path="bancos/new" element={<BankFormPage />} />
+                  <Route path="bancos/edit/:id" element={<BankFormPage />} />
+                  <Route path="bancos/:id/cuentas/new" element={<BankAccountFormPage />} />
+                  <Route path="bancos/:id/cuentas/:accountId" element={<BankAccountFormPage />} />
+                  <Route path="bancos/:id" element={<BankDetailPage />} />
                   <Route path="budget" element={<BudgetPage />} />
                   <Route path="budget/transacciones" element={<BudgetTransactionsPage />} />
                 </Route>

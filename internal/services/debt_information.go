@@ -44,6 +44,7 @@ var (
 
 var debtInformationKeyRegex = regexp.MustCompile(`^[a-z][a-z0-9_]{0,39}$`)
 var debtInformationTokenRegex = regexp.MustCompile(`\{\{\s*([a-z0-9_.]+)\s*\}\}`)
+var debtInformationVariableRegex = regexp.MustCompile(`\{\s*([a-z][a-z0-9_]*)\s*\}`)
 
 // DebtInformationValidationError es un error de validación con un código
 // apto para la respuesta HTTP (validation_error / invalid_token).
@@ -60,6 +61,10 @@ func newValidationError(message string) error {
 
 func newInvalidTokenError(message string) error {
 	return &DebtInformationValidationError{Code: "invalid_token", Message: message}
+}
+
+func newInvalidVariableError(message string) error {
+	return &DebtInformationValidationError{Code: "invalid_variable", Message: message}
 }
 
 // Tokens disponibles en los campos calculados. El frontend resuelve los
@@ -90,6 +95,36 @@ var debtInformationTokenSet = func() map[string]bool {
 	return set
 }()
 
+// Variables disponibles en los valores por defecto de campos text/textarea
+// (SPEC-132). Se persisten en inglés y se sugieren en español.
+var debtInformationValueVariables = []models.DebtInformationVariable{
+	{Key: "installment_number", Label: "Número de cuota", Example: "5", Description: "Número de la cuota que se está pagando"},
+	{Key: "installment_amount", Label: "Monto de la cuota (sin formato)", Example: "100.00", Description: "Monto de la cuota sin símbolo ni separadores"},
+	{Key: "installment_amount_formatted", Label: "Monto de la cuota con moneda", Example: "$100.00", Description: "Monto de la cuota formateado con el símbolo de la moneda"},
+	{Key: "installment_due_date", Label: "Vencimiento de la cuota (ISO)", Example: "2026-12-15", Description: "Fecha de vencimiento en formato YYYY-MM-DD"},
+	{Key: "installment_due_date_formatted", Label: "Vencimiento de la cuota (localizado)", Example: "15/12/2026", Description: "Fecha de vencimiento en formato local"},
+	{Key: "installment_status", Label: "Estado de la cuota", Example: "Pendiente", Description: "Pendiente o Pagada, según el idioma"},
+	{Key: "installment_progress", Label: "Progreso de cuotas", Example: "5/12", Description: "Cuota actual sobre el total del plan"},
+	{Key: "installments_total", Label: "Total de cuotas del plan", Example: "12", Description: "Cantidad total de cuotas de la deuda"},
+	{Key: "debt_description", Label: "Descripción de la deuda", Example: "Lote Demo 13", Description: "Descripción de la deuda"},
+	{Key: "debt_identifier", Label: "Identificador de la deuda", Example: "demo-account-001", Description: "Identificador o número de contrato"},
+	{Key: "institution_name", Label: "Institución o acreedor", Example: "Proveedor Demo", Description: "Nombre de la institución de la deuda"},
+	{Key: "currency_code", Label: "Código de moneda", Example: "USD", Description: "Código ISO de la moneda de la deuda"},
+	{Key: "currency_symbol", Label: "Símbolo de moneda", Example: "$", Description: "Símbolo de la moneda de la deuda"},
+	{Key: "debt_total", Label: "Total de la deuda (sin formato)", Example: "1200.00", Description: "Total de la deuda sin formato"},
+	{Key: "debt_total_formatted", Label: "Total de la deuda con moneda", Example: "$1,200.00", Description: "Total de la deuda formateado"},
+	{Key: "payment_date", Label: "Fecha de pago (ISO)", Example: "2026-12-10", Description: "Fecha de pago seleccionada, si ya se pagó"},
+	{Key: "payment_date_formatted", Label: "Fecha de pago (localizada)", Example: "10/12/2026", Description: "Fecha de pago en formato local"},
+}
+
+var debtInformationValueVariableSet = func() map[string]bool {
+	set := make(map[string]bool, len(debtInformationValueVariables))
+	for _, variable := range debtInformationValueVariables {
+		set[variable.Key] = true
+	}
+	return set
+}()
+
 // DebtInformationService contiene la lógica de plantillas de información y
 // forma de pago por deuda (SPEC-131).
 type DebtInformationService struct {
@@ -106,6 +141,14 @@ func NewDebtInformationService(info *storage.DebtInformationStorage, debts *stor
 func (s *DebtInformationService) Tokens() []models.DebtInformationToken {
 	result := make([]models.DebtInformationToken, len(debtInformationTokens))
 	copy(result, debtInformationTokens)
+	return result
+}
+
+// Variables devuelve el catálogo de variables disponibles en los valores por
+// defecto de campos text/textarea (SPEC-132).
+func (s *DebtInformationService) Variables() []models.DebtInformationVariable {
+	result := make([]models.DebtInformationVariable, len(debtInformationValueVariables))
+	copy(result, debtInformationValueVariables)
 	return result
 }
 
@@ -326,6 +369,9 @@ func validateDebtInformationTemplate(input *models.DebtInformationTemplate) erro
 		if utf8.RuneCountInString(field.DefaultValue) > maxDebtInformationDefault {
 			return newValidationError(fmt.Sprintf("El valor por defecto del campo '%s' no puede superar los %d caracteres.", field.Label, maxDebtInformationDefault))
 		}
+		if err := validateDebtInformationDefaultValue(field); err != nil {
+			return err
+		}
 
 		if field.Type == models.DebtInformationFieldSelect {
 			if len(field.Options) == 0 {
@@ -388,6 +434,47 @@ func validateDebtInformationValueTemplate(value string) error {
 	rest := debtInformationTokenRegex.ReplaceAllString(value, "")
 	if strings.Contains(rest, "{{") || strings.Contains(rest, "}}") {
 		return newInvalidTokenError("La expresión tiene un token mal formado. Usá el formato {{token}}.")
+	}
+	return nil
+}
+
+// validateVariableText valida que un texto solo use variables del catálogo
+// permitido. Traduce llaves dobles y llaves mal formadas a invalid_variable.
+func validateVariableText(value string, allowed map[string]bool) error {
+	if value == "" {
+		return nil
+	}
+	if strings.Contains(value, "{{") || strings.Contains(value, "}}") {
+		return newInvalidVariableError("El valor usa llaves dobles. En este campo usá el formato {variable}.")
+	}
+	for _, match := range debtInformationVariableRegex.FindAllStringSubmatch(value, -1) {
+		if !allowed[match[1]] {
+			return newInvalidVariableError(fmt.Sprintf("La variable {%s} no es válida.", match[1]))
+		}
+	}
+	rest := debtInformationVariableRegex.ReplaceAllString(value, "")
+	if strings.Contains(rest, "{") || strings.Contains(rest, "}") {
+		return newInvalidVariableError("La variable está mal formada. Usá el formato {variable}.")
+	}
+	return nil
+}
+
+func validateDebtInformationDefaultValue(field *models.DebtInformationField) error {
+	if field.DefaultValue == "" {
+		return nil
+	}
+	if field.Type == models.DebtInformationFieldText || field.Type == models.DebtInformationFieldTextarea {
+		if err := validateVariableText(field.DefaultValue, debtInformationValueVariableSet); err != nil {
+			var validation *DebtInformationValidationError
+			if errors.As(err, &validation) {
+				return newInvalidVariableError(fmt.Sprintf("%s (campo '%s')", validation.Message, field.Label))
+			}
+			return err
+		}
+		return nil
+	}
+	if strings.Contains(field.DefaultValue, "{") || strings.Contains(field.DefaultValue, "}") {
+		return newInvalidVariableError(fmt.Sprintf("El campo '%s' de tipo %s no admite variables en el valor por defecto.", field.Label, field.Type))
 	}
 	return nil
 }
