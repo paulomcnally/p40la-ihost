@@ -21,6 +21,7 @@ export default function Sidebar({ activeBase, isOpen, onClose }: SidebarProps) {
     { key: 'services', icon: 'services', label: t('menu.services') },
     { key: 'automation', icon: 'bolt', label: t('menu.automation') },
     { key: 'deudas', icon: 'credit', label: t('menu.deudas') },
+    { key: 'bancos', icon: 'bank', label: t('menu.banks') },
     { key: 'institutions', icon: 'building', label: 'Instituciones' },
     { key: 'autos', icon: 'vehicle', label: 'Autos' },
   ]

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
@@ -11,6 +11,10 @@ import { useToast } from '../components/Toast'
 import {
   DEBT_INFORMATION_FIELD_TYPES,
   DEBT_INFORMATION_TOKEN_KEYS,
+  DEBT_INFORMATION_VARIABLE_FALLBACK,
+  DEBT_INFORMATION_VARIABLE_SET,
+  buildExampleVariableContext,
+  resolveDebtInformationVariables,
   slugifyFieldKey,
   validateDebtInformationTemplate,
   type DebtInformationValidationIssue,
@@ -19,6 +23,7 @@ import type {
   DebtInformationField,
   DebtInformationFieldType,
   DebtInformationToken,
+  DebtInformationVariable,
 } from '../types'
 
 interface BuilderField extends DebtInformationField {
@@ -58,6 +63,10 @@ function issueText(
   return message
 }
 
+function normalizeSearch(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
 export default function DebtInformationTemplateFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -70,10 +79,13 @@ export default function DebtInformationTemplateFormPage() {
   const [description, setDescription] = useState('')
   const [fields, setFields] = useState<BuilderField[]>([])
   const [tokens, setTokens] = useState<DebtInformationToken[]>([])
+  const [variables, setVariables] = useState<DebtInformationVariable[]>(DEBT_INFORMATION_VARIABLE_FALLBACK)
+  const [variableSearch, setVariableSearch] = useState('')
   const [usageCount, setUsageCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [removeIndex, setRemoveIndex] = useState<number | null>(null)
+  const defaultInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
   useEffect(() => {
     let active = true
@@ -86,6 +98,11 @@ export default function DebtInformationTemplateFormPage() {
         }))
         const tokenList = await api.debtInformationTemplates.tokens().catch(() => null)
         if (active) setTokens(tokenList && tokenList.length > 0 ? tokenList : fallbackTokens)
+        const variableList = await api.debtInformationTemplates.variables().catch(() => null)
+        if (active && variableList && variableList.length > 0) {
+          for (const variable of variableList) DEBT_INFORMATION_VARIABLE_SET.add(variable.key)
+          setVariables(variableList)
+        }
 
         if (isEdit) {
           const template = await api.debtInformationTemplates.get(Number(id))
@@ -209,6 +226,37 @@ export default function DebtInformationTemplateFormPage() {
     const field = fields[index]
     const current = field.value_template || ''
     updateField(index, { value_template: `${current}{{${token}}}` })
+  }
+
+  const filteredVariables = useMemo(() => {
+    const term = normalizeSearch(variableSearch.trim())
+    if (!term) return variables
+    return variables.filter(
+      (variable) =>
+        normalizeSearch(variable.label).includes(term) ||
+        normalizeSearch(variable.key).includes(term),
+    )
+  }, [variables, variableSearch])
+
+  const exampleVariableContext = useMemo(
+    () => buildExampleVariableContext(variables),
+    [variables],
+  )
+
+  const insertVariable = (index: number, key: string) => {
+    const field = fields[index]
+    const current = field.default_value || ''
+    const input = defaultInputRefs.current[index]
+    const start = input?.selectionStart ?? current.length
+    const end = input?.selectionEnd ?? start
+    const token = `{${key}}`
+    const next = `${current.slice(0, start)}${token}${current.slice(end)}`
+    updateField(index, { default_value: next })
+    requestAnimationFrame(() => {
+      input?.focus()
+      const position = start + token.length
+      input?.setSelectionRange(position, position)
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -431,6 +479,9 @@ export default function DebtInformationTemplateFormPage() {
                     <div>
                       <label className="block text-sm font-medium mb-1">{t('deudas.template_field_default')}</label>
                       <input
+                        ref={(element) => {
+                          defaultInputRefs.current[index] = element
+                        }}
                         type="text"
                         value={field.default_value || ''}
                         onChange={(e) => updateField(index, { default_value: e.target.value })}
@@ -438,6 +489,48 @@ export default function DebtInformationTemplateFormPage() {
                         className="w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]"
                       />
                     </div>
+                    {(field.type === 'text' || field.type === 'textarea') &&
+                      field.default_value &&
+                      field.default_value.includes('{') && (
+                        <p className="text-xs text-text-secondary break-words">
+                          {t('deudas.template_variable_preview')}:{' '}
+                          {resolveDebtInformationVariables(field.default_value, exampleVariableContext)}
+                        </p>
+                      )}
+                    {(field.type === 'text' || field.type === 'textarea') && (
+                      <details className="rounded-ios-sm bg-bg/60 p-2">
+                        <summary className="text-xs font-medium text-primary cursor-pointer">
+                          {t('deudas.template_variables')}
+                        </summary>
+                        <p className="text-[11px] text-text-secondary mt-1">
+                          {t('deudas.template_variables_hint')}
+                        </p>
+                        <input
+                          type="text"
+                          value={variableSearch}
+                          onChange={(e) => setVariableSearch(e.target.value)}
+                          placeholder={t('deudas.template_variables_search')}
+                          className="mt-2 w-full px-2 py-1.5 text-xs border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[36px]"
+                        />
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {filteredVariables.map((variable) => (
+                            <button
+                              key={variable.key}
+                              type="button"
+                              onClick={() => insertVariable(index, variable.key)}
+                              className="text-[11px] px-2 py-1 rounded-full bg-card border border-border hover:border-primary"
+                              title={`${variable.description || variable.label}. Ejemplo: ${variable.example}`}
+                            >
+                              <span className="font-medium">{variable.label}</span>
+                              <code className="ml-1 font-mono text-text-secondary">{`{${variable.key}}`}</code>
+                            </button>
+                          ))}
+                          {filteredVariables.length === 0 && (
+                            <span className="text-xs text-text-secondary">{t('app.no_results')}</span>
+                          )}
+                        </div>
+                      </details>
+                    )}
                     {field.type === 'select' && (
                       <div>
                         <label className="block text-sm font-medium mb-1">

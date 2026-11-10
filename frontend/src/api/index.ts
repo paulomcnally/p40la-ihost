@@ -1,4 +1,4 @@
-import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceItem, AutoMaintenanceItemInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, DebtInformationTemplate, DebtInformationField, DebtPaymentInformation, DebtInformationToken, DebtInformationValue, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse, DocumentRecognition, ConfirmRecognitionInput, AssociationResult } from '../types'
+import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceItem, AutoMaintenanceItemInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, DebtInformationTemplate, DebtInformationField, DebtPaymentInformation, DebtInformationToken, DebtInformationVariable, DebtInformationValue, Bank, BankAccount, BankTransferFormat, BankTransferKind, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse, DocumentRecognition, ConfirmRecognitionInput, AssociationResult } from '../types'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -422,6 +422,7 @@ salaries: {
       put<DebtInformationTemplate>(`/api/debt-information-templates/${id}`, body),
     delete: (id: number) => del(`/api/debt-information-templates/${id}`),
     tokens: () => get<DebtInformationToken[]>('/api/debt-information-templates/tokens'),
+    variables: () => get<DebtInformationVariable[]>('/api/debt-information-templates/variables'),
   },
   debtPaymentInformation: {
     get: (debtId: number) => get<DebtPaymentInformation>(`/api/debts/${debtId}/payment-information`),
@@ -500,5 +501,28 @@ salaries: {
     fetchBills: (id: number) => post<{ bills: AutomationBillItem[] }>(`/api/automation/accounts/${id}/bills:fetch`, {}),
     logs: (id: number, limit = 20, offset = 0) =>
       get<AutomationWebhookLog[]>(`/api/automation/accounts/${id}/webhook/logs?limit=${limit}&offset=${offset}`),
+  },
+  banks: {
+    list: () => get<Bank[]>('/api/banks'),
+    get: (id: number) => get<Bank>(`/api/banks/${id}`),
+    create: (body: Partial<Bank>) => post<Bank>('/api/banks', body),
+    update: (id: number, body: Partial<Bank>) => put<Bank>(`/api/banks/${id}`, body),
+    delete: (id: number) => del(`/api/banks/${id}`),
+    accounts: (bankId: number) => get<BankAccount[]>(`/api/banks/${bankId}/accounts`),
+    createAccount: (bankId: number, body: Partial<BankAccount>) =>
+      post<BankAccount>(`/api/banks/${bankId}/accounts`, body),
+  },
+  bankAccounts: {
+    get: (id: number) => get<BankAccount>(`/api/bank-accounts/${id}`),
+    update: (id: number, body: Partial<BankAccount>) => put<BankAccount>(`/api/bank-accounts/${id}`, body),
+    delete: (id: number) => del(`/api/bank-accounts/${id}`),
+    formats: (id: number) => get<BankTransferFormat[]>(`/api/bank-accounts/${id}/transfer-formats`),
+    saveFormat: (id: number, kind: BankTransferKind, fields: Record<string, string>) =>
+      put<BankTransferFormat>(`/api/bank-accounts/${id}/transfer-formats/${kind}`, { fields }),
+    deleteFormat: (id: number, kind: BankTransferKind) =>
+      del(`/api/bank-accounts/${id}/transfer-formats/${kind}`),
+  },
+  bankTransferVariables: {
+    list: () => get<DebtInformationVariable[]>('/api/bank-transfer-variables'),
   },
 }

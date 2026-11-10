@@ -9,9 +9,12 @@ import Select from './Select'
 import LoadingSpinner from './LoadingSpinner'
 import ConfirmWordModal from './ConfirmWordModal'
 import DebtInformationFieldInput from './DebtInformationFieldInput'
+import DebtInformationView from './DebtInformationView'
 import {
   buildDebtInformationContext,
+  buildDebtInformationVariableContext,
   resolveDebtInformationText,
+  resolveDebtInformationVariables,
   validateDebtInformationValues,
   type DebtInformationValidationIssue,
 } from '../utils/debtInformation'
@@ -81,6 +84,8 @@ export default function DebtPaymentInformationModal({
   const [saving, setSaving] = useState(false)
   const [pendingTemplateId, setPendingTemplateId] = useState<number | null>(null)
   const [clearConfirm, setClearConfirm] = useState(false)
+  const [hasSaved, setHasSaved] = useState(Boolean(paymentInfo?.template_id))
+  const [mode, setMode] = useState<'view' | 'edit'>(paymentInfo?.template_id ? 'view' : 'edit')
 
   useEffect(() => {
     let active = true
@@ -117,6 +122,18 @@ export default function DebtPaymentInformationModal({
   const computedContext = useMemo(() => {
     if (!nextBill) return null
     return buildDebtInformationContext({
+      debt,
+      bill: nextBill,
+      symbol,
+      lang,
+      statusLabel: t(nextBill.status === 'paid' ? 'bills.status_paid' : 'bills.status_pending'),
+      formatMoney,
+    })
+  }, [debt, nextBill, symbol, lang, t, formatMoney])
+
+  const variableContext = useMemo(() => {
+    if (!nextBill) return null
+    return buildDebtInformationVariableContext({
       debt,
       bill: nextBill,
       symbol,
@@ -174,13 +191,19 @@ export default function DebtPaymentInformationModal({
     }
     setSaving(true)
     try {
-      await api.debtPaymentInformation.save(debt.id, {
+      const saved = await api.debtPaymentInformation.save(debt.id, {
         template_id: Number(selectedId),
         values,
       })
+      if (saved) {
+        setSelectedId(saved.template_id ?? Number(selectedId))
+        setTemplate(saved.template ?? template)
+        setValues(saved.values ?? values)
+      }
+      setHasSaved(true)
+      setMode('view')
       showToast(t('deudas.payment_method_saved'), 'success')
       onSaved()
-      onClose()
     } catch (err) {
       showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
     } finally {
@@ -250,6 +273,38 @@ export default function DebtPaymentInformationModal({
                 {t('deudas.template_create')}
               </button>
             </div>
+          ) : mode === 'view' && template ? (
+            <div className="mt-5 space-y-4">
+              <p className="text-sm text-text-secondary">
+                {t('deudas.payment_method_template')}:{' '}
+                <span className="font-medium text-text">{template.name}</span>
+              </p>
+              {nextBill ? (
+                <DebtInformationView
+                  template={template}
+                  values={values}
+                  debt={debt}
+                  bill={nextBill}
+                  symbol={symbol}
+                />
+              ) : (
+                <div className="space-y-2.5">
+                  {inputFields.map((field) => {
+                    const raw = values[field.key]
+                    const resolved =
+                      typeof raw === 'string'
+                        ? resolveDebtInformationVariables(raw, variableContext ?? {})
+                        : String(raw ?? '')
+                    return (
+                      <div key={field.key} className="rounded-ios-sm bg-bg/70 border border-border/60 p-3">
+                        <p className="text-xs font-medium text-text-secondary">{field.label}</p>
+                        <p className="text-sm font-medium text-text mt-0.5 break-words">{resolved || '—'}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           ) : (
             <div className="mt-5 space-y-4">
               <div>
@@ -296,6 +351,20 @@ export default function DebtPaymentInformationModal({
                           setValues((prev) => ({ ...prev, [field.key]: value }))
                         }
                       />
+                      {(() => {
+                        const raw = values[field.key]
+                        if (!variableContext || typeof raw !== 'string' || !raw.includes('{')) return null
+                        const resolved = resolveDebtInformationVariables(raw, variableContext)
+                        if (!resolved || resolved === raw) return null
+                        return (
+                          <p className="mt-1 rounded-ios-sm bg-bg/70 border border-border/60 px-2 py-1.5 text-xs text-text break-words">
+                            <span className="font-medium text-text-secondary">
+                              {t('deudas.payment_method_variable_preview')}:{' '}
+                            </span>
+                            {resolved}
+                          </p>
+                        )
+                      })()}
                       {field.help_text && (
                         <p className="text-xs text-text-secondary mt-1">{field.help_text}</p>
                       )}
@@ -331,7 +400,7 @@ export default function DebtPaymentInformationModal({
                 </div>
               )}
 
-              {paymentInfo?.template_id && (
+              {hasSaved && (
                 <button
                   type="button"
                   onClick={() => setClearConfirm(true)}
@@ -346,27 +415,55 @@ export default function DebtPaymentInformationModal({
         </div>
 
         <div className="flex gap-3 p-4 border-t border-border">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="flex-1 px-4 py-2.5 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center justify-center gap-2 min-h-[44px]"
-          >
-            <Icon name="cancel" className="w-4 h-4" />
-            {t('app.cancel')}
-          </button>
-          {templates.length > 0 && (
-            <button
-              onClick={handleSave}
-              disabled={saving || !template}
-              className="flex-1 px-4 py-2.5 bg-primary text-white rounded-ios-sm hover:opacity-90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
-            >
-              {saving ? (
-                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              ) : (
-                <Icon name="save" className="w-4 h-4" />
+          {mode === 'view' && template ? (
+            <>
+              <button
+                onClick={() => setMode('edit')}
+                className="flex-1 px-4 py-2.5 bg-primary text-white rounded-ios-sm hover:opacity-90 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+              >
+                <Icon name="edit" className="w-4 h-4" />
+                {t('app.edit')}
+              </button>
+              <button
+                onClick={onClose}
+                disabled={saving}
+                className="flex-1 px-4 py-2.5 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+              >
+                <Icon name="cancel" className="w-4 h-4" />
+                {t('app.cancel')}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  if (hasSaved) {
+                    setMode('view')
+                  } else {
+                    onClose()
+                  }
+                }}
+                disabled={saving}
+                className="flex-1 px-4 py-2.5 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+              >
+                <Icon name="cancel" className="w-4 h-4" />
+                {hasSaved ? t('app.back') : t('app.cancel')}
+              </button>
+              {templates.length > 0 && (
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !template}
+                  className="flex-1 px-4 py-2.5 bg-primary text-white rounded-ios-sm hover:opacity-90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                >
+                  {saving ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  ) : (
+                    <Icon name="save" className="w-4 h-4" />
+                  )}
+                  {saving ? t('app.saving') : t('app.save')}
+                </button>
               )}
-              {saving ? t('app.saving') : t('app.save')}
-            </button>
+            </>
           )}
         </div>
       </div>

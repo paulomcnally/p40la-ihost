@@ -71,3 +71,13 @@ type DebtInformationToken struct {
 	Label   string `json:"label"`
 	Example string `json:"example"`
 }
+
+// DebtInformationVariable describe una variable disponible en los valores por
+// defecto de los campos de texto/textarea (SPEC-132). La clave se persiste en
+// inglés; la etiqueta en español es la que se sugiere en la UI.
+type DebtInformationVariable struct {
+	Key         string `json:"key"`
+	Label       string `json:"label"`
+	Example     string `json:"example"`
+	Description string `json:"description,omitempty"`
+}
