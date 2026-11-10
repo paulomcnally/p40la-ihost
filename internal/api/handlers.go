@@ -43,6 +43,7 @@ type Handler struct {
 	webhooks            *WebhookHandlers
 	budget              *BudgetHandlers
 	automation          *AutomationHandlers
+	bank                *BankHandlers
 }
 
 // NewHandler crea un nuevo Handler.
@@ -80,6 +81,7 @@ func NewHandler(
 	webhooks *WebhookHandlers,
 	budget *BudgetHandlers,
 	automation *AutomationHandlers,
+	bank *BankHandlers,
 ) *Handler {
 	return &Handler{
 		auth:                auth,
@@ -115,6 +117,7 @@ func NewHandler(
 		webhooks:            webhooks,
 		budget:              budget,
 		automation:          automation,
+		bank:                bank,
 	}
 }
 

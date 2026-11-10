@@ -93,6 +93,7 @@ func main() {
 	debtStorage := storage.NewDebtStorage(database)
 	debtBillStorage := storage.NewDebtBillStorage(database)
 	debtInformationStorage := storage.NewDebtInformationStorage(database)
+	bankStorage := storage.NewBankStorage(database)
 	documentRecognitionStorage := storage.NewDocumentRecognitionStorage(database)
 	billHistoryStorage := storage.NewBillHistoryStorage(database)
 	serviceCycleStorage := storage.NewServiceCycleStorage(database)
@@ -163,6 +164,7 @@ func main() {
 	pensionGenerationService := services.NewPensionGenerationService(salaryStorage, currencyStorage, salaryPaymentStorage, supportRecordStorage, childSupportConfigStorage, pensionNotificationService)
 	debtService := services.NewDebtService(debtStorage, debtBillStorage, institutionStorage, currencyStorage, cfg.DataDir)
 	debtInformationService := services.NewDebtInformationService(debtInformationStorage, debtStorage)
+	bankService := services.NewBankService(bankStorage, currencyStorage)
 	documentRecognitionService := services.NewDocumentRecognitionService(documentRecognitionStorage, debtBillStorage, cfg.DataDir)
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
@@ -231,11 +233,12 @@ func main() {
 	pensionDashboardHandlers := api.NewPensionDashboardHandlers(pensionGenerationService)
 	debtHandlers := api.NewDebtHandlers(debtService)
 	debtInformationHandlers := api.NewDebtInformationHandlers(debtInformationService)
+	bankHandlers := api.NewBankHandlers(bankService)
 	webhookHandlers := api.NewWebhookHandlers(webhookService, serviceService)
 	budgetHandlers := api.NewBudgetHandlers(budgetService, categoryGroupService, categoryService, accountService, budgetTransactionService, transferService)
 	automationHandlers := api.NewAutomationHandlers(automationService, authService)
 
-	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, documentRecognitionHandlers, autoHandlers, autoServiceHandlers, autoMaintenanceHandlers, autoInspectionHandlers, autoAttachmentHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, pensionImportHandlers, debtHandlers, debtInformationHandlers, webhookHandlers, budgetHandlers, automationHandlers)
+	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, documentRecognitionHandlers, autoHandlers, autoServiceHandlers, autoMaintenanceHandlers, autoInspectionHandlers, autoAttachmentHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, pensionImportHandlers, debtHandlers, debtInformationHandlers, webhookHandlers, budgetHandlers, automationHandlers, bankHandlers)
 
 	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
 	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {
