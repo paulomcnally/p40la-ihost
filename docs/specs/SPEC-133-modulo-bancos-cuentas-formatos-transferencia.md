@@ -1,17 +1,17 @@
 ---
 title: "Módulo de bancos: cuentas y formatos de transferencia (Transferencia y ACH) con plantillas JSON"
 id: "SPEC-133"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-09"
-updated: "2026-11-09"
+updated: "2026-11-10"
 github_issue: 136
 ---
 
 # Módulo de bancos: cuentas y formatos de transferencia (Transferencia y ACH) con plantillas JSON
 
 **ID**: SPEC-133  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-09  
 **Actualizado**: 2026-11-09
@@ -443,3 +443,4 @@ Editar **`frontend/public/i18n/es.json`** y **`frontend/public/i18n/en.json`** (
 |-------|-------|-------------|
 | 2026-11-09 | opencode | Creación inicial de la especificación |
 | 2026-11-09 | opencode | Implementación: migración 0047, CRUD de bancos/cuentas, formatos Transferencia/ACH en JSON llave/valor, catálogo de variables bancarias, UI con sección en el sidebar, listados, formularios y copia del JSON resuelto. Pendiente de validación manual. |
+| 2026-11-10 | opencode | Validación manual confirmada por el usuario (incluido el fix de navegación del sidebar a `/bancos`). Release v0.5.9: implementación mergeada a `main` (commit `35cf462`, merge `5a4514b`, bump `a03154b`), label `spec/released` e issue #136 cerrado. |
