@@ -1,17 +1,17 @@
 ---
 title: "Variables dinámicas en valores por defecto de plantillas de información de deudas"
 id: "SPEC-132"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-09"
-updated: "2026-11-09"
+updated: "2026-11-10"
 github_issue: 135
 ---
 
 # Variables dinámicas en valores por defecto de plantillas de información de deudas
 
 **ID**: SPEC-132  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-09  
 **Actualizado**: 2026-11-09
@@ -353,3 +353,4 @@ Reglas de aceptación del backend:
 | 2026-11-09 | opencode | Creación inicial de la especificación |
 | 2026-11-09 | opencode | Implementación: catálogo de variables, endpoint `GET /api/debt-information-templates/variables`, validación en backend y frontend, panel de sugerencias en el editor, resolución en `DebtInformationView`, vista previa en el modal de pago y vista previa con datos de ejemplo en el editor de plantillas (REQ-010). Pendiente de validación manual. |
 | 2026-11-09 | opencode | Ajuste de UX solicitado por el usuario (REQ-016): el modal de Forma de pago abre en modo lectura cuando ya hay información guardada, con botones Editar y Cancelar; inputs y Quitar forma de pago solo en modo edición; al guardar vuelve al modo lectura. |
+| 2026-11-10 | opencode | Validación manual confirmada por el usuario. Release v0.5.9: implementación mergeada a `main` (commit `35cf462`, merge `5a4514b`, bump `a03154b`), label `spec/released` e issue #135 cerrado. |
