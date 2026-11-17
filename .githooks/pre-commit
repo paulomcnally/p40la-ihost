@@ -72,12 +72,16 @@ fi
 
 # ---------------------------------------------------------------------------
 # 3. public/i18n es salida del build
+#    Se permite si también se staged la fuente (frontend/public/i18n/),
+#    que es el caso de un `npm run build` legítimo.
 # ---------------------------------------------------------------------------
 
 if printf '%s\n' "${staged}" | grep -Eq '^public/i18n/'; then
-  fail "Se intentó commitear public/i18n/ (salida del build)." \
-       "  Editá frontend/public/i18n/{es,en}.json y corré npm run build." \
-       "UI-I18N"
+  if ! printf '%s\n' "${staged}" | grep -Eq '^frontend/public/i18n/'; then
+    fail "Se intentó commitear public/i18n/ sin su fuente (edición manual)." \
+         "  Editá frontend/public/i18n/{es,en}.json y corré npm run build." \
+         "UI-I18N"
+  fi
 fi
 
 # ---------------------------------------------------------------------------

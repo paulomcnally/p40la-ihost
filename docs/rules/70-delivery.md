@@ -78,7 +78,7 @@ Antes de declarar terminada una spec y después de cada release, ejecutar `/spec
 ## DELIV-HOOKS — Enforcement automático
 
 - Los hooks viven en `.githooks/` y se instalan con `./scripts/install-hooks.sh` (`git config core.hooksPath .githooks`). Es idempotente.
-- `pre-commit` bloquea: DBs (`*.db`, `-wal`, `-shm`), PDFs, dumps, `backups/`, `data/`; secretos y PII; cambios en `public/i18n/`; y ejecuta el guardrail de UI si hay `.tsx` staged.
+- `pre-commit` bloquea: DBs (`*.db`, `-wal`, `-shm`), PDFs, dumps, `backups/`, `data/`; secretos y PII; `public/i18n/` editado sin su fuente (el build legítimo que staged `frontend/public/i18n/` se permite); y ejecuta el guardrail de UI si hay `.tsx` staged.
 - `commit-msg` exige `SPEC-XXX: descripción` (o `Merge `, `Revert `, `bump `, `hotfix:`).
 - El plugin `.opencode/plugins/rules-guard/` bloquea en tiempo de ejecución: borrar `data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>` y checkbox nativo.
 - **Prohibido** `git commit --no-verify` salvo autorización explícita del usuario.
