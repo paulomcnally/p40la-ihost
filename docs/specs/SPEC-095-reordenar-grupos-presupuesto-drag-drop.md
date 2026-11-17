@@ -1,7 +1,7 @@
 ---
 title: "Reordenar grupos de presupuesto con drag & drop en la vista mensual"
 id: "SPEC-095"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-09-27"
 updated: "2026-09-27"
@@ -11,10 +11,10 @@ github_issue: 98
 # Reordenar grupos de presupuesto con drag & drop en la vista mensual
 
 **ID**: SPEC-095  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-09-27  
-**Actualizado**: 2026-09-27
+**Actualizado**: 2026-11-17
 
 ---
 
@@ -243,3 +243,18 @@ No hay migraciones nuevas: la columna `sort_order` ya existe. Solo cambia el com
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-09-27 | opencode | Creación inicial de la especificación. Requerimiento del usuario: "dentro de presupuesto debería poder arrastrar y soltar hacia arriba y abajo para ordenar a mi gusto y antojo los grupos". Alcance: solo grupos en la vista mensual; categorías dentro de grupos queda como P2 (REQ-010). |
+| 2026-11-17 | opencode | Release: rebase sobre `main` (incluye SPEC-136), rebuild del frontend, `go build` y tests OK; merge a `main`. |
+
+---
+
+## 10. Verificación de release
+
+| Criterio | Evidencia |
+|---|---|
+| Compilación backend | `go build ./...` OK |
+| Tests backend | `go test ./internal/services/ ./internal/storage/` OK |
+| Tests nuevos | 6 tests de reorder (servicio y storage) PASS |
+| Compilación frontend | `npm run build` (check:ui + check:pwa + tsc + vite) OK |
+| Guardrails UI | `check-ui-rules.cjs` OK (sin `<select>` ni checkbox nativo) |
+| i18n | Solo 3 claves nuevas en `frontend/public/i18n/{es,en}.json`; build regenera `public/i18n/` y `frontend/src/i18n/` |
+| Integración | Rebase sobre `main` sin pérdida de reglas ni cambios de SPEC-131..136 |
