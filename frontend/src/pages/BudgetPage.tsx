@@ -13,6 +13,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import IconPickerModal from '../components/IconPickerModal'
 import Select from '../components/Select'
 import ServicePickerModal from '../components/ServicePickerModal'
+import Toggle from '../components/Toggle'
 import { useToast } from '../components/Toast'
 import type { BudgetMonthView, BudgetCategoryRow, BudgetMonthGroup, Currency, CategoryGroup, BudgetCategory, RecurringRule, Account, Service, SuggestedAssignment } from '../types'
 
@@ -625,15 +626,14 @@ function AssignModal({ category, year, month, currencies, formatMoney, onClose, 
             </p>
           )}
 
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
+          <div className="flex items-center justify-between gap-3 min-h-[44px]">
+            <span className="text-sm">{t('budget.make_recurring')}</span>
+            <Toggle
               checked={makeRecurring}
-              onChange={(e) => setMakeRecurring(e.target.checked)}
-              className="w-4 h-4"
+              onChange={setMakeRecurring}
+              ariaLabel={t('budget.make_recurring')}
             />
-            {t('budget.make_recurring')}
-          </label>
+          </div>
 
           {rule && (
             <div className="bg-bg rounded-ios-sm p-3 space-y-2">

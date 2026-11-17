@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useI18nStore } from '../stores/i18nStore'
+import Toggle from '../components/Toggle'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -59,15 +60,10 @@ export default function LoginPage() {
               required
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={remember}
-              onChange={(e) => setRemember(e.target.checked)}
-              className="rounded"
-            />
-            Recordarme
-          </label>
+          <div className="flex items-center justify-between gap-3 text-sm min-h-[44px]">
+            <span>Recordarme</span>
+            <Toggle checked={remember} onChange={setRemember} ariaLabel="Recordarme" />
+          </div>
           <button
             type="submit"
             disabled={loading}

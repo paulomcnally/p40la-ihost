@@ -132,6 +132,23 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - Al crear o modificar un modal, verificar manualmente que el click fuera no cierra ni interactúa con el fondo, que el cierre visible existe en todos los estados y que Enter confirma en los modales de confirmación por palabra cuando corresponde.
 - Precedentes: SPEC-122 (modal de factura/comprobante y confirmación de borrado) y SPEC-126 (regla general de modales, confirmación por palabra y escala de capas).
 
+### 4.8 Páginas de detalle (show): información, nunca formulario (obligatorio)
+
+- Una página de detalle muestra los datos de la entidad en **modo lectura**: no incluye `<form>`, `<input>`, `<textarea>`, `Select` ni botones **Guardar/Cancelar**.
+- Editar es una **acción explícita** del menú de 3 puntos (o del header) que navega a una ruta separada `/edit/:id`; la acción se rotula siempre **Editar** (`app.edit`, ver §4.5).
+- Los cambios de estado se hacen desde **Editar**; el show solo muestra el estado con un badge o texto.
+- Las páginas de detalle no incluyen links "← Título" en el contenido: el retorno va en el header vía `BACK_ROUTES` (§4.4).
+- Precedente: SPEC-135 (el detalle de una cuenta bancaria era el formulario de edición).
+
+### 4.9 Booleanos: Toggle iOS obligatorio, checkbox nativo prohibido (obligatorio)
+
+- Todo booleano de entidad o configuración (`active`, `enabled`, `auto_generate`, `is_recurring`, `required`, etc.) DEBE usar el componente reutilizable `frontend/src/components/Toggle.tsx` (toggle estilo iOS con tokens de tema y darkmode).
+- **Prohibido** `<input type="checkbox">` para estos casos.
+- Excepción: checkboxes de **selección múltiple** de filas o items en tablas/listas, que no representan un estado persistido de la entidad.
+- El toggle debe tener una etiqueta visible o `aria-label`, foco visible por teclado y verificarse en darkmode.
+- El build de `frontend/` ejecuta `frontend/scripts/check-ui-rules.cjs` y **falla** si detecta un checkbox nativo fuera de la allowlist.
+- Precedente: SPEC-135 (cuenta activa de un banco usaba checkbox nativo).
+
 ---
 
 ## 5. Convenciones de Código Go

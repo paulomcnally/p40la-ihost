@@ -5,6 +5,7 @@ import { Icon } from '../components/Icons'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ConfirmWordModal from '../components/ConfirmWordModal'
 import Select from '../components/Select'
+import Toggle from '../components/Toggle'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
@@ -545,15 +546,14 @@ export default function DebtInformationTemplateFormPage() {
                         />
                       </div>
                     )}
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
+                    <div className="flex items-center justify-between gap-3 text-sm min-h-[44px]">
+                      <span>{t('deudas.template_field_required')}</span>
+                      <Toggle
                         checked={Boolean(field.required)}
-                        onChange={(e) => updateField(index, { required: e.target.checked })}
-                        className="w-4 h-4 accent-primary"
+                        onChange={(checked) => updateField(index, { required: checked })}
+                        ariaLabel={t('deudas.template_field_required')}
                       />
-                      {t('deudas.template_field_required')}
-                    </label>
+                    </div>
                   </>
                 )}
 
