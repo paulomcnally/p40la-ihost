@@ -1526,7 +1526,10 @@
     "n_services": "servicios",
     "link_account": "Cuenta",
     "link_account_required": "Seleccioná la cuenta para registrar los pagos.",
-    "linked_service_badge": "Vinculado a:"
+    "linked_service_badge": "Vinculado a:",
+    "reorder": "Arrastrar para reordenar",
+    "order_saved": "Orden guardado",
+    "order_error": "No se pudo guardar el orden"
   },
   "automation": {
     "title": "Automatización",

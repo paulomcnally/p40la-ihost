@@ -452,6 +452,7 @@ salaries: {
       create: (body: { name: string; icon: string }) => post<{ id: number; name: string; icon: string }>('/api/budget/category-groups', body),
       update: (id: number, body: { name: string; icon: string }) => put(`/api/budget/category-groups/${id}`, body),
       delete: (id: number) => del(`/api/budget/category-groups/${id}`),
+      reorder: (ids: number[]) => put<{ message: string }>('/api/budget/category-groups/reorder', { ids }),
     },
     categories: {
       create: (body: { category_group_id: number; name: string; icon: string; target_amount?: number | null; service_ids?: number[]; account_id?: number | null }) =>

@@ -141,6 +141,25 @@ type categoryGroupRequest struct {
 	Icon string `json:"icon"`
 }
 
+type categoryGroupReorderRequest struct {
+	IDs []int64 `json:"ids"`
+}
+
+// ReorderCategoryGroups persiste el orden de los grupos según el array de IDs
+// recibido (SPEC-095). Asigna sort_order = índice del array en una transacción.
+func (h *BudgetHandlers) ReorderCategoryGroups(w http.ResponseWriter, r *http.Request) {
+	var req categoryGroupReorderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
+		return
+	}
+	if err := h.categoryGroups.Reorder(r.Context(), req.IDs); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]string{"message": "Orden actualizado"})
+}
+
 // ListCategoryGroups responde los grupos con sus categorías.
 func (h *BudgetHandlers) ListCategoryGroups(w http.ResponseWriter, r *http.Request) {
 	groups, err := h.categoryGroups.List(r.Context())

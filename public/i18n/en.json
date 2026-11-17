@@ -1525,7 +1525,10 @@
     "n_services": "services",
     "link_account": "Account",
     "link_account_required": "Select the account to record payments.",
-    "linked_service_badge": "Linked to:"
+    "linked_service_badge": "Linked to:",
+    "reorder": "Drag to reorder",
+    "order_saved": "Order saved",
+    "order_error": "Could not save the order"
   },
   "automation": {
     "title": "Automation",

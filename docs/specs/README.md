@@ -6,12 +6,12 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 135 |
+| **Total de specs** | 136 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 135 🟢 |
+| **Released** | 136 🟢 |
 | **Canceladas** | 0 ⚫ |
 | **Último ID usado** | SPEC-136 |
 
@@ -115,6 +115,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-091 | Pólizas y ciclos de servicio: ver, agregar y renovar en el detalle | released | 2026-09-24 | opencode |
 | SPEC-093 | Sistema de Presupuesto estilo YNAB: grupos/categorías, asignación mensual, recurrencia y transacciones | released | 2026-09-27 | opencode |
 | SPEC-094 | Vincular categorías de presupuesto con servicios: transacción automática al pagar facturas | released | 2026-09-27 | opencode |
+| SPEC-095 | Reordenar grupos de presupuesto con drag & drop en la vista mensual | released | 2026-09-27 | opencode |
 | SPEC-096 | Categorías de presupuesto vinculadas a múltiples servicios + fix dropdown detrás del modal | released | 2026-09-28 | opencode |
 | SPEC-097 | Bot Telegram: comando /budget_transaction para registrar transacciones del presupuesto por conversación guiada | released | 2026-09-28 | opencode |
 | SPEC-098 | Auto-completar 'Asignado' de una categoría con la suma de la factura más reciente por servicio vinculado | released | 2026-09-28 | opencode |
