@@ -12,6 +12,7 @@ set -uo pipefail
 FORBIDDEN_EXTS="db db-wal db-shm sqlite sqlite3 pdf dump"
 FORBIDDEN_DIRS="backups data"
 GENERATED_PATHS="public/i18n/"
+GENERATED_SOURCE_PATHS="frontend/public/i18n/"   # fuente que permite el build
 UI_CHECK_CMD=""            # ej: "cd frontend && npm run check:ui"
 UI_PATHS_REGEX='^frontend/src/.*\.(tsx|jsx)$'
 PII_EMAIL_DOMAINS="gmail|hotmail|outlook|yahoo|icloud|live|protonmail"
@@ -60,10 +61,13 @@ if [ -n "${added}" ]; then
 fi
 
 # 3. Rutas generadas por el build
+#    Se permiten si también se staged su fuente (evita bloquear un build legítimo).
 if [ -n "${GENERATED_PATHS}" ]; then
   for gen in ${GENERATED_PATHS}; do
     if printf '%s\n' "${staged}" | grep -Eq "^${gen}"; then
-      fail "Se intentó commitear ${gen} (salida del build)." "  Editá la fuente y volvé a compilar."
+      if ! printf '%s\n' "${staged}" | grep -Eq "^${GENERATED_SOURCE_PATHS}"; then
+        fail "Se intentó commitear ${gen} sin su fuente (edición manual)." "  Editá la fuente y volvé a compilar."
+      fi
     fi
   done
 fi
