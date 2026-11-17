@@ -7,22 +7,13 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import Select from '../components/Select'
 import LoadingSpinner from '../components/LoadingSpinner'
-import TransferFormatEditor from '../components/TransferFormatEditor'
+import Toggle from '../components/Toggle'
 import {
   BANK_ACCOUNT_TYPE_VALUES,
-  BANK_TRANSFER_VARIABLE_FALLBACK,
   bankAccountTypeFromValue,
   bankAccountTypeLabel,
 } from '../utils/bank'
-import { DEBT_INFORMATION_VARIABLE_FALLBACK } from '../utils/debtInformation'
-import type {
-  Bank,
-  BankAccount,
-  BankAccountType,
-  BankTransferKind,
-  Currency,
-  DebtInformationVariable,
-} from '../types'
+import type { Bank, BankAccount, BankAccountType, Currency } from '../types'
 
 const inputClass =
   'w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]'
@@ -36,12 +27,7 @@ export default function BankAccountFormPage() {
   const { showToast } = useToast()
 
   const [bank, setBank] = useState<Bank | null>(null)
-  const [account, setAccount] = useState<BankAccount | null>(null)
   const [currencies, setCurrencies] = useState<Currency[]>([])
-  const [variables, setVariables] = useState<DebtInformationVariable[]>([
-    ...BANK_TRANSFER_VARIABLE_FALLBACK,
-    ...DEBT_INFORMATION_VARIABLE_FALLBACK,
-  ])
   const [alias, setAlias] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
   const [accountType, setAccountType] = useState<BankAccountType>('savings')
@@ -49,44 +35,34 @@ export default function BankAccountFormPage() {
   const [beneficiary, setBeneficiary] = useState('')
   const [notes, setNotes] = useState('')
   const [active, setActive] = useState(true)
-  const [tab, setTab] = useState<BankTransferKind>('transfer')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  usePageTitle(isNew ? t('banks.create_account') : alias || t('banks.edit_account'))
+  usePageTitle(isNew ? t('banks.create_account') : t('banks.edit_account'))
 
-  const loadAccount = useCallback(async () => {
-    if (isNew) return
-    try {
-      const detail = await api.bankAccounts.get(Number(accountId))
-      if (!detail) return
-      setAccount(detail)
-      setAlias(detail.alias)
-      setAccountNumber(detail.account_number)
-      setAccountType(detail.account_type)
-      setCurrencyId(detail.currency_id)
-      setBeneficiary(detail.beneficiary)
-      setNotes(detail.notes || '')
-      setActive(detail.active)
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
-    }
-  }, [accountId, isNew, showToast, t])
+  const applyAccount = useCallback((detail: BankAccount) => {
+    setAlias(detail.alias)
+    setAccountNumber(detail.account_number)
+    setAccountType(detail.account_type)
+    setCurrencyId(detail.currency_id)
+    setBeneficiary(detail.beneficiary)
+    setNotes(detail.notes || '')
+    setActive(detail.active)
+  }, [])
 
   useEffect(() => {
     let mounted = true
     const load = async () => {
       try {
-        const [bankDetail, currencyList, variableList] = await Promise.all([
+        const [bankDetail, currencyList, accountDetail] = await Promise.all([
           api.banks.get(bankId),
           api.currencies.list(),
-          api.bankTransferVariables.list().catch(() => null),
+          isNew ? Promise.resolve(null) : api.bankAccounts.get(Number(accountId)),
         ])
         if (!mounted) return
         setBank(bankDetail)
         setCurrencies(currencyList || [])
-        if (variableList && variableList.length > 0) setVariables(variableList)
-        await loadAccount()
+        if (accountDetail) applyAccount(accountDetail)
       } catch (err) {
         if (mounted) showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
       } finally {
@@ -97,7 +73,7 @@ export default function BankAccountFormPage() {
     return () => {
       mounted = false
     }
-  }, [bankId, loadAccount, showToast, t])
+  }, [accountId, applyAccount, bankId, isNew, showToast, t])
 
   const currencyOptions = useMemo(
     () => currencies.map((currency) => ({ value: currency.id, label: `${currency.code} - ${currency.name}` })),
@@ -128,9 +104,9 @@ export default function BankAccountFormPage() {
           navigate(`/bancos/${bankId}/cuentas/${created.id}`, { replace: true })
         }
       } else {
-        const updated = await api.bankAccounts.update(Number(accountId), payload)
-        setAccount(updated)
+        await api.bankAccounts.update(Number(accountId), payload)
         showToast(t('banks.account_updated'), 'success')
+        navigate(`/bancos/${bankId}/cuentas/${accountId}`, { replace: true })
       }
     } catch (err) {
       showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
@@ -139,19 +115,9 @@ export default function BankAccountFormPage() {
     }
   }
 
-  const reloadAccount = useCallback(async () => {
-    if (isNew) return
-    try {
-      const detail = await api.bankAccounts.get(Number(accountId))
-      if (detail) setAccount(detail)
-    } catch {
-      // ignore
-    }
-  }, [accountId, isNew])
-
   if (loading) return <LoadingSpinner />
 
-  const activeFormat = account?.formats?.find((format) => format.kind === tab)
+  const cancelTo = isNew ? `/bancos/${bankId}` : `/bancos/${bankId}/cuentas/${accountId}`
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -242,21 +208,16 @@ export default function BankAccountFormPage() {
               className={`${inputClass} resize-y`}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm min-h-[44px]">
-            <input
-              type="checkbox"
-              checked={active}
-              onChange={(e) => setActive(e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            {t('banks.active_account')}
-          </label>
+          <div className="flex items-center justify-between gap-3 min-h-[44px]">
+            <span className="text-sm font-medium">{t('banks.active_account')}</span>
+            <Toggle checked={active} onChange={setActive} ariaLabel={t('banks.active_account')} />
+          </div>
         </section>
 
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             type="button"
-            onClick={() => navigate(`/bancos/${bankId}`)}
+            onClick={() => navigate(cancelTo)}
             disabled={saving}
             className="flex-1 px-4 py-2.5 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center justify-center gap-2 min-h-[44px]"
           >
@@ -277,40 +238,6 @@ export default function BankAccountFormPage() {
           </button>
         </div>
       </form>
-
-      {account && (
-        <div className="mt-6 space-y-3 pb-6">
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">
-              {t('banks.formats')}
-            </h3>
-          </div>
-          <div className="flex gap-2">
-            {(['transfer', 'ach'] as BankTransferKind[]).map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setTab(value)}
-                className={`px-3 py-2 rounded-ios-sm text-sm font-medium min-h-[44px] ${
-                  tab === value ? 'bg-primary text-white' : 'bg-bg text-text hover:bg-border'
-                }`}
-              >
-                {value === 'ach' ? t('banks.ach') : t('banks.transfer')}
-              </button>
-            ))}
-          </div>
-          <TransferFormatEditor
-            key={tab}
-            accountId={account.id}
-            account={account}
-            bank={bank}
-            kind={tab}
-            initialFormat={activeFormat}
-            variables={variables}
-            onSaved={reloadAccount}
-          />
-        </div>
-      )}
     </div>
   )
 }
