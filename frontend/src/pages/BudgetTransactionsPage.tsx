@@ -10,6 +10,7 @@ import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select from '../components/Select'
+import Toggle from '../components/Toggle'
 import { useToast } from '../components/Toast'
 import type { BudgetTransaction, Account, BudgetCategory, Transfer } from '../types'
 
@@ -533,15 +534,14 @@ function TransactionFormModal({ edit, accounts, categories, currencies, defaultD
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
+          <div className="flex items-center justify-between gap-3 min-h-[44px]">
+            <span className="text-sm">{t('budget.cleared')}</span>
+            <Toggle
               checked={form.cleared}
-              onChange={(e) => setForm({ ...form, cleared: e.target.checked })}
-              className="w-4 h-4"
+              onChange={(checked) => setForm({ ...form, cleared: checked })}
+              ariaLabel={t('budget.cleared')}
             />
-            {t('budget.cleared')}
-          </label>
+          </div>
 
           <button
             onClick={handleSave}
@@ -905,15 +905,14 @@ function TransferFormModal({ edit, accounts, currencies, defaultDate, onClose, o
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
+          <div className="flex items-center justify-between gap-3 min-h-[44px]">
+            <span className="text-sm">{t('budget.cleared')}</span>
+            <Toggle
               checked={form.cleared}
-              onChange={(e) => setForm({ ...form, cleared: e.target.checked })}
-              className="w-4 h-4"
+              onChange={(checked) => setForm({ ...form, cleared: checked })}
+              ariaLabel={t('budget.cleared')}
             />
-            {t('budget.cleared')}
-          </label>
+          </div>
 
           <button
             onClick={handleSave}

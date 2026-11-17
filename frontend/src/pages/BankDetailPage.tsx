@@ -123,7 +123,12 @@ export default function BankDetailPage() {
                   {
                     label: t('app.edit'),
                     icon: 'edit',
-                    onClick: () => navigate(`/bancos/${bank.id}/cuentas/${account.id}`),
+                    onClick: () => navigate(`/bancos/${bank.id}/cuentas/${account.id}/edit`),
+                  },
+                  {
+                    label: t('banks.transfers'),
+                    icon: 'wallet',
+                    onClick: () => navigate(`/bancos/${bank.id}/cuentas/${account.id}/transferencias`),
                   },
                   {
                     label: t('app.delete'),

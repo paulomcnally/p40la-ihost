@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import Select from '../components/Select'
+import Toggle from '../components/Toggle'
 import type { Salary } from '../types'
 
 export default function SalaryFormPage() {
@@ -145,15 +146,7 @@ export default function SalaryFormPage() {
           </div>
           <div className="flex items-end pb-2">
             <div className="flex items-center gap-3">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={(e) => setActive(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-              </label>
+              <Toggle checked={active} onChange={setActive} ariaLabel={t('salaries.active')} />
               <span className="text-sm font-medium">{t('salaries.active')}</span>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { Icon } from '../components/Icons'
 import { useToast } from '../components/Toast'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
+import Toggle from '../components/Toggle'
 import type { Notification } from '../types'
 
 export default function NotificationFormPage() {
@@ -91,15 +92,7 @@ export default function NotificationFormPage() {
           />
         </div>
         <div className="flex items-center gap-3">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={active}
-              onChange={(e) => setActive(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-          </label>
+          <Toggle checked={active} onChange={setActive} ariaLabel={t('notifications.active_label')} />
           <span className="text-sm font-medium">{t('notifications.active_label')}</span>
         </div>
         <div className="flex justify-end gap-3 pt-4 border-t border-border">

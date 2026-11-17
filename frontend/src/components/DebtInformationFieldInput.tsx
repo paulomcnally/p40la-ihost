@@ -1,5 +1,6 @@
 import { useI18nStore } from '../stores/i18nStore'
 import Select from './Select'
+import Toggle from './Toggle'
 import type { DebtInformationField, DebtInformationValue } from '../types'
 
 interface DebtInformationFieldInputProps {
@@ -74,16 +75,15 @@ export default function DebtInformationFieldInput({
 
     case 'checkbox':
       return (
-        <label className="flex items-center gap-3 min-h-[44px] px-3 py-2 border border-border rounded-ios-sm bg-card text-text cursor-pointer">
-          <input
-            type="checkbox"
-            checked={value === true}
-            onChange={(e) => onChange(e.target.checked)}
-            disabled={disabled}
-            className="w-5 h-5 accent-primary"
-          />
+        <div className="flex items-center justify-between gap-3 min-h-[44px] px-3 py-2 border border-border rounded-ios-sm bg-card text-text">
           <span className="text-sm">{value === true ? t('app.yes') : t('app.no')}</span>
-        </label>
+          <Toggle
+            checked={value === true}
+            onChange={(checked) => onChange(checked)}
+            disabled={disabled}
+            ariaLabel={field.label}
+          />
+        </div>
       )
 
     default:

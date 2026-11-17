@@ -7,6 +7,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import Select from '../components/Select'
 import LoadingSpinner from '../components/LoadingSpinner'
+import Toggle from '../components/Toggle'
 import {
   DEFAULT_COUNTRY_CODE,
   countryOptions,
@@ -192,15 +193,10 @@ export default function BankFormPage() {
               className={`${inputClass} resize-y`}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm min-h-[44px]">
-            <input
-              type="checkbox"
-              checked={active}
-              onChange={(e) => setActive(e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            {t('banks.active')}
-          </label>
+          <div className="flex items-center justify-between gap-3 min-h-[44px]">
+            <span className="text-sm font-medium">{t('banks.active')}</span>
+            <Toggle checked={active} onChange={setActive} ariaLabel={t('banks.active')} />
+          </div>
         </section>
 
         <div className="flex flex-col sm:flex-row gap-3 pb-6">
