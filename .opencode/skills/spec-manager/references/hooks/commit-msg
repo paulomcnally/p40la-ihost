@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# commit-msg — Formato de mensaje de commit (SPEC-136).
+# Copiado por spec-manager init. Ajustá el patrón si el proyecto usa otro formato.
+#
+# Fail-safe: si no puede leer el mensaje, deja pasar.
+
+set -uo pipefail
+
+# ==== Configuración del proyecto ============================================
+ALLOWED_REGEX='^(SPEC-[0-9]{3}:|Merge |Revert |bump |hotfix:)'
+EXPECTED_HINT="SPEC-XXX: descripción corta"
+# ============================================================================
+
+msg_file="${1:-}"
+[ -z "${msg_file}" ] && exit 0
+[ -f "${msg_file}" ] || exit 0
+
+first_line="$(grep -v '^#' "${msg_file}" 2>/dev/null | sed '/^[[:space:]]*$/d' | head -n 1 || true)"
+[ -z "${first_line}" ] && exit 0
+
+if printf '%s' "${first_line}" | grep -Eq "${ALLOWED_REGEX}"; then
+  exit 0
+fi
+
+echo "" >&2
+echo "[commit-msg] ⛔ Formato de commit inválido." >&2
+echo "  Recibido: ${first_line}" >&2
+echo "  Esperado: ${EXPECTED_HINT}" >&2
+echo "  Referencia: docs/rules/70-delivery.md" >&2
+exit 1
