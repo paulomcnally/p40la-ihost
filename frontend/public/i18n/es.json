@@ -482,7 +482,11 @@
     "updated": "Banco actualizado",
     "account_created": "Cuenta creada",
     "account_updated": "Cuenta actualizada",
-    "no_country": "Sin país"
+    "no_country": "Sin país",
+    "country_placeholder": "Seleccioná un país",
+    "country_search": "Buscar país...",
+    "country_legacy": "Valor anterior",
+    "validation_country": "Elegí un país de la lista."
   },
   "home": {
     "title": "Casa",
@@ -929,6 +933,13 @@
       "title": "Modo oscuro",
       "subtitle": "Tema oscuro para toda la aplicación"
     },
+    "country": {
+      "title": "País",
+      "subtitle": "País usado por defecto al crear bancos",
+      "description": "Se sugiere al crear un banco. Podés cambiarlo en cada banco.",
+      "saved": "País guardado",
+      "restore": "Restaurar Nicaragua"
+    },
     "currencies": {
       "title": "Monedas",
       "subtitle": "Administra las monedas disponibles",
@@ -1113,7 +1124,8 @@
       "status_deactivated": "Desactivado",
       "status_configured": "Configurado",
       "status_pending": "Pendiente",
-      "email_appearance": "Apariencia de Emails"
+      "email_appearance": "Apariencia de Emails",
+      "country": "País"
     },
     "billing": {
       "timezone": "Zona horaria",

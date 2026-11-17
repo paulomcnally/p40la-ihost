@@ -482,7 +482,11 @@
     "updated": "Bank updated",
     "account_created": "Account created",
     "account_updated": "Account updated",
-    "no_country": "No country"
+    "no_country": "No country",
+    "country_placeholder": "Select a country",
+    "country_search": "Search country...",
+    "country_legacy": "Previous value",
+    "validation_country": "Choose a country from the list."
   },
   "home": {
     "title": "Home",
@@ -928,6 +932,13 @@
       "title": "Dark mode",
       "subtitle": "Dark theme for the entire app"
     },
+    "country": {
+      "title": "Country",
+      "subtitle": "Default country used when creating banks",
+      "description": "Suggested when creating a bank. You can change it per bank.",
+      "saved": "Country saved",
+      "restore": "Restore Nicaragua"
+    },
     "currencies": {
       "title": "Currencies",
       "subtitle": "Manage available currencies",
@@ -1112,7 +1123,8 @@
       "status_deactivated": "Deactivated",
       "status_configured": "Configured",
       "status_pending": "Pending",
-      "email_appearance": "Email Appearance"
+      "email_appearance": "Email Appearance",
+      "country": "Country"
     },
     "billing": {
       "timezone": "Time zone",
