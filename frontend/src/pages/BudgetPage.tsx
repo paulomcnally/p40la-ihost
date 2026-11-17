@@ -274,10 +274,10 @@ export default function BudgetPage() {
                   services={services}
                   accounts={accounts}
                   onAssigned={() => loadView(year, month)}
-                  onAddCategory={(groupId) => setCatForm({ groupId, name: '', icon: 'tag', target: '', serviceId: null, accountId: null })}
+                  onAddCategory={(groupId) => setCatForm({ groupId, name: '', icon: 'tag', target: '', serviceIds: [], accountId: null })}
                   onEditGroup={(g) => setGroupForm({ id: g.id, name: g.name, icon: g.icon })}
                   onDeleteGroup={(g) => setDeleteTarget({ kind: 'group', id: g.id, name: g.name })}
-                  onEditCategory={(cat) => setCatForm({ id: cat.id, groupId: cat.category_group_id, name: cat.name, icon: cat.icon, target: cat.target_amount != null ? String(cat.target_amount) : '', serviceId: cat.service_id || null, accountId: cat.account_id || null })}
+                  onEditCategory={(cat) => setCatForm({ id: cat.id, groupId: cat.category_group_id, name: cat.name, icon: cat.icon, target: cat.target_amount != null ? String(cat.target_amount) : '', serviceIds: cat.service_ids || [], accountId: cat.account_id || null })}
                   onDeleteCategory={(cat) => setDeleteTarget({ kind: 'category', id: cat.id, name: cat.name })}
                 />
               </SortableCard>

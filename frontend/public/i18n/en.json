@@ -624,10 +624,7 @@
     "chart_variation": "Variation",
     "chart_table_title": "Detail by period",
     "chart_note_estimate": "Estimated with the suggested amount; may vary.",
-    "chart_period": "Period",
-    "automation_account": "Automation account ID",
-    "automation_account_placeholder": "E.g.: 1",
-    "automation_account_hint": "Account ID in p40la-ihost-automation (for manual sync)."
+    "chart_period": "Period"
   },
   "frequency": {
     "monthly": "Monthly",
@@ -1183,18 +1180,6 @@
       "preview_loading": "Loading preview...",
       "nav_custom": "Custom colors",
       "nav_default": "Default colors"
-    },
-    "automation": {
-      "title": "Automation",
-      "desc": "p40la-ihost-automation settings for manual service sync.",
-      "base_url": "Base URL",
-      "base_url_desc": "Automation project URL (default: http://ihost.local:8089).",
-      "api_key": "API key",
-      "api_key_desc": "Automation webhooks API key (shown in the automation project, Settings → Webhooks).",
-      "api_key_placeholder": "Enter the automation API key",
-      "configured": "Configured",
-      "saved": "Saved",
-      "hint": "Manual sync runs the automation plugins (external call) and sends to the service webhook. Each service needs its Automation account ID configured."
     }
   },
   "notifications": {
