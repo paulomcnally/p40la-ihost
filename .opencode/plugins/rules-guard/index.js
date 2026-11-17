@@ -44,7 +44,7 @@ function guardCommand(command, directory) {
   if (!cmd.trim()) return
 
   // DATA-NO-DROP: nunca borrar la base del usuario
-  if (/\brm\b[^\n]*\bdata\b/i.test(cmd)) {
+  if (/(^|[;&|]\s*)rm\s+[^\n]*(\bdata\/app\.db\b|\bdata\/\*|\bdata\/?(\s|$))/i.test(cmd)) {
     block("No se puede borrar ni reemplazar la base de datos del usuario.", "DATA-NO-DROP")
   }
 
