@@ -56,6 +56,8 @@ import BanksPage from './pages/BanksPage'
 import BankFormPage from './pages/BankFormPage'
 import BankDetailPage from './pages/BankDetailPage'
 import BankAccountFormPage from './pages/BankAccountFormPage'
+import BankAccountShowPage from './pages/BankAccountShowPage'
+import BankAccountTransfersPage from './pages/BankAccountTransfersPage'
 import BudgetPage from './pages/BudgetPage'
 import BudgetTransactionsPage from './pages/BudgetTransactionsPage'
 
@@ -166,7 +168,12 @@ function App() {
                   <Route path="bancos/new" element={<BankFormPage />} />
                   <Route path="bancos/edit/:id" element={<BankFormPage />} />
                   <Route path="bancos/:id/cuentas/new" element={<BankAccountFormPage />} />
-                  <Route path="bancos/:id/cuentas/:accountId" element={<BankAccountFormPage />} />
+                  <Route path="bancos/:id/cuentas/:accountId/edit" element={<BankAccountFormPage />} />
+                  <Route
+                    path="bancos/:id/cuentas/:accountId/transferencias"
+                    element={<BankAccountTransfersPage />}
+                  />
+                  <Route path="bancos/:id/cuentas/:accountId" element={<BankAccountShowPage />} />
                   <Route path="bancos/:id" element={<BankDetailPage />} />
                   <Route path="budget" element={<BudgetPage />} />
                   <Route path="budget/transacciones" element={<BudgetTransactionsPage />} />

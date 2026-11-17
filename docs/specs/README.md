@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 132 |
+| **Total de specs** | 133 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
-| **In progress** | 0 🟣 |
+| **In progress** | 1 🟣 |
 | **Pending release** | 0 🟠 |
 | **Released** | 132 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-133 |
+| **Último ID usado** | SPEC-135 |
 
 ---
 
@@ -153,6 +153,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-131 | Forma de pago por deuda y plantillas dinámicas de información | released | 2026-11-08 | opencode |
 | SPEC-132 | Variables dinámicas en valores por defecto de plantillas de información de deudas | released | 2026-11-09 | opencode |
 | SPEC-133 | Módulo de bancos: cuentas y formatos de transferencia (Transferencia y ACH) con plantillas JSON | released | 2026-11-09 | opencode |
+| SPEC-135 | Bancos: detalle de cuenta informativo, página de transferencias con tabs y toggles iOS obligatorios | in_progress | 2026-11-17 | opencode |
 
 ---
 

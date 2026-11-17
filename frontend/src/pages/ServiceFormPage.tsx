@@ -8,6 +8,7 @@ import { api } from '../api'
 import { Icon } from '../components/Icons'
 import IconPickerModal from '../components/IconPickerModal'
 import Select from '../components/Select'
+import Toggle from '../components/Toggle'
 import type { Service, Institution, AnalyzerInfo } from '../types'
 
 export default function ServiceFormPage() {
@@ -294,33 +295,25 @@ export default function ServiceFormPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.auto_generate}
-              onChange={(e) => handleChange('auto_generate', e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-          </label>
+          <Toggle
+            checked={formData.auto_generate}
+            onChange={(checked) => handleChange('auto_generate', checked)}
+            ariaLabel={t('services.auto_generate')}
+          />
           <span className="text-sm font-medium">{t('services.auto_generate')}</span>
         </div>
         <div className="flex items-center gap-3">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.is_recurring}
-              onChange={(e) => {
-                handleChange('is_recurring', e.target.checked)
-                if (!e.target.checked) {
-                  handleChange('start_date', '')
-                  handleChange('end_date', '')
-                }
-              }}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-          </label>
+          <Toggle
+            checked={formData.is_recurring}
+            onChange={(checked) => {
+              handleChange('is_recurring', checked)
+              if (!checked) {
+                handleChange('start_date', '')
+                handleChange('end_date', '')
+              }
+            }}
+            ariaLabel="Recurrente"
+          />
           <span className="text-sm font-medium">Recurrente</span>
         </div>
         {formData.is_recurring && (
@@ -364,15 +357,11 @@ export default function ServiceFormPage() {
           onClose={() => setShowIconPicker(false)}
         />
         <div className="flex items-center gap-3">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.active}
-              onChange={(e) => handleChange('active', e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-          </label>
+          <Toggle
+            checked={formData.active}
+            onChange={(checked) => handleChange('active', checked)}
+            ariaLabel={t('services.active')}
+          />
           <span className="text-sm font-medium">{t('services.active')}</span>
         </div>
         <div className="flex justify-end gap-3 pt-4 border-t border-border">
