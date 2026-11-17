@@ -107,6 +107,19 @@ func (s *CategoryGroupStorage) CountCategories(ctx context.Context, groupID int6
 	return count, nil
 }
 
+// NextSortOrder devuelve el siguiente valor de sort_order disponible para
+// insertar un grupo nuevo al final del orden actual (SPEC-095).
+func (s *CategoryGroupStorage) NextSortOrder(ctx context.Context) (int, error) {
+	var next int
+	if err := s.db.QueryRowContext(ctx, `
+		SELECT COALESCE(MAX(sort_order), -1) + 1
+		FROM category_groups
+	`).Scan(&next); err != nil {
+		return 0, fmt.Errorf("calcular siguiente orden de grupo: %w", err)
+	}
+	return next, nil
+}
+
 // Reorder actualiza el sort_order de todos los grupos.
 func (s *CategoryGroupStorage) Reorder(ctx context.Context, ids []int64) error {
 	tx, err := s.db.BeginTx(ctx, nil)
