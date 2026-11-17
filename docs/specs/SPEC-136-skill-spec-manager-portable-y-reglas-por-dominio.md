@@ -1,7 +1,7 @@
 ---
 title: "Skill spec-manager portable: contrato de reglas por dominio, bootstrap obligatorio e init"
 id: "SPEC-136"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-17"
 updated: "2026-11-17"
@@ -11,7 +11,7 @@ github_issue: 139
 # Skill spec-manager portable: contrato de reglas por dominio, bootstrap obligatorio e init
 
 **ID**: SPEC-136
-**Estado**: in_progress
+**Estado**: released
 **Autor**: opencode
 **Creado**: 2026-11-17
 **Actualizado**: 2026-11-17
@@ -314,3 +314,32 @@ Manifiesto + 7 archivos de dominio. En p40la-ihost se migra el contenido real.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-17 | opencode | Creación inicial de la especificación |
+| 2026-11-17 | opencode | Enforcement con git hooks y plugin `rules-guard` (REQ-018..REQ-023) |
+| 2026-11-17 | opencode | Release: merge a `main` de `feature/SPEC-136` (commits `f35d506e`, `6f4f88f6`) |
+
+---
+
+## 11. Verificación de release
+
+| Criterio | Evidencia |
+|---|---|
+| `CA-ARCH-001` | `check-rules.sh` pasa; `SKILL.md` sin rutas de proyecto fuera de ejemplos |
+| `CA-ARCH-002` | Contrato en `SKILL.md` == archivos que genera `init` (12 archivos) |
+| `CA-ARCH-003` | `install-hooks.sh` idempotente; `core.hooksPath=.githooks` verificado |
+| `CA-UI-001` | `init-rules.sh` en `/tmp` vacío: 12 creados (9 reglas + 3 hooks) |
+| `CA-UI-002` | `init-rules.sh` con `AGENTS.md` previo: omitido, contenido intacto |
+| `CA-UI-003` | Plugin 14/14 casos: bloquea `<select>` y checkbox en `.tsx` |
+| `CA-UI-004` | Plugin bloquea `public/i18n/` y permite `frontend/public/i18n/` |
+| `CA-UX-001` | `check-rules.sh` en dir vacío: exit 1 con faltantes y opciones |
+| `CA-UX-002` | `docs/rules/00-index.md` §1 declara precedencia del proyecto |
+| `CA-UX-003` | Template de spec incluye sección «Cumplimiento de reglas» |
+| `CA-SEC-003` | `pre-commit` bloquea clave privada: test 5/5 PASS |
+| `CA-DELIV-005` | `pre-commit` bloquea `*.db`: test 5/5 PASS |
+| `CA-DELIV-006` | `commit-msg` rechaza mensaje sin `SPEC-XXX:`: test 5/5 PASS |
+| `CA-DELIV-007` | Plugin bloquea `rm data/`, `pkill`, `--force`, `reset --hard` |
+| `CA-TEST-001` | Gate documentado y guardrails declarados en el manifiesto |
+| `CA-NF-001` | `SKILL.md` ≤ 500 líneas |
+| `CA-NF-003` | Sin PII real; solo datos `demo-*` |
+| `CA-NF-004` | Plugin y hooks envueltos en fail-safe |
+
+Comandos ejecutados: `go build ./...`, `check-rules.sh`, `node test-guard.mjs` (14/14), `bash test-hooks.sh` (5/5), `check-ui-rules.cjs`.
