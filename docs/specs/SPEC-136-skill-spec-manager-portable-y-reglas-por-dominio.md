@@ -316,6 +316,7 @@ Manifiesto + 7 archivos de dominio. En p40la-ihost se migra el contenido real.
 | 2026-11-17 | opencode | Creación inicial de la especificación |
 | 2026-11-17 | opencode | Enforcement con git hooks y plugin `rules-guard` (REQ-018..REQ-023) |
 | 2026-11-17 | opencode | Release: merge a `main` de `feature/SPEC-136` (commits `f35d506e`, `6f4f88f6`) |
+| 2026-11-17 | opencode | Corrección post-merge: migrada la regla §4.8 de SPEC-134 como `UX-DETAIL-ACTIONS` y ajustado el mapa de redirección §4.8/§4.9/§4.10 |
 
 ---
 

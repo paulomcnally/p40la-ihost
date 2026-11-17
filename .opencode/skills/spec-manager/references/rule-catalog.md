@@ -37,6 +37,7 @@ Reglas genéricas que `init` escribe en `docs/rules/`. Cada proyecto las ajusta:
 | `UX-MODAL` | Sin cierre por click fuera, overlay bloqueante, escala z, cierre visible | Manual |
 | `UX-MODAL-CONFIRM` | Confirmación por palabra con foco y Enter | Manual |
 | `UX-DETAIL` | Detalle de solo lectura; editar en ruta separada | Revisión |
+| `UX-DETAIL-ACTIONS` | Acciones de entidad solo en el menú de 3 puntos (`CardMenu`) | Revisión |
 | `UX-PREREQ` | Prerrequisitos validados en backend y frontend | Tests + revisión |
 | `UX-EMPTY` | Estado vacío con acción | Revisión |
 | `UX-LOADING` | Estado de carga visible | Revisión |

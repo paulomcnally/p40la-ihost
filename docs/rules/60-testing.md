@@ -73,6 +73,7 @@ Antes de pasar una spec a `pending_release`:
 - [ ] Funciona en un entorno con recursos limitados (iHost).
 - [ ] Los selectores usan `Select` y no `<select>` nativo (`npm run check:ui` pasa).
 - [ ] Los modales no se cierran al hacer click fuera; el overlay bloquea el fondo; el cierre visible existe en todos los estados; se respeta la escala de capas.
+- [ ] Las páginas de detalle no tienen íconos de acción sueltos: Editar/Eliminar viven en el menú de 3 puntos (`CardMenu`).
 - [ ] Si el comportamiento depende de datos, se validó contra una copia de la DB de producción.
 - [ ] `git diff --cached` revisado: sin PII, secretos, DBs, PDFs ni exports.
 - [ ] Hooks instalados (`core.hooksPath=.githooks`) y no se usó `--no-verify`.
