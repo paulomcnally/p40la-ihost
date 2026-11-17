@@ -75,4 +75,5 @@ Antes de pasar una spec a `pending_release`:
 - [ ] Los modales no se cierran al hacer click fuera; el overlay bloquea el fondo; el cierre visible existe en todos los estados; se respeta la escala de capas.
 - [ ] Si el comportamiento depende de datos, se validó contra una copia de la DB de producción.
 - [ ] `git diff --cached` revisado: sin PII, secretos, DBs, PDFs ni exports.
+- [ ] Hooks instalados (`core.hooksPath=.githooks`) y no se usó `--no-verify`.
 - [ ] La tabla «Cumplimiento de reglas» de la spec está completa.

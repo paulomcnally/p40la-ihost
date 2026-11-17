@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#
+# commit-msg — Formato de mensaje de commit (SPEC-136).
+#
+# Acepta:
+#   SPEC-XXX: descripción corta
+#   Merge ...
+#   Revert ...
+#   bump ...
+#   hotfix: ...
+#
+# Fail-safe: si no puede leer el mensaje, deja pasar.
+
+set -uo pipefail
+
+msg_file="${1:-}"
+[ -z "${msg_file}" ] && exit 0
+[ -f "${msg_file}" ] || exit 0
+
+first_line="$(grep -v '^#' "${msg_file}" 2>/dev/null | sed '/^[[:space:]]*$/d' | head -n 1 || true)"
+[ -z "${first_line}" ] && exit 0
+
+case "${first_line}" in
+  SPEC-[0-9][0-9][0-9]:*) exit 0 ;;
+  Merge\ *|Revert\ *|bump\ *|hotfix:*) exit 0 ;;
+esac
+
+echo "" >&2
+echo "[commit-msg] ⛔ Formato de commit inválido." >&2
+echo "  Recibido: ${first_line}" >&2
+echo "  Esperado: SPEC-XXX: descripción corta" >&2
+echo "  Permitidos además: Merge ..., Revert ..., bump ..., hotfix: ..." >&2
+echo "  Regla: DELIV-COMMIT (docs/rules/70-delivery.md)" >&2
+exit 1

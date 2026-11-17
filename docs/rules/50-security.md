@@ -59,6 +59,14 @@ Detalle operativo en [40-data.md](40-data.md) (`DATA-PRODCOPY`, `DATA-PROD-WRITE
 
 ---
 
+## SEC-HOOKS — Enforcement en el commit
+
+- `.githooks/pre-commit` bloquea secretos y PII en las líneas agregadas (claves privadas, AWS keys, tokens de GitHub/Slack/Telegram/OpenAI, emails personales, contraseñas hardcodeadas) y archivos prohibidos (DBs, `-wal`, `-shm`, PDFs, dumps, `backups/`, `data/`).
+- **Prohibido** `git commit --no-verify` salvo autorización explícita del usuario.
+- Si un hook falla internamente, deja pasar el commit (fail-safe): la revisión manual de `git diff --cached` sigue siendo obligatoria.
+
+---
+
 ## SEC-INCIDENT — Protocolo de incidente
 
 Si se commiteó un dato privado o un secreto:

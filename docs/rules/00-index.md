@@ -76,6 +76,23 @@ Comandos que el gate de pre-release ejecuta cuando están disponibles. Si un com
 | `server` | `TEST-SERVER` | `./scripts/check-server.sh` | Antes de avisar al usuario |
 | `worktree` | `DELIV-WORKTREE` | `./scripts/check-worktree.sh` | Al arrancar |
 | `diff` | `SEC-COMMIT` | `git diff --cached` (revisión manual) | Antes de commit |
+| `hooks` | `DELIV-HOOKS` | `./scripts/install-hooks.sh` | Al clonar o crear worktree |
+| `rules` | `DELIV-HOOKS` | `.opencode/skills/spec-manager/scripts/check-rules.sh .` | Al arrancar |
+
+---
+
+## 5.1 Enforcement automático
+
+El proyecto tiene dos capas de prevención (SPEC-136):
+
+| Capa | Archivo | Qué bloquea |
+|---|---|---|
+| Git hooks | `.githooks/pre-commit`, `.githooks/commit-msg` | DBs/PDFs/backups, secretos y PII, `public/i18n/`, `<select>`/checkbox nativo, mensajes sin `SPEC-XXX:` |
+| Plugin OpenCode | `.opencode/plugins/rules-guard/` | `rm data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>`/checkbox nativo |
+
+Los hooks se instalan con `./scripts/install-hooks.sh` (idempotente). El plugin se carga solo si `.opencode/node_modules` está instalado (`npm --prefix .opencode install`).
+
+**Fail-safe**: si un hook o el plugin falla internamente, la operación continúa. Solo los patrones positivos bloquean.
 
 ---
 

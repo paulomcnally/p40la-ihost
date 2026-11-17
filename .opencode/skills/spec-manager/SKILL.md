@@ -78,6 +78,9 @@ docs/rules/40-data.md              # datos, migraciones, copias de producción
 docs/rules/50-security.md          # PII, secretos, datos sintéticos
 docs/rules/60-testing.md           # pruebas, verificación, flujo con el usuario
 docs/rules/70-delivery.md          # git, worktrees, release, deploy
+.githooks/pre-commit               # enforcement en el commit (recomendado)
+.githooks/commit-msg               # formato de mensaje (recomendado)
+scripts/install-hooks.sh           # instalación idempotente
 ```
 
 - Los **nombres de archivo son parte del contrato** (el manifiesto puede declarar variantes).
@@ -85,6 +88,25 @@ docs/rules/70-delivery.md          # git, worktrees, release, deploy
 - `opencode.json` debería declarar `instructions: ["AGENTS.md", "docs/rules/*.md"]`.
 
 Templates listos para generar: `references/rules/` y `references/rules-index-template.md`.
+
+---
+
+## Enforcement (hooks)
+
+Las reglas no se sostienen solo con instrucciones: el proyecto debe tener prevención automática.
+
+| Capa | Archivo | Qué bloquea |
+|---|---|---|
+| Git hook `pre-commit` | `.githooks/pre-commit` | Archivos prohibidos (DBs, PDFs, backups), secretos/PII, i18n generado, guardrail de UI |
+| Git hook `commit-msg` | `.githooks/commit-msg` | Mensajes fuera del formato del proyecto |
+| Plugin de OpenCode | `.opencode/plugins/rules-guard/` | Comandos destructivos y escrituras prohibidas del agente |
+
+Reglas:
+- **Fail-safe**: si el hook o el plugin falla internamente, la operación continúa. Solo los patrones positivos bloquean.
+- **Prohibido** `--no-verify` salvo autorización explícita del usuario.
+- `init` genera los hooks; `scripts/install-hooks.sh` los activa (`git config core.hooksPath .githooks`).
+- Si el proyecto no tiene hooks, el gate de pre-release lo reporta como advertencia (no bloqueante).
+- Los hooks **complementan** la revisión: no reemplazan la tabla de cumplimiento ni la validación del usuario.
 
 ---
 
@@ -154,6 +176,8 @@ Crea la estructura de reglas en un proyecto nuevo o incompleto.
    - `AGENTS.md` ← `agents-template.md`
    - `docs/rules/00-index.md` ← `rules-index-template.md`
    - `docs/rules/{10,20,30,40,50,60,70}-*.md` ← `rules/`
+   - `.githooks/{pre-commit,commit-msg}` ← `hooks/`
+   - `scripts/install-hooks.sh` ← `hooks/install-hooks.sh`
    Es idempotente y no destructivo. Si no se puede ejecutar (permisos, Windows), copiar manualmente respetando el mismo criterio de no-sobrescritura.
 5. Si existe un `AGENTS.md` o `project-rules.md` monolítico previo:
    - **no modificarlo**;
@@ -319,5 +343,8 @@ Si `gh` no está disponible: continuar con warning y dejar constancia de la oper
 | `references/rules/10-architecture.md` … `70-delivery.md` | Templates de dominio con reglas base genéricas |
 | `references/spec-template.md` | Template de spec con «Cumplimiento de reglas» |
 | `references/rule-catalog.md` | Catálogo de IDs de regla base y guardrails sugeridos |
+| `references/hooks/pre-commit` | Hook de commit con guardrails |
+| `references/hooks/commit-msg` | Hook de formato de mensaje |
+| `references/hooks/install-hooks.sh` | Instalador idempotente de hooks |
 | `scripts/check-rules.sh` | Verifica la estructura de reglas (Paso 0) |
 | `scripts/init-rules.sh` | Genera la estructura faltante sin sobrescribir |
