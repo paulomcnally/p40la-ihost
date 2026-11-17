@@ -52,13 +52,17 @@ func (s *CategoryGroupService) GetByID(ctx context.Context, id int64) (*models.C
 	return s.groups.GetByID(ctx, id)
 }
 
-// Create crea un nuevo grupo.
+// Create crea un nuevo grupo al final del orden actual.
 func (s *CategoryGroupService) Create(ctx context.Context, name, icon string) (*models.CategoryGroup, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, fmt.Errorf("el nombre del grupo es requerido")
 	}
-	return s.groups.Create(ctx, name, icon, 0)
+	nextOrder, err := s.groups.NextSortOrder(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.groups.Create(ctx, name, icon, nextOrder)
 }
 
 // Update actualiza un grupo existente.
@@ -91,5 +95,15 @@ func (s *CategoryGroupService) Delete(ctx context.Context, id int64) error {
 
 // Reorder actualiza el orden de los grupos.
 func (s *CategoryGroupService) Reorder(ctx context.Context, ids []int64) error {
+	if len(ids) == 0 {
+		return fmt.Errorf("la lista de IDs es requerida")
+	}
+	seen := make(map[int64]bool, len(ids))
+	for _, id := range ids {
+		if seen[id] {
+			return fmt.Errorf("ID duplicado en la lista: %d", id)
+		}
+		seen[id] = true
+	}
 	return s.groups.Reorder(ctx, ids)
 }
