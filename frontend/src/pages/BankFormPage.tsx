@@ -1,38 +1,71 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
+import Select from '../components/Select'
 import LoadingSpinner from '../components/LoadingSpinner'
+import {
+  DEFAULT_COUNTRY_CODE,
+  countryOptions,
+  resolveCountryCode,
+} from '../constants/countries'
 
 export default function BankFormPage() {
   const { id } = useParams()
   const isEdit = Boolean(id)
   const navigate = useNavigate()
-  const { t } = useI18nStore()
+  const { t, lang } = useI18nStore()
   const { showToast } = useToast()
   usePageTitle(isEdit ? t('banks.edit') : t('banks.create'))
 
   const [name, setName] = useState('')
   const [shortCode, setShortCode] = useState('')
-  const [country, setCountry] = useState('')
+  const [country, setCountry] = useState(DEFAULT_COUNTRY_CODE)
+  const [legacyCountry, setLegacyCountry] = useState('')
   const [notes, setNotes] = useState('')
   const [active, setActive] = useState(true)
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
+    if (isEdit) return
+    let mounted = true
+    api.systemSettings
+      .get()
+      .then((data) => {
+        if (!mounted) return
+        const defaultCountry =
+          resolveCountryCode(data?.country_code || '') || DEFAULT_COUNTRY_CODE
+        setCountry(defaultCountry)
+      })
+      .catch(() => {
+        // Sin settings, el default NI ya está aplicado.
+      })
+    return () => {
+      mounted = false
+    }
+  }, [isEdit])
+
+  useEffect(() => {
     if (!isEdit) return
     let mounted = true
-    api.banks
-      .get(Number(id))
-      .then((bank) => {
+    Promise.all([
+      api.banks.get(Number(id)),
+      api.systemSettings.get().catch(() => null),
+    ])
+      .then(([bank, settings]) => {
         if (!mounted || !bank) return
         setName(bank.name)
         setShortCode(bank.short_code || '')
-        setCountry(bank.country || '')
+        const rawCountry = bank.country || ''
+        const resolved = resolveCountryCode(rawCountry)
+        const defaultCountry =
+          resolveCountryCode(settings?.country_code || '') || DEFAULT_COUNTRY_CODE
+        setCountry(resolved || rawCountry || defaultCountry)
+        if (!resolved && rawCountry) setLegacyCountry(rawCountry)
         setNotes(bank.notes || '')
         setActive(bank.active)
       })
@@ -47,10 +80,29 @@ export default function BankFormPage() {
     }
   }, [id, isEdit, showToast, t])
 
+  const countrySelectOptions = useMemo(() => {
+    const options = countryOptions(lang)
+    if (legacyCountry && !options.some((option) => option.value === legacyCountry)) {
+      return [
+        {
+          value: legacyCountry,
+          label: `${legacyCountry} (${t('banks.country_legacy')})`,
+        },
+        ...options,
+      ]
+    }
+    return options
+  }, [lang, legacyCountry, t])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
       showToast(t('banks.validation_name'), 'error')
+      return
+    }
+    const countryCode = resolveCountryCode(country)
+    if (!countryCode) {
+      showToast(t('banks.validation_country'), 'error')
       return
     }
     setSaving(true)
@@ -58,7 +110,7 @@ export default function BankFormPage() {
       const payload = {
         name: name.trim(),
         short_code: shortCode.trim(),
-        country: country.trim(),
+        country: countryCode,
         notes: notes.trim(),
         active,
       }
@@ -120,13 +172,13 @@ export default function BankFormPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">{t('banks.country')}</label>
-              <input
-                type="text"
+              <Select
+                options={countrySelectOptions}
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                maxLength={80}
-                className={inputClass}
-                autoComplete="off"
+                onChange={(value) => setCountry(String(value))}
+                searchable
+                searchPlaceholder={t('banks.country_search')}
+                placeholder={t('banks.country_placeholder')}
               />
             </div>
           </div>

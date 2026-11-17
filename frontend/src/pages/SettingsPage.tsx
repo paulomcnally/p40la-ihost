@@ -12,6 +12,7 @@ import { Icon } from '../components/Icons'
 import { api } from '../api'
 import { formatCurrency } from '../utils/currency'
 import { timeZoneShortLabel } from '../constants/timezones'
+import { countryName } from '../constants/countries'
 import type { Alert } from '../types'
 
 type HourFormat = '12h' | '24h'
@@ -63,7 +64,7 @@ interface IndexRow {
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { currencies, loadCurrencies } = useAppStore()
-  const { t } = useI18nStore()
+  const { t, lang } = useI18nStore()
   usePageTitle(t('settings.title'))
   const { thousandsSeparator, decimalSeparator, decimalDigits } = useCurrencyFormatStore()
   const loadCurrencyFormat = useCurrencyFormatStore(s => s.load)
@@ -73,6 +74,7 @@ export default function SettingsPage() {
   const [billingHour, setBillingHour] = useState(0)
   const [alertCheckHour, setAlertCheckHour] = useState(0)
   const [timezone, setTimezone] = useState('')
+  const [countryCode, setCountryCode] = useState('NI')
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(false)
   const [smtpConfigured, setSmtpConfigured] = useState(false)
   const [alertEmails, setAlertEmails] = useState<string[]>([])
@@ -105,6 +107,7 @@ export default function SettingsPage() {
         setBillingHour(data.billing_generation_hour ?? 0)
         setAlertCheckHour(data.alert_check_hour ?? 0)
         setTimezone(data.timezone ?? '')
+        setCountryCode(data.country_code || 'NI')
         setEmailAlertsEnabled(data.email_alerts_enabled ?? false)
         setSmtpConfigured(data.smtp_configured ?? false)
         setAlertEmails(parseEmails(data.alert_emails))
@@ -169,6 +172,13 @@ export default function SettingsPage() {
         title: t('settings.language.title'),
         subtitle: t('settings.language.subtitle'),
         onClick: () => navigate('/settings/language'),
+      },
+      {
+        key: 'country',
+        icon: 'globe',
+        title: t('settings.nav.country'),
+        subtitle: countryName(countryCode, lang),
+        onClick: () => navigate('/settings/pais'),
       },
       {
         key: 'darkMode',
@@ -290,6 +300,8 @@ export default function SettingsPage() {
     billingHour,
     alertCheckHour,
     timezone,
+    countryCode,
+    lang,
     hourFormat,
     activeAlertsCount,
     alerts.length,

@@ -16,6 +16,7 @@ import SettingsPage from './pages/SettingsPage'
 import LanguagePage from './pages/LanguagePage'
 import CurrencyFormPage from './pages/CurrencyFormPage'
 import SettingsBillingPage from './pages/SettingsBillingPage'
+import SettingsCountryPage from './pages/SettingsCountryPage'
 import SettingsAlertsPage from './pages/SettingsAlertsPage'
 import SettingsEmailAlertsPage from './pages/SettingsEmailAlertsPage'
 import SettingsVoiceMonkeyPage from './pages/SettingsVoiceMonkeyPage'
@@ -122,6 +123,7 @@ function App() {
                   <Route path="settings/currency" element={<CurrencyFormPage />} />
                   <Route path="settings/currency/:id" element={<CurrencyFormPage />} />
                   <Route path="settings/facturacion" element={<SettingsBillingPage />} />
+                  <Route path="settings/pais" element={<SettingsCountryPage />} />
                   <Route path="settings/alertas" element={<SettingsAlertsPage />} />
                   <Route path="settings/alertas/email" element={<SettingsEmailAlertsPage />} />
                   <Route path="settings/alertas/voz" element={<SettingsVoiceMonkeyPage />} />

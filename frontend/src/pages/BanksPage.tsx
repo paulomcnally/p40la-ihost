@@ -8,11 +8,12 @@ import { Icon } from '../components/Icons'
 import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
+import { countryName } from '../constants/countries'
 import type { Bank } from '../types'
 
 export default function BanksPage() {
   const navigate = useNavigate()
-  const { t } = useI18nStore()
+  const { t, lang } = useI18nStore()
   usePageTitle(t('banks.title'))
   const { showToast } = useToast()
   const [banks, setBanks] = useState<Bank[]>([])
@@ -101,7 +102,7 @@ export default function BanksPage() {
               </span>
             )}
             <p className="text-sm text-text-secondary mt-1">
-              {bank.country || t('banks.no_country')}
+              {bank.country ? countryName(bank.country, lang) : t('banks.no_country')}
             </p>
             <p className="text-sm text-text-secondary mt-1">
               {bank.account_count === 1
