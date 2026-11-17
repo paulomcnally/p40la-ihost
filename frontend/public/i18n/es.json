@@ -624,7 +624,10 @@
     "chart_variation": "Variación",
     "chart_table_title": "Detalle por período",
     "chart_note_estimate": "Estimado con el monto sugerido; puede variar.",
-    "chart_period": "Período"
+    "chart_period": "Período",
+    "automation_account": "ID de cuenta en Automation",
+    "automation_account_placeholder": "Ej: 1",
+    "automation_account_hint": "ID de la cuenta en p40la-ihost-automation (para sincronización manual)."
   },
   "frequency": {
     "monthly": "Mensual",
@@ -1181,6 +1184,18 @@
       "preview_loading": "Cargando vista previa...",
       "nav_custom": "Colores personalizados",
       "nav_default": "Colores predeterminados"
+    },
+    "automation": {
+      "title": "Automation",
+      "desc": "Configuración del proyecto p40la-ihost-automation para la sincronización manual de servicios.",
+      "base_url": "URL base",
+      "base_url_desc": "URL del proyecto de automation (default: http://ihost.local:8089).",
+      "api_key": "API key",
+      "api_key_desc": "API key de webhooks de automation (se muestra en el proyecto de automation, Configuración → Webhooks).",
+      "api_key_placeholder": "Ingresá la API key de automation",
+      "configured": "Configurada",
+      "saved": "Guardado",
+      "hint": "La sincronización manual ejecuta los plugins de automation (llamado externo) y el envío al webhook del servicio. Requiere que cada servicio tenga su ID de cuenta en Automation configurado."
     }
   },
   "notifications": {
@@ -1526,7 +1541,10 @@
     "n_services": "servicios",
     "link_account": "Cuenta",
     "link_account_required": "Seleccioná la cuenta para registrar los pagos.",
-    "linked_service_badge": "Vinculado a:"
+    "linked_service_badge": "Vinculado a:",
+    "reorder": "Arrastrar para reordenar",
+    "order_saved": "Orden guardado",
+    "order_error": "No se pudo guardar el orden"
   },
   "automation": {
     "title": "Automatización",

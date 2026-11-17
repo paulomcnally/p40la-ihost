@@ -11,9 +11,12 @@ import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import IconPickerModal from '../components/IconPickerModal'
-import Select from '../components/Select'
+import Select, { type SelectOption } from '../components/Select'
 import ServicePickerModal from '../components/ServicePickerModal'
 import Toggle from '../components/Toggle'
+import { SortableGrid } from '../components/sortable/SortableGrid'
+import { SortableCard } from '../components/sortable/SortableCard'
+import { useSortableOrder } from '../hooks/useSortableOrder'
 import { useToast } from '../components/Toast'
 import type { BudgetMonthView, BudgetCategoryRow, BudgetMonthGroup, Currency, CategoryGroup, BudgetCategory, RecurringRule, Account, Service, SuggestedAssignment } from '../types'
 
@@ -68,6 +71,20 @@ export default function BudgetPage() {
   useEffect(() => {
     loadView(year, month)
   }, [year, month, loadView])
+
+  const setGroups = useCallback((next: BudgetMonthGroup[]) => {
+    setView((v) => (v ? { ...v, groups: next } : v))
+  }, [])
+
+  const { handleReorder: handleReorderGroups } = useSortableOrder<BudgetMonthGroup>({
+    items: view?.groups || [],
+    setItems: setGroups,
+    onPersist: async (ids) => {
+      await api.budget.categoryGroups.reorder(ids)
+      showToast(t('budget.order_saved'))
+    },
+    onError: (err) => showToast((err as Error)?.message || t('budget.order_error'), 'error'),
+  })
 
   useEffect(() => {
     api.services.list().then((list) => setServices(list || [])).catch(() => setServices([]))
@@ -233,25 +250,39 @@ export default function BudgetPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {(view.groups || []).map((group) => (
-            <BudgetGroupTable
-              key={group.id}
-              group={group}
-              currencies={currencies}
-              formatMoney={formatMoney}
-              symbolOf={symbolOf}
-              year={year}
-              month={month}
-              services={services}
-              accounts={accounts}
-              onAssigned={() => loadView(year, month)}
-              onAddCategory={(groupId) => setCatForm({ groupId, name: '', icon: 'tag', target: '', serviceIds: [], accountId: null })}
-              onEditGroup={(g) => setGroupForm({ id: g.id, name: g.name, icon: g.icon })}
-              onDeleteGroup={(g) => setDeleteTarget({ kind: 'group', id: g.id, name: g.name })}
-              onEditCategory={(cat) => setCatForm({ id: cat.id, groupId: cat.category_group_id, name: cat.name, icon: cat.icon, target: cat.target_amount != null ? String(cat.target_amount) : '', serviceIds: cat.service_ids || [], accountId: cat.account_id || null })}
-              onDeleteCategory={(cat) => setDeleteTarget({ kind: 'category', id: cat.id, name: cat.name })}
-            />
-          ))}
+          <SortableGrid
+            items={view.groups || []}
+            onReorder={handleReorderGroups}
+            layout="vertical"
+            className="space-y-4"
+          >
+            {(group) => (
+              <SortableCard
+                key={group.id}
+                id={group.id}
+                handle={<Icon name="gripVertical" className="w-4 h-4" />}
+                handleAriaLabel={t('budget.reorder')}
+                className="relative"
+              >
+                <BudgetGroupTable
+                  group={group}
+                  currencies={currencies}
+                  formatMoney={formatMoney}
+                  symbolOf={symbolOf}
+                  year={year}
+                  month={month}
+                  services={services}
+                  accounts={accounts}
+                  onAssigned={() => loadView(year, month)}
+                  onAddCategory={(groupId) => setCatForm({ groupId, name: '', icon: 'tag', target: '', serviceId: null, accountId: null })}
+                  onEditGroup={(g) => setGroupForm({ id: g.id, name: g.name, icon: g.icon })}
+                  onDeleteGroup={(g) => setDeleteTarget({ kind: 'group', id: g.id, name: g.name })}
+                  onEditCategory={(cat) => setCatForm({ id: cat.id, groupId: cat.category_group_id, name: cat.name, icon: cat.icon, target: cat.target_amount != null ? String(cat.target_amount) : '', serviceId: cat.service_id || null, accountId: cat.account_id || null })}
+                  onDeleteCategory={(cat) => setDeleteTarget({ kind: 'category', id: cat.id, name: cat.name })}
+                />
+              </SortableCard>
+            )}
+          </SortableGrid>
           <button
             onClick={() => setGroupForm({ name: '', icon: 'tag' })}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-card border-2 border-dashed border-border rounded-ios text-primary font-semibold hover:border-primary hover:bg-primary/5 transition-colors min-h-[44px]"
@@ -353,7 +384,7 @@ function BudgetGroupTable({ group, currencies, formatMoney, symbolOf, year, mont
   const [assignTarget, setAssignTarget] = useState<BudgetCategoryRow | null>(null)
 
   return (
-    <div className="bg-card rounded-ios shadow-ios overflow-hidden">
+    <div className="bg-card rounded-ios shadow-ios overflow-hidden pl-10">
       <div className="relative flex items-center gap-2 px-4 py-3 border-b border-border">
         <Icon name={group.icon || 'tag'} className="w-4 h-4 text-primary" />
         <h3 className="font-semibold flex-1">{group.name}</h3>
