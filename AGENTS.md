@@ -52,6 +52,19 @@ Detalle: [`docs/rules/50-security.md`](docs/rules/50-security.md), [`40-data.md`
 
 ---
 
+## 🛡️ Enforcement automático
+
+| Capa | Instalación | Qué bloquea |
+|---|---|---|
+| Git hooks (`.githooks/`) | `./scripts/install-hooks.sh` | DBs/PDFs/backups, secretos y PII, `public/i18n/`, `<select>`/checkbox nativo, commits sin `SPEC-XXX:` |
+| Plugin (`.opencode/plugins/rules-guard/`) | `npm --prefix .opencode install` | `rm data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>`/checkbox nativo |
+
+- **Prohibido** `git commit --no-verify` salvo autorización explícita del usuario.
+- Fail-safe: si un hook o el plugin falla internamente, la operación continúa; solo los patrones positivos bloquean.
+- Detalle: [`docs/rules/70-delivery.md`](docs/rules/70-delivery.md) (`DELIV-HOOKS`) y [`50-security.md`](docs/rules/50-security.md) (`SEC-HOOKS`).
+
+---
+
 ## 🔄 Sistema de specs (resumen)
 
 ```
@@ -76,6 +89,7 @@ Flujo completo, comandos y gates: skill `spec-manager` (`.opencode/skills/spec-m
 - [ ] Probado en local y confirmado por el usuario (🤖).
 - [ ] Si depende de datos: validado contra copia de producción.
 - [ ] `git diff --cached` sin PII, secretos, DBs, PDFs ni exports.
+- [ ] Hooks instalados (`./scripts/install-hooks.sh`) y sin `--no-verify`.
 - [ ] Tabla «Cumplimiento de reglas» de la spec completa.
 
 ---

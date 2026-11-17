@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+#
+# pre-commit — Guardrails de repositorio (SPEC-136).
+#
+# Bloquea:
+#   1. Archivos prohibidos: DBs, WAL/SHM, PDFs, dumps y backups.
+#   2. Secretos y PII en las líneas agregadas.
+#   3. Cambios directos en public/i18n/ (generado por el build).
+#   4. Guardrail de UI (<select> nativo / checkbox nativo) si hay .tsx staged.
+#
+# Fail-safe: si el hook falla internamente, NO bloquea el commit.
+# Omitir (solo con autorización explícita del usuario): git commit --no-verify
+
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+cd "$ROOT" 2>/dev/null || exit 0
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)"
+[ -z "${staged}" ] && exit 0
+
+fail() {
+  echo "" >&2
+  echo "[pre-commit] ⛔ ${1}" >&2
+  [ -n "${2:-}" ] && echo "${2}" >&2
+  [ -n "${3:-}" ] && echo "  Regla: ${3} (docs/rules/00-index.md)" >&2
+  echo "  Omitir: git commit --no-verify (solo con autorización explícita del usuario)" >&2
+  exit 1
+}
+
+# ---------------------------------------------------------------------------
+# 1. Archivos prohibidos
+# ---------------------------------------------------------------------------
+
+while IFS= read -r f; do
+  [ -z "${f}" ] && continue
+  case "${f}" in
+    *.db|*.db-wal|*.db-shm|*.sqlite|*.sqlite3|*.pdf|*.dump|backups/*|data/*)
+      fail "Archivo prohibido en el commit: ${f}" \
+           "  No se commitean DBs, backups, PDFs ni datos de producción." \
+           "SEC-NO-PII / SEC-PRODCOPY"
+      ;;
+  esac
+done <<< "${staged}"
+
+# ---------------------------------------------------------------------------
+# 2. Secretos y PII en líneas agregadas
+# ---------------------------------------------------------------------------
+
+added="$(git diff --cached -U0 --no-color 2>/dev/null | grep '^+' | grep -v '^+++' || true)"
+
+if [ -n "${added}" ]; then
+  if printf '%s\n' "${added}" | grep -Eq 'BEGIN [A-Z ]*PRIVATE KEY-----'; then
+    fail "Clave privada detectada en el diff." "  Eliminá el archivo y rotá la clave." "SEC-INCIDENT"
+  fi
+  if printf '%s\n' "${added}" | grep -Eq 'AKIA[0-9A-Z]{16}'; then
+    fail "AWS access key detectada en el diff." "" "SEC-NO-PII"
+  fi
+  if printf '%s\n' "${added}" | grep -Eq '(gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|sk-[A-Za-z0-9]{20,})'; then
+    fail "Token de API detectado en el diff." "" "SEC-NO-PII"
+  fi
+  if printf '%s\n' "${added}" | grep -Eq '[0-9]{8,10}:[A-Za-z0-9_-]{35}'; then
+    fail "Posible token de bot de Telegram en el diff." "" "SEC-NO-PII"
+  fi
+  if printf '%s\n' "${added}" | grep -Eiq '[A-Za-z0-9._%+-]+@(gmail|hotmail|outlook|yahoo|icloud|live|protonmail)\.[A-Za-z]{2,}'; then
+    fail "Email personal detectado en el diff." "  Usá datos sintéticos: demo@example.com" "SEC-SYNTHETIC"
+  fi
+  if printf '%s\n' "${added}" | grep -Eq "password[[:space:]]*[:=][[:space:]]*['\"][^'\"]{4,}"; then
+    fail "Posible contraseña hardcodeada en el diff." "  Usá variables de entorno o un secreto de prueba." "SEC-NO-PII"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# 3. public/i18n es salida del build
+# ---------------------------------------------------------------------------
+
+if printf '%s\n' "${staged}" | grep -Eq '^public/i18n/'; then
+  fail "Se intentó commitear public/i18n/ (salida del build)." \
+       "  Editá frontend/public/i18n/{es,en}.json y corré npm run build." \
+       "UI-I18N"
+fi
+
+# ---------------------------------------------------------------------------
+# 4. Guardrail de UI
+# ---------------------------------------------------------------------------
+
+if printf '%s\n' "${staged}" | grep -Eq '^frontend/src/.*\.(tsx|jsx)$'; then
+  if [ -d frontend/node_modules ]; then
+    if ! (cd frontend && npm run --silent check:ui >/dev/null 2>&1); then
+      echo "" >&2
+      (cd frontend && npm run --silent check:ui) >&2 || true
+      fail "El guardrail de UI falló." "  Corregí los selectores/checkbox nativos." "UI-SELECT / UI-TOGGLE"
+    fi
+  else
+    echo "[pre-commit] aviso: frontend/node_modules no existe; se omite check:ui." >&2
+  fi
+fi
+
+exit 0

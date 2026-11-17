@@ -1,0 +1,1 @@
+{"version":3,"file":"MigratorFileSystem.d.ts","sourceRoot":"","sources":["../../src/sql/MigratorFileSystem.ts"],"names":[],"mappings":"AAOA,OAAO,EAAE,UAAU,EAAE,MAAM,kBAAkB,CAAA;AAE7C,OAAO,EAAE,IAAI,EAAE,MAAM,YAAY,CAAA;AACjC,OAAO,EAAE,KAAK,MAAM,EAA0C,MAAM,eAAe,CAAA;AAKnF;;;;;;;;;;;;;;;GAeG;AACH,eAAO,MAAM,cAAc,EAAE,CAAC,SAAS,EAAE,MAAM,KAAK,MAAM,CAAC,UAAU,GAAG,IAAI,CAuC1E,CAAA"}

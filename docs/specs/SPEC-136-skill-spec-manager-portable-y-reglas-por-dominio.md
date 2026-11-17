@@ -80,6 +80,20 @@ Reglas aplicables al diseño de la skill; el detalle vive en `docs/rules/`.
 8. **REQ-008**: La skill DEBE incluir un **gate de pre-release** que: (a) ejecute los guardrails declarados en el manifiesto; (b) verifique que cada regla aplicable esté citada en la spec; (c) bloquee el pasaje a `pending_release`/`released` si falta alguna.
 9. **REQ-009**: El ID de la próxima spec DEBE calcularse desde el sistema de archivos (`docs/specs/SPEC-*.md` + issues abiertos), nunca desde el README tracker, que se actualiza solo en release.
 10. **REQ-010**: Los comandos documentados en la skill DEBEN coincidir con los comandos reales de OpenCode (`/spec-create`, `/spec-list`, `/spec-status`, `/spec-show`) más los que se agreguen (`/spec-init`, `/spec-check-release`), sin comandos fantasma.
+11. **REQ-018**: El repositorio DEBE incluir **hooks de git** versionados en `.githooks/`:
+    - `pre-commit`: bloquea archivos prohibidos (`*.db`, `*.db-wal`, `*.db-shm`, `*.sqlite*`, `*.pdf`, `*.dump`, `backups/`), PII/secretos en líneas agregadas, cambios directos en `public/i18n/`, y ejecuta el guardrail de UI cuando hay `.tsx` staged.
+    - `commit-msg`: exige el formato `SPEC-XXX: descripción` (o prefijos permitidos: `Merge `, `Revert `, `bump `, `hotfix:`).
+    - `scripts/install-hooks.sh`: instalación idempotente vía `git config core.hooksPath .githooks`.
+12. **REQ-019**: El repositorio DEBE incluir un **plugin de OpenCode** (`.opencode/plugins/rules-guard/`) que, en `tool.execute.before`, bloquee:
+    - comandos que borren o reemplacen `data/app.db` o el directorio `data/`;
+    - `pkill` (debe usarse `killall`);
+    - `git push --force`/`-f` y `git reset --hard`;
+    - escrituras en `public/i18n/**` (debe editarse `frontend/public/i18n/**`);
+    - `<select>` nativo y `<input type="checkbox">` en archivos `.tsx`/`.jsx` fuera de la allowlist.
+13. **REQ-020**: El plugin DEBE inyectar una vez por sesión un bloque compacto con la ruta de `docs/rules/` y las prohibiciones críticas, para que las reglas estén presentes aun sin invocar la skill.
+14. **REQ-021**: `scripts/check-worktree.sh` DEBE advertir (sin bloquear) si `core.hooksPath` no está configurado.
+15. **REQ-022**: La skill DEBE incluir templates de hooks en `references/hooks/` y `init` DEBE generarlos en proyectos nuevos.
+16. **REQ-023**: Todo hook y plugin DEBE ser **fail-safe**: si su propia lógica falla, no debe romper el commit ni la sesión; solo los patrones positivos bloquean.
 
 ### 2.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -186,6 +200,18 @@ Usuario → /spec-create ─────┐
   - **Interfaz**: `check-rules.sh [directorio]`.
   - **Salida**: `exit 0` si está completa; `exit 1` con la lista de faltantes y las opciones.
 
+#### 4.2.4 `.githooks/` + `scripts/install-hooks.sh`
+- **Responsabilidad**: enforcement determinista e independiente del agente.
+- **`pre-commit`**: archivos prohibidos, PII/secretos, `public/i18n`, guardrail de UI.
+- **`commit-msg`**: formato `SPEC-XXX: ...`.
+- **Instalación**: `git config core.hooksPath .githooks`.
+
+#### 4.2.5 `.opencode/plugins/rules-guard/`
+- **Responsabilidad**: prevención en tiempo de ejecución del agente.
+- **API**: V2 `Plugin.define` de `@opencode/plugin` (fijado a la versión del runtime).
+- **Hooks**: `tool.execute.before` (bloqueo) y `session.hook("context")` (recordatorio de reglas).
+- **Fail-safe**: toda comprobación envuelta en `try/catch`; ante error, no bloquea.
+
 #### 4.2.3 `docs/rules/` (por proyecto)
 Manifiesto + 7 archivos de dominio. En p40la-ihost se migra el contenido real.
 
@@ -228,6 +254,14 @@ Manifiesto + 7 archivos de dominio. En p40la-ihost se migra el contenido real.
 - [ ] CA-DELIV-002: `docs/project-rules.md` queda como stub que apunta a `docs/rules/` sin contenido duplicado.
 - [ ] CA-DELIV-003: `opencode.json` usa `instructions` con `docs/rules/*.md` y claves vigentes.
 - [ ] CA-DELIV-004: El cálculo del próximo ID usa `docs/specs/SPEC-*.md` + issues, no el README.
+- [ ] CA-DELIV-005: `pre-commit` bloquea un commit con `*.db`, `*.db-wal`, `*.db-shm`, `*.pdf` o `backups/`.
+- [ ] CA-DELIV-006: `commit-msg` rechaza un mensaje sin `SPEC-XXX:` ni prefijo permitido.
+- [ ] CA-DELIV-007: El plugin bloquea `rm data/app.db`, `pkill`, `git push --force` y `git reset --hard`.
+- [ ] CA-UI-003: `pre-commit` y el plugin bloquean `<select>` nativo y checkbox nativo en `.tsx` (fuera de la allowlist).
+- [ ] CA-UI-004: El plugin bloquea escribir en `public/i18n/**` y sugiere `frontend/public/i18n/**`.
+- [ ] CA-SEC-003: `pre-commit` bloquea un secreto (clave privada, token) en líneas agregadas.
+- [ ] CA-ARCH-003: `scripts/install-hooks.sh` es idempotente y deja `core.hooksPath=.githooks` verificado.
+- [ ] CA-NF-004: Un hook/plugin que falla internamente deja pasar la operación (fail-safe), sin romper el commit ni la sesión.
 
 ### 5.2 No funcionales
 

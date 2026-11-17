@@ -58,7 +58,13 @@ copy_rule_file "${TEMPLATES}/rules/30-ux.md"            "docs/rules/30-ux.md"
 copy_rule_file "${TEMPLATES}/rules/40-data.md"          "docs/rules/40-data.md"
 copy_rule_file "${TEMPLATES}/rules/50-security.md"      "docs/rules/50-security.md"
 copy_rule_file "${TEMPLATES}/rules/60-testing.md"       "docs/rules/60-testing.md"
-copy_rule_file "${TEMPLATES}/rules/70-delivery.md"      "docs/rules/70-delivery.md"
+copy_rule_file "${TEMPLATES}/rules/70-delivery.md"     "docs/rules/70-delivery.md"
+copy_rule_file "${TEMPLATES}/hooks/pre-commit"          ".githooks/pre-commit"
+copy_rule_file "${TEMPLATES}/hooks/commit-msg"          ".githooks/commit-msg"
+copy_rule_file "${TEMPLATES}/hooks/install-hooks.sh"    "scripts/install-hooks.sh"
+
+chmod +x "${DEST}/.githooks/pre-commit" "${DEST}/.githooks/commit-msg" \
+         "${DEST}/scripts/install-hooks.sh" 2>/dev/null || true
 
 echo ""
 echo "Resumen: ${created} creados, ${omitted} omitidos en ${DEST}"
@@ -68,4 +74,5 @@ if [[ ${created} -gt 0 ]]; then
   echo "Pendiente (manual, requiere confirmación del usuario):"
   echo "  - Completar los placeholders {{...}} de docs/rules/ y AGENTS.md."
   echo "  - Declarar 'instructions': [\"AGENTS.md\", \"docs/rules/*.md\"] en opencode.json."
+  echo "  - Activar los hooks: ./scripts/install-hooks.sh"
 fi

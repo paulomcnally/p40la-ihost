@@ -75,6 +75,17 @@ Antes de declarar terminada una spec y después de cada release, ejecutar `/spec
 
 ---
 
+## DELIV-HOOKS — Enforcement automático
+
+- Los hooks viven en `.githooks/` y se instalan con `./scripts/install-hooks.sh` (`git config core.hooksPath .githooks`). Es idempotente.
+- `pre-commit` bloquea: DBs (`*.db`, `-wal`, `-shm`), PDFs, dumps, `backups/`, `data/`; secretos y PII; cambios en `public/i18n/`; y ejecuta el guardrail de UI si hay `.tsx` staged.
+- `commit-msg` exige `SPEC-XXX: descripción` (o `Merge `, `Revert `, `bump `, `hotfix:`).
+- El plugin `.opencode/plugins/rules-guard/` bloquea en tiempo de ejecución: borrar `data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>` y checkbox nativo.
+- **Prohibido** `git commit --no-verify` salvo autorización explícita del usuario.
+- **Fail-safe**: si un hook o el plugin falla internamente, la operación continúa; solo los patrones positivos bloquean.
+
+---
+
 ## DELIV-DOCKER — Docker multi-arch obligatorio
 
 - El iHost usa ARM64 (aarch64).
