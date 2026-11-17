@@ -94,6 +94,44 @@ func (s *SystemSettingsService) GetTimezoneLocation(ctx context.Context) (*time.
 	return loc, nil
 }
 
+// ---- País global (SPEC-134) ----
+
+// CountryCodeKey es la key del setting del país usado por defecto al crear
+// bancos (código ISO 3166-1 alpha-2).
+const CountryCodeKey = "country_code"
+
+// DefaultCountryCode es el fallback cuando el setting no existe o es inválido.
+const DefaultCountryCode = "NI"
+
+var countryCodeRegex = regexp.MustCompile(`^[A-Z]{2}$`)
+
+// GetCountryCode devuelve el país configurado o DefaultCountryCode si no está
+// configurado o el valor guardado no tiene formato ISO alpha-2.
+func (s *SystemSettingsService) GetCountryCode(ctx context.Context) (string, error) {
+	code, err := s.storage.Get(ctx, CountryCodeKey)
+	if err != nil {
+		return DefaultCountryCode, err
+	}
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if !countryCodeRegex.MatchString(code) {
+		return DefaultCountryCode, nil
+	}
+	return code, nil
+}
+
+// SetCountryCode valida y persiste el país global (ISO alpha-2). Un valor
+// vacío limpia el setting (vuelve al default NI).
+func (s *SystemSettingsService) SetCountryCode(ctx context.Context, code string) error {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if code == "" {
+		return s.storage.Set(ctx, CountryCodeKey, "")
+	}
+	if !countryCodeRegex.MatchString(code) {
+		return fmt.Errorf("código de país inválido: %q", code)
+	}
+	return s.storage.Set(ctx, CountryCodeKey, code)
+}
+
 // ---- Formato de moneda (SPEC-058) ----
 
 // Claves de formato de moneda en system_settings.

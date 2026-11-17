@@ -44,6 +44,7 @@ var (
 )
 
 var bankFormatKeyRegex = regexp.MustCompile(`^[a-z][a-z0-9_]{0,39}$`)
+var bankCountryRegex = regexp.MustCompile(`^[A-Z]{2}$`)
 
 // BankValidationError es un error de validación del módulo bancario.
 type BankValidationError struct {
@@ -239,7 +240,7 @@ func (s *BankService) DeleteFormat(ctx context.Context, accountID int64, kind st
 func prepareBank(bank *models.Bank) error {
 	bank.Name = strings.TrimSpace(bank.Name)
 	bank.ShortCode = strings.TrimSpace(bank.ShortCode)
-	bank.Country = strings.TrimSpace(bank.Country)
+	bank.Country = strings.ToUpper(strings.TrimSpace(bank.Country))
 	bank.Notes = strings.TrimSpace(bank.Notes)
 
 	if bank.Name == "" {
@@ -253,6 +254,9 @@ func prepareBank(bank *models.Bank) error {
 	}
 	if utf8.RuneCountInString(bank.Country) > maxBankCountry {
 		return newBankValidationError(fmt.Sprintf("El país no puede superar los %d caracteres.", maxBankCountry))
+	}
+	if bank.Country != "" && !bankCountryRegex.MatchString(bank.Country) {
+		return newBankValidationError("El país debe ser un código ISO de dos letras (ej: NI).")
 	}
 	if utf8.RuneCountInString(bank.Notes) > maxBankNotes {
 		return newBankValidationError(fmt.Sprintf("Las notas no pueden superar los %d caracteres.", maxBankNotes))

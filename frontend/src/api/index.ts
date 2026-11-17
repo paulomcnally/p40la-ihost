@@ -169,6 +169,7 @@ export const api = {
       billing_generation_hour: number
       alert_check_hour: number
       timezone: string
+      country_code: string
       smtp_host: string
       smtp_port: number
       smtp_user: string

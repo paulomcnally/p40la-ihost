@@ -77,6 +77,7 @@ type settingsRequest struct {
 	BillingGenerationHour *int    `json:"billing_generation_hour,omitempty"`
 	AlertCheckHour        *int    `json:"alert_check_hour,omitempty"`
 	Timezone              *string `json:"timezone,omitempty"`
+	CountryCode           *string `json:"country_code,omitempty"`
 	SMTPHost              *string `json:"smtp_host,omitempty"`
 	SMTPPort              *int    `json:"smtp_port,omitempty"`
 	SMTPUser              *string `json:"smtp_user,omitempty"`
@@ -140,6 +141,12 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 	}
 
 	timezone, err := h.settings.GetTimezone(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+
+	countryCode, err := h.settings.GetCountryCode(r.Context())
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
@@ -215,6 +222,7 @@ func (h *SystemSettingsHandlers) GetSystemSettings(w http.ResponseWriter, r *htt
 		"billing_generation_hour":       hour,
 		"alert_check_hour":              alertCheckHour,
 		"timezone":                      timezone,
+		"country_code":                  countryCode,
 		"smtp_host":                     smtp.Host,
 		"smtp_port":                     smtp.Port,
 		"smtp_user":                     smtp.User,
@@ -274,6 +282,15 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 	if req.Timezone != nil {
 		if err := h.settings.SetTimezone(r.Context(), *req.Timezone); err != nil {
 			respondError(w, http.StatusBadRequest, "invalid_timezone", err.Error())
+			return
+		}
+	}
+
+	// País global (SPEC-134). Se valida en el service (ISO alpha-2); un valor
+	// inválido se rechaza con 400 sin persistir.
+	if req.CountryCode != nil {
+		if err := h.settings.SetCountryCode(r.Context(), *req.CountryCode); err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_country", err.Error())
 			return
 		}
 	}
@@ -475,6 +492,7 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 
 	hour, _ := h.settings.GetBillingGenerationHour(r.Context())
 	timezone, _ := h.settings.GetTimezone(r.Context())
+	countryCode, _ := h.settings.GetCountryCode(r.Context())
 	smtp, _ := h.settings.GetSMTPConfigPublic(r.Context())
 	vm, _ := h.settings.GetVoiceMonkeyConfigPublic(r.Context())
 	emailAlertsEnabled, _ := h.settings.GetEmailAlertsEnabled(r.Context())
@@ -485,6 +503,7 @@ func (h *SystemSettingsHandlers) UpdateSystemSettings(w http.ResponseWriter, r *
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"billing_generation_hour":       hour,
 		"timezone":                      timezone,
+		"country_code":                  countryCode,
 		"smtp_configured":               smtp.Configured,
 		"voicemonkey_configured":        vm.Configured,
 		"email_alerts_enabled":          emailAlertsEnabled,

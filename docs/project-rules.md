@@ -1,6 +1,6 @@
 # Reglas del Proyecto — p40la-ihost
 
-> **Última actualización**: 2026-08-12  
+> **Última actualización**: 2026-11-17  
 > **Vigente para**: Todo el repositorio `p40la-ihost`
 
 ---
@@ -131,6 +131,13 @@ El proyecto corre en un **iHost con recursos limitados**, por lo que el stack se
 - **El drawer del sidebar móvil no es un modal** y conserva su cierre por click fuera; no se le aplica la regla de overlay bloqueante de modales.
 - Al crear o modificar un modal, verificar manualmente que el click fuera no cierra ni interactúa con el fondo, que el cierre visible existe en todos los estados y que Enter confirma en los modales de confirmación por palabra cuando corresponde.
 - Precedentes: SPEC-122 (modal de factura/comprobante y confirmación de borrado) y SPEC-126 (regla general de modales, confirmación por palabra y escala de capas).
+
+### 4.8 Acciones de entidad en páginas de detalle (obligatorio)
+
+- En las páginas de detalle/show, las acciones de gestión de la entidad (**Editar**, **Eliminar** y acciones relacionadas, como crear una entidad hija) viven SIEMPRE dentro del menú de 3 puntos (`CardMenu`) del header/tarjeta. Está prohibido mostrarlas como íconos o botones separados al lado del menú.
+- El menú de 3 puntos es el único punto de acciones de la entidad. La etiqueta de edición sigue siendo `app.edit` ("Editar"/"Edit") según §4.5.
+- Las acciones primarias del flujo de negocio (por ejemplo "Pagar" o "Agregar factura") pueden seguir como botones visibles cuando son la acción principal de la página.
+- Referencias: `AutoShowPage.tsx`, `InstitutionShowPage.tsx` y `BankDetailPage.tsx`. Ver SPEC-117 y SPEC-134.
 
 ---
 
