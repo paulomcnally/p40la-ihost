@@ -1,300 +1,323 @@
 ---
 name: spec-manager
-description: "Use ONLY when the user asks to create, manage, update, or track technical specifications (specs). Triggers on keywords: spec, especificacion, especificación, requirement, requerimiento, tracking, contador, estado de spec, pending release. Manages the full spec lifecycle from creation to release for the p40la-ihost project."
+description: "Crea, actualiza y libera especificaciones técnicas (specs) con cumplimiento verificado de las reglas del proyecto. Úsala cuando el usuario pida crear/gestionar una spec, definir requerimientos, cambiar estados (draft/pending_execution/in_progress/pending_release/released), sincronizar con GitHub Issues, inicializar la estructura de reglas de un proyecto nuevo, o auditar qué reglas aplican a un cambio. Triggers: spec, especificación, requerimiento, tracking, contador, estado de spec, pending release, init rules."
 ---
 
 # Spec Manager
 
-Sistema de gestión de especificaciones técnicas para el repositorio `p40la-ihost`.
+Sistema de especificaciones con **reglas del proyecto como contrato**.
 
-## Ubicación
+## Principios
 
-- **Specs activas**: `docs/specs/`
-- **Template**: `docs/specs/templates/spec-template.md`
-- **Tracking**: `docs/specs/README.md`
-- **GitHub Issues**: Espejo sincronizado con labels de estado
-
-## Estados de una Spec
-
-```
-draft → pending_execution → in_progress → pending_release → released
-```
-
-| Estado | Descripción | Color | Label GitHub | Acción Issue |
-|--------|-------------|-------|-------------|--------------|
-| `draft` | En proceso de redacción/investigación | 🟡 | `spec/draft` | Abierto |
-| `pending_execution` | Lista para desarrollo, no iniciada | 🔵 | `spec/pending-execution` | Abierto |
-| `in_progress` | Actualmente en desarrollo | 🟣 | `spec/in-progress` | Abierto |
-| `pending_release` | Desarrollo completo, lista para release | 🟠 | `spec/pending-release` | Abierto |
-| `released` | Subida a iHost o producción | 🟢 | `spec/released` | **Cerrado** |
-| `cancelled` | Cancelada o descartada | ⚫ | `spec/cancelled` | **Cerrado** |
-
-## Regla de Oro: Flujo Forzado
-
-**El agente DEBE seguir estas reglas sin excepción:**
-
-0. **"Cerrar" NUNCA es "cancelar".** Cuando el usuario pide cerrar/finalizar una spec, se ejecuta el flujo de **release** (`released`: merge a main, label `spec/released`, issue cerrado). La **cancelación** (`cancelled`) es una decisión EXCLUSIVA del usuario: requiere que use explícitamente la palabra "cancelar" o "descartar". JAMÁS cancelar una spec porque otra spec "absorba" su requerimiento o porque el código ya esté en main: en ese caso la spec se **libera** documentando la implementación (quién la hizo y dónde). Ante la mínima duda entre release y cancelación, preguntar al usuario ANTES de cambiar cualquier estado. Precedente crítico: SPEC-085 cancelada sin consentimiento del usuario (revertida; reapertura + release formal obligatorios).
-1. **NUNCA escribir código significativo sin una spec existente.** Si el usuario pide una funcionalidad, primero crear la spec.
-2. **Si el usuario pide cambios iterativos durante desarrollo que no están en la spec**, el agente debe:
-   - Actualizar la spec con los nuevos requerimientos/cambios
-   - Agregar un comentario al issue de GitHub documentando el cambio
-   - Solo entonces implementar el cambio
-3. **Si el usuario pide cambios pequeños y el agente los implementa sin actualizar la spec**, debe al menos agregar un comentario al issue: `"[AUTO] Cambio iterativo solicitado por usuario: <descripción>"`.
-4. **Antes de cualquier operación de cambio de estado**, intentar actualizar el issue de GitHub. Si `gh` CLI falla, continuar con warning visible.
-
-## Integración con GitHub Issues
-
-Cada spec tiene un issue de GitHub asociado almacenado en el frontmatter como `github_issue: <número>`.
-
-### Labels de GitHub
-
-| Label | Color | Descripción |
-|-------|-------|-------------|
-| `spec/draft` | `#F4D03F` | Spec en redacción |
-| `spec/pending-execution` | `#3498DB` | Lista para desarrollo |
-| `spec/in-progress` | `#9B59B6` | En desarrollo activo |
-| `spec/pending-release` | `#E67E22` | Desarrollo completo, pendiente release |
-| `spec/released` | `#2ECC71` | En producción/iHost |
-| `spec/cancelled` | `#95A5A6` | Cancelada o descartada |
-
-### Operaciones de GitHub
-
-**Crear issue** (al crear spec):
-```bash
-gh issue create --title "SPEC-XXX: Título" --label "spec/<estado>" --body "<cuerpo>"
-```
-
-**Actualizar labels** (al cambiar estado):
-```bash
-gh issue edit <número> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"
-```
-
-**Cerrar issue** (al release/cancel):
-```bash
-gh issue close <número>
-```
-
-**Reabrir issue** (si se reabre spec):
-```bash
-gh issue reopen <número>
-```
-
-**Listar issues**:
-```bash
-gh issue list --label "spec/<estado>" --state open
-```
-
-**Comentar en issue** (cambios iterativos):
-```bash
-gh issue comment <número> --body "<comentario>"
-```
-
-## Flujo de trabajo
-
-### 1. Crear una nueva spec
-
-Cuando el usuario pide crear una spec (SPEC-066):
-
-0. **Verificar el worktree** (obligatorio): ejecutar `./scripts/check-worktree.sh`. Si no se está en un worktree de spec, crearlo primero con `/spec worktree` (el checkout principal es de SOLO LECTURA para agentes). Toda la spec (archivo + README + código) se crea DENTRO del worktree.
-1. **Investigar** el requerimiento usando websearch/webfetch si es necesario
-2. **Generar ID**: Buscar el último número en `docs/specs/README.md` y asignar `SPEC-XXX` (3 dígitos, zero-padded)
-3. **Crear archivo**: `docs/specs/SPEC-XXX-<titulo-breve>.md` con campo `github_issue: null`
-4. **Documentar completamente** usando el template como guía
-5. **Crear issue de GitHub**:
-   ```bash
-   OUTPUT=$(gh issue create --title "SPEC-XXX: Título" --label "spec/draft" --body "<cuerpo resumido>" 2>&1)
-   ISSUE_NUM=$(echo "$OUTPUT" | grep -oP '\d+$')
-   ```
-6. **Actualizar frontmatter**: Cambiar `github_issue: null` a `github_issue: <número>`
-7. **Confirmar**: Informar al usuario el ID asignado y URL del issue
-
-> **Nota (SPEC-066)**: el README tracker (`docs/specs/README.md`) NO se actualiza al crear la spec ni al cambiar de estado intermedio. Se actualiza **solo en el release** (merge a `main`). El estado vivo de las specs abiertas se consulta en GitHub (labels) o con `/spec list`.
-
-### 2. Contador de specs
-
-El contador está en `docs/specs/README.md` en la sección "## Resumen".
-
-- Total de specs: conteo de todas las specs en el directorio
-- Por estado: conteo agrupado por estado
-- Último ID usado: último número secuencial
-
-### 3. Actualizar estado de una spec
-
-Cuando el usuario menciona que una spec cambió de estado:
-
-1. **Validar transición**: Asegurar que el estado anterior y nuevo son válidos según el diagrama de estados
-2. **Leer spec**: Obtener `github_issue` del frontmatter
-3. **Actualizar GitHub** (si `github_issue` existe y `gh` está disponible):
-   - Determinar label nuevo según mapeo
-   - `gh issue edit <número> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"`
-   - Si nuevo estado es `released`: `gh issue close <número>` (flujo normal de cierre).
-   - **`cancelled` SOLO procede por orden explícita del usuario (palabra "cancelar"/"descartar").** Jamás cerrar un issue con `spec/cancelled` como consecuencia de que otra spec "absorba" el requerimiento: en ese caso se libera la spec documentando la implementación.
-   - Si falla GitHub: continuar con warning `"⚠️ No se pudo actualizar el issue de GitHub"`
-4. **Actualizar archivo local**: Cambiar `status:` en el frontmatter
-5. **Actualizar historial**: Agregar entrada con fecha y descripción del cambio
-6. **Confirmar**: Informar al usuario
-
-> **Nota (SPEC-066)**: NO actualizar el README tracker en estados intermedios. El README (`docs/specs/README.md`) se actualiza solo en el release.
-
-### 4. Reglas de documentación
-
-- **Sin datos privados**: las specs NUNCA incluyen PII, secretos, DBs, PDFs ni exports de producción. Los ejemplos usan datos sintéticos (`demo-account-001`, `demo@example.com`, `demo-api-key`). Ver `docs/project-rules.md` §8.
-- **Si la spec toca formularios o selectores**, DEBE exigir el componente `Select` (`frontend/src/components/Select.tsx`) y prohibir `<select>` nativo (SPEC-118). El build falla con `frontend/scripts/check-ui-rules.cjs` si se agrega uno.
-- **Si la spec crea o modifica modales**, DEBE exigir que el click fuera no los cierre, que el overlay bloquee la interacción con el fondo, que el cierre sea solo con Cancelar/Cerrar/Listo o la X (visible en todos los estados, incluidos `loading`/`saving`), que se respete la escala de capas (menús `z-50`, modal base `z-[60]`, anidado `z-[70]`, confirmación sobre anidado `z-[80]`, `Select` `z-[90]`, toasts `z-[100]`) y que **todo modal de confirmación por palabra** (no solo `DeleteModal` con `confirmo`) enfoque el input al abrirse y acepte **Enter** cuando la palabra es válida y la acción está habilitada. El drawer del sidebar móvil no es un modal y conserva su cierre por click fuera (SPEC-122, SPEC-126, `docs/project-rules.md` §4.7).
-- **Si la spec crea o modifica páginas de detalle**, DEBE exigir que el show sea de solo lectura (sin `<form>`, inputs ni Guardar/Cancelar) y que editar sea una acción separada que navegue a `/edit/:id` (SPEC-135, `docs/project-rules.md` §4.9).
-- **Si la spec toca booleanos de entidad/configuración**, DEBE exigir `frontend/src/components/Toggle.tsx` (toggle iOS) y prohibir `<input type="checkbox">`; solo se exceptúan selecciones múltiples de filas/items (SPEC-135, `docs/project-rules.md` §4.10).
-
-Cada archivo de spec DEBE incluir:
-
-- **Frontmatter** con: title, id, status, author, created, updated, github_issue
-- **Resumen ejecutivo**: Qué problema resuelve (2-3 párrafos)
-- **Requerimientos**: Lista numerada y priorizada (P0, P1, P2)
-- **Investigación**: Referencias, decisiones técnicas evaluadas, porqué de cada decisión
-- **Diseño técnico**: Arquitectura, componentes, APIs, dependencias
-- **Criterios de aceptación**: Lista verificable de condiciones que definen "terminado"
-- **Plan de implementación**: Fases, estimación, dependencias entre tareas
-- **Riesgos y mitigaciones**: Qué puede fallar y cómo manejarlo
-- **Historial de cambios**: Fecha, autor, descripción de cada modificación
-
-### 5. Release
-
-Cuando una spec pasa a `released`:
-
-1. Verificar que exista commit/versión que la suba a iHost
-2. Documentar en la spec: commit/versión, fecha de deploy
-3. Cerrar el issue de GitHub con label `spec/released`
-4. El estado `released` significa "en iHost o producción"
-5. **Limpiar el worktree de la spec liberada** (si existe):
-   - `git worktree remove <ruta-del-worktree>` (ej: `../p40la-ihost-spec-XXX`)
-   - `git branch -d feature/SPEC-XXX` (usa `-d`, NO `-D`: falla si la rama no está mergeada)
-   - Verificar con `git worktree list` que ya no aparece
-   - **Regla**: la limpieza SOLO aplica a specs `released`. Worktrees de specs en desarrollo NO se tocan.
-
-**Regla CRÍTICA: implementación y release son inseparables.**
-
-- Una spec NO se da por terminada hasta completar el release completo: frontmatter + cuerpo (`**Estado**:`) + README tracker + label GitHub + cierre del issue + documentación del commit.
-- Si el código de una feature está commiteado en `main`, la spec DEBE estar `released`. Toda spec en `pending_release` con código en `main` es un error.
-- Antes de declarar terminada una spec, ejecutar `/spec check-release` para confirmar que no quedan colgadas.
-- Los commits de implementación DEBEN ir acompañados (en la misma sesión) del commit de release que documenta el cambio de estado. No dejar la spec en `pending_release` tras mergear a main.
-
-## Comandos de la skill
-
-### `/spec create "<título>"`
-Crear nueva spec con título dado. Investigación automática. Crea archivo local + issue de GitHub.
-
-### `/spec list [estado]`
-Listar specs locales. Filtrar por estado si se proporciona.
-
-### `/spec status <id> <nuevo_estado>`
-Cambiar estado de una spec. Validar transición permitida. Actualiza archivo local + issue de GitHub.
-
-### `/spec show <id>`
-Mostrar resumen de una spec específica.
-
-### `/spec list-issues [estado]`
-Listar issues de GitHub de specs. Filtrar por estado/label si se proporciona. Muestra ID, título, estado, URL.
-```bash
-gh issue list --label "spec/<estado>" --json number,title,state,url
-```
-
-### `/spec sync`
-Sincronizar estado de issues de GitHub con archivos locales.
-1. Listar todos los issues con label que empiece con `spec/`
-2. Para cada issue, buscar la spec local con `github_issue` matching
-3. Comparar estado del issue (labels + open/closed) con estado de la spec
-4. Si hay diferencia, actualizar archivo local + README.md
-5. Reporte final: specs sincronizadas, sin cambios, warnings
-
-### `/spec process <ID>`
-Tomar una spec en `pending_execution` y empezar desarrollo.
-1. Validar que spec esté en `pending_execution`
-2. Cambiar estado a `in_progress` (actualizar archivo, label, README)
-3. Leer criterios de aceptación de la spec
-4. Generar lista de tareas (todo) para el agente
-5. Confirmar y mostrar plan
-
-### `/spec worktree <ID>`
-Crear un worktree aislado para desarrollar una spec en su propia rama, sin pisar el trabajo de otras sesiones.
-
-**Regla crítica (SPEC-066)**: cada ventana/sesión trabaja en su PROPIO worktree. Compartir un checkout git hace que operaciones como `checkout`/`reset` destruyan el trabajo sin commitear de otras sesiones. El checkout principal (`main`) es de SOLO LECTURA para agentes: no se edita código ni se ejecutan git ops allí.
-
-1. Ejecutar `./scripts/check-worktree.sh` para verificar dónde está corriendo la sesión; si no está en un worktree, continuar aquí
-2. Validar que la spec exista en `docs/specs/`
-3. Ejecutar: `./scripts/new-worktree.sh <SPEC-ID>` (valida que `main` esté limpio antes de crear)
-4. Informar al usuario el directorio aislado creado (ej: `../p40la-ihost-spec-034`) y pedir que abra una NUEVA ventana de opencode allí
-5. **NUNCA** ejecutar `git checkout`/`switch`/`reset`/`stash`/`clean` sobre el worktree principal compartido ni sobre worktrees de otras sesiones
-6. Toda operación git de la spec (incluida la creación del archivo de spec) se hace DENTRO del worktree propio
-7. **Limpieza al liberar**: cuando la spec pasa a `released`, el worktree y su rama se eliminan (ver sección "Release"). Limpieza manual de referencia:
-   ```bash
-   git worktree remove ../p40la-ihost-spec-XXX
-   git branch -d feature/SPEC-XXX
-   git worktree list   # verificar que ya no aparece
-   ```
-
-### `/spec pending`
-Mostrar rápidamente specs en estados no-terminal con sus issues.
-```bash
-gh issue list --label "spec/draft,spec/pending-execution,spec/in-progress,spec/pending-release" --state open
-```
-
-### `/spec check-release`
-Verificar que no haya specs "colgadas" (código commiteado en main pero estado != `released`). Debe ejecutarse SIEMPRE antes de declarar terminada una spec y tras cada release.
-
-1. Listar todas las specs locales y su estado (`frontmatter status`)
-2. Para cada spec en estado != `released`, verificar si su feature tiene código en `main`:
-   - Buscar commits con el nombre de la spec: `git log --all --oneline --grep="SPEC-XXX" -i`
-   - Si hay commits de implementación pero el estado no es `released`, la spec está colgada
-3. Cruzar con issues de GitHub: `gh issue list --label "spec/<estado>" --state open`
-4. Reporte final:
-   - Specs colgadas (requieren release o documentación de bloqueo)
-   - Issues abiertos sin spec local o viceversa
-   - Consistencia local vs GitHub (frontmatter vs labels + open/closed)
-5. Si hay colgadas: NO declarar la tarea terminada. Ejecutar el flujo de release de la sección 5 o documentar el bloqueo.
-
-## Validaciones
-
-- Un ID no se puede reutilizar
-- `draft` puede ir a `pending_execution` o `cancelled`
-- `pending_execution` puede ir a `in_progress` o `cancelled`
-- `in_progress` puede ir a `pending_release` o volver a `pending_execution`
-- `pending_release` puede ir a `released` o volver a `in_progress`
-- `released` es estado final (o puede ir a `in_progress` para hotfixes)
-- `cancelled` es estado terminal
-
-## Formato de IDs
-
-- Siempre `SPEC-XXX` donde XXX es 001-999
-- Los números son secuenciales y no se reutilizan
-- Extraer número del nombre de archivo: `SPEC-(\d{3})`
-
-## Cuerpo del issue de GitHub
-
-Al crear un issue, usar este formato:
-
-```markdown
-## SPEC-XXX: Título Completo
-
-**Estado**: draft | pending_execution | in_progress | pending_release | released
-**Archivo**: [docs/specs/SPEC-XXX-titulo.md](https://github.com/paulomcnally/p40la-ihost/blob/main/docs/specs/SPEC-XXX-titulo.md)
+1. **La spec primero.** No se escribe código sin una spec que lo defina.
+2. **Una regla = un ID + una fuente canónica + un guardrail.** Esta skill **no copia reglas**: las referencia.
+3. **Las reglas del proyecto ganan** sobre esta skill, sobre los templates y sobre la memoria del agente.
+4. **Falla ruidosa.** Si faltan las reglas, se detiene y se ofrece `init`; nunca se opera a ciegas.
+5. **Portable.** Nada de rutas, componentes ni tecnologías de un proyecto específico fuera de ejemplos marcados.
 
 ---
 
-### Resumen
-[2-3 párrafos del resumen ejecutivo]
+## PASO 0 — Rules Bootstrap (OBLIGATORIO)
 
-### Requerimientos P0
-1. REQ-001: ...
-2. REQ-002: ...
+Ejecutar **antes de cualquier comando o de escribir una spec**.
 
-### Criterios de Aceptación
-- [ ] CA-001: ...
-- [ ] CA-002: ...
+1. **Localizar** en la raíz del proyecto/worktree actual:
+   - `AGENTS.md`
+   - `docs/rules/00-index.md`
 
-### Plan de Implementación
-| Fase | Descripción | Estimación |
-|------|-------------|------------|
-| 1 | ... | ... |
+   Si el script existe, verificar de forma determinista:
+   ```bash
+   <skill-dir>/scripts/check-rules.sh <directorio>
+   ```
+2. **Leer el manifiesto** (`docs/rules/00-index.md`) y extraer:
+   - perfil del proyecto (stack, rutas clave);
+   - tabla de dominios (qué archivo cargar según el tipo de cambio);
+   - guardrails ejecutables;
+   - reglas no negociables.
+3. **Cargar los dominios aplicables** (no hace falta cargar todo):
+
+   | Tipo de cambio | Dominios |
+   |---|---|
+   | UI / frontend / formularios | `20-ui`, `30-ux` |
+   | Rutas, pantallas, modales | `30-ux` |
+   | DB, migraciones, datos reales | `40-data` |
+   | Backend, arquitectura, dependencias | `10-architecture` |
+   | Deploy, git, release | `70-delivery` |
+   | **Siempre** | `50-security` + `60-testing` |
+
+4. **Verificar** que existan los archivos que el manifiesto declara. Si falta alguno:
+
+   ```
+   ⛔ DETENIDO — Estructura de reglas incompleta
+   Faltan: <rutas>
+   No puedo crear ni modificar specs sin las reglas del proyecto.
+   Opciones:
+     1) /spec-init        → generar la estructura faltante (no destructivo)
+     2) Indicarme la ruta de las reglas existentes para declararlas en el manifiesto
+   ```
+
+   No continuar hasta resolverlo. No inventar reglas ni asumir las de otro proyecto.
+
+5. **Si no existe ninguna estructura** (`AGENTS.md` ni `docs/rules/`), asumir proyecto nuevo y ofrecer `/spec-init`.
+
+> OpenCode ignora en silencio los archivos de reglas faltantes: esta verificación explícita es la única garantía.
 
 ---
-*Este issue es gestionado automáticamente por el sistema de specs. No cambiar labels manualmente.*
+
+## Contrato de estructura
+
+Todo proyecto que use esta skill debe tener:
+
 ```
+AGENTS.md                          # entrada auto-cargada + no negociables + índice
+docs/rules/00-index.md             # manifiesto: perfil, dominios, guardrails, IDs
+docs/rules/10-architecture.md      # stack, capas, carpetas, convenciones
+docs/rules/20-ui.md                # componentes, tokens, patrones visuales
+docs/rules/30-ux.md                # navegación, modales, detalle, estados, flujos
+docs/rules/40-data.md              # datos, migraciones, copias de producción
+docs/rules/50-security.md          # PII, secretos, datos sintéticos
+docs/rules/60-testing.md           # pruebas, verificación, flujo con el usuario
+docs/rules/70-delivery.md          # git, worktrees, release, deploy
+```
+
+- Los **nombres de archivo son parte del contrato** (el manifiesto puede declarar variantes).
+- `AGENTS.md` debe apuntar a `docs/rules/` y contener las reglas de seguridad no negociables.
+- `opencode.json` debería declarar `instructions: ["AGENTS.md", "docs/rules/*.md"]`.
+
+Templates listos para generar: `references/rules/` y `references/rules-index-template.md`.
+
+---
+
+## IDs de regla y de criterios
+
+| Prefijo | Dominio |
+|---|---|
+| `ARCH-` | arquitectura y stack |
+| `UI-` | interfaz y componentes |
+| `UX-` | experiencia, navegación, modales |
+| `DATA-` | datos y migraciones |
+| `SEC-` | seguridad y privacidad |
+| `TEST-` | pruebas y verificación |
+| `DELIV-` | entrega, git y deploy |
+
+- Regla: `UI-SELECT`, `UX-MODAL`, `DATA-PRODCOPY`.
+- Criterio de aceptación: `CA-UI-SELECT`, `CA-UX-MODAL`, `CA-DATA-PRODCOPY`.
+- **Obligatorio**: toda spec incluye una sección **«Cumplimiento de reglas»**:
+
+  ```markdown
+  ## Cumplimiento de reglas
+
+  | Regla | Cómo la cumple la spec | Criterio |
+  |---|---|---|
+  | UI-SELECT | El selector de moneda usa el componente Select, searchable | CA-UI-SELECT |
+  | UX-MODAL | El modal no cierra por click fuera; z-[60]; cierre visible | CA-UX-MODAL |
+  | SEC-SYNTHETIC | Ejemplos con datos `demo-*` | CA-SEC-SYNTHETIC |
+  | UX-BACK | N/A: la spec no agrega rutas con lista padre | — |
+  ```
+
+- `N/A` solo con justificación.
+- El ID de regla debe existir en `docs/rules/`. Si no existe y aplica: crear la regla antes de la spec.
+
+---
+
+## Comandos
+
+| Comando | Descripción |
+|---|---|
+| `/spec-init` | Genera la estructura de reglas faltante (no destructivo) |
+| `/spec-create "<título>"` | Crea spec + issue con ID secuencial y tabla de cumplimiento |
+| `/spec-list [estado]` | Lista specs locales, filtradas por estado |
+| `/spec-status <id> <estado>` | Cambia estado con validación de transición |
+| `/spec-show <id>` | Resumen de una spec |
+| `/spec-worktree <id>` | Crea worktree aislado (si el proyecto usa worktrees) |
+| `/spec-check-release` | Detecta specs colgadas (código en main sin release) |
+| `/spec-audit <id>` | Audita una spec contra las reglas del manifiesto |
+
+> Si los comandos de OpenCode del proyecto usan otro nombre (`/spec-create` vs `/spec create`), usar el registrado en `opencode.json`. No inventar comandos.
+
+---
+
+## 1. `/spec-init`
+
+Crea la estructura de reglas en un proyecto nuevo o incompleto.
+
+### Procedimiento
+
+1. Ejecutar Paso 0 en modo **diagnóstico** (sin abortar).
+2. Detectar qué falta de la lista del contrato.
+3. **Nunca sobrescribir**: si un archivo existe, omitirlo y reportarlo.
+4. Generar con el script determinista:
+   ```bash
+   <skill-dir>/scripts/init-rules.sh <directorio-del-proyecto>
+   ```
+   El script copia desde `references/`:
+   - `AGENTS.md` ← `agents-template.md`
+   - `docs/rules/00-index.md` ← `rules-index-template.md`
+   - `docs/rules/{10,20,30,40,50,60,70}-*.md` ← `rules/`
+   Es idempotente y no destructivo. Si no se puede ejecutar (permisos, Windows), copiar manualmente respetando el mismo criterio de no-sobrescritura.
+5. Si existe un `AGENTS.md` o `project-rules.md` monolítico previo:
+   - **no modificarlo**;
+   - ofrecer `--migrate` para mapear secciones a dominios (solo propuesta, requiere confirmación).
+6. Actualizar `opencode.json` **solo con confirmación**: `instructions` con `AGENTS.md` y `docs/rules/*.md`.
+7. Reportar:
+
+   ```
+   Estructura de reglas
+   ✓ creados:   docs/rules/00-index.md, docs/rules/10-architecture.md, ...
+   = omitidos:  AGENTS.md (ya existía)
+   ⚠ pendiente: completar la tabla de dominios del manifiesto
+   ```
+
+### Reglas de `init`
+
+- No crea specs, código, ramas ni issues.
+- No borra ni renombra archivos.
+- Es idempotente: correrlo dos veces no cambia nada.
+- No asume stack: los templates usan placeholders `{{...}}` que el proyecto completa.
+- **Anti-drift**: si detecta el mismo enunciado de regla en más de un archivo, advertirlo y proponer dejar una sola copia canónica (con ID) y referencias en el resto.
+
+---
+
+## 2. `/spec-create "<título>"`
+
+1. **Paso 0** (obligatorio). Si falta estructura → abortar y ofrecer `init`.
+2. **Worktree** (si el proyecto lo exige): ejecutar el script de verificación declarado en el manifiesto. Si aborta, no trabajar en ese checkout.
+3. **Investigar** el requerimiento (web/docs si aplica).
+4. **Calcular el ID**: máximo `SPEC-(\d{3})` entre `docs/specs/SPEC-*.md` **y** los issues abiertos/cerrados con título `SPEC-XXX`. Nunca desde el README tracker (se actualiza solo en release).
+5. **Crear el archivo** `docs/specs/SPEC-XXX-<slug>.md` con el template del proyecto (o `references/spec-template.md`).
+6. **Completar** las secciones obligatorias (ver abajo), incluida **Cumplimiento de reglas**.
+7. **Crear el issue** con label `spec/draft` y guardar `github_issue` en el frontmatter.
+8. **Confirmar** al usuario: ID, ruta y URL del issue.
+
+### Secciones obligatorias de una spec
+
+- Frontmatter: `title`, `id`, `status`, `author`, `created`, `updated`, `github_issue`.
+- Resumen ejecutivo (problema, por qué ahora, resultado esperado).
+- Requerimientos priorizados P0/P1/P2.
+- **Cumplimiento de reglas** (tabla con IDs).
+- Investigación y decisiones (ADRs cuando hay trade-offs).
+- Diseño técnico (componentes, APIs, datos, archivos).
+- Criterios de aceptación con IDs canónicos (`CA-<DOMINIO>-<NOMBRE>`).
+- Plan de implementación.
+- Riesgos y mitigaciones.
+- Historial de cambios.
+
+---
+
+## 3. `/spec-status <id> <estado>`
+
+1. Validar la transición (ver diagrama).
+2. Leer `github_issue` del frontmatter.
+3. Actualizar GitHub: `gh issue edit <n> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"`.
+   - Si el nuevo estado es `released`: cerrar el issue **después** de actualizar el label.
+   - Si `gh` falla: continuar con warning visible.
+4. Actualizar `status` en el frontmatter **y** en el cuerpo (`**Estado**:`).
+5. Agregar entrada al historial.
+6. **No** actualizar el README tracker en estados intermedios (solo en release, si el proyecto lo define así).
+7. Confirmar al usuario.
+
+### Transiciones válidas
+
+```
+draft            → pending_execution | cancelled
+pending_execution→ in_progress | cancelled
+in_progress      → pending_release | pending_execution
+pending_release  → released | in_progress
+released         → in_progress (hotfix)
+cancelled        → terminal
+```
+
+**`cancelled` es decisión exclusiva del usuario** (palabras «cancelar»/«descartar»). «Cerrar» = `released`.
+
+---
+
+## 4. Gate de pre-release
+
+Antes de pasar a `pending_release` o `released`, verificar y reportar:
+
+1. **Guardrails del manifiesto**: ejecutar cada comando declarado y capturar el resultado. Si uno falla → **bloquear**.
+2. **Cobertura de reglas**: cada regla aplicable al cambio está en la tabla de cumplimiento con criterio o `N/A` justificado.
+3. **Checklist del proyecto**: leer `docs/rules/60-testing.md` y confirmar cada ítem.
+4. **Higiene de datos**: `git diff --cached` sin PII, secretos, DBs, PDFs ni exports.
+5. **Validación del usuario**: no avanzar sin confirmación explícita de las pruebas manuales.
+
+Salida del gate:
+
+```
+Gate de pre-release — SPEC-XXX
+✓ guardrails: check:ui, build, test
+✗ reglas sin cubrir: UX-BACK (falta CA o N/A)
+⛔ BLOQUEADO: completar la tabla de cumplimiento antes de continuar
+```
+
+---
+
+## 5. `/spec-check-release`
+
+Detecta specs colgadas (implementación en main sin release).
+
+1. Listar specs locales y su `status`.
+2. Para cada spec ≠ `released`: buscar commits `git log --all --oneline --grep="SPEC-XXX" -i`.
+3. Cruzar con GitHub: `gh issue list --label "spec/<estado>" --state open`.
+4. Reportar: specs colgadas, issues sin spec local o viceversa, inconsistencias frontmatter ↔ labels.
+5. Si hay colgadas: **no** declarar terminada la tarea.
+
+---
+
+## 6. Release
+
+Una spec pasa a `released` solo con **todos** estos pasos en el mismo ciclo:
+
+1. Merge a `main` **con confirmación explícita del usuario**.
+2. Commit y push de todos los cambios pendientes (formato del proyecto, ej: `SPEC-XXX: descripción`).
+3. Documentar commit/versión y fecha en la spec.
+4. Actualizar `status` (frontmatter + cuerpo).
+5. Actualizar el tracker del proyecto (si existe).
+6. Cambiar label a `spec/released` y cerrar el issue.
+7. Limpiar el worktree/rama de la spec (solo si está `released`).
+8. Verificar con `/spec-check-release`.
+
+**Implementación y release son inseparables**: si el código está en `main`, la spec debe estar `released`.
+
+---
+
+## 7. Integración con GitHub Issues
+
+| Operación | Comando |
+|---|---|
+| Crear | `gh issue create --title "SPEC-XXX: Título" --label "spec/<estado>" --body "..."` |
+| Cambiar label | `gh issue edit <n> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"` |
+| Cerrar | `gh issue close <n>` |
+| Reabrir | `gh issue reopen <n>` |
+| Comentar | `gh issue comment <n> --body "..."` |
+| Listar | `gh issue list --label "spec/<estado>" --state open` |
+
+Labels válidos: `spec/draft`, `spec/pending-execution`, `spec/in-progress`, `spec/pending-release`, `spec/released`, `spec/cancelled`. Nunca labels genéricos.
+
+Si `gh` no está disponible: continuar con warning y dejar constancia de la operación pendiente.
+
+---
+
+## Anti-patrones (prohibidos)
+
+- Crear una spec sin haber leído `docs/rules/00-index.md`.
+- Copiar reglas dentro de la spec o de la skill (solo IDs + referencia).
+- Inventar reglas cuando el proyecto no las tiene.
+- Cerrar/liberar sin confirmación del usuario.
+- Cancelar una spec sin orden explícita del usuario.
+- Suponer que un archivo de reglas existe (OpenCode lo ignora en silencio).
+- Declarar terminada una spec con guardrails fallando.
+
+---
+
+## Referencias incluidas
+
+| Archivo | Uso |
+|---|---|
+| `references/agents-template.md` | `AGENTS.md` base para proyectos nuevos |
+| `references/rules-index-template.md` | Manifiesto `docs/rules/00-index.md` |
+| `references/rules/10-architecture.md` … `70-delivery.md` | Templates de dominio con reglas base genéricas |
+| `references/spec-template.md` | Template de spec con «Cumplimiento de reglas» |
+| `references/rule-catalog.md` | Catálogo de IDs de regla base y guardrails sugeridos |
+| `scripts/check-rules.sh` | Verifica la estructura de reglas (Paso 0) |
+| `scripts/init-rules.sh` | Genera la estructura faltante sin sobrescribir |
