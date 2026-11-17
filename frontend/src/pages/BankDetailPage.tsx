@@ -5,17 +5,17 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
-import CreateMenu from '../components/CreateMenu'
 import CardMenu from '../components/CardMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { bankAccountTypeLabel } from '../utils/bank'
+import { countryName } from '../constants/countries'
 import type { Bank, BankAccount } from '../types'
 
 export default function BankDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { t } = useI18nStore()
+  const { t, lang } = useI18nStore()
   const { showToast } = useToast()
   const [bank, setBank] = useState<Bank | null>(null)
   const [accounts, setAccounts] = useState<BankAccount[]>([])
@@ -66,34 +66,28 @@ export default function BankDetailPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-3 mb-4 sm:mb-5">
-        <div>
+      <div className="relative bg-card rounded-ios shadow-ios p-4 sm:p-6 mb-6">
+        <CardMenu
+          options={[
+            {
+              label: t('app.edit'),
+              icon: 'edit',
+              onClick: () => navigate(`/bancos/edit/${bank.id}`),
+            },
+            {
+              label: t('banks.create_account'),
+              icon: 'plus',
+              onClick: () => navigate(`/bancos/${bank.id}/cuentas/new`),
+            },
+          ]}
+        />
+        <div className="pr-10">
           <h2 className="text-xl sm:text-2xl font-bold">{bank.name}</h2>
           <p className="text-sm text-text-secondary mt-1">
             {bank.short_code ? `${bank.short_code} · ` : ''}
-            {bank.country || t('banks.no_country')}
+            {bank.country ? countryName(bank.country, lang) : t('banks.no_country')}
           </p>
           {bank.notes && <p className="text-sm text-text-secondary mt-1">{bank.notes}</p>}
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => navigate(`/bancos/edit/${bank.id}`)}
-            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-bg transition-colors"
-            title={t('app.edit')}
-            aria-label={t('app.edit')}
-          >
-            <Icon name="edit" className="w-5 h-5" />
-          </button>
-          <CreateMenu
-            options={[
-              {
-                label: t('banks.create_account'),
-                icon: 'plus',
-                onClick: () => navigate(`/bancos/${bank.id}/cuentas/new`),
-              },
-            ]}
-          />
         </div>
       </div>
 

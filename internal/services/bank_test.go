@@ -36,7 +36,7 @@ func currencyID(t *testing.T, database *sql.DB) int64 {
 }
 
 func validBank(name string) *models.Bank {
-	return &models.Bank{Name: name, ShortCode: "BDEMO", Country: "Nicaragua", Notes: "Banco de prueba", Active: true}
+	return &models.Bank{Name: name, ShortCode: "BDEMO", Country: "NI", Notes: "Banco de prueba", Active: true}
 }
 
 func validBankAccount(bankID, currencyID int64) *models.BankAccount {
@@ -102,6 +102,27 @@ func TestBankValidation(t *testing.T) {
 	account.CurrencyID = 999999
 	if _, err := service.CreateAccount(ctx, account); err == nil {
 		t.Fatal("se esperaba error por moneda inexistente")
+	}
+}
+
+func TestBankCountryValidation(t *testing.T) {
+	service, _ := setupBankTest(t)
+	ctx := context.Background()
+
+	if _, err := service.CreateBank(ctx, &models.Bank{Name: "Banco Demo", Country: "Nicaragua"}); err == nil {
+		t.Fatal("se esperaba error por país con formato inválido")
+	}
+
+	created, err := service.CreateBank(ctx, &models.Bank{Name: "Banco Demo", Country: " us "})
+	if err != nil {
+		t.Fatalf("CreateBank con código minúscula: %v", err)
+	}
+	if created.Country != "US" {
+		t.Errorf("país normalizado esperado US, got %q", created.Country)
+	}
+
+	if _, err := service.CreateBank(ctx, &models.Bank{Name: "Banco sin país", Country: ""}); err != nil {
+		t.Fatalf("país vacío debe ser válido: %v", err)
 	}
 }
 
