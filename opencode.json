@@ -1,25 +1,38 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": ["AGENTS.md", "docs/project-rules.md"],
-  "skills": {
-    "paths": [".opencode/skills"]
-  },
+  "instructions": ["AGENTS.md", "docs/rules/*.md"],
   "command": {
+    "spec-init": {
+      "description": "Genera la estructura de reglas (docs/rules/) de forma no destructiva",
+      "template": "Usá la skill spec-manager en modo init. Ejecutá el Paso 0 en modo diagnóstico, detectá qué archivos del contrato de estructura faltan (AGENTS.md, docs/rules/00-index.md y los 7 dominios) y genera solo los faltantes desde .opencode/skills/spec-manager/references/. No sobrescribas archivos existentes. Reportá creados, omitidos y pendientes."
+    },
     "spec-create": {
       "description": "Create a new technical specification with auto-incremented ID",
-      "template": "Use the spec-manager skill to create a new spec. Ask the user for the title/requirement, then: 1) Check docs/specs/README.md for the last ID used, 2) Create a new file in docs/specs/ using the next sequential ID (SPEC-XXX format), 3) Copy the template from docs/specs/templates/spec-template.md, 4) Research the requirement if needed, 5) Fill in the template with the requirement details, 6) Update docs/specs/README.md to add the new spec to the index and update counters, 7) Report back the created spec ID and summary. Remember iHost constraints: low memory, SQLite, minimal dependencies."
+      "template": "Usá la skill spec-manager. PASO 0 obligatorio: leé AGENTS.md y docs/rules/00-index.md, cargá los dominios aplicables y abortá con advertencia si falta la estructura (ofrecé /spec-init). Luego: 1) verificá el worktree con ./scripts/check-worktree.sh; 2) calculá el próximo ID desde docs/specs/SPEC-*.md + issues (no desde el README); 3) creá docs/specs/SPEC-XXX-<slug>.md desde docs/specs/templates/spec-template.md; 4) completá la tabla 'Cumplimiento de reglas' con IDs de docs/rules/; 5) creá el issue con label spec/draft; 6) actualizá github_issue en el frontmatter; 7) informá ID, ruta y URL. Recordá las restricciones del iHost: poca memoria, SQLite, mínimas dependencias."
     },
     "spec-list": {
       "description": "List all specs with optional status filter",
-      "template": "Read docs/specs/README.md and report the current status of all specs. If the user provided a status argument, filter by that status. Include the counter summary."
+      "template": "Leé docs/specs/README.md y las specs en docs/specs/. Reportá el estado de todas las specs; si el usuario pasó un estado, filtrá por ese estado. Incluí el resumen del contador."
     },
     "spec-status": {
       "description": "Update the status of a specific spec",
-      "template": "Update the status of a spec. Arguments: spec ID and new status. Steps: 1) Read the spec file from docs/specs/, 2) Validate the status transition is allowed (draft→pending_execution→in_progress→pending_release→released), 3) Update the frontmatter status in the spec file, 4) Update the status in docs/specs/README.md, 5) Add an entry to the spec's change history, 6) Confirm the update."
+      "template": "Usá la skill spec-manager. PASO 0: cargá docs/rules/00-index.md. Argumentos: ID de spec y estado nuevo. Pasos: 1) leé la spec; 2) validá la transición permitida; 3) actualizá el label en GitHub (gh issue edit) y, si es released, cerrá el issue DESPUÉS del label; 4) actualizá status en frontmatter y cuerpo; 5) agregá entrada al historial; 6) si es released, ejecutá el flujo de release completo. Nunca canceles sin orden explícita del usuario."
     },
     "spec-show": {
       "description": "Show summary of a specific spec",
-      "template": "Read the spec file from docs/specs/ and provide a concise summary: ID, title, status, requirements, acceptance criteria, and current progress."
+      "template": "Leé la spec en docs/specs/ y devolvé un resumen conciso: ID, título, estado, requerimientos, cumplimiento de reglas y criterios de aceptación."
+    },
+    "spec-check-release": {
+      "description": "Detecta specs colgadas (código en main sin release)",
+      "template": "Usá la skill spec-manager. Listá las specs locales y su estado; para cada una distinta de released buscá commits con git log --all --oneline --grep=\"SPEC-XXX\" -i; cruzalo con gh issue list; reportá specs colgadas, issues huérfanos e inconsistencias. Si hay colgadas, no declares terminada la tarea."
+    },
+    "spec-worktree": {
+      "description": "Crea un worktree aislado para desarrollar una spec",
+      "template": "Usá la skill spec-manager. Argumento: ID de spec. Pasos: 1) ejecutá ./scripts/check-worktree.sh; 2) validá que la spec exista en docs/specs/; 3) ejecutá ./scripts/new-worktree.sh <SPEC-ID>; 4) informá el directorio creado (../p40la-ihost-spec-XXX) y pedí abrir una nueva ventana de opencode allí. Nunca ejecutes checkout/reset/switch sobre el worktree principal ni sobre el de otra sesión."
+    },
+    "spec-audit": {
+      "description": "Audita una spec contra las reglas del proyecto",
+      "template": "Usá la skill spec-manager. Argumento: ID de spec. Leé docs/rules/00-index.md, determiná los dominios aplicables y verificá que la spec tenga la tabla 'Cumplimiento de reglas' completa: cada regla aplicable con criterio CA-* o N/A justificado. Reportá reglas faltantes y bloqueá el avance si las hay."
     }
   }
 }
