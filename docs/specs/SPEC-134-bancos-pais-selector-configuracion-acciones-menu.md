@@ -1,7 +1,7 @@
 ---
 title: "Bancos: país desde configuración con selector buscable y acciones en menú de 3 puntos"
 id: "SPEC-134"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-17"
 updated: "2026-11-17"
@@ -11,7 +11,7 @@ github_issue: 137
 # Bancos: país desde configuración con selector buscable y acciones en menú de 3 puntos
 
 **ID**: SPEC-134  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-17  
 **Actualizado**: 2026-11-17
@@ -295,36 +295,36 @@ No se elimina `banks.no_country` (fallback defensivo), aunque en la práctica de
 
 ### 5.1 Funcionales
 
-- [ ] **CA-001**: En `/bancos/new`, el campo País es un dropdown buscable (componente `Select`), no un `input` de texto ni un `<select>` nativo.
-- [ ] **CA-002**: El dropdown lista los 249 países del estándar ISO 3166-1 alpha-2, ordenados alfabéticamente por nombre en el idioma activo.
-- [ ] **CA-003**: El buscador del dropdown filtra por nombre sin distinguir mayúsculas ni acentos (ej: escribir `espana` encuentra `España`).
-- [ ] **CA-004**: Con el setting global en `NI`, al abrir `/bancos/new` el selector aparece precargado con Nicaragua.
-- [ ] **CA-005**: Sin setting global (clave ausente o vacía), al abrir `/bancos/new` el selector aparece precargado con Nicaragua.
-- [ ] **CA-006**: Al guardar un banco nuevo se persiste el código ISO de dos letras (`NI`, `US`, `ES`, …), verificable en la DB y en el JSON de respuesta del API.
-- [ ] **CA-007**: Al editar un banco con `country = "NI"` el selector muestra Nicaragua; al guardar sin cambios se conserva `NI`.
-- [ ] **CA-008**: Al editar un banco legacy con `country = "Nicaragua"` el selector muestra Nicaragua; al guardar se normaliza a `NI` sin error.
-- [ ] **CA-009**: Al editar un banco con un valor legacy no reconocido, ese valor aparece como opción seleccionable; si se intenta guardar sin elegir un país válido, se muestra un error de validación y no se envía la petición (el valor original no se pierde en la DB).
-- [ ] **CA-010**: El listado y el detalle del banco muestran el nombre del país localizado según el idioma activo; un valor legacy no resoluble se muestra tal cual.
-- [ ] **CA-011**: En Configuraciones existe la fila **País** con el país global actual como subtítulo; al tocarla se abre `/settings/pais`.
-- [ ] **CA-012**: En `/settings/pais` se puede elegir cualquier país con el dropdown buscable; al elegir se guarda automáticamente y se muestra el toast de confirmación; el valor persiste tras recargar.
-- [ ] **CA-013**: El botón **Restaurar Nicaragua** guarda `NI` y actualiza la UI.
-- [ ] **CA-014**: En el detalle de un banco (`/bancos/:id`) NO existe un ícono de editar separado; el menú de 3 puntos contiene **Editar** (clave `app.edit`) y **Nueva cuenta**.
-- [ ] **CA-015**: **Editar** en el menú de 3 puntos navega a `/bancos/edit/:id`.
-- [ ] **CA-016**: `docs/project-rules.md` contiene la regla §4.8 y `AGENTS.md` la referencia en Reglas críticas/checklist.
-- [ ] **CA-017**: El backend rechaza con `400` un `country_code` que no sea de dos letras (ej: `USA`, `1`, `N!`), sin persistir el valor.
-- [ ] **CA-018**: El backend acepta `country_code` en minúsculas y lo normaliza a mayúsculas.
-- [ ] **CA-019**: El backend rechaza con validación un `country` de banco con formato inválido (distinto de vacío y de `^[A-Z]{2}$`).
-- [ ] **CA-020**: `npm run check:ui` pasa y `npm run build` compila sin errores.
-- [ ] **CA-DARK**: Los campos del formulario de banco y de la pantalla de país usan tokens del tema (`bg-card`, `text-text`) y se verificó legibilidad en darkmode (texto y placeholders).
-- [ ] **CA-BACK**: La pantalla `/settings/pais` tiene flecha atrás en el header registrada en `BACK_ROUTES` y NO tiene links "← Título" en el contenido.
+- [x] **CA-001**: En `/bancos/new`, el campo País es un dropdown buscable (componente `Select`), no un `input` de texto ni un `<select>` nativo.
+- [x] **CA-002**: El dropdown lista los 249 países del estándar ISO 3166-1 alpha-2, ordenados alfabéticamente por nombre en el idioma activo.
+- [x] **CA-003**: El buscador del dropdown filtra por nombre sin distinguir mayúsculas ni acentos (ej: escribir `espana` encuentra `España`).
+- [x] **CA-004**: Con el setting global en `NI`, al abrir `/bancos/new` el selector aparece precargado con Nicaragua.
+- [x] **CA-005**: Sin setting global (clave ausente o vacía), al abrir `/bancos/new` el selector aparece precargado con Nicaragua.
+- [x] **CA-006**: Al guardar un banco nuevo se persiste el código ISO de dos letras (`NI`, `US`, `ES`, …), verificable en la DB y en el JSON de respuesta del API.
+- [x] **CA-007**: Al editar un banco con `country = "NI"` el selector muestra Nicaragua; al guardar sin cambios se conserva `NI`.
+- [x] **CA-008**: Al editar un banco legacy con `country = "Nicaragua"` el selector muestra Nicaragua; al guardar se normaliza a `NI` sin error.
+- [x] **CA-009**: Al editar un banco con un valor legacy no reconocido, ese valor aparece como opción seleccionable; si se intenta guardar sin elegir un país válido, se muestra un error de validación y no se envía la petición (el valor original no se pierde en la DB).
+- [x] **CA-010**: El listado y el detalle del banco muestran el nombre del país localizado según el idioma activo; un valor legacy no resoluble se muestra tal cual.
+- [x] **CA-011**: En Configuraciones existe la fila **País** con el país global actual como subtítulo; al tocarla se abre `/settings/pais`.
+- [x] **CA-012**: En `/settings/pais` se puede elegir cualquier país con el dropdown buscable; al elegir se guarda automáticamente y se muestra el toast de confirmación; el valor persiste tras recargar.
+- [x] **CA-013**: El botón **Restaurar Nicaragua** guarda `NI` y actualiza la UI.
+- [x] **CA-014**: En el detalle de un banco (`/bancos/:id`) NO existe un ícono de editar separado; el menú de 3 puntos contiene **Editar** (clave `app.edit`) y **Nueva cuenta**.
+- [x] **CA-015**: **Editar** en el menú de 3 puntos navega a `/bancos/edit/:id`.
+- [x] **CA-016**: `docs/project-rules.md` contiene la regla §4.8 y `AGENTS.md` la referencia en Reglas críticas/checklist.
+- [x] **CA-017**: El backend rechaza con `400` un `country_code` que no sea de dos letras (ej: `USA`, `1`, `N!`), sin persistir el valor.
+- [x] **CA-018**: El backend acepta `country_code` en minúsculas y lo normaliza a mayúsculas.
+- [x] **CA-019**: El backend rechaza con validación un `country` de banco con formato inválido (distinto de vacío y de `^[A-Z]{2}$`).
+- [x] **CA-020**: `npm run check:ui` pasa y `npm run build` compila sin errores.
+- [x] **CA-DARK**: Los campos del formulario de banco y de la pantalla de país usan tokens del tema (`bg-card`, `text-text`) y se verificó legibilidad en darkmode (texto y placeholders).
+- [x] **CA-BACK**: La pantalla `/settings/pais` tiene flecha atrás en el header registrada en `BACK_ROUTES` y NO tiene links "← Título" en el contenido.
 
 ### 5.2 No funcionales
 
-- [ ] **CA-NF-001**: Abrir el selector y filtrar países responde de forma instantánea (percepción <50 ms en el iHost), sin peticiones HTTP por búsqueda.
-- [ ] **CA-NF-002**: El bundle del frontend crece menos de 20 KB sin comprimir por el listado de países.
-- [ ] **CA-NF-003**: No se agregan dependencias a `frontend/package.json` ni al `go.mod`.
-- [ ] **CA-NF-004**: No se agregan migraciones ni se modifica el esquema de `banks`/`system_settings`.
-- [ ] **CA-NF-005**: Los tests Go (`go test ./...`) y el build del frontend pasan.
+- [x] **CA-NF-001**: Abrir el selector y filtrar países responde de forma instantánea (percepción <50 ms en el iHost), sin peticiones HTTP por búsqueda.
+- [x] **CA-NF-002**: El bundle del frontend crece menos de 20 KB sin comprimir por el listado de países.
+- [x] **CA-NF-003**: No se agregan dependencias a `frontend/package.json` ni al `go.mod`.
+- [x] **CA-NF-004**: No se agregan migraciones ni se modifica el esquema de `banks`/`system_settings`.
+- [x] **CA-NF-005**: Los tests Go (`go test ./...`) y el build del frontend pasan.
 
 ### 5.3 Testing
 
@@ -401,3 +401,4 @@ No se elimina `banks.no_country` (fallback defensivo), aunque en la práctica de
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-17 | opencode | Creación inicial de la especificación (país de banco con dropdown buscable, setting global con default Nicaragua, acciones del detalle en menú de 3 puntos y nueva regla de UI) |
+| 2026-11-17 | opencode | Implementación completa, tests Go, `npm run check:ui`, `npm run build` y validación manual satisfactoria confirmada por el usuario. Release v0.6.0: merge a `main` (commit `fc0d99e`, merge `0ac489e`, bump `09820c8`); label `spec/released` e issue #137 cerrado. |
