@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+#
+# pre-commit — Guardrails de repositorio (SPEC-136).
+# Copiado por spec-manager init. Ajustá la configuración de abajo.
+#
+# Fail-safe: si el hook falla internamente, NO bloquea el commit.
+# Omitir (solo con autorización explícita del usuario): git commit --no-verify
+
+set -uo pipefail
+
+# ==== Configuración del proyecto ============================================
+FORBIDDEN_EXTS="db db-wal db-shm sqlite sqlite3 pdf dump"
+FORBIDDEN_DIRS="backups data"
+GENERATED_PATHS="public/i18n/"
+UI_CHECK_CMD=""            # ej: "cd frontend && npm run check:ui"
+UI_PATHS_REGEX='^frontend/src/.*\.(tsx|jsx)$'
+PII_EMAIL_DOMAINS="gmail|hotmail|outlook|yahoo|icloud|live|protonmail"
+# ============================================================================
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+cd "$ROOT" 2>/dev/null || exit 0
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)"
+[ -z "${staged}" ] && exit 0
+
+fail() {
+  echo "" >&2
+  echo "[pre-commit] ⛔ ${1}" >&2
+  [ -n "${2:-}" ] && echo "${2}" >&2
+  echo "  Referencia: docs/rules/00-index.md" >&2
+  echo "  Omitir: git commit --no-verify (solo con autorización explícita del usuario)" >&2
+  exit 1
+}
+
+# 1. Archivos prohibidos
+while IFS= read -r f; do
+  [ -z "${f}" ] && continue
+  base="${f##*/}"
+  ext="${base##*.}"
+  for bad in ${FORBIDDEN_EXTS}; do
+    if [ "${ext}" = "${bad}" ]; then
+      fail "Archivo prohibido en el commit: ${f}" "  No se commitean DBs, backups, PDFs ni datos de producción."
+    fi
+  done
+  for dir in ${FORBIDDEN_DIRS}; do
+    case "${f}" in
+      "${dir}"/*) fail "Ruta prohibida en el commit: ${f}" "  Los datos locales y backups no se versionan." ;;
+    esac
+  done
+done <<< "${staged}"
+
+# 2. Secretos y PII
+added="$(git diff --cached -U0 --no-color 2>/dev/null | grep '^+' | grep -v '^+++' || true)"
+if [ -n "${added}" ]; then
+  printf '%s\n' "${added}" | grep -Eq 'BEGIN [A-Z ]*PRIVATE KEY-----' && fail "Clave privada detectada." "  Rotá la clave y eliminá el archivo."
+  printf '%s\n' "${added}" | grep -Eq 'AKIA[0-9A-Z]{16}' && fail "AWS access key detectada."
+  printf '%s\n' "${added}" | grep -Eq '(gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|sk-[A-Za-z0-9]{20,})' && fail "Token de API detectado."
+  printf '%s\n' "${added}" | grep -Eq '[0-9]{8,10}:[A-Za-z0-9_-]{35}' && fail "Posible token de bot de Telegram."
+  printf '%s\n' "${added}" | grep -Eiq "[A-Za-z0-9._%+-]+@(${PII_EMAIL_DOMAINS})\.[A-Za-z]{2,}" && fail "Email personal detectado." "  Usá datos sintéticos: demo@example.com"
+fi
+
+# 3. Rutas generadas por el build
+if [ -n "${GENERATED_PATHS}" ]; then
+  for gen in ${GENERATED_PATHS}; do
+    if printf '%s\n' "${staged}" | grep -Eq "^${gen}"; then
+      fail "Se intentó commitear ${gen} (salida del build)." "  Editá la fuente y volvé a compilar."
+    fi
+  done
+fi
+
+# 4. Guardrail de UI
+if [ -n "${UI_CHECK_CMD}" ] && printf '%s\n' "${staged}" | grep -Eq "${UI_PATHS_REGEX}"; then
+  if ! bash -c "${UI_CHECK_CMD}" >/dev/null 2>&1; then
+    bash -c "${UI_CHECK_CMD}" >&2 || true
+    fail "El guardrail de UI falló."
+  fi
+fi
+
+exit 0

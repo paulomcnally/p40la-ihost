@@ -32,6 +32,11 @@ fi
 
 if [[ -n "${IS_SPEC_WT}" ]]; then
   echo "[check-worktree] OK: sesión en worktree de spec (${ROOT} / ${BRANCH})."
+  HOOKS_PATH="$(git config --get core.hooksPath || true)"
+  if [[ "${HOOKS_PATH}" != ".githooks" ]]; then
+    echo "[check-worktree] aviso: hooks de repo no instalados (core.hooksPath='${HOOKS_PATH:-vacío}')." >&2
+    echo "  Ejecutá: ./scripts/install-hooks.sh" >&2
+  fi
   exit 0
 fi
 

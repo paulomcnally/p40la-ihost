@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 134 |
+| **Total de specs** | 135 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 134 🟢 |
+| **Released** | 135 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-135 |
+| **Último ID usado** | SPEC-136 |
 
 ---
 
@@ -155,6 +155,7 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-133 | Módulo de bancos: cuentas y formatos de transferencia (Transferencia y ACH) con plantillas JSON | released | 2026-11-09 | opencode |
 | SPEC-134 | Bancos: país desde configuración con selector buscable y acciones en menú de 3 puntos | released | 2026-11-17 | opencode |
 | SPEC-135 | Bancos: detalle de cuenta informativo, página de transferencias con tabs y toggles iOS obligatorios | released | 2026-11-17 | opencode |
+| SPEC-136 | Skill spec-manager portable: reglas por dominio, bootstrap obligatorio, init y enforcement con hooks | released | 2026-11-17 | opencode |
 
 ---
 

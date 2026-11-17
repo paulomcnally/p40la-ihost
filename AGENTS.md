@@ -1,302 +1,118 @@
-# AGENTS.md - Reglas del Repositorio
+# AGENTS.md — p40la-ihost
 
-> **Última actualización**: 2026-09-04  
-> **Proyecto**: p40la-ihost  
-> **Sistema de specs**: v1.2
+> **Última actualización**: 2026-11-17
+> **Sistema de specs**: v2.0 (reglas por dominio — SPEC-136)
 
----
-
-## 🎯 Propósito
-
-Este repositorio utiliza un sistema formal de especificaciones técnicas (specs) para gestionar el desarrollo de funcionalidades. Todo cambio significativo DEBE pasar por el flujo de specs.
-
-El proyecto corre en un **iHost con recursos muy limitados**, por lo que todas las decisiones técnicas deben priorizar simplicidad, bajo consumo de memoria y mínimas dependencias.
+Este archivo es la **entrada** para agentes. Las reglas completas viven en `docs/rules/`, una sola vez cada una, con IDs estables.
 
 ---
 
 ## ⚠️ Regla de Oro
 
-**Antes de escribir código: la spec primero. Siempre.**  
-Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, la spec se actualiza primero. No hay excepciones.
+**Antes de escribir código: la spec primero. Siempre.**
+Si la spec no existe, no se escribe código. Si la spec no contempla el cambio, se actualiza primero. Sin excepciones.
 
-**Cerrar una spec es SIEMPRE un release, jamás una cancelación.**  
-Cuando el usuario dice "cerrá/terminá/dá por terminada la SPEC-XXX", se ejecuta el flujo de release (`released`). El estado `cancelled` solo existe si el usuario lo ordena explícitamente con la palabra "cancelar"/"descartar". Ver sección "Reglas críticas".
+**Cerrar una spec es SIEMPRE un release, jamás una cancelación.**
+`cancelled` solo existe si el usuario lo ordena explícitamente con las palabras «cancelar» o «descartar». Ante duda, preguntar antes de cambiar el estado. Precedente: SPEC-085.
 
 ---
 
-## 📋 Reglas Fundamentales
+## 🚨 No negociables (aplicar siempre)
 
-### 0. Reglas críticas (aprendidas de errores)
+| ID | Regla |
+|---|---|
+| `SEC-NO-PII` | Prohibido commitear PII, datos financieros, secretos o volcados de producción. Aplica a código, tests, specs, docs, issues, PRs, commits, logs y capturas. |
+| `SEC-SYNTHETIC` | Todo ejemplo/test usa datos sintéticos (`demo@example.com`, `demo-account-001`, `+1 555 0100`, `Proveedor Demo`, `F000000000000001`). |
+| `SEC-INCIDENT` | Secreto/PII commiteado = incidente: rotar, purgar del árbol **y de la historia**, documentar, avisar. |
+| `DATA-NO-DROP` | Nunca borrar ni reemplazar `data/app.db`. La DB local del usuario es producción. |
+| `DATA-PRODCOPY` | Validar contra copia de producción en `/tmp`, nunca contra la DB local. Nunca escribir en producción. |
+| `DELIV-WORKTREE` | Cada sesión en su worktree. `main` es solo lectura para agentes. |
+| `DELIV-CONFIRM` | Merge y push requieren confirmación explícita del usuario. Prohibido `--force`. |
+| `TEST-KILLALL` | Usar `killall`, nunca `pkill`. |
+| `TEST-SERVER` | Verificar `./scripts/check-server.sh` antes de avisar al usuario. |
 
-- **NUNCA ejecutar `rm -f data/app.db` ni ningún comando que elimine la base de datos del usuario.** La DB local es producción. Si se necesitan pruebas limpias, usar `/tmp/test-app.db`.
-- **Usar SIEMPRE `killall` para matar procesos, NUNCA `pkill`.** `pkill` falla silenciosamente en este entorno. Comando correcto: `killall p40la-ihost`.
-- **Verificar SIEMPRE que el server responde antes de informar al usuario que puede acceder.** Ejecutar `./scripts/check-server.sh` (revisa `GET /health` esperando `{"status":"ok"}`, con reintentos; en fallo muestra el log y sale con error). Solo entonces informar al usuario. Si no responde, revisar el log y reiniciar.
-- **Seguir siempre el patrón de UI existente.** Para páginas de listado: cards con menú de acciones (3 puntos) + EmptyCard (título, descripción, botón) cuando no hay registros. Nunca formularios inline en listados. Referencia: `HomesPage.tsx`.
-- **La acción de edición se rotula SIEMPRE "Editar".** En menús de 3 puntos, dropdowns, headers y botones, usar la clave i18n `app.edit` (`Editar`/`Edit`). Nunca "Editar servicio", "Editar deuda" ni "Editar [página]": los títulos de formulario pueden ser descriptivos, pero las acciones no. Ver SPEC-115.
-- **En páginas de detalle, las acciones de entidad (Editar, Eliminar y crear entidad hija) viven SIEMPRE en el menú de 3 puntos, nunca como ícono o botón separado al lado.** Todo detalle usa `CardMenu` en el header/tarjeta como único punto de acciones; la etiqueta de edición es `app.edit`. Las acciones primarias del flujo (ej: "Pagar") pueden ser botones visibles. Ver SPEC-117 y SPEC-134, y `docs/project-rules.md` §4.8.
-- **Inputs SIEMPRE con tokens del tema, jamás colores hardcodeados.** Todo `input`/`select`/`textarea` DEBE usar `bg-card` (fondo) y `text-text`/`text-text-secondary` (texto/placeholder). Nunca `bg-white`, `dark:bg-[#2c2c2e]` ni `text-black`. El color global de los form controls lo fija `frontend/src/index.css`; no duplicarlo por formulario. **Todo formulario nuevo debe verificarse en darkmode** (texto y placeholders legibles) antes de considerarse completo. Ver SPEC-060.
-- **Dropdowns SIEMPRE con el componente `Select` del repo, JAMÁS `<select>` nativo.** Todo selector de opciones (color, mes, moneda, estado, institución, etc.) DEBE usar `frontend/src/components/Select.tsx` (dropdown custom con portal, tokens de tema y darkmode). Prohibido `<select>`/`<option>` nativo: muestra el dropdown del sistema operativo y rompe el patrón de UI iOS. Los selectores con muchas opciones DEBEN ser `searchable` (buscador con autofocus, filtrado sin mayúsculas ni acentos). El build de `frontend/` ejecuta `frontend/scripts/check-ui-rules.cjs` y **falla** si detecta un `<select>` nativo. Ver SPEC-004 CA-022, SPEC-111 CA-018 y SPEC-118.
-- **Páginas de detalle: flecha atrás en el header, jamás links "← Título" en el contenido.** Si una página tiene una lista padre (detalle, crear o editar), el header muestra una flecha atrás en móvil en vez de la hamburguesa. Registrar la ruta en el mapa `BACK_ROUTES` de `frontend/src/components/DashboardLayout.tsx`. Nunca crear links de retorno dentro del contenido. Ver SPEC-063.
-- **Ningún modal se cierra al hacer click fuera del contenido.** El overlay NO debe tener `onClick` de cierre: el modal solo se cierra con los botones **Cancelar/Cerrar/Listo** o la **X**. El overlay debe bloquear la interacción con la página de fondo (incluidos los menús de 3 puntos, que usan `z-50`): usar `z-[60]` o superior. **Escala de capas**: menús `z-50`, modal base `z-[60]`, modal anidado/picker `z-[70]`, confirmación sobre anidado `z-[80]`, `Select` `z-[90]`, toasts `z-[100]`; la confirmación de borrado (`DeleteModal`) debe quedar por encima del modal que la abre. **Todo modal de confirmación por palabra** (por ejemplo `DeleteModal` con `confirmo`, reapertura de mes con `reabrir`/`reopen`, y cualquier futuro) debe enfocar el input automáticamente al abrirse y permitir confirmar con **Enter** cuando la palabra es válida y la acción está habilitada, ejecutando lo mismo que el botón. **Todo modal debe tener siempre una acción visible de cierre** (X o Cancelar/Cerrar/Listo), incluso en `loading`/`saving` y antes de seleccionar una entidad. El drawer del sidebar móvil no es un modal y conserva su cierre por click fuera. Ver SPEC-122, SPEC-126 y `docs/project-rules.md` §4.7.
-- **Las páginas show (detalle) muestran información, jamás son formularios.** El detalle no tiene `<form>`, inputs, selects ni botones Guardar/Cancelar: muestra los datos en modo lectura con un badge de estado. Editar es una acción explícita del menú de 3 puntos que navega a `/edit/:id` y se rotula **Editar**. Ver SPEC-135 y `docs/project-rules.md` §4.9.
-- **Todo booleano de entidad/configuración usa `Toggle` estilo iOS, nunca checkbox nativo.** Activo/inactivo, habilitado, auto-generar, recurrente, requerido, etc. se renderizan con `frontend/src/components/Toggle.tsx` (foco visible, `aria-label` o etiqueta visible y darkmode). Prohibido `<input type="checkbox">` para estos casos; solo se exceptúan las selecciones múltiples de filas/items. Ver SPEC-135 y `docs/project-rules.md` §4.10.
-- **Validar prerequisitos en backend Y frontend.** Si una entidad depende de otra (ej: servicios → instituciones), validar en ambos lados y redirigir al formulario de la dependencia si no existe.
-- **Validar SIEMPRE contra una copia de la DB de producción cuando el resultado depende de datos reales.** Migraciones, importaciones, matching de datos, reportes y cualquier prueba cuyo resultado cambie según el contenido de la DB se ejecutan sobre un backup de producción (`.backup` vía SSH y descarga a `/tmp`), **nunca** sobre `data/app.db` local: la DB local está desactualizada y produce conclusiones falsas (precedente SPEC-109: `Tigo` apareció como institución nueva porque la DB local no la tenía). La DB local solo se usa para tests unitarios con fixtures sintéticos. Nunca se escribe en producción: siempre sobre la copia.
-- **PROHIBIDO commitear datos privados o secretos. Sin excepciones.** Se considera dato privado: nombres y apellidos, teléfonos, emails personales, direcciones, cédulas/DNI, RUC personal, números de cuenta/medidor/contrato, números de factura reales, facturas o PDFs reales, chat IDs de Telegram, IPs/MACs domésticas y cualquier dato financiero. Se considera secreto: contraseñas, hashes, tokens (Telegram/APIs), API keys, cookies, session secrets, credenciales SSH, webhook UUIDs/keys y claves privadas. Aplica a código, tests, fixtures, specs, docs, README, issues, PRs, mensajes de commit, logs y capturas.
-- **Usar SIEMPRE datos sintéticos** en ejemplos y tests: `demo-account-001`, `demo@example.com`, `+1 555 0100`, `Proveedor Demo`, `F000000000000001`, `demo-api-key`. Está prohibido usar datos reales "porque son de prueba".
-- **Las copias de producción viven solo en `/tmp`** y se borran al terminar. Nunca se commitean DBs, `-wal`, `-shm`, backups, PDFs ni exports de producción. Antes de commitear, revisar `git diff --cached` y escanear el diff buscando PII/secretos.
-- **Si se commitea un secreto o dato privado es un incidente**: rotar el secreto, eliminarlo del árbol y de la historia (no alcanza con un commit posterior), documentar el incidente y avisar al usuario.
-- **Crear usuarios de prueba directamente en la DB cuando se necesite autenticar.** El agente tiene permiso y obligación de crear usuarios vía SQLite para poder probar endpoints protegidos. Ejecutar `./scripts/create-test-user.sh`: crea/actualiza el usuario (default `test@test.com` / `test1234`), hace login y deja las cookies en `/tmp/cookies.txt`. Personalizable con `EMAIL`, `PASSWORD`, `DB_PATH` y `PORT`. Usar luego: `curl -s -b /tmp/cookies.txt http://localhost:8088/api/...`
-- **La fuente de verdad del i18n es `frontend/public/i18n/`, NO `public/i18n/`.** El build de Vite (`npm run build` en `frontend/`) usa `emptyOutDir: true` sobre `public/`: borra TODO su contenido y lo regenera desde `frontend/public/` (copia `i18n/`, `index.html`, assets). Por lo tanto:
-  - Cualquier cambio de traducción se edita SIEMPRE en `frontend/public/i18n/{es,en}.json`.
-  - Nunca editar `public/i18n/*.json` directamente: esos archivos son salida del build y se sobrescriben/perden en el próximo `npm run build`.
-  - Después de editar i18n, correr `npm run build` (en `frontend/`) y verificar con `curl -s http://localhost:8088/i18n/es.json` que las claves nuevas estén servidas.
-  - Precedente: SPEC-032/033 — las claves `settings.alerts.*` y `settings.voicemonkey.*` se editaron en `public/i18n/` y desaparecieron en el build (fallo de i18n reportado por el usuario).
-- **"Cerrar" una spec JAMÁS significa "cancelarla".** Cuando el usuario pide cerrar/finalizar una spec ("cerrá la SPEC-XXX", "dalo por terminado", "terminá eso"), el agente SIEMPRE ejecuta el flujo de **release** (estado `released`: merge a main, label `spec/released`, cierre del issue). La **cancelación** (`cancelled`) es una decisión EXCLUSIVA del usuario y requiere que use explícitamente la palabra "cancelar" o "descartar" referida a la spec. JAMÁS se cancela una spec porque otra spec "absorba" su requerimiento o porque el código ya esté en main: en ese caso la spec se **libera** documentando la implementación (quién la hizo y dónde), nunca se cancela. Ante la mínima duda entre release y cancelación, el agente DEBE preguntar al usuario ANTES de cambiar cualquier estado. Precedente crítico: SPEC-085 fue cancelada sin consentimiento del usuario (revertida; la reapertura y el release formal fueron obligatorios).
+Detalle: [`docs/rules/50-security.md`](docs/rules/50-security.md), [`40-data.md`](docs/rules/40-data.md), [`70-delivery.md`](docs/rules/70-delivery.md), [`60-testing.md`](docs/rules/60-testing.md).
 
-### 1. Cero código sin spec
+---
 
-- **No se escribe una sola línea de código sin que exista una spec que lo defina.**
-- El agente **JAMÁS** debe hacer cambios en el código que no estén contemplados en una spec existente o en creación.
-- Si durante el desarrollo surge un cambio no contemplado (nuevo archivo, nuevo índice, cambio de modelo, etc.), la spec DEBE actualizarse **antes** de escribir el código.
+## 📚 Reglas por dominio
 
-### 2. ¿Qué necesita spec?
+| Archivo | Alcance | Cargar cuando… |
+|---|---|---|
+| [`docs/rules/00-index.md`](docs/rules/00-index.md) | Manifiesto, precedencia, guardrails, IDs | **Siempre** (Paso 0) |
+| [`docs/rules/10-architecture.md`](docs/rules/10-architecture.md) | Stack, capas, carpetas, Go, límites del iHost | Se diseña una solución |
+| [`docs/rules/20-ui.md`](docs/rules/20-ui.md) | Componentes, tokens, listados, i18n | Toca frontend/UI |
+| [`docs/rules/30-ux.md`](docs/rules/30-ux.md) | Navegación, modales, detalle, estados, formularios | Toca pantallas o flujos |
+| [`docs/rules/40-data.md`](docs/rules/40-data.md) | SQLite, migraciones, copias de producción | Toca DB o datos reales |
+| [`docs/rules/50-security.md`](docs/rules/50-security.md) | PII, secretos, datos sintéticos | **Siempre** |
+| [`docs/rules/60-testing.md`](docs/rules/60-testing.md) | Pruebas locales, verificación, flujo con el usuario | Antes de release |
+| [`docs/rules/70-delivery.md`](docs/rules/70-delivery.md) | Git, worktrees, release, Docker, deploy | Antes de commit/merge |
 
-**TODO necesita spec, excepto**:
-- Hotfixes críticos (servicio caído, seguridad)
-- Cambios cosméticos (espacios, comentarios, formato)
-- Actualizaciones de dependencias sin cambio de comportamiento
+> `docs/project-rules.md` quedó como **stub de compatibilidad** para las specs históricas. No agregar reglas allí.
 
-Cualquier cambio que toque lógica de negocio, base de datos, APIs, eventos, configuración de infraestructura o UI requiere spec **obligatoriamente**.
+---
 
-### 3. Flujo estricto
+## 🛡️ Enforcement automático
+
+| Capa | Instalación | Qué bloquea |
+|---|---|---|
+| Git hooks (`.githooks/`) | `./scripts/install-hooks.sh` | DBs/PDFs/backups, secretos y PII, `public/i18n/`, `<select>`/checkbox nativo, commits sin `SPEC-XXX:` |
+| Plugin (`.opencode/plugins/rules-guard/`) | `npm --prefix .opencode install` | `rm data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>`/checkbox nativo |
+
+- **Prohibido** `git commit --no-verify` salvo autorización explícita del usuario.
+- Fail-safe: si un hook o el plugin falla internamente, la operación continúa; solo los patrones positivos bloquean.
+- Detalle: [`docs/rules/70-delivery.md`](docs/rules/70-delivery.md) (`DELIV-HOOKS`) y [`50-security.md`](docs/rules/50-security.md) (`SEC-HOOKS`).
+
+---
+
+## 🔄 Sistema de specs (resumen)
 
 ```
-1. Identificar necesidad → 2. Crear spec (draft) → 3. Completar spec (pending_execution) → 4. Desarrollar
+draft → pending_execution → in_progress → pending_release → released
 ```
 
-- **Paso 2 y 3**: Se crea la spec, se documenta todo (requerimientos, diseño, criterios de aceptación).
-- **Paso 4**: Solo entonces se escribe código. Nunca a la inversa.
-- Si se detecta algo no previsto durante el desarrollo → volver al paso 2, actualizar la spec, luego continuar.
-- Si durante la evaluación manual local el usuario solicita cambios (incluso pequeños), el agente debe:
-  1. Actualizar la spec para reflejar los cambios solicitados.
-  2. Crear/actualizar la lista de tareas (`todo`) con cada cambio pendiente.
-  3. Implementar los cambios y volver a dejar la app corriendo en local para reevaluación.
-  4. Solo cuando el usuario confirme, se considera el spec cerrado.
+- IDs `SPEC-XXX` inmutables y secuenciales. El próximo ID se calcula desde `docs/specs/SPEC-*.md` + issues, **no** desde el README.
+- Toda spec vive en un worktree propio y tiene un issue de GitHub con label `spec/<estado>`.
+- El README tracker (`docs/specs/README.md`) se actualiza **solo en el release**.
+- Antes de `pending_release`: checklist de calidad de [`docs/rules/60-testing.md`](docs/rules/60-testing.md).
+- Antes de declarar terminada una spec: `/spec-check-release`.
 
-### 4. Documentación mínima
-
-Cada spec DEBE incluir:
-- Requerimientos claros y priorizados (P0/P1/P2)
-- Investigación técnica con fuentes cuando aplica
-- Decisiones arquitectónicas justificadas
-- Criterios de aceptación verificables
-- Plan de implementación con estimaciones
-- Consideraciones específicas de iHost (recursos limitados, SQLite, etc.)
-
-### 5. IDs únicos y secuenciales
-
-Los IDs de spec (`SPEC-XXX`) son inmutables y secuenciales. Nunca se reutiliza un número.
+Flujo completo, comandos y gates: skill `spec-manager` (`.opencode/skills/spec-manager/SKILL.md`).
 
 ---
 
-## 🔄 Flujo de Trabajo
+## ✅ Checklist mínima antes de `pending_release`
 
-### Fase 1: Requerimiento
-
-1. Se identifica una necesidad
-2. Se crea una spec usando la skill `spec-manager` o el template
-3. Estado inicial: `draft`
-
-### Fase 2: Definición
-
-1. Investigar soluciones técnicas
-2. Documentar decisiones y arquitectura
-3. Definir criterios de aceptación
-4. Validar con stakeholders
-5. Mover a estado: `pending_execution`
-
-### Fase 3: Desarrollo
-
-1. Crear rama/feature desde la spec
-2. Desarrollar según la especificación
-3. Estado: `in_progress`
-
-### Fase 4: Validación
-
-1. Pasar criterios de aceptación
-2. Code review
-3. QA/Testing (tests automáticos + pruebas manuales locales)
-4. El agente debe correr la aplicación en local y dejarla disponible para evaluación del usuario
-5. El usuario confirma que los cambios están correctos tras probar manualmente
-6. Estado: `pending_release`
-
-### Fase 5: Release
-
-1. Hacer commit de TODOS los cambios pendientes a `main` con mensaje descriptivo (formato: `SPEC-XXX: descripción corta`)
-2. Push a `main`
-3. Documentar commit/versión en la spec
-4. Estado: `released`
-5. **Cerrar el spec SIEMPRE implica commitear y pushear los cambios.** No cerrar un spec con cambios sin commitear.
-6. **Actualizar SIEMPRE el label de GitHub al estado final.** Al cambiar el estado de una spec, ejecutar `gh issue edit <number> --remove-label "spec/<anterior>" --add-label "spec/<nuevo>"`. Si el estado es `released`, cerrar el issue con `gh issue close <number>`. **El estado `cancelled` SOLO lo aplica el usuario con la palabra explícita "cancelar"/"descartar"**: cerrar un issue con `spec/cancelled` sin esa orden es un error crítico (precedente: SPEC-085). **No cerrar un issue sin antes actualizar su label al estado correcto.**
-7. **Implementación y release son inseparables.** Si el código de una feature está commiteado en `main`, la spec DEBE estar `released`. Toda spec en `pending_release` (o anterior) con código en `main` es un error y debe liberarse o documentar el bloqueo. Antes de declarar terminada una spec, ejecutar `/spec check-release`.
-8. **El release incluye TODOS estos pasos en el mismo ciclo:** actualizar `status` del frontmatter y del cuerpo (`**Estado**:`), actualizar el README tracker (tabla + contadores), cambiar el label de GitHub, cerrar el issue y documentar el commit/versión en el historial. No declarar una spec terminada hasta completar todos.
+- [ ] Requerimientos P0 implementados y criterios de aceptación verificados.
+- [ ] `go build ./...` y `go test ./...` pasan.
+- [ ] `cd frontend && npm run check:ui` pasa (si hay UI).
+- [ ] Probado en local y confirmado por el usuario (🤖).
+- [ ] Si depende de datos: validado contra copia de producción.
+- [ ] `git diff --cached` sin PII, secretos, DBs, PDFs ni exports.
+- [ ] Hooks instalados (`./scripts/install-hooks.sh`) y sin `--no-verify`.
+- [ ] Tabla «Cumplimiento de reglas» de la spec completa.
 
 ---
 
-##  Restricciones de Despliegue (Agentes)
-
-### Reglas absolutas
-
-- **JAMÁS** ejecutar `git push` a ramas protegidas sin confirmación explícita del usuario.
-- **JAMÁS** mergear a `main` directamente desde una rama de feature.
-- **JAMÁS** ejecutar `--force` o `--force-with-lease` en `main` o ramas de release.
-- **Solo usar labels de spec definidos en la skill.** Los labels válidos son: `spec/draft`, `spec/pending-execution`, `spec/in-progress`, `spec/pending-release`, `spec/released`, `spec/cancelled`. **NUNCA** agregar labels genéricos como `spec` o cualquier otro que no esté en esta lista. Solo se agregan labels cuando el flujo de specs lo requiere explícitamente.
-
-### ️ Regla CRÍTICA: Worktrees por sesión (multi-ventana)
-
-- **El checkout principal (`main`) es de SOLO LECTURA para agentes (SPEC-066).** Ninguna sesión edita código ni ejecuta `git commit`/`reset`/`checkout`/`switch` sobre `/home/paulomcnally/github/p40la-ihost`. Todo trabajo de una spec (spec + código) vive en su worktree; los únicos cambios a `main` salen de merges de release.
-- **Cada ventana/sesión de opencode trabaja en SU PROPIO git worktree.** El proyecto permite hasta 6 ventanas trabajando en specs distintos en paralelo; compartir un mismo checkout git hace que operaciones como `checkout` o `reset` pisen el trabajo sin commitear de otras sesiones (error crítico documentado: SPEC-018/024/025/026 + SPEC-030-033 + SPEC-064).
-- **Paso obligatorio al arrancar cualquier sesión**: ejecutar `./scripts/check-worktree.sh`. Si aborta, NO trabajes en ese checkout: creá el worktree con `./scripts/new-worktree.sh SPEC-XXX` y abrí opencode en `../p40la-ihost-spec-XXX`.
-- **Para empezar una spec**: `./scripts/new-worktree.sh SPEC-XXX` crea un directorio aislado (`p40la-ihost-spec-XXX`) en su propia rama `feature/SPEC-XXX`. La spec se crea DENTRO del worktree (archivo `docs/specs/SPEC-XXX.md` + issue de GitHub); el README tracker se actualiza solo en el release (SPEC-066). Luego abrir una nueva ventana de opencode en ese directorio.
-- **JAMÁS ejecutar `git checkout`, `git switch`, `git reset`, `git stash` ni `git clean`** sobre el worktree principal compartido ni sobre el worktree de otra sesión. Cada sesión solo opera su propio worktree.
-- **Verificar antes de operar**: `git worktree list` muestra todos los worktrees y sus ramas. Antes de cualquier operación git, confirmar en qué worktree se está (`git branch --show-current`).
-- **JAMÁS ejecutar `git reset --hard`** salvo que el usuario lo pida explícitamente para su propio worktree. Un `reset --hard` descarta TODO cambio sin commitear (propio o ajeno).
-- **Para liberar una spec** (pasar a `released`): mergear la rama del worktree a `main` (con confirmación del usuario), luego cerrar el issue y actualizar labels desde cualquier worktree.
-- **Al liberar una spec, limpiar SU worktree y rama** (paso obligatorio del release, SPEC-038): `git worktree remove ../p40la-ihost-spec-XXX` y `git branch -d feature/SPEC-XXX` (usar SIEMPRE `-d`, nunca `-D`: protege ramas no mergeadas). Verificar con `git worktree list`. **Esta limpieza SOLO aplica a specs `released`**; los worktrees de specs en desarrollo (`draft`/`in_progress`/`pending_release`) nunca se tocan.
-
-### ️ Regla CRÍTICA: Arquitectura Multi-Arch (iHost + desarrollo)
-
-- **El SONOFF iHost usa procesador ARM64 (aarch64).**
-- **TODAS** las imágenes Docker DEBEN ser **multi-arch con 3 plataformas**: `linux/amd64` + `linux/arm/v7` + `linux/arm64`.
-- Las versiones 0.1.x tenían estas 3 arquitecturas. **NUNCA** romper esto en 0.2.x o posteriores.
-- Comando obligatorio: `docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64 --push .`
-- Verificar con `docker buildx imagetools inspect <image>` que existan los 3 manifests.
-- Esta regla aplica a CUALQUIER imagen Docker del proyecto, sin excepciones.
-
-### ️ Regla CRÍTICA: Acceso a la DB de producción en el iHost (SSH)
-
-La app corre como add-on Docker en un **SONOFF iHost**. La DB SQLite vive en el **volumen Docker `p40la`** (montado en `/app/data` dentro del contenedor). El iHost **NO tiene SSH nativo** (puerto 22 cerrado, no existe "Developer Mode"); el acceso se logra con el add-on Docker **`capiloky/sonoff-ssh`** (port host `2222` → container `22`, volumen `p40la` montado). **Guía completa para agentes: `docs/ssh-ihost-access.md`.**
-
-- **Credenciales SSH**: `ssh sshuser@ihost.local -p 2222` con password `password`; sudo con el mismo password (`echo "password" | sudo -S <cmd>`).
-- **Sin `sshpass` en la dev machine**: usar Python `paramiko` (disponible). No usar `base64` en args (falla con `Argument list too long`); para subir archivos usar stdin de `exec_command` (`cat > archivo`). **SFTP NO disponible**.
-- **`sqlite3` NO viene instalado** en el contenedor SSH: instalar una vez con `sudo apt-get install -y sqlite3`.
-- **Regla de oro de operación**: si una petición del usuario implica manipular la DB del volumen (`data` de producción), el agente DEBE:
-  1. Pedir al usuario detener el contenedor `p40la-ihost` ANTES de cualquier escritura (modo WAL: `app.db-wal` activo con el server corriendo → corrupción).
-  2. **Respaldar siempre** antes de modificar: `sudo sqlite3 /app/data/app.db ".backup '/app/data/backups/<fecha>-<motivo>/app.db'"` + verificar `PRAGMA integrity_check;` + descargar copia local a `/home/paulomcnally/p40la-db-backups/`.
-  3. Probar el SQL en local sobre una copia del backup antes de aplicarlo en producción.
-  4. Ejecutar cambios multi-tabla envueltos en `BEGIN/COMMIT` vía `sudo sqlite3 /app/data/app.db ".read /tmp/script.sql"`.
-  5. Verificar conteos e integridad, luego pedir al usuario arrancar el contenedor.
-- **No modificar el esquema SQLite** de `debts`/`debt_bills` (política del usuario); solo insertar/actualizar datos. Ver SPEC-054 para el modelo de deudas.
-- Verificar siempre el server con `curl -s http://ihost.local:8088/health` → `{"status":"ok"}`.
-- Para autenticar endpoints protegidos contra la DB del volumen (`/app/data/app.db`), generar el hash con `go run ./scripts/genhash.go <password>` y aplicar el INSERT vía SSH (el script `create-test-user.sh` es solo local por ahora; la variante remota es trabajo futuro, ver SPEC-059 REQ-011).
-
-### Pruebas locales obligatorias
-
-- **Todo cambio significativo debe probarse en local** (tests, build, ejecución básica) antes de intentar commits o push.
-- **Si el resultado depende de datos reales, la prueba se corre contra una copia de la DB de producción**, no contra `data/app.db` local. Ver "Reglas críticas".
-- **No se realiza commit** de código que no compile, que falle los tests o que no haya sido validado en el entorno de desarrollo local.
-- Antes de solicitar confirmación para merge/push, el agente debe verificar que la aplicación levanta correctamente con la base de datos SQLite y que los criterios de aceptación del spec pasan en local.
-
-### Flujo de pruebas con el usuario
-
-1. **Después de implementar cambios de un spec, preguntar SIEMPRE:** 🤖 *"¿Querés que corra el server en local para que hagas pruebas?"*
-2. **NO marcar tareas como completadas** hasta que el usuario confirme que las pruebas manuales fueron satisfactorias.
-3. **Preguntar explícitamente:** 🤖 *"¿Las pruebas fueron satisfactorias? ¿Puedo cerrar el spec?"*
-4. **Solo después de confirmación del usuario** se marcan los criterios de aceptación como pass y se cambia el estado del spec.
-5. **Si el usuario reporta errores**, no cerrar el spec. Corregir, volver a preguntar, repetir.
-
-### Convención de comunicación
-
-- 🤖 **Icono de robot**: Se usa ANTES de cualquier pregunta que sea parte del flujo de interacción (correr server, confirmar implementación, cerrar spec, etc.). Esto indica al usuario que es una pregunta de flujo, no información técnica.
-
-### Flujo permitido
-
-1. Desarrollar en rama `feature/SPEC-XXX-*` (local).
-2. Ejecutar pruebas locales (tests, build y validación manual mínima).
-3. Correr la aplicación en local para que el usuario evalúe los cambios manualmente.
-4. El usuario confirma que todo está correcto; solo entonces se considera el spec listo para cerrar/publicar.
-5. Solicitar confirmación al usuario para merge/push.
-6. Solo el usuario puede aprobar deploys a producción/iHost.
-
----
-
-## 🗂️ Estructura de Carpetas
+## 🗂️ Estructura
 
 ```
 /
-├── .opencode/
-│   └── skills/
-│       └── spec-manager/
-│           └── SKILL.md         # Skill de gestión de specs
+├── .opencode/skills/spec-manager/   # Skill + references (templates de reglas y specs)
+├── cmd/server/                      # Entrypoint
+├── internal/{api,config,db,models,services,storage}
+├── frontend/                        # Fuente React (build fuera del iHost)
+├── public/                          # Salida del build
 ├── docs/
-│   ├── specs/
-│   │   ├── README.md            # Tracker y contador
-│   │   ├── templates/
-│   │   │   └── spec-template.md # Template base
-│   │   └── SPEC-XXX-*.md        # Especificaciones
-│   ├── project-rules.md         # Reglas de stack y arquitectura
-│   ├── infrastructure.md        # Infraestructura y deploy
-│   └── ssh-ihost-access.md      # Guía de acceso SSH a la DB del iHost
-├── AGENTS.md                    # Este archivo
-├── opencode.json               # Configuración de opencode
-├── src/                        # Código fuente backend
-├── public/                     # Frontend estático básico
-└── package.json
+│   ├── rules/                       # ← fuente de verdad de las reglas
+│   ├── specs/                       # Specs + tracker
+│   ├── ssh-ihost-access.md
+│   └── project-rules.md             # stub de compatibilidad
+├── migrations/
+├── scripts/
+└── AGENTS.md                        # este archivo
 ```
 
 ---
 
-## 🤖 Uso de la Skill `spec-manager`
-
-La skill está registrada en `.opencode/skills/spec-manager/SKILL.md`.
-
-### Comandos disponibles
-
-| Comando | Descripción |
-|---------|-------------|
-| `/spec create "Título"` | Crear nueva spec con investigación automática |
-| `/spec list [estado]` | Listar specs, opcionalmente filtradas |
-| `/spec status <id> <estado>` | Cambiar estado de una spec |
-| `/spec show <id>` | Mostrar resumen de una spec |
-| `/spec check-release` | Verificar que no haya specs colgadas (código en main sin estado released) |
-| `/spec worktree <ID>` | Crear worktree aislado para desarrollar una spec en su propia rama |
-
-### Activación automática
-
-La skill se activa automáticamente cuando el usuario menciona:
-- "crear spec", "nueva especificación", "nuevo requerimiento"
-- "estado de spec", "cambiar estado", "pending release"
-- "contador de specs", "listar specs", "tracking"
-
----
-
-## ✅ Checklist de Calidad
-
-Antes de marcar una spec como `pending_release`:
-
-- [ ] Todos los requerimientos P0 están implementados
-- [ ] Los criterios de aceptación pasan
-- [ ] Hay tests unitarios/integración si aplica
-- [ ] Se actualizó la documentación técnica si aplica
-- [ ] Se hizo code review
-- [ ] No hay deuda técnica crítica sin documentar
-- [ ] Se verificó que funciona en entornos con recursos limitados (iHost)
-- [ ] Los dropdowns usan el componente `Select` y no `<select>` nativo (`npm run check:ui` pasa)
-- [ ] Las páginas de detalle no tienen íconos de acción sueltos: Editar/Eliminar viven en el menú de 3 puntos (`CardMenu`)
-- [ ] Los modales no se cierran al hacer click fuera; el overlay bloquea el fondo, el cierre visible existe en todos los estados y se respeta la escala de capas (`z-[60]`/`z-[70]`/`z-[80]`/`z-[90]`/`z-[100]`)
-- [ ] Si el comportamiento depende de datos, se validó contra una copia de la DB de producción (nunca contra la DB local)
-- [ ] `git diff --cached` revisado: sin PII, secretos, DBs, PDFs ni exports de producción
-
----
-
-## 📞 Escalación
-
-Si una spec se bloquea más de 3 días en cualquier estado, se debe:
-1. Documentar el bloqueo en la spec (sección de riesgos)
-2. Evaluar si se cancela o se redefine
-3. Notificar al equipo
-
----
-
-*Este documento es la fuente de verdad para el sistema de especificaciones. Cualquier cambio al flujo debe actualizar este archivo y la skill correspondiente.*
+*Las reglas del proyecto prevalecen sobre cualquier skill o template genérico.*
