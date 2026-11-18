@@ -1,7 +1,7 @@
 ---
 title: "Tarjetas de crédito, estados de cuenta e importación BAC con módulos namespaced"
 id: "SPEC-137"
-status: "draft"
+status: "in_progress"
 author: "OpenCode"
 created: "2026-11-18"
 updated: "2026-11-18"
@@ -11,7 +11,7 @@ github_issue: 140
 # Tarjetas de crédito, estados de cuenta e importación BAC con módulos namespaced
 
 **ID**: SPEC-137  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: OpenCode  
 **Creado**: 2026-11-18  
 **Actualizado**: 2026-11-18
@@ -132,7 +132,7 @@ El resultado esperado: desde el detalle de un banco, tab **Tarjetas**, se crea u
 **Importación BAC**
 
 12. **REQ-012**: Importar el PDF "Transacciones del periodo" de BAC Nicaragua en **dos pasos**: `preview` (parsea, no persiste) y `confirm` (persiste en una transacción SQL).
-13. **REQ-013**: El preview devuelve encabezado, movimientos, warnings y `preview_hash`; el frontend muestra todo antes de confirmar.
+13. **REQ-013**: El preview devuelve encabezado, movimientos, warnings y `preview_hash`; el frontend muestra todo antes de confirmar. El preview es **solo lectura**: la categoría y el tipo se editan después de importar (evita alterar el hash y mantiene el confirm determinista).
 14. **REQ-014**: El parser extrae: producto enmascarado (solo `last4`), fecha de corte, fechas límite, saldo anterior, pago mínimo, pago de contado, intereses corrientes y saldo al corte (local/USD), más las filas de movimientos (fecha, concepto, local, USD).
 15. **REQ-015**: El parser ignora líneas informativas (`PRICECASH`, `DISPONIBLE`, `SU DISPONIBLE`, `ACCIONES GANADAS`, `SORTEO`, `SERIE`, `Página #`, ecos de producto/titular con 0.00/0.00).
 16. **REQ-016**: Clasificación por concepto: `SU PAGO RECIBIDO` → `payment`; `BONIFICACION` → `payment_bonus`; `RETIRO DE EFEC.` → `cash_advance`; `COMISION ADELANTO` → `cash_advance_fee`; `INTERES` → `interest_current`; `COMISION`/`MEMBRESA`/`SEGURO` → `fee`; resto → `purchase`.
@@ -603,15 +603,17 @@ type ParsedStatement struct {
 **Algoritmo**
 
 1. Abrir con `pdf.NewReader` (soporta el cifrado con password vacío).
-2. Por página: `Content().Text` → glifos con X/Y/W.
-3. Agrupar por Y (±2), ordenar por X, insertar espacio si `x_next − (x_prev + w_prev) > 1.5`.
-4. Detectar columnas por posición X: concepto, local, dólares (los montos están alineados a la derecha).
-5. Encabezado por regex sobre el texto de la página: `Producto`, `Fecha de corte`, `Pago Mínimo/Fecha límite`, `Pago Contado/Fecha limite`, `Saldo Al Corte/Local`, `Saldo Al Corte/Dólares`, `INTERESES CORRIENTES DEL MES/LOCAL`, `/DÓLARES`, `Previous balance`.
-6. Filas: `^\d{2}/\d{2}/\d{4}` + concepto + 2 montos; fecha `dd/mm/yyyy`.
-7. Ignorar líneas informativas y todo lo posterior a `INTERESES CORRIENTES`.
+2. Por página: `GetPlainText` (conserva palabras y espacios; no conserva saltos de línea).
+3. Recortar la sección de movimientos entre `Previous balance` y `INTERESES CORRIENTES DEL…`.
+4. Encabezado por regex tolerantes a espacios (`\s*`) sobre el texto completo: `Producto`, `Fecha de corte`, `Pago Mínimo/Fecha límite`, `Pago Contado/Fecha limite`, `Saldo Al Corte/Local`, `Saldo Al Corte/Dólares`, `INTERESES CORRIENTES DEL MES/LOCAL`, `/DÓLARES`, `Previous balance`.
+5. Filas con fecha: regex perezosa `fecha + concepto + monto local + monto USD` (soporta montos pegados entre sí).
+6. Bonificaciones sin fecha: regex sobre `BONIFICACION…` con dos montos; se imputan a la fecha de corte.
+7. Ignorar líneas informativas (`PRICECASH`, `DISPONIBLE`, `SORTEOS`, `SERIE`, ecos de producto/titular).
 8. Clasificar y normalizar (`external_ref` = `sha256(fecha|concepto|local|usd|índice)`).
 9. Sanidad: si Σ movimientos no cuadra con los totales impresos, agregar warning (no abortar).
 10. Devolver `ParsedStatement` + `preview_hash` (SHA-256 del JSON normalizado, sin el hash).
+
+> Nota de implementación: `Content()` de `ledongthuc/pdf` entrega la X del *run*, no de cada glifo, por lo que la reconstrucción posicional no es fiable. `GetPlainText` + anclas resultó robusto y fue validado contra un estado de cuenta real (26 movimientos, conciliación exacta).
 
 **Restricciones**: no leer el nombre del titular; solo `last4`; no loguear líneas; no persistir el PDF; un parser que no reconoce el formato devuelve `unsupported_statement` con mensaje accionable.
 
@@ -663,7 +665,7 @@ UI:
 
 - **Tab Tarjetas** en `BankDetailPage`: cards con alias, `**** 0000`, marca, límite, disponible, badge activa; `CardMenu` (Editar / Eliminar); `CreateMenu` (Nueva tarjeta / Importar estado).
 - **Detalle tarjeta**: lectura; `CardMenu` (Editar / Eliminar); acción primaria «Importar estado de cuenta»; lista de estados con periodo, corte, saldo local/USD y badge.
-- **Importación**: página con pasos 1 (archivo) y 2 (revisión). Paso 2 muestra encabezado, tabla de movimientos editable (categoría y tipo por fila), warnings, y botones «Importar» / «Cancelar». Muestra `module_id` y versión al pie.
+- **Importación**: página con pasos 1 (archivo) y 2 (revisión). Paso 2 muestra encabezado, tabla de movimientos en modo lectura, warnings, y botones «Importar» / «Elegir otro archivo». Muestra `module_id` y versión al pie.
 - Reutiliza: `Select`, `Toggle`, `CardMenu`, `CreateMenu`, `DeleteModal`, `IconPickerModal`, `LoadingSpinner`, `useCurrencyFormatStore`, `EmptyCard`.
 - Categorías: `GET /api/budget/category-groups` aplanado (patrón `BudgetTransactionsPage`).
 
@@ -846,3 +848,4 @@ Reutiliza `app.edit`, `app.delete`, `app.save`, `app.cancel`, `app.search`, y `b
 | Fecha | Autor | Descripción |
 |---|---|---|
 | 2026-11-18 | OpenCode | Creación inicial de la especificación (SPEC-137) |
+| 2026-11-18 | OpenCode | Implementación backend + frontend; parser ajustado a `GetPlainText` + anclas; preview de solo lectura |

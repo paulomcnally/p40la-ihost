@@ -307,6 +307,8 @@ func respondBankError(w http.ResponseWriter, err error) {
 		respondError(w, http.StatusConflict, "bank_name_exists", "Ya existe un banco con ese nombre")
 	case errors.Is(err, services.ErrBankHasAccounts):
 		respondError(w, http.StatusConflict, "bank_has_accounts", "El banco tiene cuentas asociadas")
+	case errors.Is(err, services.ErrBankHasCards):
+		respondError(w, http.StatusConflict, "bank_has_cards", "El banco tiene tarjetas de crédito asociadas")
 	case errors.Is(err, services.ErrBankAccountDuplicate):
 		respondError(w, http.StatusConflict, "duplicate_account", "Ya existe una cuenta con ese número en el banco")
 	default:

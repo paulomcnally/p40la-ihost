@@ -18,6 +18,8 @@ var (
 	ErrBankNameExists = errors.New("ya existe un banco con ese nombre")
 	// ErrBankHasAccounts indica que el banco todavía tiene cuentas.
 	ErrBankHasAccounts = errors.New("el banco tiene cuentas asociadas")
+	// ErrBankHasCards indica que el banco todavía tiene tarjetas de crédito.
+	ErrBankHasCards = errors.New("el banco tiene tarjetas de crédito asociadas")
 	// ErrBankAccountNotFound indica que la cuenta no existe.
 	ErrBankAccountNotFound = errors.New("cuenta bancaria no encontrada")
 	// ErrBankAccountDuplicate indica un número de cuenta repetido en el banco.
@@ -164,6 +166,10 @@ func (s *BankStorage) DeleteBank(ctx context.Context, id int64) error {
 	}
 	if existing.AccountCount > 0 {
 		return ErrBankHasAccounts
+	}
+	var cards int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM credit_cards WHERE bank_id = ?`, id).Scan(&cards); err == nil && cards > 0 {
+		return ErrBankHasCards
 	}
 	if _, err := s.db.ExecContext(ctx, `DELETE FROM banks WHERE id = ?`, id); err != nil {
 		return fmt.Errorf("eliminar banco: %w", err)

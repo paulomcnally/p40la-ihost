@@ -26,6 +26,34 @@ const BACK_ROUTES: { pattern: RegExp; to: string | ((pathname: string) => string
     pattern: /^\/bancos\/\d+\/cuentas\/(new|\d+)$/,
     to: (pathname) => `/bancos/${pathname.split('/')[2]}`,
   },
+  {
+    pattern: /^\/bancos\/\d+\/tarjetas\/new$/,
+    to: (pathname) => `/bancos/${pathname.split('/')[2]}?tab=tarjetas`,
+  },
+  {
+    pattern: /^\/bancos\/\d+\/tarjetas\/\d+\/edit$/,
+    to: (pathname) => `/bancos/${pathname.split('/')[2]}/tarjetas/${pathname.split('/')[4]}`,
+  },
+  {
+    pattern: /^\/bancos\/\d+\/tarjetas\/\d+\/importar$/,
+    to: (pathname) => `/bancos/${pathname.split('/')[2]}/tarjetas/${pathname.split('/')[4]}`,
+  },
+  {
+    pattern: /^\/bancos\/\d+\/tarjetas\/\d+\/estados\/new$/,
+    to: (pathname) => `/bancos/${pathname.split('/')[2]}/tarjetas/${pathname.split('/')[4]}`,
+  },
+  {
+    pattern: /^\/bancos\/\d+\/tarjetas\/\d+\/estados\/\d+\/edit$/,
+    to: (pathname) => `/bancos/${pathname.split('/')[2]}/tarjetas/${pathname.split('/')[4]}/estados/${pathname.split('/')[6]}`,
+  },
+  {
+    pattern: /^\/bancos\/\d+\/tarjetas\/\d+\/estados\/\d+$/,
+    to: (pathname) => `/bancos/${pathname.split('/')[2]}/tarjetas/${pathname.split('/')[4]}`,
+  },
+  {
+    pattern: /^\/bancos\/\d+\/tarjetas\/\d+$/,
+    to: (pathname) => `/bancos/${pathname.split('/')[2]}?tab=tarjetas`,
+  },
   { pattern: /^\/bancos\/\d+$/, to: '/bancos' },
   { pattern: /^\/services\/bills\/\d+$/, to: '/services' },
   { pattern: /^\/services\/(new|edit\/\d+)$/, to: '/services' },
