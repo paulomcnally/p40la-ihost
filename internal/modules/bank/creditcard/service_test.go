@@ -1,6 +1,7 @@
 package creditcard
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -36,6 +37,17 @@ func (l fakeLookup) FindImporter(filename, mimeType string) (modules.StatementIm
 		return nil, false
 	}
 	return l.importer, true
+}
+
+func (l fakeLookup) ParseStatements(ctx context.Context, filename, mimeType string, data []byte) (*models.ParsedStatement, modules.StatementImporter, error) {
+	if l.importer == nil {
+		return nil, nil, modules.ErrUnsupportedStatement
+	}
+	parsed, err := l.importer.Parse(ctx, bytes.NewReader(data))
+	if err != nil {
+		return nil, nil, err
+	}
+	return parsed, l.importer, nil
 }
 
 func setupTest(t *testing.T) (*Service, *sql.DB, int64) {
@@ -205,7 +217,7 @@ func TestStatementAndTransactions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetStatement: %v", err)
 	}
-	if detail.Reconciliation == nil || detail.Reconciliation.DifferenceLocal != -1.11 {
+	if detail.Reconciliation == nil || detail.Reconciliation.DifferenceBalance != -1.11 {
 		t.Fatalf("conciliación inesperada: %+v", detail.Reconciliation)
 	}
 	if len(detail.Summary) != 1 || detail.Summary[0].Type != TypePurchase {
@@ -253,7 +265,7 @@ func TestImportFlow(t *testing.T) {
 	}
 	service.importers = fakeLookup{importer: &fakeImporter{parsed: parsed}}
 
-	preview, hash, err := service.PreviewImport(ctx, card.ID, "estado.pdf", "application/pdf", nil)
+	preview, hash, err := service.PreviewImport(ctx, card.ID, "estado.pdf", "application/pdf", []byte("%PDF-demo"))
 	if err != nil {
 		t.Fatalf("PreviewImport: %v", err)
 	}
@@ -323,7 +335,114 @@ func TestImportCardMismatch(t *testing.T) {
 	}
 	service.importers = fakeLookup{importer: &fakeImporter{parsed: parsed}}
 
-	if _, _, err := service.PreviewImport(ctx, card.ID, "estado.pdf", "application/pdf", nil); !errors.Is(err, ErrCardMismatch) {
+	if _, _, err := service.PreviewImport(ctx, card.ID, "estado.pdf", "application/pdf", []byte("%PDF-demo")); !errors.Is(err, ErrCardMismatch) {
 		t.Fatalf("preview = %v, quiero ErrCardMismatch", err)
+	}
+}
+
+// ---------------------------------------------------------------- SPEC-139
+
+func TestReconciliationTwoBases(t *testing.T) {
+	service, database, bankID := setupTest(t)
+	nio, usd := currencyIDs(t, database)
+	ctx := context.Background()
+
+	card, err := service.CreateCard(ctx, validCard(bankID, nio, usd))
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+
+	statement, err := service.CreateStatement(ctx, &Statement{
+		CardID:             card.ID,
+		PeriodEnd:          "2026-11-17",
+		MinPaymentDueDate:  "2026-12-14",
+		FullPaymentDueDate: "2026-11-17",
+		PreviousBalance:    1000,
+		TotalPayment:       1050,
+		NewBalance:         1080,
+		InterestBonifiable: 30,
+		InterestCurrent:    30,
+		MinPayment:         100,
+		MoraAmount:         200,
+		ArrearsCount:       1,
+		OverLimitAmount:    50,
+	})
+	if err != nil {
+		t.Fatalf("CreateStatement: %v", err)
+	}
+	if statement.InterestBonifiable != 30 || statement.MoraAmount != 200 || statement.ArrearsCount != 1 {
+		t.Fatalf("agregados no persistidos: %+v", statement)
+	}
+
+	if _, err := service.CreateTransaction(ctx, statement.ID, &Transaction{
+		PostedAt: "2026-11-02", Concept: "Comercio Demo", Type: TypePurchase, AmountLocal: 100,
+	}); err != nil {
+		t.Fatalf("compra: %v", err)
+	}
+	if _, err := service.CreateTransaction(ctx, statement.ID, &Transaction{
+		PostedAt: "2026-11-05", Concept: "Pago Demo", Type: TypePayment, AmountLocal: -50,
+	}); err != nil {
+		t.Fatalf("pago: %v", err)
+	}
+
+	detail, err := service.GetStatement(ctx, statement.ID)
+	if err != nil {
+		t.Fatalf("GetStatement: %v", err)
+	}
+	recon := detail.Reconciliation
+	if recon == nil {
+		t.Fatal("sin conciliación")
+	}
+	if recon.DifferenceCash != 0 || recon.DifferenceBalance != 0 || !recon.Balanced {
+		t.Fatalf("conciliación inesperada: %+v", recon)
+	}
+	if !recon.CashApplicable || !recon.BalanceApplicable {
+		t.Fatalf("ambas bases deberían aplicar: %+v", recon)
+	}
+}
+
+func TestReconciliationDetectsMissingBonifiable(t *testing.T) {
+	service, database, bankID := setupTest(t)
+	nio, usd := currencyIDs(t, database)
+	ctx := context.Background()
+
+	card, err := service.CreateCard(ctx, validCard(bankID, nio, usd))
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+	// El saldo al corte incluye 30 de bonificable, pero el estado no lo declara.
+	statement, err := service.CreateStatement(ctx, &Statement{
+		CardID:             card.ID,
+		PeriodEnd:          "2026-11-17",
+		MinPaymentDueDate:  "2026-12-14",
+		FullPaymentDueDate: "2026-11-17",
+		PreviousBalance:    1000,
+		TotalPayment:       1050,
+		NewBalance:         1080,
+	})
+	if err != nil {
+		t.Fatalf("CreateStatement: %v", err)
+	}
+	if _, err := service.CreateTransaction(ctx, statement.ID, &Transaction{
+		PostedAt: "2026-11-02", Concept: "Comercio Demo", Type: TypePurchase, AmountLocal: 100,
+	}); err != nil {
+		t.Fatalf("compra: %v", err)
+	}
+	if _, err := service.CreateTransaction(ctx, statement.ID, &Transaction{
+		PostedAt: "2026-11-05", Concept: "Pago Demo", Type: TypePayment, AmountLocal: -50,
+	}); err != nil {
+		t.Fatalf("pago: %v", err)
+	}
+
+	detail, err := service.GetStatement(ctx, statement.ID)
+	if err != nil {
+		t.Fatalf("GetStatement: %v", err)
+	}
+	recon := detail.Reconciliation
+	if recon.DifferenceCash != 0 {
+		t.Fatalf("la base cash debería cerrar: %+v", recon)
+	}
+	if recon.DifferenceBalance != -30 || recon.Balanced {
+		t.Fatalf("la base balance debería acusar 30: %+v", recon)
 	}
 }

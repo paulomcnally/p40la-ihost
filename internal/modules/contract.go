@@ -4,11 +4,16 @@ package modules
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
 	"github.com/paulomcnally/p40la-ihost/internal/models"
 )
+
+// ErrUnsupportedStatement indica que el archivo no corresponde al layout que un
+// importador reconoce (SPEC-139). El registry prueba el siguiente importador.
+var ErrUnsupportedStatement = errors.New("unsupported_statement")
 
 // Info identifica un módulo de forma estable.
 type Info struct {
