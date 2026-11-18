@@ -35,6 +35,8 @@ var (
 	ErrBankNameExists = storage.ErrBankNameExists
 	// ErrBankHasAccounts indica que el banco tiene cuentas.
 	ErrBankHasAccounts = storage.ErrBankHasAccounts
+	// ErrBankHasCards indica que el banco tiene tarjetas de crédito.
+	ErrBankHasCards = storage.ErrBankHasCards
 	// ErrBankAccountNotFound indica que la cuenta no existe.
 	ErrBankAccountNotFound = storage.ErrBankAccountNotFound
 	// ErrBankAccountDuplicate indica un número de cuenta duplicado.

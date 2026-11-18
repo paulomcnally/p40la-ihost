@@ -1,6 +1,6 @@
 import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceItem, AutoMaintenanceItemInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, DebtInformationTemplate, DebtInformationField, DebtPaymentInformation, DebtInformationToken, DebtInformationVariable, DebtInformationValue, Bank, BankAccount, BankTransferFormat, BankTransferKind, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse, DocumentRecognition, ConfirmRecognitionInput, AssociationResult } from '../types'
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
@@ -22,7 +22,7 @@ function post<T>(path: string, body: unknown) { return request<T>(path, { method
 function put<T>(path: string, body: unknown) { return request<T>(path, { method: 'PUT', body: JSON.stringify(body) }) }
 function del<T>(path: string) { return request<T>(path, { method: 'DELETE' }) }
 
-function postFormData<T>(path: string, file: File): Promise<T | null> {
+export function postFormData<T>(path: string, file: File): Promise<T | null> {
   const form = new FormData()
   form.append('file', file)
   return fetch(path, { method: 'POST', body: form }).then(async (res) => {

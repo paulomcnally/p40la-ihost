@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/paulomcnally/p40la-ihost/internal/modules"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 )
 
@@ -44,6 +45,7 @@ type Handler struct {
 	budget              *BudgetHandlers
 	automation          *AutomationHandlers
 	bank                *BankHandlers
+	moduleRegistry      *modules.Registry
 }
 
 // NewHandler crea un nuevo Handler.
@@ -82,6 +84,7 @@ func NewHandler(
 	budget *BudgetHandlers,
 	automation *AutomationHandlers,
 	bank *BankHandlers,
+	moduleRegistry *modules.Registry,
 ) *Handler {
 	return &Handler{
 		auth:                auth,
@@ -118,6 +121,7 @@ func NewHandler(
 		budget:              budget,
 		automation:          automation,
 		bank:                bank,
+		moduleRegistry:      moduleRegistry,
 	}
 }
 
