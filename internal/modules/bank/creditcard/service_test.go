@@ -327,3 +327,159 @@ func TestImportCardMismatch(t *testing.T) {
 		t.Fatalf("preview = %v, quiero ErrCardMismatch", err)
 	}
 }
+
+// ---------------------------------------------------------------- SPEC-138
+
+func validationCode(t *testing.T, err error) string {
+	t.Helper()
+	var validation *ValidationError
+	if !errors.As(err, &validation) {
+		t.Fatalf("esperaba ValidationError, obtuve %v", err)
+	}
+	return validation.Code
+}
+
+func TestDeriveLimitFromUSD(t *testing.T) {
+	service, database, bankID := setupTest(t)
+	nio, usd := currencyIDs(t, database)
+	ctx := context.Background()
+
+	card := validCard(bankID, nio, usd)
+	card.LimitCurrency = LimitCurrencyUSD
+	card.CreditLimit = 0
+	card.CreditLimitUSD = 1000
+	card.ExchangeRate = 36.5
+
+	created, err := service.CreateCard(ctx, card)
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+	if created.CreditLimit != 36500 {
+		t.Fatalf("límite local derivado = %v, esperaba 36500", created.CreditLimit)
+	}
+	if created.LateTotalRate != 60 || created.LateTotalRateUSD != 48 {
+		t.Fatalf("moratoria total = %v/%v, esperaba 60/48", created.LateTotalRate, created.LateTotalRateUSD)
+	}
+}
+
+func TestDeriveLimitFromLocal(t *testing.T) {
+	service, database, bankID := setupTest(t)
+	nio, usd := currencyIDs(t, database)
+	ctx := context.Background()
+
+	card := validCard(bankID, nio, usd)
+	card.LimitCurrency = LimitCurrencyLocal
+	card.CreditLimit = 36500
+	card.CreditLimitUSD = 0
+	card.ExchangeRate = 36.5
+
+	created, err := service.CreateCard(ctx, card)
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+	if created.CreditLimitUSD != 1000 {
+		t.Fatalf("límite USD derivado = %v, esperaba 1000", created.CreditLimitUSD)
+	}
+}
+
+func TestDeriveLimitKeepsManualValues(t *testing.T) {
+	service, database, bankID := setupTest(t)
+	nio, usd := currencyIDs(t, database)
+	ctx := context.Background()
+
+	card := validCard(bankID, nio, usd)
+	card.LimitCurrency = LimitCurrencyUSD
+	card.CreditLimit = 30000
+	card.CreditLimitUSD = 1000
+	card.ExchangeRate = 36.5
+
+	created, err := service.CreateCard(ctx, card)
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+	if created.CreditLimit != 30000 {
+		t.Fatalf("el límite manual se sobrescribió: %v", created.CreditLimit)
+	}
+}
+
+func TestLimitWithoutExchangeRateStaysUndefined(t *testing.T) {
+	service, database, bankID := setupTest(t)
+	nio, usd := currencyIDs(t, database)
+	ctx := context.Background()
+
+	card := validCard(bankID, nio, usd)
+	card.LimitCurrency = LimitCurrencyUSD
+	card.CreditLimit = 0
+	card.CreditLimitUSD = 1000
+	card.ExchangeRate = 0
+
+	created, err := service.CreateCard(ctx, card)
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+	if created.CreditLimit != 0 {
+		t.Fatalf("sin tipo de cambio el límite local debe quedar en 0, obtuve %v", created.CreditLimit)
+	}
+}
+
+func TestBonusDayValidation(t *testing.T) {
+	service, database, bankID := setupTest(t)
+	nio, usd := currencyIDs(t, database)
+	ctx := context.Background()
+
+	equal := validCard(bankID, nio, usd)
+	equal.BonusDueDay = equal.PaymentDueDay
+	if _, err := service.CreateCard(ctx, equal); validationCode(t, err) != "invalid_bonus_day" {
+		t.Fatalf("bonus = payment debe fallar con invalid_bonus_day")
+	}
+
+	outOfRange := validCard(bankID, nio, usd)
+	outOfRange.BonusDueDay = 32
+	if _, err := service.CreateCard(ctx, outOfRange); validationCode(t, err) != "invalid_bonus_day" {
+		t.Fatalf("bonus 32 debe fallar con invalid_bonus_day")
+	}
+
+	valid := validCard(bankID, nio, usd)
+	valid.BonusDueDay = 7
+	created, err := service.CreateCard(ctx, valid)
+	if err != nil {
+		t.Fatalf("CreateCard con bonus válido: %v", err)
+	}
+	if created.BonusDueDay != 7 {
+		t.Fatalf("bonus_due_day = %d, esperaba 7", created.BonusDueDay)
+	}
+}
+
+func TestLimitCurrencyAndExchangeRateValidation(t *testing.T) {
+	service, database, bankID := setupTest(t)
+	nio, usd := currencyIDs(t, database)
+	ctx := context.Background()
+
+	badCurrency := validCard(bankID, nio, usd)
+	badCurrency.LimitCurrency = "EUR"
+	if _, err := service.CreateCard(ctx, badCurrency); validationCode(t, err) != "invalid_limit_currency" {
+		t.Fatalf("moneda EUR debe fallar con invalid_limit_currency")
+	}
+
+	badRate := validCard(bankID, nio, usd)
+	badRate.ExchangeRate = -1
+	if _, err := service.CreateCard(ctx, badRate); validationCode(t, err) != "invalid_exchange_rate" {
+		t.Fatalf("tipo de cambio negativo debe fallar con invalid_exchange_rate")
+	}
+
+	badCategory := validCard(bankID, nio, usd)
+	badCategory.Category = "inventada"
+	if _, err := service.CreateCard(ctx, badCategory); validationCode(t, err) != "validation_error" {
+		t.Fatalf("categoría inválida debe fallar")
+	}
+
+	withCategory := validCard(bankID, nio, usd)
+	withCategory.Category = "gold"
+	created, err := service.CreateCard(ctx, withCategory)
+	if err != nil {
+		t.Fatalf("CreateCard con categoría: %v", err)
+	}
+	if created.Category != "gold" {
+		t.Fatalf("categoría = %q, esperaba gold", created.Category)
+	}
+}

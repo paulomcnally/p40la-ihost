@@ -36,7 +36,9 @@ func NewStorage(db *sql.DB) *Storage {
 const cardColumns = `
 	c.id, c.bank_id, b.name, c.alias, c.network, c.last4, c.holder,
 	c.currency_id, COALESCE(cur.code, ''), c.secondary_currency_id, COALESCE(scur.code, ''),
-	c.credit_limit, c.credit_limit_usd, c.statement_day, c.payment_due_day, c.min_payment_pct,
+	c.category, c.limit_currency, c.exchange_rate,
+	c.credit_limit, c.credit_limit_usd, c.statement_day, c.payment_due_day, c.bonus_due_day,
+	c.min_payment_pct,
 	c.interest_current_rate, c.interest_late_rate, c.interest_current_rate_usd, c.interest_late_rate_usd,
 	c.color, c.icon, c.active, c.notes,
 	(SELECT COUNT(*) FROM card_statements s WHERE s.card_id = c.id),
@@ -135,13 +137,16 @@ func (s *Storage) CreateCard(ctx context.Context, card *CreditCard) (*CreditCard
 	result, err := s.db.ExecContext(ctx, `
 		INSERT INTO credit_cards (
 			bank_id, alias, network, last4, holder, currency_id, secondary_currency_id,
-			credit_limit, credit_limit_usd, statement_day, payment_due_day, min_payment_pct,
+			category, limit_currency, exchange_rate,
+			credit_limit, credit_limit_usd, statement_day, payment_due_day, bonus_due_day,
+			min_payment_pct,
 			interest_current_rate, interest_late_rate, interest_current_rate_usd,
 			interest_late_rate_usd, color, icon, active, notes
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, card.BankID, card.Alias, card.Network, card.Last4, card.Holder, card.CurrencyID,
-		secondary, card.CreditLimit, card.CreditLimitUSD, card.StatementDay, card.PaymentDueDay,
-		card.MinPaymentPct, card.InterestCurrentRate, card.InterestLateRate,
+		secondary, card.Category, card.LimitCurrency, card.ExchangeRate,
+		card.CreditLimit, card.CreditLimitUSD, card.StatementDay, card.PaymentDueDay,
+		card.BonusDueDay, card.MinPaymentPct, card.InterestCurrentRate, card.InterestLateRate,
 		card.InterestCurrentRateUSD, card.InterestLateRateUSD, card.Color, card.Icon,
 		card.Active, card.Notes)
 	if err != nil {
@@ -166,15 +171,17 @@ func (s *Storage) UpdateCard(ctx context.Context, card *CreditCard) (*CreditCard
 	result, err := s.db.ExecContext(ctx, `
 		UPDATE credit_cards SET
 			alias = ?, network = ?, last4 = ?, holder = ?, currency_id = ?,
-			secondary_currency_id = ?, credit_limit = ?, credit_limit_usd = ?,
-			statement_day = ?, payment_due_day = ?, min_payment_pct = ?,
+			secondary_currency_id = ?, category = ?, limit_currency = ?, exchange_rate = ?,
+			credit_limit = ?, credit_limit_usd = ?,
+			statement_day = ?, payment_due_day = ?, bonus_due_day = ?, min_payment_pct = ?,
 			interest_current_rate = ?, interest_late_rate = ?,
 			interest_current_rate_usd = ?, interest_late_rate_usd = ?,
 			color = ?, icon = ?, active = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`, card.Alias, card.Network, card.Last4, card.Holder, card.CurrencyID, secondary,
+		card.Category, card.LimitCurrency, card.ExchangeRate,
 		card.CreditLimit, card.CreditLimitUSD, card.StatementDay, card.PaymentDueDay,
-		card.MinPaymentPct, card.InterestCurrentRate, card.InterestLateRate,
+		card.BonusDueDay, card.MinPaymentPct, card.InterestCurrentRate, card.InterestLateRate,
 		card.InterestCurrentRateUSD, card.InterestLateRateUSD, card.Color, card.Icon,
 		card.Active, card.Notes, card.ID)
 	if err != nil {
@@ -614,8 +621,9 @@ func scanCard(row rowScanner) (*CreditCard, error) {
 	if err := row.Scan(
 		&card.ID, &card.BankID, &card.BankName, &card.Alias, &card.Network,
 		&card.Last4, &card.Holder, &card.CurrencyID, &card.CurrencyCode,
-		&secondaryID, &secondaryCode, &card.CreditLimit, &card.CreditLimitUSD,
-		&card.StatementDay, &card.PaymentDueDay, &card.MinPaymentPct,
+		&secondaryID, &secondaryCode, &card.Category, &card.LimitCurrency,
+		&card.ExchangeRate, &card.CreditLimit, &card.CreditLimitUSD,
+		&card.StatementDay, &card.PaymentDueDay, &card.BonusDueDay, &card.MinPaymentPct,
 		&card.InterestCurrentRate, &card.InterestLateRate,
 		&card.InterestCurrentRateUSD, &card.InterestLateRateUSD,
 		&card.Color, &card.Icon, &card.Active, &card.Notes, &card.StatementCount,

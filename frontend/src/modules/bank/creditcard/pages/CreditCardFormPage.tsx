@@ -10,10 +10,13 @@ import Toggle from '../../../../components/Toggle'
 import LoadingSpinner from '../../../../components/LoadingSpinner'
 import IconPickerModal from '../../../../components/IconPickerModal'
 import { CARD_COLORS, isCardColor } from '../../../../constants/cardColors'
+import { useCurrencyFormatStore } from '../../../../stores/currencyFormatStore'
 import type { Bank, Currency } from '../../../../types'
 import { creditCardsApi } from '../api'
-import type { CardNetwork, CreditCard } from '../types'
+import type { CardCategory, CardNetwork, CreditCard, LimitCurrency } from '../types'
 import { CARD_NETWORKS, networkLabel } from '../utils'
+
+const CARD_CATEGORIES: CardCategory[] = ['', 'classic', 'gold', 'platinum', 'black', 'business', 'other']
 
 const inputClass =
   'w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text focus:outline-none focus:border-primary min-h-[44px]'
@@ -25,6 +28,7 @@ export default function CreditCardFormPage() {
   const navigate = useNavigate()
   const { t } = useI18nStore()
   const { showToast } = useToast()
+  const formatMoney = useCurrencyFormatStore((state) => state.formatMoney)
 
   const [bank, setBank] = useState<Bank | null>(null)
   const [currencies, setCurrencies] = useState<Currency[]>([])
@@ -34,14 +38,18 @@ export default function CreditCardFormPage() {
 
   const [alias, setAlias] = useState('')
   const [network, setNetwork] = useState<CardNetwork>('visa')
+  const [category, setCategory] = useState<CardCategory>('')
   const [last4, setLast4] = useState('')
   const [holder, setHolder] = useState('')
   const [currencyId, setCurrencyId] = useState<number | ''>('')
   const [secondaryId, setSecondaryId] = useState<number>(0)
+  const [limitCurrency, setLimitCurrency] = useState<LimitCurrency>('NIO')
+  const [exchangeRate, setExchangeRate] = useState(0)
   const [creditLimit, setCreditLimit] = useState(0)
   const [creditLimitUSD, setCreditLimitUSD] = useState(0)
   const [statementDay, setStatementDay] = useState(1)
   const [paymentDueDay, setPaymentDueDay] = useState(1)
+  const [bonusDueDay, setBonusDueDay] = useState(0)
   const [minPaymentPct, setMinPaymentPct] = useState(4)
   const [interestCurrentRate, setInterestCurrentRate] = useState(0)
   const [interestLateRate, setInterestLateRate] = useState(0)
@@ -57,14 +65,18 @@ export default function CreditCardFormPage() {
   const applyCard = useCallback((card: CreditCard) => {
     setAlias(card.alias)
     setNetwork(card.network)
+    setCategory(card.category || '')
     setLast4(card.last4)
     setHolder(card.holder || '')
     setCurrencyId(card.currency_id)
     setSecondaryId(card.secondary_currency_id || 0)
+    setLimitCurrency(card.limit_currency === 'USD' ? 'USD' : 'NIO')
+    setExchangeRate(card.exchange_rate)
     setCreditLimit(card.credit_limit)
     setCreditLimitUSD(card.credit_limit_usd)
     setStatementDay(card.statement_day)
     setPaymentDueDay(card.payment_due_day)
+    setBonusDueDay(card.bonus_due_day || 0)
     setMinPaymentPct(card.min_payment_pct)
     setInterestCurrentRate(card.interest_current_rate)
     setInterestLateRate(card.interest_late_rate)
@@ -114,10 +126,64 @@ export default function CreditCardFormPage() {
     [currencyId, currencyOptions, t],
   )
 
+  // SPEC-138: el límite se publica en una sola moneda; el otro se deriva con el
+  // tipo de cambio y solo se muestra como referencia (el cálculo real es del backend).
+  const limitCurrencyOptions = useMemo(
+    () => [
+      { value: 'NIO', label: t('creditCards.limit_currency_nio') },
+      { value: 'USD', label: t('creditCards.limit_currency_usd') },
+    ],
+    [t],
+  )
+
+  const categoryOptions = useMemo(
+    () => CARD_CATEGORIES.map((value) => ({
+      value,
+      label: value === '' ? t('creditCards.category_none') : t(`creditCards.category_${value}`),
+    })),
+    [t],
+  )
+
+  const aliasSuggestion = useMemo(() => {
+    const networkKey = `creditCards.network_${network}`
+    const networkLabelText = t(networkKey, '')
+    const categoryLabelText = category ? t(`creditCards.category_${category}`, '') : ''
+    return [networkLabelText, categoryLabelText].filter(Boolean).join(' ')
+  }, [category, network, t])
+
+  const derivedLimit = useMemo(() => {
+    if (exchangeRate <= 0) return null
+    if (limitCurrency === 'USD' && creditLimit === 0 && creditLimitUSD > 0) {
+      return { amount: creditLimitUSD * exchangeRate, code: 'NIO' }
+    }
+    if (limitCurrency === 'NIO' && creditLimitUSD === 0 && creditLimit > 0) {
+      return { amount: creditLimit / exchangeRate, code: 'USD' }
+    }
+    return null
+  }, [creditLimit, creditLimitUSD, exchangeRate, limitCurrency])
+
+  const lateTotalLocal = useMemo(
+    () => Math.round((interestCurrentRate + interestLateRate) * 100) / 100,
+    [interestCurrentRate, interestLateRate],
+  )
+
+  const lateTotalUSD = useMemo(
+    () => Math.round((interestCurrentRateUSD + interestLateRateUSD) * 100) / 100,
+    [interestCurrentRateUSD, interestLateRateUSD],
+  )
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!alias.trim() || !currencyId || !/^\d{4}$/.test(last4)) {
       showToast(t('creditCards.validation_required'), 'error')
+      return
+    }
+    if (bonusDueDay > 0 && bonusDueDay === paymentDueDay) {
+      showToast(t('creditCards.validation_bonus_day'), 'error')
+      return
+    }
+    if (exchangeRate < 0) {
+      showToast(t('creditCards.validation_exchange_rate'), 'error')
       return
     }
     setSaving(true)
@@ -125,14 +191,18 @@ export default function CreditCardFormPage() {
       const payload = {
         alias: alias.trim(),
         network,
+        category,
         last4,
         holder: holder.trim(),
         currency_id: Number(currencyId),
         secondary_currency_id: secondaryId ? Number(secondaryId) : undefined,
+        limit_currency: limitCurrency,
+        exchange_rate: Number(exchangeRate) || 0,
         credit_limit: Number(creditLimit) || 0,
         credit_limit_usd: Number(creditLimitUSD) || 0,
         statement_day: Number(statementDay) || 1,
         payment_due_day: Number(paymentDueDay) || 1,
+        bonus_due_day: Number(bonusDueDay) || 0,
         min_payment_pct: Number(minPaymentPct) || 0,
         interest_current_rate: Number(interestCurrentRate) || 0,
         interest_late_rate: Number(interestLateRate) || 0,
@@ -194,6 +264,7 @@ export default function CreditCardFormPage() {
                 maxLength={100}
                 className={inputClass}
                 autoComplete="off"
+                placeholder={alias ? undefined : aliasSuggestion}
               />
             </div>
             <div>
@@ -202,6 +273,14 @@ export default function CreditCardFormPage() {
                 options={CARD_NETWORKS.map((value) => ({ value, label: networkLabel(value, t) }))}
                 value={network}
                 onChange={(value) => setNetwork(value as CardNetwork)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('creditCards.category')}</label>
+              <Select
+                options={categoryOptions}
+                value={category}
+                onChange={(value) => setCategory(value as CardCategory)}
               />
             </div>
             <div>
@@ -262,11 +341,80 @@ export default function CreditCardFormPage() {
             {t('creditCards.limits')}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <NumberField label={t('creditCards.credit_limit')} value={creditLimit} onChange={setCreditLimit} />
-            <NumberField label={t('creditCards.credit_limit_usd')} value={creditLimitUSD} onChange={setCreditLimitUSD} />
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('creditCards.limit_currency')}</label>
+              <Select
+                options={limitCurrencyOptions}
+                value={limitCurrency}
+                onChange={(value) => setLimitCurrency(value as LimitCurrency)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                {limitCurrency === 'USD' ? t('creditCards.credit_limit_usd') : t('creditCards.credit_limit')}
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={limitCurrency === 'USD' ? creditLimitUSD : creditLimit}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? 0 : Number(e.target.value)
+                  if (limitCurrency === 'USD') setCreditLimitUSD(value)
+                  else setCreditLimit(value)
+                }}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('creditCards.exchange_rate')}</label>
+              <input
+                type="number"
+                min={0}
+                step="0.0001"
+                value={exchangeRate}
+                onChange={(e) => setExchangeRate(e.target.value === '' ? 0 : Number(e.target.value))}
+                className={inputClass}
+              />
+              <p className="text-xs text-text-secondary mt-1">{t('creditCards.exchange_rate_help')}</p>
+            </div>
+            <div className="flex items-end">
+              {derivedLimit ? (
+                <p className="text-sm text-text-secondary">
+                  {t('creditCards.limit_derived')}: {formatMoney(derivedLimit.amount)} {derivedLimit.code}
+                </p>
+              ) : (
+                <p className="text-sm text-text-secondary">{t('creditCards.limit_undefined')}</p>
+              )}
+            </div>
             <NumberField label={t('creditCards.statement_day')} value={statementDay} onChange={setStatementDay} min={1} max={31} />
             <NumberField label={t('creditCards.payment_due_day')} value={paymentDueDay} onChange={setPaymentDueDay} min={1} max={31} />
-            <NumberField label={t('creditCards.min_payment_pct')} value={minPaymentPct} onChange={setMinPaymentPct} min={0} max={100} />
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('creditCards.bonus_due_day')}</label>
+              <input
+                type="number"
+                min={0}
+                max={31}
+                step="1"
+                value={bonusDueDay}
+                onChange={(e) => setBonusDueDay(e.target.value === '' ? 0 : Number(e.target.value))}
+                className={inputClass}
+              />
+              <p className="text-xs text-text-secondary mt-1">{t('creditCards.bonus_due_day_help')}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('creditCards.min_payment_pct')}</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                value={minPaymentPct}
+                onChange={(e) => setMinPaymentPct(e.target.value === '' ? 0 : Number(e.target.value))}
+                className={inputClass}
+              />
+              <p className="text-xs text-text-secondary mt-1">{t('creditCards.min_payment_pct_help')}</p>
+            </div>
           </div>
         </section>
 
@@ -276,10 +424,14 @@ export default function CreditCardFormPage() {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <NumberField label={t('creditCards.interest_current_rate')} value={interestCurrentRate} onChange={setInterestCurrentRate} />
-            <NumberField label={t('creditCards.interest_late_rate')} value={interestLateRate} onChange={setInterestLateRate} />
+            <NumberField label={t('creditCards.late_surcharge')} value={interestLateRate} onChange={setInterestLateRate} />
             <NumberField label={t('creditCards.interest_current_rate_usd')} value={interestCurrentRateUSD} onChange={setInterestCurrentRateUSD} />
-            <NumberField label={t('creditCards.interest_late_rate_usd')} value={interestLateRateUSD} onChange={setInterestLateRateUSD} />
+            <NumberField label={t('creditCards.late_surcharge_usd')} value={interestLateRateUSD} onChange={setInterestLateRateUSD} />
           </div>
+          <p className="text-xs text-text-secondary">{t('creditCards.late_surcharge_help')}</p>
+          <p className="text-sm text-text-secondary">
+            {t('creditCards.late_total')}: {lateTotalLocal}% · USD {lateTotalUSD}%
+          </p>
         </section>
 
         <section className="bg-card rounded-ios shadow-ios p-4 sm:p-5 space-y-4">
