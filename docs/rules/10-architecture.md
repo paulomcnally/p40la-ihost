@@ -26,12 +26,13 @@
 /
 ├── cmd/server/            # Entrypoint: solo arranca el servidor
 ├── internal/
-│   ├── api/               # Handlers HTTP
+│   ├── api/               # Handlers HTTP (código legacy y router central)
 │   ├── config/            # Configuración y env vars
 │   ├── db/                # Conexión SQLite y migraciones
-│   ├── models/            # Structs de dominio
-│   ├── services/          # Lógica de negocio
-│   └── storage/           # Queries SQLite
+│   ├── models/            # Structs de dominio compartidos
+│   ├── modules/           # Módulos nuevos con namespace (ARCH-MODULES)
+│   ├── services/          # Lógica de negocio (código legacy)
+│   └── storage/           # Queries SQLite (código legacy)
 ├── frontend/              # Código fuente React (build fuera del iHost)
 ├── public/                # Salida del build servida por el backend
 ├── migrations/            # SQL versionado
@@ -56,6 +57,61 @@
 - Lógica de negocio en handlers.
 - SQL en services o handlers.
 - Dependencias de HTTP dentro de models.
+
+> Las capas siguen vigentes **dentro** de cada módulo de `internal/modules/` (ver `ARCH-MODULES`), donde `handlers.go`, `service.go`, `storage.go` y `model.go` son archivos separados del mismo paquete.
+
+---
+
+## ARCH-MODULES — Módulos con namespace canónico
+
+Inspirado en los plugins de integración (`<proveedor>.<país>`, ej. `assa.nicaragua`). Aplica **solo a módulos nuevos**; el código existente en `internal/{api,services,storage,models}` no se migra.
+
+### Identificador
+
+| Tipo | Gramática | Ejemplo |
+|---|---|---|
+| Core (agnóstico) | `<dominio>.<producto>[.<capacidad>][.<acción>]` | `bank.creditcard` |
+| Proveedor | `<dominio>.<proveedor>.<país>.<producto>[.<capacidad>][.<acción>]` | `bank.bac.ni.creditcard.statement.import` |
+
+- Segmentos en minúsculas: `[a-z][a-z0-9_]*`.
+- País: ISO 3166-1 alpha-2 en minúsculas (`ni`, `pa`).
+- Máximo 6 segmentos. El ID es **inmutable** una vez publicado.
+
+### Carpetas
+
+La ruta espeja el ID desde `internal/modules/`:
+
+```
+internal/modules/bank/creditcard/                                   # bank.creditcard
+internal/modules/bank/bac/ni/creditcard/statement/import/           # bank.bac.ni.creditcard.statement.import
+```
+
+### Archivos obligatorios por módulo
+
+| Archivo | Responsabilidad |
+|---|---|
+| `module.go` | `Info()` con ID, versión semver, tipo, proveedor, país, nombre, descripción y migraciones que usa; registro en `init()` |
+| `model.go` | Structs y constantes de dominio del módulo |
+| `storage.go` | Único lugar con SQL del módulo |
+| `service.go` | Única capa con lógica de negocio |
+| `handlers.go` | Solo parseo de request/response HTTP |
+| `*_test.go` | Tests del módulo |
+
+### Registro y rutas
+
+- `internal/modules/registry.go` define `Info`, `Module`, `Registry` y las interfaces de capacidad (ej. `StatementImporter`, `Router`).
+- `internal/modules/all/register.go` es el **único punto de entrada** que importa los módulos y los registra (patrón `automation-plugins/all` y `analyzers/all`).
+- `cmd/server/main.go` construye el registry con las dependencias (`*sql.DB`) y lo pasa a `internal/api`.
+- `internal/api/routes.go` solo invoca el registro de rutas del módulo; el módulo monta sus propios paths.
+- Migraciones: los `.sql` viven en `migrations/` (fuente única, `DATA-MIGRATIONS`) y el módulo los declara en `Info().Migrations`.
+
+### Dependencias
+
+- Dirección obligatoria: `handlers → service → storage → model`.
+- Un módulo **no** importa `storage` ni `handlers` de otro módulo. La comunicación es por contratos en `internal/modules` o structs en `internal/models`.
+- Un módulo puede usar servicios compartidos de `internal/services` (moneda, formato) sin duplicarlos.
+
+**Guardrail propuesto**: `modules` (regla `ARCH-MODULES`) → `.opencode/skills/spec-manager/scripts/check-modules.sh .` — se implementa en SPEC-137; hasta entonces la verificación es manual y se declara en la spec.
 
 ---
 
