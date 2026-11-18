@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
@@ -10,11 +10,14 @@ import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { bankAccountTypeLabel } from '../utils/bank'
 import { countryName } from '../constants/countries'
+import CreditCardsTab from '../modules/bank/creditcard/components/CreditCardsTab'
 import type { Bank, BankAccount } from '../types'
 
 export default function BankDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') === 'tarjetas' ? 'tarjetas' : 'cuentas'
   const { t, lang } = useI18nStore()
   const { showToast } = useToast()
   const [bank, setBank] = useState<Bank | null>(null)
@@ -79,6 +82,11 @@ export default function BankDetailPage() {
               icon: 'plus',
               onClick: () => navigate(`/bancos/${bank.id}/cuentas/new`),
             },
+            {
+              label: t('creditCards.create'),
+              icon: 'credit',
+              onClick: () => navigate(`/bancos/${bank.id}/tarjetas/new`),
+            },
           ]}
         />
         <div className="pr-10">
@@ -91,11 +99,36 @@ export default function BankDetailPage() {
         </div>
       </div>
 
-      <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-2">
-        {t('banks.accounts')}
-      </h3>
+      <div
+        className="flex gap-1 p-1 bg-card rounded-ios shadow-ios mb-4 max-w-sm"
+        role="tablist"
+        aria-label={t('creditCards.title')}
+      >
+        <button
+          role="tab"
+          aria-selected={tab === 'cuentas'}
+          onClick={() => setSearchParams({ tab: 'cuentas' }, { replace: true })}
+          className={`flex-1 px-3 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
+            tab === 'cuentas' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-bg'
+          }`}
+        >
+          {t('creditCards.tab_accounts')}
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === 'tarjetas'}
+          onClick={() => setSearchParams({ tab: 'tarjetas' }, { replace: true })}
+          className={`flex-1 px-3 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
+            tab === 'tarjetas' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-bg'
+          }`}
+        >
+          {t('creditCards.tab')}
+        </button>
+      </div>
 
-      {accounts.length === 0 ? (
+      {tab === 'tarjetas' && <CreditCardsTab bankId={bank.id} />}
+
+      {tab === 'cuentas' && (accounts.length === 0 ? (
         <div className="bg-card rounded-ios shadow-ios p-8 text-center max-w-md mx-auto mt-4">
           <div className="w-14 h-14 mx-auto mb-4 text-primary opacity-80">
             <Icon name="bank" className="w-full h-full" />
@@ -151,7 +184,7 @@ export default function BankDetailPage() {
             </div>
           ))}
         </div>
-      )}
+      ))}
 
       {deleteTarget && (
         <DeleteModal
