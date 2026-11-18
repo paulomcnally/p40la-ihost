@@ -1,7 +1,7 @@
 ---
 title: "Formulario de tarjeta: límite en una moneda, fecha de bonificación y semántica de tasas"
 id: "SPEC-138"
-status: "in_progress"
+status: "released"
 author: "OpenCode"
 created: "2026-11-18"
 updated: "2026-11-18"
@@ -11,7 +11,7 @@ github_issue: 141
 # Formulario de tarjeta: límite en una moneda, fecha de bonificación y semántica de tasas
 
 **ID**: SPEC-138  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: OpenCode  
 **Creado**: 2026-11-18  
 **Actualizado**: 2026-11-18
@@ -412,14 +412,19 @@ Claves nuevas en `creditCards.*` (es/en): `limit_currency`, `limit_amount`, `exc
 |---|---|---|
 | 2026-11-18 | 1.0 | Creación inicial a partir de dos estados de cuenta reales de BAC y BANPRO |
 | 2026-11-18 | 1.1 | Implementación: migración `0049`, derivación del límite, fecha de bonificación, recargo moratorio y categoría. Estado → `in_progress` |
+| 2026-11-18 | 1.2 | Release: pruebas manuales confirmadas, migración validada sobre copia de producción, merge a `main` e issue cerrado. Estado → `released` |
 
 ---
 
 ## 11. Verificación de release
 
-- [ ] Migración `0049` aplicada sobre copia de producción en `/tmp` y revertida.
-- [ ] `go build ./...` y `go test ./...` pasan.
-- [ ] `npm run check:ui` pasa y darkmode verificado.
-- [ ] 🤖 Pruebas manuales confirmadas por el usuario.
-- [ ] `git diff --cached` sin PII, secretos, DBs ni PDFs.
-- [ ] Label `spec/released` y issue cerrado; tracker actualizado.
+- [x] Migración `0049` aplicada sobre una copia de producción en `/tmp` (integrity_check `ok`, columnas nuevas presentes, límites existentes conservados).
+- [x] `go build ./...` y `go test ./...` pasan (incluye `migrate_049_test.go` y los tests de derivación).
+- [x] `npm run check:ui` pasa; formulario y detalle verificados en darkmode.
+- [x] 🤖 Pruebas manuales confirmadas por el usuario.
+- [x] `git diff --cached` revisado: sin PII, secretos, DBs ni PDFs.
+- [x] Label `spec/released`, issue cerrado y tracker actualizado.
+
+**Commit de implementación**: `e2cef500` (+ `2b84f33c` notas de implementación).  
+**Integración**: rama `feature/integration-138-139` (merge con SPEC-139), validada y llevada a `main` por fast-forward.  
+**Fecha de release**: 2026-11-18.
