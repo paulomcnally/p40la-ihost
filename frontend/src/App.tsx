@@ -56,6 +56,11 @@ import DebtInformationTemplateFormPage from './pages/DebtInformationTemplateForm
 import BanksPage from './pages/BanksPage'
 import BankFormPage from './pages/BankFormPage'
 import BankDetailPage from './pages/BankDetailPage'
+import CreditCardFormPage from './modules/bank/creditcard/pages/CreditCardFormPage'
+import CreditCardShowPage from './modules/bank/creditcard/pages/CreditCardShowPage'
+import CreditCardImportPage from './modules/bank/creditcard/pages/CreditCardImportPage'
+import CreditCardStatementFormPage from './modules/bank/creditcard/pages/CreditCardStatementFormPage'
+import CreditCardStatementShowPage from './modules/bank/creditcard/pages/CreditCardStatementShowPage'
 import BankAccountFormPage from './pages/BankAccountFormPage'
 import BankAccountShowPage from './pages/BankAccountShowPage'
 import BankAccountTransfersPage from './pages/BankAccountTransfersPage'
@@ -176,6 +181,13 @@ function App() {
                     element={<BankAccountTransfersPage />}
                   />
                   <Route path="bancos/:id/cuentas/:accountId" element={<BankAccountShowPage />} />
+                  <Route path="bancos/:id/tarjetas/new" element={<CreditCardFormPage />} />
+                  <Route path="bancos/:id/tarjetas/:cardId/edit" element={<CreditCardFormPage />} />
+                  <Route path="bancos/:id/tarjetas/:cardId/importar" element={<CreditCardImportPage />} />
+                  <Route path="bancos/:id/tarjetas/:cardId/estados/new" element={<CreditCardStatementFormPage />} />
+                  <Route path="bancos/:id/tarjetas/:cardId/estados/:statementId/edit" element={<CreditCardStatementFormPage />} />
+                  <Route path="bancos/:id/tarjetas/:cardId/estados/:statementId" element={<CreditCardStatementShowPage />} />
+                  <Route path="bancos/:id/tarjetas/:cardId" element={<CreditCardShowPage />} />
                   <Route path="bancos/:id" element={<BankDetailPage />} />
                   <Route path="budget" element={<BudgetPage />} />
                   <Route path="budget/transacciones" element={<BudgetTransactionsPage />} />

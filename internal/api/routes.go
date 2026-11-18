@@ -203,6 +203,12 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("DELETE /api/bank-accounts/{id}/transfer-formats/{kind}", authMiddleware(http.HandlerFunc(handler.bank.DeleteFormat)))
 	mux.Handle("GET /api/bank-transfer-variables", authMiddleware(http.HandlerFunc(handler.bank.ListVariables)))
 
+	// Módulos namespaced (ARCH-MODULES, SPEC-137)
+	mux.Handle("GET /api/modules", authMiddleware(http.HandlerFunc(handler.ListModules)))
+	if handler.moduleRegistry != nil {
+		handler.moduleRegistry.RegisterRoutes(mux, authMiddleware)
+	}
+
 	mux.Handle("GET /api/debt-bills", authMiddleware(http.HandlerFunc(handler.debt.ListDebtBillsByMonth)))
 	mux.Handle("PUT /api/debt-bills/{id}/pay", authMiddleware(http.HandlerFunc(handler.debt.PayDebtBill)))
 	mux.Handle("GET /api/debt-bills/{id}/invoice", authMiddleware(http.HandlerFunc(handler.debt.DownloadDebtInvoice)))
