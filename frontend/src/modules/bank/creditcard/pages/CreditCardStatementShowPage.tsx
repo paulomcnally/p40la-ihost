@@ -204,12 +204,74 @@ export default function CreditCardStatementShowPage() {
             <Icon name={reconciliation.balanced ? 'check' : 'warning'} className="w-5 h-5" />
             {reconciliation.balanced ? t('creditCards.reconciliation_balanced') : t('creditCards.reconciliation_unbalanced')}
           </p>
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
-            <p>{t('creditCards.reconciliation_expected')}: {formatMoney(reconciliation.expected_local)}</p>
-            <p>{t('creditCards.reconciliation_actual')}: {formatMoney(reconciliation.actual_local)}</p>
-            <p>{t('creditCards.reconciliation_difference')}: {formatMoney(reconciliation.difference_local)}</p>
+          <div className="mt-3 space-y-3 text-sm">
+            {reconciliation.cash_applicable && (
+              <div>
+                <p className="font-medium">{t('creditCards.reconciliation_cash')}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <p>{t('creditCards.reconciliation_expected')}: {formatMoney(reconciliation.expected_cash)}</p>
+                  <p>{t('creditCards.reconciliation_actual')}: {formatMoney(reconciliation.printed_cash)}</p>
+                  <p>{t('creditCards.reconciliation_difference')}: {formatMoney(reconciliation.difference_cash)}</p>
+                </div>
+              </div>
+            )}
+            {reconciliation.balance_applicable && (
+              <div>
+                <p className="font-medium">{t('creditCards.reconciliation_balance')}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <p>{t('creditCards.reconciliation_expected')}: {formatMoney(reconciliation.expected_balance)}</p>
+                  <p>{t('creditCards.reconciliation_actual')}: {formatMoney(reconciliation.printed_balance)}</p>
+                  <p>{t('creditCards.reconciliation_difference')}: {formatMoney(reconciliation.difference_balance)}</p>
+                </div>
+              </div>
+            )}
+            <p className="text-xs">
+              {t('creditCards.reconciliation_balance_hint')}
+            </p>
           </div>
         </div>
+      )}
+
+      {(statement.interest_bonifiable > 0 ||
+        statement.mora_amount > 0 ||
+        statement.arrears_count > 0 ||
+        statement.over_limit_amount > 0) && (
+        <section className="bg-card rounded-ios shadow-ios p-4 sm:p-5 mb-6">
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">
+            {t('creditCards.statement_aggregates')}
+          </h3>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {statement.interest_bonifiable > 0 && (
+              <Metric
+                label={t('creditCards.interest_bonifiable')}
+                value={formatMoney(statement.interest_bonifiable)}
+                sub={formatMoney(statement.interest_bonifiable_usd) + ' USD'}
+              />
+            )}
+            {statement.mora_amount > 0 && (
+              <Metric
+                label={t('creditCards.mora_amount')}
+                value={formatMoney(statement.mora_amount)}
+                sub={formatMoney(statement.mora_amount_usd) + ' USD'}
+              />
+            )}
+            {statement.arrears_count > 0 && (
+              <Metric label={t('creditCards.arrears_count')} value={String(statement.arrears_count)} />
+            )}
+            {statement.over_limit_amount > 0 && (
+              <Metric
+                label={t('creditCards.over_limit_amount')}
+                value={formatMoney(statement.over_limit_amount)}
+                sub={formatMoney(statement.over_limit_amount_usd) + ' USD'}
+              />
+            )}
+          </div>
+          {statement.points_available !== 0 && (
+            <p className="text-xs text-text-secondary mt-3">
+              {t('creditCards.points')}: {statement.points_available}
+            </p>
+          )}
+        </section>
       )}
 
       {statement.summary && statement.summary.length > 0 && (

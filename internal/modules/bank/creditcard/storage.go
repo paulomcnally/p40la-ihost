@@ -219,7 +219,12 @@ func (s *Storage) DeleteCard(ctx context.Context, id int64) error {
 const statementColumns = `
 	s.id, s.card_id, s.period_start, s.period_end, s.min_payment_due_date,
 	s.full_payment_due_date, s.previous_balance, s.previous_balance_usd,
-	s.interest_current, s.interest_current_usd, s.min_payment, s.min_payment_usd,
+	s.interest_current, s.interest_current_usd,
+	s.interest_bonifiable, s.interest_bonifiable_usd,
+	s.mora_amount, s.mora_amount_usd, s.arrears_count,
+	s.over_limit_amount, s.over_limit_amount_usd,
+	s.points_previous, s.points_earned, s.points_used, s.points_available,
+	s.min_payment, s.min_payment_usd,
 	s.total_payment, s.total_payment_usd, s.new_balance, s.new_balance_usd,
 	s.status, s.source, s.source_module_id, s.import_hash, s.notes,
 	(SELECT COUNT(*) FROM card_transactions t WHERE t.statement_id = s.id),
@@ -292,12 +297,18 @@ func (s *Storage) CreateStatement(ctx context.Context, st *Statement) (*Statemen
 		INSERT INTO card_statements (
 			card_id, period_start, period_end, min_payment_due_date, full_payment_due_date,
 			previous_balance, previous_balance_usd, interest_current, interest_current_usd,
+			interest_bonifiable, interest_bonifiable_usd, mora_amount, mora_amount_usd,
+			arrears_count, over_limit_amount, over_limit_amount_usd,
+			points_previous, points_earned, points_used, points_available,
 			min_payment, min_payment_usd, total_payment, total_payment_usd,
 			new_balance, new_balance_usd, status, source, source_module_id,
 			import_hash, notes
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, st.CardID, periodStart, st.PeriodEnd, st.MinPaymentDueDate, st.FullPaymentDueDate,
 		st.PreviousBalance, st.PreviousBalanceUSD, st.InterestCurrent, st.InterestCurrentUSD,
+		st.InterestBonifiable, st.InterestBonifiableUSD, st.MoraAmount, st.MoraAmountUSD,
+		st.ArrearsCount, st.OverLimitAmount, st.OverLimitAmountUSD,
+		st.PointsPrevious, st.PointsEarned, st.PointsUsed, st.PointsAvailable,
 		st.MinPayment, st.MinPaymentUSD, st.TotalPayment, st.TotalPaymentUSD,
 		st.NewBalance, st.NewBalanceUSD, st.Status, st.Source, st.SourceModuleID,
 		st.ImportHash, st.Notes)
@@ -324,13 +335,20 @@ func (s *Storage) UpdateStatement(ctx context.Context, st *Statement) (*Statemen
 		UPDATE card_statements SET
 			period_start = ?, period_end = ?, min_payment_due_date = ?,
 			full_payment_due_date = ?, previous_balance = ?, previous_balance_usd = ?,
-			interest_current = ?, interest_current_usd = ?, min_payment = ?,
-			min_payment_usd = ?, total_payment = ?, total_payment_usd = ?,
+			interest_current = ?, interest_current_usd = ?,
+			interest_bonifiable = ?, interest_bonifiable_usd = ?,
+			mora_amount = ?, mora_amount_usd = ?, arrears_count = ?,
+			over_limit_amount = ?, over_limit_amount_usd = ?,
+			points_previous = ?, points_earned = ?, points_used = ?, points_available = ?,
+			min_payment = ?, min_payment_usd = ?, total_payment = ?, total_payment_usd = ?,
 			new_balance = ?, new_balance_usd = ?, status = ?, notes = ?,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`, periodStart, st.PeriodEnd, st.MinPaymentDueDate, st.FullPaymentDueDate,
 		st.PreviousBalance, st.PreviousBalanceUSD, st.InterestCurrent, st.InterestCurrentUSD,
+		st.InterestBonifiable, st.InterestBonifiableUSD, st.MoraAmount, st.MoraAmountUSD,
+		st.ArrearsCount, st.OverLimitAmount, st.OverLimitAmountUSD,
+		st.PointsPrevious, st.PointsEarned, st.PointsUsed, st.PointsAvailable,
 		st.MinPayment, st.MinPaymentUSD, st.TotalPayment, st.TotalPaymentUSD,
 		st.NewBalance, st.NewBalanceUSD, st.Status, st.Notes, st.ID)
 	if err != nil {
@@ -381,12 +399,18 @@ func (s *Storage) ImportStatement(ctx context.Context, st *Statement, transactio
 		INSERT INTO card_statements (
 			card_id, period_start, period_end, min_payment_due_date, full_payment_due_date,
 			previous_balance, previous_balance_usd, interest_current, interest_current_usd,
+			interest_bonifiable, interest_bonifiable_usd, mora_amount, mora_amount_usd,
+			arrears_count, over_limit_amount, over_limit_amount_usd,
+			points_previous, points_earned, points_used, points_available,
 			min_payment, min_payment_usd, total_payment, total_payment_usd,
 			new_balance, new_balance_usd, status, source, source_module_id,
 			import_hash, notes
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, st.CardID, periodStart, st.PeriodEnd, st.MinPaymentDueDate, st.FullPaymentDueDate,
 		st.PreviousBalance, st.PreviousBalanceUSD, st.InterestCurrent, st.InterestCurrentUSD,
+		st.InterestBonifiable, st.InterestBonifiableUSD, st.MoraAmount, st.MoraAmountUSD,
+		st.ArrearsCount, st.OverLimitAmount, st.OverLimitAmountUSD,
+		st.PointsPrevious, st.PointsEarned, st.PointsUsed, st.PointsAvailable,
 		st.MinPayment, st.MinPaymentUSD, st.TotalPayment, st.TotalPaymentUSD,
 		st.NewBalance, st.NewBalanceUSD, st.Status, st.Source, st.SourceModuleID,
 		st.ImportHash, st.Notes)
@@ -647,7 +671,12 @@ func scanStatement(row rowScanner) (*Statement, error) {
 	if err := row.Scan(
 		&st.ID, &st.CardID, &periodStart, &st.PeriodEnd, &st.MinPaymentDueDate,
 		&st.FullPaymentDueDate, &st.PreviousBalance, &st.PreviousBalanceUSD,
-		&st.InterestCurrent, &st.InterestCurrentUSD, &st.MinPayment, &st.MinPaymentUSD,
+		&st.InterestCurrent, &st.InterestCurrentUSD,
+		&st.InterestBonifiable, &st.InterestBonifiableUSD,
+		&st.MoraAmount, &st.MoraAmountUSD, &st.ArrearsCount,
+		&st.OverLimitAmount, &st.OverLimitAmountUSD,
+		&st.PointsPrevious, &st.PointsEarned, &st.PointsUsed, &st.PointsAvailable,
+		&st.MinPayment, &st.MinPaymentUSD,
 		&st.TotalPayment, &st.TotalPaymentUSD, &st.NewBalance, &st.NewBalanceUSD,
 		&st.Status, &st.Source, &st.SourceModuleID, &st.ImportHash, &st.Notes,
 		&st.TransactionCount, &st.CreatedAt, &st.UpdatedAt,

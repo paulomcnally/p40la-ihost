@@ -15,6 +15,7 @@ import (
 
 	"github.com/ledongthuc/pdf"
 	"github.com/paulomcnally/p40la-ihost/internal/models"
+	"github.com/paulomcnally/p40la-ihost/internal/modules"
 )
 
 const maxPDFSize = 10 * 1024 * 1024
@@ -89,7 +90,7 @@ func parseText(text string) (*models.ParsedStatement, error) {
 	minDue := isoDate(firstMatch(minDueRe, text))
 	fullDue := isoDate(firstMatch(fullDueRe, text))
 	if periodEnd == "" || minDue == "" || fullDue == "" {
-		return nil, fmt.Errorf("faltan fechas del encabezado")
+		return nil, fmt.Errorf("%w: faltan fechas del encabezado", modules.ErrUnsupportedStatement)
 	}
 
 	parsed := &models.ParsedStatement{
@@ -136,7 +137,7 @@ func parseText(text string) (*models.ParsedStatement, error) {
 	}
 
 	if len(parsed.Transactions) == 0 {
-		return nil, fmt.Errorf("no se encontraron movimientos")
+		return nil, fmt.Errorf("%w: no se encontraron movimientos", modules.ErrUnsupportedStatement)
 	}
 
 	diffLocal := round2(parsed.PreviousBalance + sumLocal(parsed.Transactions) - parsed.NewBalance)

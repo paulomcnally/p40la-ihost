@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"regexp"
 	"strings"
@@ -35,7 +34,8 @@ var (
 
 var (
 	// ErrUnsupportedStatement indica que ningún importador reconoce el archivo.
-	ErrUnsupportedStatement = errors.New("formato de estado de cuenta no soportado")
+	// SPEC-139: un único sentinela compartido con el registry.
+	ErrUnsupportedStatement = modules.ErrUnsupportedStatement
 	// ErrCardMismatch indica que el PDF pertenece a otra tarjeta.
 	ErrCardMismatch = errors.New("el estado de cuenta no corresponde a la tarjeta")
 	// ErrPreviewMismatch indica que el preview y el confirm no coinciden.
@@ -55,6 +55,7 @@ func (e *ValidationError) Error() string { return e.Message }
 // ImporterLookup encuentra el importador adecuado para un archivo.
 type ImporterLookup interface {
 	FindImporter(filename, mimeType string) (modules.StatementImporter, bool)
+	ParseStatements(ctx context.Context, filename, mimeType string, data []byte) (*models.ParsedStatement, modules.StatementImporter, error)
 }
 
 // Service contiene la lógica de negocio del módulo (ARCH-MODULES).
@@ -183,18 +184,41 @@ func (s *Service) GetStatement(ctx context.Context, id int64) (*Statement, error
 		totalLocal += item.AmountLocal
 		totalUSD += item.AmountUSD
 	}
-	expectedLocal := round2(statement.PreviousBalance + totalLocal)
-	expectedUSD := round2(statement.PreviousBalanceUSD + totalUSD)
-	diffLocal := round2(expectedLocal - statement.NewBalance)
-	diffUSD := round2(expectedUSD - statement.NewBalanceUSD)
+	// SPEC-139: dos bases de conciliación. `cash` valida la suma de movimientos;
+	// `balance` agrega el interés bonificable que el banco imprime aparte.
+	expectedCashLocal := round2(statement.PreviousBalance + totalLocal)
+	expectedCashUSD := round2(statement.PreviousBalanceUSD + totalUSD)
+	expectedBalanceLocal := round2(expectedCashLocal + statement.InterestBonifiable)
+	expectedBalanceUSD := round2(expectedCashUSD + statement.InterestBonifiableUSD)
+
+	diffCashLocal := round2(expectedCashLocal - statement.TotalPayment)
+	diffCashUSD := round2(expectedCashUSD - statement.TotalPaymentUSD)
+	diffBalanceLocal := round2(expectedBalanceLocal - statement.NewBalance)
+	diffBalanceUSD := round2(expectedBalanceUSD - statement.NewBalanceUSD)
+
+	cashApplicable := statement.TotalPayment != 0 || statement.TotalPaymentUSD != 0
+	balanceApplicable := statement.NewBalance != 0 || statement.NewBalanceUSD != 0
+	cashOK := !cashApplicable ||
+		(math.Abs(diffCashLocal) <= 0.005 && math.Abs(diffCashUSD) <= 0.005)
+	balanceOK := !balanceApplicable ||
+		(math.Abs(diffBalanceLocal) <= 0.005 && math.Abs(diffBalanceUSD) <= 0.005)
+
 	statement.Reconciliation = &Reconciliation{
-		ExpectedLocal:   expectedLocal,
-		ActualLocal:     statement.NewBalance,
-		DifferenceLocal: diffLocal,
-		ExpectedUSD:     expectedUSD,
-		ActualUSD:       statement.NewBalanceUSD,
-		DifferenceUSD:   diffUSD,
-		Balanced:        math.Abs(diffLocal) <= 0.005 && math.Abs(diffUSD) <= 0.005,
+		ExpectedCash:         expectedCashLocal,
+		PrintedCash:          statement.TotalPayment,
+		DifferenceCash:       diffCashLocal,
+		ExpectedBalance:      expectedBalanceLocal,
+		PrintedBalance:       statement.NewBalance,
+		DifferenceBalance:    diffBalanceLocal,
+		ExpectedCashUSD:      expectedCashUSD,
+		PrintedCashUSD:       statement.TotalPaymentUSD,
+		DifferenceCashUSD:    diffCashUSD,
+		ExpectedBalanceUSD:   expectedBalanceUSD,
+		PrintedBalanceUSD:    statement.NewBalanceUSD,
+		DifferenceBalanceUSD: diffBalanceUSD,
+		CashApplicable:       cashApplicable,
+		BalanceApplicable:    balanceApplicable,
+		Balanced:             cashOK && balanceOK,
 	}
 	return statement, nil
 }
@@ -294,7 +318,7 @@ func (s *Service) DeleteTransaction(ctx context.Context, id int64) error {
 // --------------------------------------------------------------- importar
 
 // PreviewImport parsea un archivo sin persistirlo y devuelve el hash del payload.
-func (s *Service) PreviewImport(ctx context.Context, cardID int64, filename, mimeType string, reader io.Reader) (*models.ParsedStatement, string, error) {
+func (s *Service) PreviewImport(ctx context.Context, cardID int64, filename, mimeType string, data []byte) (*models.ParsedStatement, string, error) {
 	card, err := s.storage.GetCard(ctx, cardID)
 	if err != nil {
 		return nil, "", err
@@ -305,11 +329,7 @@ func (s *Service) PreviewImport(ctx context.Context, cardID int64, filename, mim
 	if s.importers == nil {
 		return nil, "", ErrUnsupportedStatement
 	}
-	importer, ok := s.importers.FindImporter(filename, mimeType)
-	if !ok {
-		return nil, "", ErrUnsupportedStatement
-	}
-	parsed, err := importer.Parse(ctx, reader)
+	parsed, _, err := s.importers.ParseStatements(ctx, filename, mimeType, data)
 	if err != nil {
 		return nil, "", err
 	}
@@ -372,16 +392,29 @@ func (s *Service) ConfirmImport(ctx context.Context, cardID int64, parsed *model
 		PreviousBalanceUSD: parsed.PreviousBalanceUSD,
 		InterestCurrent:    parsed.InterestCurrent,
 		InterestCurrentUSD: parsed.InterestCurrentUSD,
-		MinPayment:         parsed.MinPayment,
-		MinPaymentUSD:      parsed.MinPaymentUSD,
-		TotalPayment:       parsed.TotalPayment,
-		TotalPaymentUSD:    parsed.TotalPaymentUSD,
-		NewBalance:         parsed.NewBalance,
-		NewBalanceUSD:      parsed.NewBalanceUSD,
-		Status:             StatementUnpaid,
-		Source:             SourceImport,
-		SourceModuleID:     parsed.ModuleID,
-		ImportHash:         importHash(cardID, parsed.PeriodEnd, hash),
+
+		InterestBonifiable:    parsed.InterestBonifiable,
+		InterestBonifiableUSD: parsed.InterestBonifiableUSD,
+		MoraAmount:            parsed.MoraAmount,
+		MoraAmountUSD:         parsed.MoraAmountUSD,
+		ArrearsCount:          parsed.ArrearsCount,
+		OverLimitAmount:       parsed.OverLimitAmount,
+		OverLimitAmountUSD:    parsed.OverLimitAmountUSD,
+		PointsPrevious:        parsed.PointsPrevious,
+		PointsEarned:          parsed.PointsEarned,
+		PointsUsed:            parsed.PointsUsed,
+		PointsAvailable:       parsed.PointsAvailable,
+
+		MinPayment:      parsed.MinPayment,
+		MinPaymentUSD:   parsed.MinPaymentUSD,
+		TotalPayment:    parsed.TotalPayment,
+		TotalPaymentUSD: parsed.TotalPaymentUSD,
+		NewBalance:      parsed.NewBalance,
+		NewBalanceUSD:   parsed.NewBalanceUSD,
+		Status:          StatementUnpaid,
+		Source:          SourceImport,
+		SourceModuleID:  parsed.ModuleID,
+		ImportHash:      importHash(cardID, parsed.PeriodEnd, hash),
 	}
 
 	transactions := make([]Transaction, 0, len(parsed.Transactions))
@@ -621,10 +654,21 @@ func (s *Service) prepareStatement(ctx context.Context, statement *Statement, ch
 		"pago de contado USD": statement.TotalPaymentUSD,
 		"saldo al corte":      statement.NewBalance,
 		"saldo al corte USD":  statement.NewBalanceUSD,
+
+		"interés bonificable":     statement.InterestBonifiable,
+		"interés bonificable USD": statement.InterestBonifiableUSD,
+		"monto en mora":           statement.MoraAmount,
+		"monto en mora USD":       statement.MoraAmountUSD,
+		"monto en exceso":         statement.OverLimitAmount,
+		"monto en exceso USD":     statement.OverLimitAmountUSD,
 	} {
 		if !validAmount(value) {
 			return &ValidationError{Code: "validation_error", Message: "Monto inválido en " + name}
 		}
+	}
+	if statement.ArrearsCount < 0 || statement.PointsPrevious < 0 || statement.PointsEarned < 0 ||
+		statement.PointsUsed < 0 || statement.PointsAvailable < 0 {
+		return &ValidationError{Code: "validation_error", Message: "Los contadores no pueden ser negativos"}
 	}
 	if len(statement.Notes) > maxNotes {
 		return &ValidationError{Code: "validation_error", Message: "Las notas son demasiado largas"}
@@ -639,6 +683,12 @@ func (s *Service) prepareStatement(ctx context.Context, statement *Statement, ch
 	statement.TotalPaymentUSD = round2(statement.TotalPaymentUSD)
 	statement.NewBalance = round2(statement.NewBalance)
 	statement.NewBalanceUSD = round2(statement.NewBalanceUSD)
+	statement.InterestBonifiable = round2(statement.InterestBonifiable)
+	statement.InterestBonifiableUSD = round2(statement.InterestBonifiableUSD)
+	statement.MoraAmount = round2(statement.MoraAmount)
+	statement.MoraAmountUSD = round2(statement.MoraAmountUSD)
+	statement.OverLimitAmount = round2(statement.OverLimitAmount)
+	statement.OverLimitAmountUSD = round2(statement.OverLimitAmountUSD)
 	return nil
 }
 
