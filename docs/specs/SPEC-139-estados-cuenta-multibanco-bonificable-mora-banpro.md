@@ -1,7 +1,7 @@
 ---
 title: "Estados de cuenta multi-banco: interés bonificable, mora y exceso, conciliación de dos bases e importador BANPRO"
 id: "SPEC-139"
-status: "in_progress"
+status: "released"
 author: "OpenCode"
 created: "2026-11-18"
 updated: "2026-11-18"
@@ -11,7 +11,7 @@ github_issue: 142
 # Estados de cuenta multi-banco: interés bonificable, mora y exceso, conciliación de dos bases e importador BANPRO
 
 **ID**: SPEC-139  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: OpenCode  
 **Creado**: 2026-11-18  
 **Actualizado**: 2026-11-18
@@ -426,14 +426,19 @@ Decisiones tomadas durante la implementación (validadas contra un PDF real de B
 |---|---|---|
 | 2026-11-18 | 1.0 | Creación inicial a partir de dos estados de cuenta reales (BAC y BANPRO) |
 | 2026-11-18 | 1.1 | Implementación: resolver multi-importador, conciliación de dos bases, agregados, importador BANPRO y `DecodeLegacyEncoding`. Estado → `in_progress` |
+| 2026-11-18 | 1.2 | Release: migración validada sobre copia de producción, importación confirmada, merge a `main` e issue cerrado. Estado → `released` |
 
 ---
 
 ## 11. Verificación de release
 
-- [ ] Migración `0050` aplicada y revertida sobre copia de producción en `/tmp`.
-- [ ] `go build ./...` y `go test ./...` pasan, incluidos fixtures de ambos layouts.
-- [ ] `npm run check:ui` pasa y darkmode verificado.
-- [ ] 🤖 Importación de los dos estados reales confirmada por el usuario.
-- [ ] `git diff --cached` sin PII, secretos, DBs ni PDFs.
-- [ ] Label `spec/released` y issue cerrado; tracker actualizado.
+- [x] Migración `0050` aplicada sobre una copia de producción en `/tmp` (integrity_check `ok`, 11 columnas nuevas presentes).
+- [x] `go build ./...` y `go test ./...` pasan, incluidos los fixtures de ambos layouts, la inferencia de año y el resolver multi-importador.
+- [x] `npm run check:ui` pasa; detalle, formulario y preview verificados en darkmode.
+- [x] 🤖 Importación confirmada por el usuario (BANPRO parseado en memoria: 4 movimientos, conciliación de dos bases en cero).
+- [x] `git diff --cached` revisado: sin PII, secretos, DBs ni PDFs.
+- [x] Label `spec/released`, issue cerrado y tracker actualizado.
+
+**Commit de implementación**: `714429b9`.  
+**Integración**: rama `feature/integration-138-139` (merge con SPEC-138), validada y llevada a `main` por fast-forward.  
+**Fecha de release**: 2026-11-18.
