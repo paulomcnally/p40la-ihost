@@ -1,9 +1,14 @@
 package modules
 
 import (
+	"bytes"
+	"context"
+	"errors"
 	"net/http"
 	"sort"
 	"sync"
+
+	"github.com/paulomcnally/p40la-ihost/internal/models"
 )
 
 // Registry mantiene los módulos disponibles por ID.
@@ -74,6 +79,32 @@ func (r *Registry) FindImporter(filename, mimeType string) (StatementImporter, b
 		}
 	}
 	return nil, false
+}
+
+// ParseStatements prueba los importadores registrados y devuelve el primero cuyo
+// layout coincide con el archivo (SPEC-139). Un error distinto de
+// ErrUnsupportedStatement se propaga: un PDF corrupto no debe confundirse con un
+// layout desconocido.
+func (r *Registry) ParseStatements(ctx context.Context, filename, mimeType string, data []byte) (*models.ParsedStatement, StatementImporter, error) {
+	var unsupported error
+	for _, imp := range r.Importers() {
+		if !imp.CanParse(filename, mimeType) {
+			continue
+		}
+		parsed, err := imp.Parse(ctx, bytes.NewReader(data))
+		if err == nil {
+			return parsed, imp, nil
+		}
+		if errors.Is(err, ErrUnsupportedStatement) {
+			unsupported = err
+			continue
+		}
+		return nil, nil, err
+	}
+	if unsupported != nil {
+		return nil, nil, unsupported
+	}
+	return nil, nil, ErrUnsupportedStatement
 }
 
 // RegisterRoutes invoca el registro de rutas de cada módulo que lo implemente.

@@ -33,6 +33,13 @@ export default function CreditCardStatementFormPage() {
   const [previousUSD, setPreviousUSD] = useState(0)
   const [interest, setInterest] = useState(0)
   const [interestUSD, setInterestUSD] = useState(0)
+  const [bonifiable, setBonifiable] = useState(0)
+  const [bonifiableUSD, setBonifiableUSD] = useState(0)
+  const [mora, setMora] = useState(0)
+  const [moraUSD, setMoraUSD] = useState(0)
+  const [arrears, setArrears] = useState(0)
+  const [overLimit, setOverLimit] = useState(0)
+  const [overLimitUSD, setOverLimitUSD] = useState(0)
   const [minPayment, setMinPayment] = useState(0)
   const [minPaymentUSD, setMinPaymentUSD] = useState(0)
   const [totalPayment, setTotalPayment] = useState(0)
@@ -53,6 +60,13 @@ export default function CreditCardStatementFormPage() {
     setPreviousUSD(statement.previous_balance_usd)
     setInterest(statement.interest_current)
     setInterestUSD(statement.interest_current_usd)
+    setBonifiable(statement.interest_bonifiable)
+    setBonifiableUSD(statement.interest_bonifiable_usd)
+    setMora(statement.mora_amount)
+    setMoraUSD(statement.mora_amount_usd)
+    setArrears(statement.arrears_count)
+    setOverLimit(statement.over_limit_amount)
+    setOverLimitUSD(statement.over_limit_amount_usd)
     setMinPayment(statement.min_payment)
     setMinPaymentUSD(statement.min_payment_usd)
     setTotalPayment(statement.total_payment)
@@ -103,6 +117,13 @@ export default function CreditCardStatementFormPage() {
         previous_balance_usd: Number(previousUSD) || 0,
         interest_current: Number(interest) || 0,
         interest_current_usd: Number(interestUSD) || 0,
+        interest_bonifiable: Number(bonifiable) || 0,
+        interest_bonifiable_usd: Number(bonifiableUSD) || 0,
+        mora_amount: Number(mora) || 0,
+        mora_amount_usd: Number(moraUSD) || 0,
+        arrears_count: Number(arrears) || 0,
+        over_limit_amount: Number(overLimit) || 0,
+        over_limit_amount_usd: Number(overLimitUSD) || 0,
         min_payment: Number(minPayment) || 0,
         min_payment_usd: Number(minPaymentUSD) || 0,
         total_payment: Number(totalPayment) || 0,
@@ -185,6 +206,19 @@ export default function CreditCardStatementFormPage() {
             <NumberField label={t('creditCards.new_balance')} value={newBalance} onChange={setNewBalance} />
             <NumberField label={t('creditCards.new_balance_usd')} value={newBalanceUSD} onChange={setNewBalanceUSD} />
           </div>
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">
+            {t('creditCards.statement_aggregates')}
+          </h3>
+          <p className="text-xs text-text-secondary">{t('creditCards.statement_aggregates_help')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <NumberField label={t('creditCards.interest_bonifiable')} value={bonifiable} onChange={setBonifiable} />
+            <NumberField label={t('creditCards.interest_bonifiable_usd')} value={bonifiableUSD} onChange={setBonifiableUSD} />
+            <NumberField label={t('creditCards.mora_amount')} value={mora} onChange={setMora} />
+            <NumberField label={t('creditCards.mora_amount_usd')} value={moraUSD} onChange={setMoraUSD} />
+            <NumberField label={t('creditCards.arrears_count')} value={arrears} onChange={setArrears} min={0} />
+            <NumberField label={t('creditCards.over_limit_amount')} value={overLimit} onChange={setOverLimit} />
+            <NumberField label={t('creditCards.over_limit_amount_usd')} value={overLimitUSD} onChange={setOverLimitUSD} />
+          </div>
           <div>
             <label className="block text-sm font-medium mb-1">{t('creditCards.statement_notes')}</label>
             <textarea
@@ -250,10 +284,12 @@ function NumberField({
   label,
   value,
   onChange,
+  min,
 }: {
   label: string
   value: number
   onChange: (value: number) => void
+  min?: number
 }) {
   return (
     <div>

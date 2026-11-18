@@ -135,30 +135,42 @@ type CreditCard struct {
 
 // Statement es el estado de cuenta mensual de una tarjeta.
 type Statement struct {
-	ID                 int64     `json:"id"`
-	CardID             int64     `json:"card_id"`
-	PeriodStart        *string   `json:"period_start,omitempty"`
-	PeriodEnd          string    `json:"period_end"`
-	MinPaymentDueDate  string    `json:"min_payment_due_date"`
-	FullPaymentDueDate string    `json:"full_payment_due_date"`
-	PreviousBalance    float64   `json:"previous_balance"`
-	PreviousBalanceUSD float64   `json:"previous_balance_usd"`
-	InterestCurrent    float64   `json:"interest_current"`
-	InterestCurrentUSD float64   `json:"interest_current_usd"`
-	MinPayment         float64   `json:"min_payment"`
-	MinPaymentUSD      float64   `json:"min_payment_usd"`
-	TotalPayment       float64   `json:"total_payment"`
-	TotalPaymentUSD    float64   `json:"total_payment_usd"`
-	NewBalance         float64   `json:"new_balance"`
-	NewBalanceUSD      float64   `json:"new_balance_usd"`
-	Status             string    `json:"status"`
-	Source             string    `json:"source"`
-	SourceModuleID     string    `json:"source_module_id,omitempty"`
-	ImportHash         string    `json:"-"`
-	Notes              string    `json:"notes"`
-	TransactionCount   int       `json:"transaction_count"`
-	CreatedAt          time.Time `json:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at"`
+	ID                 int64   `json:"id"`
+	CardID             int64   `json:"card_id"`
+	PeriodStart        *string `json:"period_start,omitempty"`
+	PeriodEnd          string  `json:"period_end"`
+	MinPaymentDueDate  string  `json:"min_payment_due_date"`
+	FullPaymentDueDate string  `json:"full_payment_due_date"`
+	PreviousBalance    float64 `json:"previous_balance"`
+	PreviousBalanceUSD float64 `json:"previous_balance_usd"`
+	InterestCurrent    float64 `json:"interest_current"`
+	InterestCurrentUSD float64 `json:"interest_current_usd"`
+	// SPEC-139: agregados que imprimen los bancos.
+	InterestBonifiable    float64   `json:"interest_bonifiable"`
+	InterestBonifiableUSD float64   `json:"interest_bonifiable_usd"`
+	MoraAmount            float64   `json:"mora_amount"`
+	MoraAmountUSD         float64   `json:"mora_amount_usd"`
+	ArrearsCount          int       `json:"arrears_count"`
+	OverLimitAmount       float64   `json:"over_limit_amount"`
+	OverLimitAmountUSD    float64   `json:"over_limit_amount_usd"`
+	PointsPrevious        int       `json:"points_previous"`
+	PointsEarned          int       `json:"points_earned"`
+	PointsUsed            int       `json:"points_used"`
+	PointsAvailable       int       `json:"points_available"`
+	MinPayment            float64   `json:"min_payment"`
+	MinPaymentUSD         float64   `json:"min_payment_usd"`
+	TotalPayment          float64   `json:"total_payment"`
+	TotalPaymentUSD       float64   `json:"total_payment_usd"`
+	NewBalance            float64   `json:"new_balance"`
+	NewBalanceUSD         float64   `json:"new_balance_usd"`
+	Status                string    `json:"status"`
+	Source                string    `json:"source"`
+	SourceModuleID        string    `json:"source_module_id,omitempty"`
+	ImportHash            string    `json:"-"`
+	Notes                 string    `json:"notes"`
+	TransactionCount      int       `json:"transaction_count"`
+	CreatedAt             time.Time `json:"created_at"`
+	UpdatedAt             time.Time `json:"updated_at"`
 
 	// Derivados solo en el detalle.
 	Summary        []StatementSummary `json:"summary,omitempty"`
@@ -174,14 +186,27 @@ type StatementSummary struct {
 }
 
 // Reconciliation compara los totales impresos con la suma de movimientos.
+// SPEC-139: dos bases. `cash` es el pago de contado (saldo anterior + cargos −
+// abonos); `balance` es el saldo al corte, que agrega el interés bonificable.
 type Reconciliation struct {
-	ExpectedLocal   float64 `json:"expected_local"`
-	ActualLocal     float64 `json:"actual_local"`
-	DifferenceLocal float64 `json:"difference_local"`
-	ExpectedUSD     float64 `json:"expected_usd"`
-	ActualUSD       float64 `json:"actual_usd"`
-	DifferenceUSD   float64 `json:"difference_usd"`
-	Balanced        bool    `json:"balanced"`
+	ExpectedCash      float64 `json:"expected_cash"`
+	PrintedCash       float64 `json:"printed_cash"`
+	DifferenceCash    float64 `json:"difference_cash"`
+	ExpectedBalance   float64 `json:"expected_balance"`
+	PrintedBalance    float64 `json:"printed_balance"`
+	DifferenceBalance float64 `json:"difference_balance"`
+
+	ExpectedCashUSD      float64 `json:"expected_cash_usd"`
+	PrintedCashUSD       float64 `json:"printed_cash_usd"`
+	DifferenceCashUSD    float64 `json:"difference_cash_usd"`
+	ExpectedBalanceUSD   float64 `json:"expected_balance_usd"`
+	PrintedBalanceUSD    float64 `json:"printed_balance_usd"`
+	DifferenceBalanceUSD float64 `json:"difference_balance_usd"`
+
+	// Una base solo aplica si el banco imprimió su total.
+	CashApplicable    bool `json:"cash_applicable"`
+	BalanceApplicable bool `json:"balance_applicable"`
+	Balanced          bool `json:"balanced"`
 }
 
 // Transaction es un movimiento de la tarjeta.

@@ -73,13 +73,22 @@ export interface StatementSummary {
   count: number
 }
 
+// SPEC-139: conciliación de dos bases.
 export interface Reconciliation {
-  expected_local: number
-  actual_local: number
-  difference_local: number
-  expected_usd: number
-  actual_usd: number
-  difference_usd: number
+  expected_cash: number
+  printed_cash: number
+  difference_cash: number
+  expected_balance: number
+  printed_balance: number
+  difference_balance: number
+  expected_cash_usd: number
+  printed_cash_usd: number
+  difference_cash_usd: number
+  expected_balance_usd: number
+  printed_balance_usd: number
+  difference_balance_usd: number
+  cash_applicable: boolean
+  balance_applicable: boolean
   balanced: boolean
 }
 
@@ -94,6 +103,17 @@ export interface CardStatement {
   previous_balance_usd: number
   interest_current: number
   interest_current_usd: number
+  interest_bonifiable: number
+  interest_bonifiable_usd: number
+  mora_amount: number
+  mora_amount_usd: number
+  arrears_count: number
+  over_limit_amount: number
+  over_limit_amount_usd: number
+  points_previous: number
+  points_earned: number
+  points_used: number
+  points_available: number
   min_payment: number
   min_payment_usd: number
   total_payment: number
@@ -156,6 +176,17 @@ export interface ParsedStatement {
   previous_balance_usd: number
   interest_current: number
   interest_current_usd: number
+  interest_bonifiable: number
+  interest_bonifiable_usd: number
+  mora_amount: number
+  mora_amount_usd: number
+  arrears_count: number
+  over_limit_amount: number
+  over_limit_amount_usd: number
+  points_previous: number
+  points_earned: number
+  points_used: number
+  points_available: number
   min_payment: number
   min_payment_usd: number
   total_payment: number
