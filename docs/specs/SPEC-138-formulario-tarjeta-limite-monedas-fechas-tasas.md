@@ -1,7 +1,7 @@
 ---
 title: "Formulario de tarjeta: límite en una moneda, fecha de bonificación y semántica de tasas"
 id: "SPEC-138"
-status: "draft"
+status: "in_progress"
 author: "OpenCode"
 created: "2026-11-18"
 updated: "2026-11-18"
@@ -11,7 +11,7 @@ github_issue: 141
 # Formulario de tarjeta: límite en una moneda, fecha de bonificación y semántica de tasas
 
 **ID**: SPEC-138  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: OpenCode  
 **Creado**: 2026-11-18  
 **Actualizado**: 2026-11-18
@@ -324,6 +324,14 @@ Claves nuevas en `creditCards.*` (es/en): `limit_currency`, `limit_amount`, `exc
 
 ---
 
+### 5.7 Notas de implementación
+
+1. **Límite derivado en el cliente y en el servidor.** El formulario muestra el equivalente para que el usuario vea el efecto del tipo de cambio, pero el valor que se persiste lo calcula `service.go` (`deriveLimit`). El frontend no envía el derivado.
+2. **Listado de tarjetas.** `CreditCardsTab` mostraba `Límite`/`Disponible` en la moneda principal aunque el límite estuviera en USD; ahora muestra la moneda del límite y `—` cuando no está definido.
+3. **Mora como recargo sin migración de datos.** Los valores ya cargados se reinterpretan como recargo; el detalle muestra corriente, recargo y moratoria total. No se reescriben filas.
+4. **Migración probada.** `0049` se aplica y revierte sobre DB temporal; las tarjetas existentes conservan sus límites y toman `limit_currency = 'NIO'`, `bonus_due_day = 0`, `category = ''`.
+5. **`% pago mínimo` en 0** se muestra como `—`, tanto en el detalle como en el listado.
+
 ## 6. Criterios de Aceptación
 
 ### 6.1 Funcionales
@@ -403,6 +411,7 @@ Claves nuevas en `creditCards.*` (es/en): `limit_currency`, `limit_amount`, `exc
 | Fecha | Versión | Cambio |
 |---|---|---|
 | 2026-11-18 | 1.0 | Creación inicial a partir de dos estados de cuenta reales de BAC y BANPRO |
+| 2026-11-18 | 1.1 | Implementación: migración `0049`, derivación del límite, fecha de bonificación, recargo moratorio y categoría. Estado → `in_progress` |
 
 ---
 
