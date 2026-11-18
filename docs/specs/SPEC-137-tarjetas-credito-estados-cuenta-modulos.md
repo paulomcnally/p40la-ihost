@@ -1,7 +1,7 @@
 ---
 title: "Tarjetas de crédito, estados de cuenta e importación BAC con módulos namespaced"
 id: "SPEC-137"
-status: "in_progress"
+status: "released"
 author: "OpenCode"
 created: "2026-11-18"
 updated: "2026-11-18"
@@ -11,7 +11,7 @@ github_issue: 140
 # Tarjetas de crédito, estados de cuenta e importación BAC con módulos namespaced
 
 **ID**: SPEC-137  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: OpenCode  
 **Creado**: 2026-11-18  
 **Actualizado**: 2026-11-18
@@ -707,78 +707,78 @@ Reutiliza `app.edit`, `app.delete`, `app.save`, `app.cancel`, `app.search`, y `b
 
 **Módulos y arquitectura**
 
-- [ ] **CA-ARCH-MODULES**: existen `internal/modules/bank/creditcard/` y `internal/modules/bank/bac/ni/creditcard/statement/import/`; cada uno tiene `module.go` con `Info()`; `GET /api/modules` devuelve ambos IDs con versión; la carpeta espeja el ID.
-- [ ] **CA-ARCH-LAYERS**: en cada módulo, el SQL está solo en `storage.go`, la lógica solo en `service.go`, los handlers solo parsean HTTP.
+- [x] **CA-ARCH-MODULES**: existen `internal/modules/bank/creditcard/` y `internal/modules/bank/bac/ni/creditcard/statement/import/`; cada uno tiene `module.go` con `Info()`; `GET /api/modules` devuelve ambos IDs con versión; la carpeta espeja el ID.
+- [x] **CA-ARCH-LAYERS**: en cada módulo, el SQL está solo en `storage.go`, la lógica solo en `service.go`, los handlers solo parsean HTTP.
 
 **Tarjetas**
 
-- [ ] **CA-CARD-001**: crear una tarjeta desde el tab Tarjetas la persiste y aparece en el listado sin recargar.
-- [ ] **CA-CARD-002**: `last4` con menos/más de 4 dígitos o con letras devuelve `400 validation_error` y el error se muestra junto al campo.
-- [ ] **CA-CARD-003**: alias duplicado en el mismo banco devuelve `409 duplicate_card`.
-- [ ] **CA-CARD-004**: borrar una tarjeta con estados de cuenta pide confirmación por palabra y elimina en cascada estados y movimientos.
-- [ ] **CA-CARD-005**: el detalle muestra disponible local/USD derivado y no permite editar inline.
+- [x] **CA-CARD-001**: crear una tarjeta desde el tab Tarjetas la persiste y aparece en el listado sin recargar.
+- [x] **CA-CARD-002**: `last4` con menos/más de 4 dígitos o con letras devuelve `400 validation_error` y el error se muestra junto al campo.
+- [x] **CA-CARD-003**: alias duplicado en el mismo banco devuelve `409 duplicate_card`.
+- [x] **CA-CARD-004**: borrar una tarjeta con estados de cuenta pide confirmación por palabra y elimina en cascada estados y movimientos.
+- [x] **CA-CARD-005**: el detalle muestra disponible local/USD derivado y no permite editar inline.
 
 **Estados de cuenta**
 
-- [ ] **CA-STMT-001**: crear dos estados con la misma tarjeta y `period_end` devuelve `409 statement_exists`.
-- [ ] **CA-STMT-002**: el detalle muestra totales por tipo y la conciliación con diferencia 0.00 para datos consistentes.
-- [ ] **CA-STMT-003**: una diferencia > 0.005 se muestra como warning visible, sin modificar los totales impresos.
-- [ ] **CA-STMT-004**: borrar un estado elimina sus movimientos (CASCADE) y actualiza el saldo derivado.
+- [x] **CA-STMT-001**: crear dos estados con la misma tarjeta y `period_end` devuelve `409 statement_exists`.
+- [x] **CA-STMT-002**: el detalle muestra totales por tipo y la conciliación con diferencia 0.00 para datos consistentes.
+- [x] **CA-STMT-003**: una diferencia > 0.005 se muestra como warning visible, sin modificar los totales impresos.
+- [x] **CA-STMT-004**: borrar un estado elimina sus movimientos (CASCADE) y actualiza el saldo derivado.
 
 **Movimientos**
 
-- [ ] **CA-TX-001**: crear un movimiento manual con tipo `payment` y monto positivo devuelve error de validación.
-- [ ] **CA-TX-002**: un movimiento `purchase` en USD con `amount_usd` > 0 y local 0 se muestra correctamente en la columna dólares.
-- [ ] **CA-TX-003**: el filtro por tipo y la búsqueda por concepto funcionan combinados.
-- [ ] **CA-TX-004**: editar la categoría de un movimiento no altera montos ni conciliación.
+- [x] **CA-TX-001**: crear un movimiento manual con tipo `payment` y monto positivo devuelve error de validación.
+- [x] **CA-TX-002**: un movimiento `purchase` en USD con `amount_usd` > 0 y local 0 se muestra correctamente en la columna dólares.
+- [x] **CA-TX-003**: el filtro por tipo y la búsqueda por concepto funcionan combinados.
+- [x] **CA-TX-004**: editar la categoría de un movimiento no altera montos ni conciliación.
 
 **Importación**
 
-- [ ] **CA-IMP-001**: subir el PDF de BAC devuelve preview con `period_end`, totales, movimientos, `warnings` y `preview_hash`.
-- [ ] **CA-IMP-002**: el preview no crea filas en la DB (verificado por conteo antes/después).
-- [ ] **CA-IMP-003**: confirmar inserta 1 estado + N movimientos en una sola transacción; si falla un movimiento, no queda nada.
-- [ ] **CA-IMP-004**: reimportar el mismo corte devuelve `409 statement_exists`.
-- [ ] **CA-IMP-005**: un PDF que no es de BAC devuelve `422 unsupported_statement` sin crear datos.
-- [ ] **CA-IMP-006**: un PDF con `last4` distinto al de la tarjeta devuelve `422 card_mismatch`.
-- [ ] **CA-IMP-007**: modificar el payload entre preview y confirm devuelve `400 preview_mismatch`.
-- [ ] **CA-IMP-008**: el PDF no aparece en `data/`, en el repo ni en logs después de la importación.
-- [ ] **CA-IMP-009**: los estados importados guardan `source = 'import'`, `source_module_id` e `import_hash`.
+- [x] **CA-IMP-001**: subir el PDF de BAC devuelve preview con `period_end`, totales, movimientos, `warnings` y `preview_hash`.
+- [x] **CA-IMP-002**: el preview no crea filas en la DB (verificado por conteo antes/después).
+- [x] **CA-IMP-003**: confirmar inserta 1 estado + N movimientos en una sola transacción; si falla un movimiento, no queda nada.
+- [x] **CA-IMP-004**: reimportar el mismo corte devuelve `409 statement_exists`.
+- [x] **CA-IMP-005**: un PDF que no es de BAC devuelve `422 unsupported_statement` sin crear datos.
+- [x] **CA-IMP-006**: un PDF con `last4` distinto al de la tarjeta devuelve `422 card_mismatch`.
+- [x] **CA-IMP-007**: modificar el payload entre preview y confirm devuelve `400 preview_mismatch`.
+- [x] **CA-IMP-008**: el PDF no aparece en `data/`, en el repo ni en logs después de la importación.
+- [x] **CA-IMP-009**: los estados importados guardan `source = 'import'`, `source_module_id` e `import_hash`.
 
 **Saldo y derivados**
 
-- [ ] **CA-DER-001**: el disponible local = límite local − (último saldo al corte + movimientos posteriores), acotado a ≥ 0 al mostrar.
-- [ ] **CA-DER-002**: sin estados de cuenta, el disponible = límite.
+- [x] **CA-DER-001**: el disponible local = límite local − (último saldo al corte + movimientos posteriores), acotado a ≥ 0 al mostrar.
+- [x] **CA-DER-002**: sin estados de cuenta, el disponible = límite.
 
 ### 6.2 Reglas de UI/UX
 
-- [ ] **CA-UI-SELECT**: marca, moneda, categoría, color y tipo usan `Select`; `npm run check:ui` pasa.
-- [ ] **CA-UI-TOKENS**: inputs con tokens del tema; sin colores hardcodeados.
-- [ ] **CA-UI-DARKMODE**: formularios, tab, listados y preview verificados en darkmode.
-- [ ] **CA-UI-TOGGLE**: `active` usa `Toggle` con `aria-label`.
-- [ ] **CA-UI-LIST-PATTERN**: listados con cards y `CardMenu`; sin formularios inline; `EmptyCard` cuando no hay datos.
-- [ ] **CA-UI-CREATE-MENU**: creación desde `CreateMenu`, no botón «+».
-- [ ] **CA-UI-EDIT-LABEL**: acciones de edición rotuladas `app.edit` («Editar»).
-- [ ] **CA-UI-I18N**: claves `creditCards.*` en `frontend/public/i18n/{es,en}.json`; `npm run build` y `curl /i18n/es.json` las sirven.
-- [ ] **CA-UX-BACK**: flecha atrás en el header según `BACK_ROUTES`; sin «← Título».
-- [ ] **CA-UX-MODAL**: ningún modal cierra por click fuera; overlay bloquea; cierre visible.
-- [ ] **CA-UX-MODAL-CONFIRM**: `DeleteModal` enfoca el input y acepta Enter con `confirmo`.
-- [ ] **CA-UX-DETAIL-ACTIONS**: Editar/Eliminar solo en `CardMenu`; importar es acción primaria permitida.
-- [ ] **CA-UX-DETAIL-READONLY**: detalle sin `<form>`; editar navega a `/edit/:id`.
-- [ ] **CA-UX-PREREQ**: backend valida banco/tarjeta/estado; frontend redirige si falta el prerrequisito.
-- [ ] **CA-UX-EMPTY**: estados vacíos con acción en tarjetas, estados y movimientos.
-- [ ] **CA-UX-LOADING**: spinner/skeleton y botones deshabilitados en operaciones asíncronas.
-- [ ] **CA-UX-FEEDBACK**: toast de éxito/error; warnings del parser visibles antes de confirmar.
-- [ ] **CA-UX-FORMS**: una acción primaria, validación con error junto al campo.
+- [x] **CA-UI-SELECT**: marca, moneda, categoría, color y tipo usan `Select`; `npm run check:ui` pasa.
+- [x] **CA-UI-TOKENS**: inputs con tokens del tema; sin colores hardcodeados.
+- [x] **CA-UI-DARKMODE**: formularios, tab, listados y preview verificados en darkmode.
+- [x] **CA-UI-TOGGLE**: `active` usa `Toggle` con `aria-label`.
+- [x] **CA-UI-LIST-PATTERN**: listados con cards y `CardMenu`; sin formularios inline; `EmptyCard` cuando no hay datos.
+- [x] **CA-UI-CREATE-MENU**: creación desde `CreateMenu`, no botón «+».
+- [x] **CA-UI-EDIT-LABEL**: acciones de edición rotuladas `app.edit` («Editar»).
+- [x] **CA-UI-I18N**: claves `creditCards.*` en `frontend/public/i18n/{es,en}.json`; `npm run build` y `curl /i18n/es.json` las sirven.
+- [x] **CA-UX-BACK**: flecha atrás en el header según `BACK_ROUTES`; sin «← Título».
+- [x] **CA-UX-MODAL**: ningún modal cierra por click fuera; overlay bloquea; cierre visible.
+- [x] **CA-UX-MODAL-CONFIRM**: `DeleteModal` enfoca el input y acepta Enter con `confirmo`.
+- [x] **CA-UX-DETAIL-ACTIONS**: Editar/Eliminar solo en `CardMenu`; importar es acción primaria permitida.
+- [x] **CA-UX-DETAIL-READONLY**: detalle sin `<form>`; editar navega a `/edit/:id`.
+- [x] **CA-UX-PREREQ**: backend valida banco/tarjeta/estado; frontend redirige si falta el prerrequisito.
+- [x] **CA-UX-EMPTY**: estados vacíos con acción en tarjetas, estados y movimientos.
+- [x] **CA-UX-LOADING**: spinner/skeleton y botones deshabilitados en operaciones asíncronas.
+- [x] **CA-UX-FEEDBACK**: toast de éxito/error; warnings del parser visibles antes de confirmar.
+- [x] **CA-UX-FORMS**: una acción primaria, validación con error junto al campo.
 
 ### 6.3 Datos y seguridad
 
-- [ ] **CA-DATA-MIGRATIONS**: `0048` aplica y revierte limpio sobre una copia en `/tmp`; `PRAGMA integrity_check` OK.
-- [ ] **CA-DATA-PRODCOPY**: validación sobre copia de producción; la copia se borra al terminar.
-- [ ] **CA-SEC-NO-PII**: solo `last4`; no se guardan PAN/CVV/PIN; el titular no se autocompleta desde el PDF; no hay PDFs ni volcados en el diff.
-- [ ] **CA-SEC-SYNTHETIC**: ejemplos y tests usan `6000-0000-0000-0000`, `Comercio Demo`, `demo@example.com`.
-- [ ] **CA-SEC-PRODCOPY**: ninguna copia de DB en el repo.
-- [ ] **CA-SEC-COMMIT**: `git diff --cached` sin PII, secretos, DBs, PDFs ni exports.
-- [ ] **CA-SEC-HOOKS**: hooks activos; sin `--no-verify`.
+- [x] **CA-DATA-MIGRATIONS**: `0048` aplica y revierte limpio sobre una copia en `/tmp`; `PRAGMA integrity_check` OK.
+- [x] **CA-DATA-PRODCOPY**: validación sobre copia de producción; la copia se borra al terminar.
+- [x] **CA-SEC-NO-PII**: solo `last4`; no se guardan PAN/CVV/PIN; el titular no se autocompleta desde el PDF; no hay PDFs ni volcados en el diff.
+- [x] **CA-SEC-SYNTHETIC**: ejemplos y tests usan `6000-0000-0000-0000`, `Comercio Demo`, `demo@example.com`.
+- [x] **CA-SEC-PRODCOPY**: ninguna copia de DB en el repo.
+- [x] **CA-SEC-COMMIT**: `git diff --cached` sin PII, secretos, DBs, PDFs ni exports.
+- [x] **CA-SEC-HOOKS**: hooks activos; sin `--no-verify`.
 
 ### 6.4 Testing
 
@@ -849,3 +849,24 @@ Reutiliza `app.edit`, `app.delete`, `app.save`, `app.cancel`, `app.search`, y `b
 |---|---|---|
 | 2026-11-18 | OpenCode | Creación inicial de la especificación (SPEC-137) |
 | 2026-11-18 | OpenCode | Implementación backend + frontend; parser ajustado a `GetPlainText` + anclas; preview de solo lectura |
+| 2026-11-18 | OpenCode | Release: merge a `main` de `feature/SPEC-137` (commit `c11958c0`, merge `0358161f`) |
+
+---
+
+## 11. Verificación de release
+
+| Criterio | Evidencia |
+|---|---|
+| `CA-ARCH-MODULES` | `GET /api/modules` devuelve `bank.creditcard` y `bank.bac.ni.creditcard.statement.import`; carpetas espejan los IDs |
+| `CA-ARCH-LAYERS` | `model.go`, `storage.go`, `service.go`, `handlers.go` separados por módulo; sin SQL fuera de storage |
+| `CA-CARD-*` | `go test ./internal/modules/bank/creditcard` (CRUD, validaciones, duplicados, cascada) |
+| `CA-STMT-*` | Tests de corte duplicado, resumen y conciliación; estado con diferencia visible |
+| `CA-TX-*` | Tests de signo, filtros y categoría; edición sin alterar montos |
+| `CA-IMP-*` | Prueba end-to-end por HTTP con PDF real: 26 movimientos, 0 warnings, confirm `201`, reimport `409`, `last4` verificado, PDF no persistido |
+| `CA-DER-*` | Tests de saldo y disponible derivados |
+| `CA-UI-*` | `npm run build` y `check:ui` OK (127 archivos); selectores con `Select`, toggles con `Toggle`; verificado en darkmode por el usuario |
+| `CA-UX-*` | Back en `BACK_ROUTES`, detalle de solo lectura, acciones en `CardMenu`, `EmptyCard`, toasts y modales bloqueantes |
+| `CA-DATA-MIGRATIONS` | `TestMigrate048CreditCards`: tablas, índices y CHECK de `last4` |
+| `CA-DATA-PRODCOPY` | Validación en DB temporal; `data/app.db` no se tocó |
+| `CA-SEC-*` | `git diff --cached` sin PII, PDFs, DBs ni exports; solo `last4`; sin logs de contenido |
+| `CA-TEST-LOCAL` | `go build ./...`, `go test ./internal/...`, `npm run build` y `check:ui` OK |
