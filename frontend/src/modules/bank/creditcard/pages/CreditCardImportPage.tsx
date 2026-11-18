@@ -162,6 +162,18 @@ export default function CreditCardImportPage() {
               <Metric label={t('creditCards.new_balance')} value={formatMoney(preview.new_balance)} sub={formatMoney(preview.new_balance_usd) + ' USD'} />
               <Metric label={t('creditCards.min_payment')} value={formatMoney(preview.min_payment)} sub={formatMoney(preview.min_payment_usd) + ' USD'} />
               <Metric label={t('creditCards.total_payment')} value={formatMoney(preview.total_payment)} sub={formatMoney(preview.total_payment_usd) + ' USD'} />
+              {preview.interest_bonifiable > 0 && (
+                <Metric label={t('creditCards.interest_bonifiable')} value={formatMoney(preview.interest_bonifiable)} sub={formatMoney(preview.interest_bonifiable_usd) + ' USD'} />
+              )}
+              {preview.mora_amount > 0 && (
+                <Metric label={t('creditCards.mora_amount')} value={formatMoney(preview.mora_amount)} sub={formatMoney(preview.mora_amount_usd) + ' USD'} />
+              )}
+              {preview.arrears_count > 0 && (
+                <Metric label={t('creditCards.arrears_count')} value={String(preview.arrears_count)} />
+              )}
+              {preview.over_limit_amount > 0 && (
+                <Metric label={t('creditCards.over_limit_amount')} value={formatMoney(preview.over_limit_amount)} sub={formatMoney(preview.over_limit_amount_usd) + ' USD'} />
+              )}
             </div>
 
             <p className="mt-3 text-xs text-text-secondary font-mono">

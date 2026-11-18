@@ -1,7 +1,7 @@
 ---
 title: "Estados de cuenta multi-banco: interés bonificable, mora y exceso, conciliación de dos bases e importador BANPRO"
 id: "SPEC-139"
-status: "draft"
+status: "in_progress"
 author: "OpenCode"
 created: "2026-11-18"
 updated: "2026-11-18"
@@ -11,7 +11,7 @@ github_issue: 142
 # Estados de cuenta multi-banco: interés bonificable, mora y exceso, conciliación de dos bases e importador BANPRO
 
 **ID**: SPEC-139  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: OpenCode  
 **Creado**: 2026-11-18  
 **Actualizado**: 2026-11-18
@@ -330,6 +330,19 @@ Claves nuevas: `statement_interest_bonifiable`, `statement_mora`, `statement_arr
 
 ---
 
+### 5.9 Notas de implementación
+
+Decisiones tomadas durante la implementación (validadas contra un PDF real de BANPRO, procesado en memoria y no persistido):
+
+1. **Codificación heredada.** El PDF de BANPRO no trae `ToUnicode`: los glifos llegan desplazados 31 posiciones y los dígitos como caracteres de control. Se agrega `statementtext.DecodeLegacyEncoding`, que detecta la corrupción (> 5 caracteres de control no blancos) y desplaza solo en ese caso. Los acentos sin mapeo se descartan (`MEMBRESIA ANUAL SEGUNDO AÑO` → `... SEGUNDO AO`); es preferible a romper las anclas.
+2. **Una sola fecha de pago.** BANPRO imprime únicamente la fecha límite de pago mínimo. `full_payment_due_date` se completa con la fecha de corte (el pago de contado vence al corte) y se emite el warning `single_payment_date`.
+3. **BAC no completa los agregados nuevos.** Su importador procesa el PDF «Transacciones del periodo», que no imprime bonificable, mora ni exceso: quedan en `0` y la UI los oculta. El campo existe en el contrato para cuando ese layout los incluya.
+4. **Bases aplicables.** La conciliación marca `cash_applicable` / `balance_applicable` solo cuando el banco imprimió el total correspondiente; un estado manual sin `total_payment` no reporta un descuadre falso.
+5. **Firma del resolver.** `Registry.ParseStatements` recibe `[]byte` (el handler ya lee y valida el PDF con límite de 5 MB) y `PreviewImport` cambió de `io.Reader` a `[]byte`.
+6. **Verificación real.** Con un estado BANPRO de 4 movimientos: cargos y abonos coinciden al centavo, `previous + cargos − abonos = pago de contado`, `+ interés bonificable = saldo al corte`, sin warnings de conciliación.
+
+---
+
 ## 6. Criterios de Aceptación
 
 ### 6.1 Funcionales
@@ -412,6 +425,7 @@ Claves nuevas: `statement_interest_bonifiable`, `statement_mora`, `statement_arr
 | Fecha | Versión | Cambio |
 |---|---|---|
 | 2026-11-18 | 1.0 | Creación inicial a partir de dos estados de cuenta reales (BAC y BANPRO) |
+| 2026-11-18 | 1.1 | Implementación: resolver multi-importador, conciliación de dos bases, agregados, importador BANPRO y `DecodeLegacyEncoding`. Estado → `in_progress` |
 
 ---
 

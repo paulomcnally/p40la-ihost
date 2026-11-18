@@ -295,7 +295,7 @@ func (h *handlers) previewImport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mimeType := header.Header.Get("Content-Type")
-	parsed, hash, err := h.service.PreviewImport(r.Context(), cardID, header.Filename, mimeType, bytes.NewReader(data))
+	parsed, hash, err := h.service.PreviewImport(r.Context(), cardID, header.Filename, mimeType, data)
 	if err != nil {
 		respondModuleError(w, err)
 		return
@@ -382,7 +382,8 @@ func respondModuleError(w http.ResponseWriter, err error) {
 	case errors.Is(err, ErrCardMismatch):
 		respondError(w, http.StatusUnprocessableEntity, "card_mismatch", "El estado de cuenta no corresponde a la tarjeta")
 	case errors.Is(err, ErrUnsupportedStatement):
-		respondError(w, http.StatusUnprocessableEntity, "unsupported_statement", "Formato de estado de cuenta no soportado")
+		respondError(w, http.StatusUnprocessableEntity, "unsupported_statement",
+			"Ningún importador reconoce este PDF: descargá el estado de cuenta del banco (no el resumen de transacciones) y verificá que el banco esté soportado")
 	case errors.Is(err, ErrPreviewMismatch):
 		respondError(w, http.StatusBadRequest, "preview_mismatch", "Los datos cambiaron desde el preview")
 	case errors.Is(err, ErrInvalidFile):
