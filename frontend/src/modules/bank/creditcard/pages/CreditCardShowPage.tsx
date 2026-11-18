@@ -132,11 +132,29 @@ export default function CreditCardShowPage() {
         </div>
 
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Metric label={`${t('creditCards.limit_label')} ${card.currency_code || 'NIO'}`} value={formatMoney(card.credit_limit)} />
-          <Metric label={`${t('creditCards.limit_label')} USD`} value={formatMoney(card.credit_limit_usd)} />
-          <Metric label={`${t('creditCards.available')} ${card.currency_code || 'NIO'}`} value={formatMoney(card.available_local)} />
-          <Metric label={`${t('creditCards.available')} USD`} value={formatMoney(card.available_usd)} />
+          <Metric
+            label={`${t('creditCards.limit_label')} ${card.currency_code || 'NIO'}`}
+            value={card.credit_limit > 0 ? formatMoney(card.credit_limit) : '—'}
+          />
+          <Metric
+            label={`${t('creditCards.limit_label')} USD`}
+            value={card.credit_limit_usd > 0 ? formatMoney(card.credit_limit_usd) : '—'}
+          />
+          <Metric
+            label={`${t('creditCards.available')} ${card.currency_code || 'NIO'}`}
+            value={card.credit_limit > 0 ? formatMoney(card.available_local) : '—'}
+          />
+          <Metric
+            label={`${t('creditCards.available')} USD`}
+            value={card.credit_limit_usd > 0 ? formatMoney(card.available_usd) : '—'}
+          />
         </div>
+        {card.limit_currency ? (
+          <p className="text-xs text-text-secondary mt-2">
+            {t('creditCards.limit_currency')}: {card.limit_currency}
+            {card.exchange_rate > 0 ? ` · ${t('creditCards.exchange_rate')}: ${card.exchange_rate}` : ''}
+          </p>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
@@ -146,7 +164,16 @@ export default function CreditCardShowPage() {
           </h3>
           <InfoRow label={t('creditCards.statement_day')} value={String(card.statement_day)} />
           <InfoRow label={t('creditCards.payment_due_day')} value={String(card.payment_due_day)} />
-          <InfoRow label={t('creditCards.min_payment_pct')} value={`${card.min_payment_pct}%`} />
+          {card.bonus_due_day > 0 ? (
+            <InfoRow label={t('creditCards.bonus_due_day')} value={String(card.bonus_due_day)} />
+          ) : null}
+          {card.category ? (
+            <InfoRow label={t('creditCards.category')} value={t(`creditCards.category_${card.category}`)} />
+          ) : null}
+          <InfoRow
+            label={t('creditCards.min_payment_pct')}
+            value={card.min_payment_pct > 0 ? `${card.min_payment_pct}%` : '—'}
+          />
           <InfoRow label={t('creditCards.holder')} value={card.holder} />
         </section>
         <section className="bg-card rounded-ios shadow-ios p-4 sm:p-5">
@@ -154,9 +181,11 @@ export default function CreditCardShowPage() {
             {t('creditCards.rates')}
           </h3>
           <InfoRow label={t('creditCards.interest_current_rate')} value={`${card.interest_current_rate}%`} />
-          <InfoRow label={t('creditCards.interest_late_rate')} value={`${card.interest_late_rate}%`} />
+          <InfoRow label={t('creditCards.late_surcharge')} value={`${card.interest_late_rate}%`} />
+          <InfoRow label={t('creditCards.late_total')} value={`${card.late_total_rate}%`} />
           <InfoRow label={t('creditCards.interest_current_rate_usd')} value={`${card.interest_current_rate_usd}%`} />
-          <InfoRow label={t('creditCards.interest_late_rate_usd')} value={`${card.interest_late_rate_usd}%`} />
+          <InfoRow label={t('creditCards.late_surcharge_usd')} value={`${card.interest_late_rate_usd}%`} />
+          <InfoRow label={`${t('creditCards.late_total')} USD`} value={`${card.late_total_rate_usd}%`} />
         </section>
         <section className="bg-card rounded-ios shadow-ios p-4 sm:p-5">
           <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-2">

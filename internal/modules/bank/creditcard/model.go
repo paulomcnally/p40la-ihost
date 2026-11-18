@@ -5,7 +5,7 @@ import "time"
 // Identificador canónico del módulo core (ARCH-MODULES).
 const (
 	ModuleID      = "bank.creditcard"
-	ModuleVersion = "1.0.0"
+	ModuleVersion = "1.1.0"
 )
 
 // Marcas de tarjeta soportadas.
@@ -19,6 +19,18 @@ const (
 
 // Networks contiene las marcas válidas.
 var Networks = []string{NetworkVisa, NetworkMastercard, NetworkAmex, NetworkDiners, NetworkOther}
+
+// Monedas en las que se puede expresar el límite de crédito (SPEC-138).
+const (
+	LimitCurrencyLocal = "NIO"
+	LimitCurrencyUSD   = "USD"
+)
+
+// LimitCurrencies contiene las monedas válidas para el límite.
+var LimitCurrencies = []string{LimitCurrencyLocal, LimitCurrencyUSD}
+
+// Categorías de producto de la tarjeta (SPEC-138). "" = no definida.
+var Categories = []string{"", "classic", "gold", "platinum", "black", "business", "other"}
 
 // Tipos de movimiento.
 const (
@@ -89,10 +101,14 @@ type CreditCard struct {
 	CurrencyCode           string  `json:"currency_code,omitempty"`
 	SecondaryCurrencyID    *int64  `json:"secondary_currency_id,omitempty"`
 	SecondaryCurrencyCode  string  `json:"secondary_currency_code,omitempty"`
+	Category               string  `json:"category"`
+	LimitCurrency          string  `json:"limit_currency"`
+	ExchangeRate           float64 `json:"exchange_rate"`
 	CreditLimit            float64 `json:"credit_limit"`
 	CreditLimitUSD         float64 `json:"credit_limit_usd"`
 	StatementDay           int     `json:"statement_day"`
 	PaymentDueDay          int     `json:"payment_due_day"`
+	BonusDueDay            int     `json:"bonus_due_day"`
 	MinPaymentPct          float64 `json:"min_payment_pct"`
 	InterestCurrentRate    float64 `json:"interest_current_rate"`
 	InterestLateRate       float64 `json:"interest_late_rate"`
@@ -105,11 +121,13 @@ type CreditCard struct {
 	StatementCount         int     `json:"statement_count"`
 
 	// Derivados (no se almacenan).
-	BalanceLocal    float64 `json:"balance_local"`
-	BalanceUSD      float64 `json:"balance_usd"`
-	AvailableLocal  float64 `json:"available_local"`
-	AvailableUSD    float64 `json:"available_usd"`
-	LastStatementID *int64  `json:"last_statement_id,omitempty"`
+	LateTotalRate    float64 `json:"late_total_rate"`
+	LateTotalRateUSD float64 `json:"late_total_rate_usd"`
+	BalanceLocal     float64 `json:"balance_local"`
+	BalanceUSD       float64 `json:"balance_usd"`
+	AvailableLocal   float64 `json:"available_local"`
+	AvailableUSD     float64 `json:"available_usd"`
+	LastStatementID  *int64  `json:"last_statement_id,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

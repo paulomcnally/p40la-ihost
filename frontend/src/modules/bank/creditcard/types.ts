@@ -21,6 +21,10 @@ export type StatementStatus = 'unpaid' | 'partial' | 'paid'
 export type StatementSource = 'manual' | 'import'
 export type TransactionStatus = 'posted' | 'pending'
 
+// SPEC-138: la moneda en la que se publica el límite y la categoría del producto.
+export type LimitCurrency = 'NIO' | 'USD'
+export type CardCategory = '' | 'classic' | 'gold' | 'platinum' | 'black' | 'business' | 'other'
+
 export interface CreditCard {
   id: number
   bank_id: number
@@ -33,15 +37,21 @@ export interface CreditCard {
   currency_code?: string
   secondary_currency_id?: number
   secondary_currency_code?: string
+  category: CardCategory
+  limit_currency: LimitCurrency
+  exchange_rate: number
   credit_limit: number
   credit_limit_usd: number
   statement_day: number
   payment_due_day: number
+  bonus_due_day: number
   min_payment_pct: number
   interest_current_rate: number
   interest_late_rate: number
   interest_current_rate_usd: number
   interest_late_rate_usd: number
+  late_total_rate: number
+  late_total_rate_usd: number
   color: string
   icon: string
   active: boolean

@@ -123,15 +123,23 @@ export default function CreditCardsTab({ bankId }: { bankId: number }) {
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <p className="text-xs text-text-secondary uppercase tracking-wide">
-                    {t('creditCards.limit_label')} {card.currency_code || 'NIO'}
+                    {t('creditCards.limit_label')} {card.limit_currency === 'USD' ? 'USD' : (card.currency_code || 'NIO')}
                   </p>
-                  <p className="font-medium">{formatMoney(card.credit_limit)}</p>
+                  <p className="font-medium">
+                    {card.limit_currency === 'USD'
+                      ? (card.credit_limit_usd > 0 ? formatMoney(card.credit_limit_usd) : '—')
+                      : (card.credit_limit > 0 ? formatMoney(card.credit_limit) : '—')}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-text-secondary uppercase tracking-wide">
-                    {t('creditCards.available')} {card.currency_code || 'NIO'}
+                    {t('creditCards.available')} {card.limit_currency === 'USD' ? 'USD' : (card.currency_code || 'NIO')}
                   </p>
-                  <p className="font-medium">{formatMoney(card.available_local)}</p>
+                  <p className="font-medium">
+                    {card.limit_currency === 'USD'
+                      ? (card.credit_limit_usd > 0 ? formatMoney(card.available_usd) : '—')
+                      : (card.credit_limit > 0 ? formatMoney(card.available_local) : '—')}
+                  </p>
                 </div>
               </div>
             </div>

@@ -423,6 +423,10 @@ func (s *Service) withDerived(ctx context.Context, card *CreditCard) error {
 	}
 	card.AvailableLocal = math.Max(0, round2(card.CreditLimit-card.BalanceLocal))
 	card.AvailableUSD = math.Max(0, round2(card.CreditLimitUSD-card.BalanceUSD))
+	// SPEC-138: la tasa moratoria publicada por los bancos es un recargo;
+	// el total se deriva para mostrarlo sin recalcular en el frontend.
+	card.LateTotalRate = round2(card.InterestCurrentRate + card.InterestLateRate)
+	card.LateTotalRateUSD = round2(card.InterestCurrentRateUSD + card.InterestLateRateUSD)
 	return nil
 }
 
@@ -433,6 +437,11 @@ func (s *Service) prepareCard(ctx context.Context, card *CreditCard, checkBank b
 	card.Icon = strings.TrimSpace(card.Icon)
 	card.Network = strings.ToLower(strings.TrimSpace(card.Network))
 	card.Color = strings.ToLower(strings.TrimSpace(card.Color))
+	card.LimitCurrency = strings.ToUpper(strings.TrimSpace(card.LimitCurrency))
+	card.Category = strings.ToLower(strings.TrimSpace(card.Category))
+	if card.LimitCurrency == "" {
+		card.LimitCurrency = LimitCurrencyLocal
+	}
 
 	if checkBank {
 		if card.BankID <= 0 {
@@ -492,6 +501,21 @@ func (s *Service) prepareCard(ctx context.Context, card *CreditCard, checkBank b
 	if card.PaymentDueDay < 1 || card.PaymentDueDay > 31 {
 		return &ValidationError{Code: "validation_error", Message: "El día de pago debe estar entre 1 y 31"}
 	}
+	if card.BonusDueDay < 0 || card.BonusDueDay > 31 {
+		return &ValidationError{Code: "invalid_bonus_day", Message: "El día límite para bonificar debe estar entre 0 y 31"}
+	}
+	if card.BonusDueDay > 0 && card.BonusDueDay == card.PaymentDueDay {
+		return &ValidationError{Code: "invalid_bonus_day", Message: "El día límite para bonificar debe ser distinto del día límite de pago"}
+	}
+	if !isLimitCurrency(card.LimitCurrency) {
+		return &ValidationError{Code: "invalid_limit_currency", Message: "La moneda del límite debe ser NIO o USD"}
+	}
+	if !validAmount(card.ExchangeRate) || card.ExchangeRate < 0 {
+		return &ValidationError{Code: "invalid_exchange_rate", Message: "El tipo de cambio es inválido"}
+	}
+	if !isCategory(card.Category) {
+		return &ValidationError{Code: "validation_error", Message: "Categoría de tarjeta inválida"}
+	}
 	if !validPercent(card.MinPaymentPct) {
 		return &ValidationError{Code: "validation_error", Message: "El porcentaje de pago mínimo debe estar entre 0 y 100"}
 	}
@@ -507,6 +531,10 @@ func (s *Service) prepareCard(ctx context.Context, card *CreditCard, checkBank b
 		!validAmount(card.CreditLimitUSD) || card.CreditLimitUSD < 0 {
 		return &ValidationError{Code: "validation_error", Message: "El límite de crédito es inválido"}
 	}
+	// SPEC-138: el límite se publica en una sola moneda. Si el usuario informó
+	// el tipo de cambio, se completa el límite de la otra moneda; si no, queda
+	// en 0 y la UI lo trata como no definido.
+	deriveLimit(card)
 	if !isColor(card.Color) {
 		return &ValidationError{Code: "validation_error", Message: "Color inválido"}
 	}
@@ -766,6 +794,24 @@ func validAmount(value float64) bool {
 	return !math.IsNaN(value) && !math.IsInf(value, 0)
 }
 
+// deriveLimit completa el límite de la moneda contraria usando el tipo de cambio
+// de la tarjeta. Solo actúa cuando el usuario no ingresó ese límite (SPEC-138).
+func deriveLimit(card *CreditCard) {
+	if card.ExchangeRate <= 0 {
+		return
+	}
+	switch card.LimitCurrency {
+	case LimitCurrencyUSD:
+		if card.CreditLimit == 0 && card.CreditLimitUSD > 0 {
+			card.CreditLimit = round2(card.CreditLimitUSD * card.ExchangeRate)
+		}
+	case LimitCurrencyLocal:
+		if card.CreditLimitUSD == 0 && card.CreditLimit > 0 {
+			card.CreditLimitUSD = round2(card.CreditLimit / card.ExchangeRate)
+		}
+	}
+}
+
 func validPercent(value float64) bool {
 	return validAmount(value) && value >= 0 && value <= 100
 }
@@ -789,6 +835,24 @@ func isNetwork(value string) bool {
 
 func isColor(value string) bool {
 	for _, item := range Colors {
+		if item == value {
+			return true
+		}
+	}
+	return false
+}
+
+func isLimitCurrency(value string) bool {
+	for _, item := range LimitCurrencies {
+		if item == value {
+			return true
+		}
+	}
+	return false
+}
+
+func isCategory(value string) bool {
+	for _, item := range Categories {
 		if item == value {
 			return true
 		}
