@@ -7,6 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select, { addOption } from '../components/Select'
+import DeleteModal from '../components/DeleteModal'
 import NumberInput from '../components/NumberInput'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
@@ -59,6 +60,7 @@ export default function LeaseFormPage() {
   const [quickAgencyName, setQuickAgencyName] = useState('')
   const [quickAgent, setQuickAgent] = useState({ full_name: '', email: '', phone: '' })
   const [quickSaving, setQuickSaving] = useState(false)
+  const [removePartyIndex, setRemovePartyIndex] = useState<number | null>(null)
   const [parties, setParties] = useState<PartyDraft[]>([emptyParty('tenant')])
   const [initialPartyIds, setInitialPartyIds] = useState<number[]>([])
   const [customTerm, setCustomTerm] = useState(false)
@@ -589,7 +591,7 @@ export default function LeaseFormPage() {
                   {t('rental.notify_email')}
                 </label>
                 {parties.length > 1 && (
-                  <button type="button" onClick={() => setParties((prev) => prev.filter((_, i) => i !== index))} className="text-sm text-danger">
+                  <button type="button" onClick={() => setRemovePartyIndex(index)} className="text-sm text-danger">
                     {t('app.remove')}
                   </button>
                 )}
@@ -662,6 +664,18 @@ export default function LeaseFormPage() {
         <TextInput value={quickAgent.phone} onChange={(e) => setQuickAgent((prev) => ({ ...prev, phone: e.target.value }))} />
       </Field>
     </Modal>
+
+    {removePartyIndex !== null && (
+      <DeleteModal
+        title={t('app.confirm')}
+        subtitle={`${t('rental.person')}: ${parties[removePartyIndex]?.full_name || `#${removePartyIndex + 1}`}`}
+        onConfirm={() => {
+          setParties((prev) => prev.filter((_, i) => i !== removePartyIndex))
+          setRemovePartyIndex(null)
+        }}
+        onCancel={() => setRemovePartyIndex(null)}
+      />
+    )}
     </>
   )
 }

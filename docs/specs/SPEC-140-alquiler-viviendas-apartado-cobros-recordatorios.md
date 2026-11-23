@@ -637,3 +637,4 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 | 2026-11-23 | OpenCode | Formulario de contrato en tres tabs (Vivienda, Condiciones, Personas) con la tab activa en `?tab=` y salto automático a la tab con error. |
 | 2026-11-23 | OpenCode | Agente y comisión dependen de la inmobiliaria: se ocultan sin agencia, se resetean al quitarla y el backend los limpia. La sección Intermediación del detalle solo aparece con inmobiliaria. |
 | 2026-11-23 | OpenCode | Regla `UI-NUMBER-INPUT`: componente `NumberInput` que permite vacío y elimina ceros a la izquierda. Migrados los formularios de alquiler. Los 21 archivos legacy quedan listados en `frontend/scripts/number-input-legacy.txt` para una spec de migración. |
+| 2026-11-23 | OpenCode | Quitar una persona del contrato ahora abre `DeleteModal` con confirmación por palabra («confirmo») antes de eliminarla de la lista. |
