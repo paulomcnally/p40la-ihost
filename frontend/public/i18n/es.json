@@ -1943,6 +1943,8 @@
     "parties_empty": "Sin personas asociadas",
     "parties_empty_hint": "Agregá al menos un inquilino con email.",
     "add_party": "Agregar persona",
+    "party_added": "Persona agregada",
+    "party_exists": "Esa persona ya tiene ese rol en el contrato.",
     "person": "Persona",
     "person_name": "Nombre completo",
     "email": "Email",
