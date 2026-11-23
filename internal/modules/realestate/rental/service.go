@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -901,6 +902,8 @@ func (s *Service) prepareReservation(ctx context.Context, r *Reservation, checkA
 	return nil
 }
 
+var phoneRegex = regexp.MustCompile(`^\+?[0-9(][0-9\s().-]*$`)
+
 func preparePerson(p *Person) error {
 	p.FullName = strings.TrimSpace(p.FullName)
 	p.Email = strings.TrimSpace(p.Email)
@@ -919,6 +922,20 @@ func preparePerson(p *Person) error {
 	}
 	if p.Email != "" && !strings.Contains(p.Email, "@") {
 		return invalid("invalid_email", "El email es inválido")
+	}
+	if p.Phone != "" {
+		if !phoneRegex.MatchString(p.Phone) {
+			return invalid("invalid_phone", "El teléfono solo admite números y formato telefónico")
+		}
+		digits := strings.Map(func(r rune) rune {
+			if r >= '0' && r <= '9' {
+				return r
+			}
+			return -1
+		}, p.Phone)
+		if len(digits) < 5 || len(digits) > 15 {
+			return invalid("invalid_phone", "El teléfono debe tener entre 5 y 15 dígitos")
+		}
 	}
 	if p.MonthlyIncome < 0 {
 		return invalid("invalid_income", "El ingreso mensual no puede ser negativo")
