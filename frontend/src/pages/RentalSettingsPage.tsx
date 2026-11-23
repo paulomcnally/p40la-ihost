@@ -7,6 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select from '../components/Select'
+import NumberInput from '../components/NumberInput'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Field, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
@@ -93,14 +94,14 @@ export default function RentalSettingsPage() {
             <TextInput value={form.receipt_series} onChange={(e) => set('receipt_series', e.target.value.toUpperCase())} maxLength={10} />
           </Field>
           <Field label={t('rental.settings.default_lead_days')}>
-            <TextInput type="number" min={0} value={form.default_lead_days} onChange={(e) => set('default_lead_days', Number(e.target.value))} />
+            <NumberInput  min={0} value={form.default_lead_days} onChange={(e) => set('default_lead_days', Number(e.target.value))} />
           </Field>
           <div className="hidden sm:block" />
           <Field label={t('rental.settings.owner_split')}>
-            <TextInput type="number" min={0} max={100} step="0.01" value={form.default_owner_split_percent} onChange={(e) => set('default_owner_split_percent', Number(e.target.value))} />
+            <NumberInput  min={0} max={100} step="0.01" value={form.default_owner_split_percent} onChange={(e) => set('default_owner_split_percent', Number(e.target.value))} />
           </Field>
           <Field label={t('rental.settings.agency_split')}>
-            <TextInput type="number" min={0} max={100} step="0.01" value={form.default_agency_split_percent} onChange={(e) => set('default_agency_split_percent', Number(e.target.value))} />
+            <NumberInput  min={0} max={100} step="0.01" value={form.default_agency_split_percent} onChange={(e) => set('default_agency_split_percent', Number(e.target.value))} />
           </Field>
         </div>
         <p className="text-xs text-text-secondary mt-3">{t('rental.settings.splits_hint')}</p>

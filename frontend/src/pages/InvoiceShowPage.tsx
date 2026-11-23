@@ -6,6 +6,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select from '../components/Select'
+import NumberInput from '../components/NumberInput'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Badge, Field, Modal, Money, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
@@ -225,7 +226,7 @@ export default function InvoiceShowPage() {
       >
         <form onSubmit={submitPayment} className="space-y-3">
           <Field label={t('rental.amount')}>
-            <TextInput type="number" min={0.01} step="0.01" value={payForm.amount} onChange={(e) => setPayForm((p) => ({ ...p, amount: Number(e.target.value) }))} required />
+            <NumberInput  min={0.01} step="0.01" value={payForm.amount} onChange={(e) => setPayForm((p) => ({ ...p, amount: Number(e.target.value) }))} required />
           </Field>
           <Field label={t('rental.payment_date')}>
             <TextInput type="date" value={payForm.paid_at} onChange={(e) => setPayForm((p) => ({ ...p, paid_at: e.target.value }))} />

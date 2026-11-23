@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CardMenu from '../components/CardMenu'
 import Select from '../components/Select'
+import NumberInput from '../components/NumberInput'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import {
@@ -529,7 +530,7 @@ export default function LeaseShowPage() {
       >
         <form onSubmit={submitPayment} className="space-y-3">
           <Field label={t('rental.amount')}>
-            <TextInput type="number" min={0.01} step="0.01" value={paymentForm.amount} onChange={(e) => setPaymentForm((p) => ({ ...p, amount: Number(e.target.value) }))} required />
+            <NumberInput  min={0.01} step="0.01" value={paymentForm.amount} onChange={(e) => setPaymentForm((p) => ({ ...p, amount: Number(e.target.value) }))} required />
           </Field>
           <Field label={t('rental.payment_date')}>
             <TextInput type="date" value={paymentForm.paid_at} onChange={(e) => setPaymentForm((p) => ({ ...p, paid_at: e.target.value }))} />
@@ -618,7 +619,7 @@ export default function LeaseShowPage() {
               <TextInput type="datetime-local" value={reminderForm.next_due_at} onChange={(e) => setReminderForm((p) => ({ ...p, next_due_at: e.target.value }))} required />
             </Field>
             <Field label={t('rental.reminder.lead_days')}>
-              <TextInput type="number" min={0} value={reminderForm.lead_days} onChange={(e) => setReminderForm((p) => ({ ...p, lead_days: Number(e.target.value) }))} />
+              <NumberInput  min={0} value={reminderForm.lead_days} onChange={(e) => setReminderForm((p) => ({ ...p, lead_days: Number(e.target.value) }))} />
             </Field>
           </div>
           <Field label={t('rental.reminder.roles')} hint={t('rental.reminder.roles_hint')}>

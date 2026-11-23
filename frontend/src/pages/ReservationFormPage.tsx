@@ -7,6 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select, { addOption } from '../components/Select'
+import NumberInput from '../components/NumberInput'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Field, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
@@ -247,7 +248,7 @@ export default function ReservationFormPage() {
       <SectionCard title={t('rental.reservation.conditions')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label={t('rental.reservation.amount')}>
-            <TextInput type="number" min={0} step="0.01" value={form.amount} onChange={(e) => set('amount', Number(e.target.value))} />
+            <NumberInput  min={0} step="0.01" value={form.amount} onChange={(e) => set('amount', Number(e.target.value))} />
           </Field>
           <Field label={t('rental.currency')}>
             <Select options={currencyOptions} value={form.currency} onChange={(v) => set('currency', String(v))} searchable />
@@ -279,16 +280,16 @@ export default function ReservationFormPage() {
             <TextInput type="date" value={form.move_in_date} onChange={(e) => set('move_in_date', e.target.value)} />
           </Field>
           <Field label={t('rental.rent')}>
-            <TextInput type="number" min={0} step="0.01" value={form.rent_amount} onChange={(e) => set('rent_amount', Number(e.target.value))} />
+            <NumberInput  min={0} step="0.01" value={form.rent_amount} onChange={(e) => set('rent_amount', Number(e.target.value))} />
           </Field>
           <Field label={t('rental.maintenance')}>
-            <TextInput type="number" min={0} step="0.01" value={form.maintenance_amount} onChange={(e) => set('maintenance_amount', Number(e.target.value))} />
+            <NumberInput  min={0} step="0.01" value={form.maintenance_amount} onChange={(e) => set('maintenance_amount', Number(e.target.value))} />
           </Field>
           <Field label={t('rental.reservation.owner_split')}>
-            <TextInput type="number" min={0} max={100} step="0.01" value={form.owner_split_percent} onChange={(e) => set('owner_split_percent', Number(e.target.value))} />
+            <NumberInput  min={0} max={100} step="0.01" value={form.owner_split_percent} onChange={(e) => set('owner_split_percent', Number(e.target.value))} />
           </Field>
           <Field label={t('rental.reservation.agency_split')}>
-            <TextInput type="number" min={0} max={100} step="0.01" value={form.agency_split_percent} onChange={(e) => set('agency_split_percent', Number(e.target.value))} />
+            <NumberInput  min={0} max={100} step="0.01" value={form.agency_split_percent} onChange={(e) => set('agency_split_percent', Number(e.target.value))} />
           </Field>
         </div>
         <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-border">
