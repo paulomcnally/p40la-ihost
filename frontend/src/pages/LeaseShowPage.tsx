@@ -338,7 +338,7 @@ export default function LeaseShowPage() {
       </SectionCard>
 
       <SectionCard
-        title={t('rental.charges')}
+        title={t('rental.charges_title')}
         action={lease.status === 'active' ? (
           <div className="flex gap-2">
             <SecondaryButton disabled={busy} onClick={() => run(() => api.rental.leases.generateCharges(lease.id), t('rental.charges.generated'))}>
