@@ -667,5 +667,5 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 - Los formularios legacy con `<input type="number">` y teléfonos de texto libre quedan listados para una spec de migración; los formularios nuevos cumplen `UI-NUMBER-INPUT` / `UI-PHONE-INPUT`.
 
 **Commit de implementación**: `4e6df637` + commits de UI de comprobantes y release.  
-**Integración**: merge `feature/SPEC-140` → `main`.  
+**Integración**: merge `feature/SPEC-140` → `main` (`6fa789a9`).  
 **Fecha de release**: 2026-11-23.
