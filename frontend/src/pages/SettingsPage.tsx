@@ -196,6 +196,13 @@ export default function SettingsPage() {
         onClick: () => navigate('/settings/facturacion'),
       },
       {
+        key: 'rental',
+        icon: 'home',
+        title: t('rental.settings.title'),
+        subtitle: t('rental.settings.subtitle'),
+        onClick: () => navigate('/settings/alquiler'),
+      },
+      {
         key: 'alerts',
         icon: 'bell',
         title: t('settings.alerts.title'),

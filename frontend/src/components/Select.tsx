@@ -5,6 +5,15 @@ import { Icon } from './Icons'
 export interface SelectOption {
   value: string | number
   label: string
+  icon?: string
+}
+
+// Valor centinela para opciones que abren un alta en vez de seleccionar.
+export const ADD_OPTION_VALUE = -1
+
+// addOption construye la opción canónica "Agregar" con ícono plus (UI-SELECT-ADD).
+export function addOption(label: string, value: string | number = ADD_OPTION_VALUE): SelectOption {
+  return { value, label, icon: 'plus' }
 }
 
 export interface SelectProps {
@@ -16,6 +25,7 @@ export interface SelectProps {
   searchPlaceholder?: string
   emptyLabel?: string
   zIndex?: string
+  disabled?: boolean
 }
 
 // normalizeText quita acentos y mayúsculas para que el buscador encuentre
@@ -33,6 +43,7 @@ export default function Select({
   searchPlaceholder = 'Buscar...',
   emptyLabel = 'Sin resultados',
   zIndex = 'z-[90]',
+  disabled = false,
 }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -91,11 +102,15 @@ export default function Select({
     <div className="relative" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full min-h-[44px] flex items-center justify-between px-3 py-2 border border-border rounded-ios-sm bg-card hover:border-primary/50 focus:outline-none focus:border-primary transition-colors text-left text-text"
+        onClick={() => { if (!disabled) setOpen(!open) }}
+        disabled={disabled}
+        className={`w-full min-h-[44px] flex items-center justify-between px-3 py-2 border border-border rounded-ios-sm bg-card focus:outline-none focus:border-primary transition-colors text-left text-text ${
+          disabled ? 'opacity-60 cursor-not-allowed' : 'hover:border-primary/50'
+        }`}
       >
-        <span className={selected ? '' : 'text-text-secondary'}>
-          {selected?.label || placeholder || 'Seleccionar...'}
+        <span className={`flex items-center gap-2 min-w-0 ${selected ? '' : 'text-text-secondary'}`}>
+          {selected?.icon && <Icon name={selected.icon} className="w-4 h-4 shrink-0" />}
+          <span className="truncate">{selected?.label || placeholder || 'Seleccionar...'}</span>
         </span>
         <Icon name="chevron" className={`w-4 h-4 text-text-secondary transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -129,11 +144,12 @@ export default function Select({
                     key={opt.value}
                     type="button"
                     onClick={() => handleSelect(opt)}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-bg transition-colors ${
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-bg transition-colors flex items-center gap-2 ${
                       opt.value === value ? 'text-primary font-medium bg-primary/5' : ''
                     }`}
                   >
-                    {opt.label}
+                    {opt.icon && <Icon name={opt.icon} className="w-4 h-4 shrink-0" />}
+                    <span className="truncate">{opt.label}</span>
                   </button>
                 ))
               )}
