@@ -7,9 +7,10 @@
     "check:ui": "node scripts/check-ui-rules.cjs",
     "check:pwa": "node scripts/check-pwa-rules.cjs",
     "dev": "vite",
-    "build": "node scripts/check-ui-rules.cjs && node scripts/check-i18n-keys.cjs && node scripts/check-pwa-rules.cjs && node scripts/sync-i18n.cjs && tsc -b && vite build",
+    "build": "node scripts/check-ui-rules.cjs && node scripts/check-i18n-keys.cjs && node scripts/check-number-inputs.cjs && node scripts/check-pwa-rules.cjs && node scripts/sync-i18n.cjs && tsc -b && vite build",
     "preview": "vite preview",
-    "check:i18n": "node scripts/check-i18n-keys.cjs"
+    "check:i18n": "node scripts/check-i18n-keys.cjs",
+    "check:numbers": "node scripts/check-number-inputs.cjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

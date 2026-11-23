@@ -85,7 +85,7 @@ Flujo completo, comandos y gates: skill `spec-manager` (`.opencode/skills/spec-m
 
 - [ ] Requerimientos P0 implementados y criterios de aceptación verificados.
 - [ ] `go build ./...` y `go test ./...` pasan.
-- [ ] `cd frontend && npm run check:ui && npm run check:i18n` pasa (si hay UI).
+- [ ] `cd frontend && npm run check:ui && npm run check:i18n && npm run check:numbers` pasa (si hay UI).
 - [ ] Probado en local y confirmado por el usuario (🤖).
 - [ ] Si depende de datos: validado contra copia de producción.
 - [ ] `git diff --cached` sin PII, secretos, DBs, PDFs ni exports.

@@ -7,6 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select, { addOption } from '../components/Select'
+import NumberInput from '../components/NumberInput'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Field, Modal, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
@@ -412,7 +413,7 @@ export default function LeaseFormPage() {
           {form.commission_type === 'percent' ? (
             <>
               <Field label={t('rental.commission_percent')}>
-                <TextInput type="number" min={0} max={100} step="0.01" value={form.commission_percent} onChange={(e) => set('commission_percent', Number(e.target.value))} />
+                <NumberInput  min={0} max={100} step="0.01" value={form.commission_percent} onChange={(e) => set('commission_percent', Number(e.target.value))} />
               </Field>
               <Field label={t('rental.commission_base')}>
                 <Select
@@ -427,7 +428,7 @@ export default function LeaseFormPage() {
             </>
           ) : (
             <Field label={t('rental.commission_amount')} hint={t('rental.commission_amount_hint')}>
-              <TextInput type="number" min={0} step="0.01" value={form.commission_amount} onChange={(e) => set('commission_amount', Number(e.target.value))} />
+              <NumberInput  min={0} step="0.01" value={form.commission_amount} onChange={(e) => set('commission_amount', Number(e.target.value))} />
             </Field>
           )}
             </>
@@ -465,9 +466,9 @@ export default function LeaseFormPage() {
               }}
             />
             {customTerm && (
-              <TextInput
+              <NumberInput
                 className="mt-2"
-                type="number"
+                
                 min={1}
                 max={120}
                 value={form.term_months}
@@ -478,22 +479,22 @@ export default function LeaseFormPage() {
             )}
           </Field>
           <Field label={t('rental.rent')}>
-            <TextInput type="number" min={0} step="0.01" value={form.rent_amount} onChange={(e) => set('rent_amount', Number(e.target.value))} disabled={lockedTerms} />
+            <NumberInput  min={0} step="0.01" value={form.rent_amount} onChange={(e) => set('rent_amount', Number(e.target.value))} disabled={lockedTerms} />
           </Field>
           <Field label={t('rental.maintenance')} hint={t('rental.maintenance_hint')}>
-            <TextInput type="number" min={0} step="0.01" value={form.maintenance_amount} onChange={(e) => set('maintenance_amount', Number(e.target.value))} disabled={lockedTerms} />
+            <NumberInput  min={0} step="0.01" value={form.maintenance_amount} onChange={(e) => set('maintenance_amount', Number(e.target.value))} disabled={lockedTerms} />
           </Field>
           <Field label={t('rental.currency')}>
             <Select options={currencyOptions} value={form.currency} onChange={(v) => set('currency', String(v))} disabled={lockedTerms} searchable />
           </Field>
           <Field label={t('rental.payment_day')} hint={t('rental.payment_day_hint')}>
-            <TextInput type="number" min={1} max={28} value={form.payment_day} onChange={(e) => set('payment_day', Number(e.target.value))} disabled={lockedTerms} />
+            <NumberInput  min={1} max={28} value={form.payment_day} onChange={(e) => set('payment_day', Number(e.target.value))} disabled={lockedTerms} />
           </Field>
           <Field label={t('rental.deposit')}>
-            <TextInput type="number" min={0} step="0.01" value={form.deposit_amount} onChange={(e) => set('deposit_amount', Number(e.target.value))} disabled={lockedTerms} />
+            <NumberInput  min={0} step="0.01" value={form.deposit_amount} onChange={(e) => set('deposit_amount', Number(e.target.value))} disabled={lockedTerms} />
           </Field>
           <Field label={t('rental.notice_days')}>
-            <TextInput type="number" min={0} value={form.notice_days} onChange={(e) => set('notice_days', Number(e.target.value))} />
+            <NumberInput  min={0} value={form.notice_days} onChange={(e) => set('notice_days', Number(e.target.value))} />
           </Field>
           <Field label={t('rental.late_fee')}>
             <Select
@@ -509,10 +510,10 @@ export default function LeaseFormPage() {
           {form.late_fee_type !== 'none' && (
             <>
               <Field label={t('rental.late_fee_value')}>
-                <TextInput type="number" min={0} step="0.01" value={form.late_fee_value} onChange={(e) => set('late_fee_value', Number(e.target.value))} />
+                <NumberInput  min={0} step="0.01" value={form.late_fee_value} onChange={(e) => set('late_fee_value', Number(e.target.value))} />
               </Field>
               <Field label={t('rental.late_fee_cap')}>
-                <TextInput type="number" min={0} step="0.01" value={form.late_fee_cap} onChange={(e) => set('late_fee_cap', Number(e.target.value))} />
+                <NumberInput  min={0} step="0.01" value={form.late_fee_cap} onChange={(e) => set('late_fee_cap', Number(e.target.value))} />
               </Field>
             </>
           )}

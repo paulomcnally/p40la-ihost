@@ -1,0 +1,24 @@
+# Archivos legacy con <input type="number"> pendientes de migrar a NumberInput.
+# Regla: UI-NUMBER-INPUT. No agregar archivos nuevos a esta lista.
+# Cada línea es una ruta relativa a frontend/src.
+components/DebtInformationFieldInput.tsx
+components/MaintenanceItemModal.tsx
+components/MaintenanceModal.tsx
+components/RecognizeDocumentModal.tsx
+components/RenewServiceModal.tsx
+components/UploadBillModal.tsx
+modules/bank/creditcard/components/TransactionFormModal.tsx
+modules/bank/creditcard/pages/CreditCardFormPage.tsx
+modules/bank/creditcard/pages/CreditCardStatementFormPage.tsx
+pages/AutoFormPage.tsx
+pages/AutomationFormPage.tsx
+pages/BillFormPage.tsx
+pages/BudgetPage.tsx
+pages/BudgetTransactionsPage.tsx
+pages/DebtFormPage.tsx
+pages/PensionImportPage.tsx
+pages/RegistrosPage.tsx
+pages/SalaryFormPage.tsx
+pages/ServiceFormPage.tsx
+pages/SettingsEmailAlertsPage.tsx
+pages/SettingsTelegramBotPage.tsx

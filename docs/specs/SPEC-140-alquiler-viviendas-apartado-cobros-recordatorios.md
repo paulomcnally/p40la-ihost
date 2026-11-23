@@ -42,6 +42,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 | `ARCH-IHOST` | PDF en Go puro, envío acotado, sin servicios externos obligatorios; estado en el volumen | `CA-ARCH-IHOST` |
 | `UI-SELECT` | Vivienda, inmobiliaria, moneda, rol de parte, tipo de documento y frecuencia usan `Select` (buscable cuando aplica) | `CA-UI-SELECT` |
 | `UI-SELECT-ADD` | Las opciones «Agregar inmobiliaria / agente / persona / categoría» dentro de un `Select` se rotulan `app.add` («Agregar») con ícono `plus`, usando `addOption()` | `CA-UI-SELECT-ADD` |
+| `UI-NUMBER-INPUT` | Montos, porcentajes, días y cantidades usan `NumberInput`; permite vacío al editar y limpia ceros a la izquierda. Guardrail `npm run check:numbers`; legacy documentado en `number-input-legacy.txt` | `CA-UI-NUMBER-INPUT` |
 | `UI-INPUT-TOKENS` | Inputs con `bg-card` / `text-text`; sin colores hardcodeados | `CA-UI-INPUT-TOKENS` |
 | `UI-DARKMODE` | Formularios, modales y pestaña Alquiler verificados en darkmode | `CA-UI-DARKMODE` |
 | `UI-TOGGLE` | «Publicar vivienda», «Renovación automática», «Notificar por email», «Recordatorio activo» usan `Toggle` | `CA-UI-TOGGLE` |
@@ -635,3 +636,4 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 | 2026-11-23 | OpenCode | Edición de contratos activos: acción Editar en el menú, campos económicos bloqueados en UI y preservados en backend; se editan inmobiliaria, agente, comisión, mora, preaviso, cuenta de cobro, notas y personas. |
 | 2026-11-23 | OpenCode | Formulario de contrato en tres tabs (Vivienda, Condiciones, Personas) con la tab activa en `?tab=` y salto automático a la tab con error. |
 | 2026-11-23 | OpenCode | Agente y comisión dependen de la inmobiliaria: se ocultan sin agencia, se resetean al quitarla y el backend los limpia. La sección Intermediación del detalle solo aparece con inmobiliaria. |
+| 2026-11-23 | OpenCode | Regla `UI-NUMBER-INPUT`: componente `NumberInput` que permite vacío y elimina ceros a la izquierda. Migrados los formularios de alquiler. Los 21 archivos legacy quedan listados en `frontend/scripts/number-input-legacy.txt` para una spec de migración. |

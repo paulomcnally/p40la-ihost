@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import CardMenu from '../components/CardMenu'
 import { Icon } from '../components/Icons'
 import { Badge, Field, Modal, Money, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
+import NumberInput from '../components/NumberInput'
 import type { Reservation } from '../types/rental'
 
 export default function ReservationShowPage() {
@@ -176,13 +177,13 @@ export default function ReservationShowPage() {
         <p className="text-sm text-text-secondary">{t('rental.reservation.convert_hint')}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label={t('rental.term_months')}>
-            <TextInput type="number" min={1} max={120} value={convertForm.term_months} onChange={(e) => setConvertForm((p) => ({ ...p, term_months: Number(e.target.value) }))} />
+            <NumberInput  min={1} max={120} value={convertForm.term_months} onChange={(e) => setConvertForm((p) => ({ ...p, term_months: Number(e.target.value) }))} />
           </Field>
           <Field label={t('rental.payment_day')}>
-            <TextInput type="number" min={1} max={28} value={convertForm.payment_day} onChange={(e) => setConvertForm((p) => ({ ...p, payment_day: Number(e.target.value) }))} />
+            <NumberInput  min={1} max={28} value={convertForm.payment_day} onChange={(e) => setConvertForm((p) => ({ ...p, payment_day: Number(e.target.value) }))} />
           </Field>
           <Field label={t('rental.deposit')}>
-            <TextInput type="number" min={0} step="0.01" value={convertForm.deposit_amount} onChange={(e) => setConvertForm((p) => ({ ...p, deposit_amount: Number(e.target.value) }))} />
+            <NumberInput  min={0} step="0.01" value={convertForm.deposit_amount} onChange={(e) => setConvertForm((p) => ({ ...p, deposit_amount: Number(e.target.value) }))} />
           </Field>
         </div>
       </Modal>
