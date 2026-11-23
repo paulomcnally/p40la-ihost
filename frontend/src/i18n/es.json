@@ -1909,7 +1909,6 @@
     "agency": "Inmobiliaria",
     "agency_add": "Agregar inmobiliaria",
     "agent_add": "Agregar agente",
-    "agency_fixed_hint": "Se crea con la categoría Inmobiliaria y solo necesitás el nombre.",
     "agency_name_placeholder": "Ej.: Inmobiliaria Demo",
     "name_required": "El nombre es obligatorio",
     "agency_category_missing": "No se encontró la categoría Inmobiliaria",

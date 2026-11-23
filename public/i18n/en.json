@@ -1908,7 +1908,6 @@
     "agency": "Real estate agency",
     "agency_add": "Add real estate agency",
     "agent_add": "Add agent",
-    "agency_fixed_hint": "Created with the Real estate category; only the name is required.",
     "agency_name_placeholder": "E.g. Demo Real Estate",
     "name_required": "Name is required",
     "agency_category_missing": "Real estate category not found",

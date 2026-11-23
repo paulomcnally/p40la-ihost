@@ -521,7 +521,6 @@ export default function LeaseFormPage() {
         </>
       )}
     >
-      <p className="text-sm text-text-secondary">{t('rental.agency_fixed_hint')}</p>
       <Field label={t('rental.person_name')}>
         <TextInput
           autoFocus
