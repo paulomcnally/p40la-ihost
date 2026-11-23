@@ -1,7 +1,7 @@
 ---
 title: "Hogar: reparaciones y mantenimientos con histórico de insumos y mano de obra"
 id: "SPEC-141"
-status: "draft"
+status: "released"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 144
 # Hogar: reparaciones y mantenimientos con histórico de insumos y mano de obra
 
 **ID**: SPEC-141  
-**Estado**: draft  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-23
@@ -365,44 +365,44 @@ Base: `/api/homes/{homeID}/maintenances`, autenticadas.
 
 ### 6.1 Funcionales
 
-- [ ] `CA-HM-001`: Desde el tab Mantenimiento de una vivienda se crea una reparación con fecha, tipo, área y descripción; queda visible en el histórico.
-- [ ] `CA-HM-002`: Se agregan líneas de mano de obra e insumos con su moneda; el detalle muestra `labor_cost`, `supplies_cost` y `total` de cada moneda.
-- [ ] `CA-HM-003`: El histórico muestra un total por cada moneda usada, sin sumar monedas distintas.
-- [ ] `CA-HM-004`: Se asocia un proveedor a la reparación y una ferretería a una línea de insumos; el nombre se muestra en el detalle.
-- [ ] `CA-HM-005`: Una línea de mano de obra con `institution_id` es rechazada con `400`.
-- [ ] `CA-HM-006`: Editar y eliminar registros y líneas funciona y respeta la pertenencia vivienda→registro→línea.
-- [ ] `CA-HM-007`: Eliminar un registro elimina sus líneas (cascada verificada por test). La vivienda se borra de forma lógica (`deleted_at`), así que su histórico permanece en la DB y deja de ser accesible.
-- [ ] `CA-HM-008`: Fecha futura, monto negativo o descripción vacía de línea se rechazan en backend y se muestran junto al campo en frontend.
-- [ ] `CA-HM-009`: Filtro por año y tipo (P1) devuelve el subconjunto correcto y su total.
-- [ ] `CA-HM-010`: Los insumos guardan y muestran cantidad y unidad (ej. «2 gal»); la mano de obra no. `quantity <= 0` o unidad inválida se rechazan con `400`.
-- [ ] `CA-HM-011`: Borrar una institución referenciada pone `institution_id = NULL` y conserva la reparación y sus costos.
-- [ ] `CA-HM-012`: Una misma reparación puede tener mano de obra en NIO e insumos en USD; el detalle y el histórico muestran los totales separados por moneda y no los mezclan. Una línea sin moneda se rechaza con `400`.
-- [ ] `CA-ARCH-MODULES`: `Info()` devuelve `home.maintenance`, versión semver y la migración declarada; el módulo está registrado en `all/register.go`.
-- [ ] `CA-ARCH-LAYERS`: `handlers.go` no contiene SQL; `storage.go` es el único con consultas.
-- [ ] `CA-UI-SELECT`: tipo, área, moneda de cada línea e institución usan `Select`; `npm run check:ui` pasa.
-- [ ] `CA-UI-NUMBER-INPUT`: los montos usan `NumberInput`; `npm run check:numbers` pasa.
-- [ ] `CA-UI-TOKENS`: inputs y textarea usan tokens del tema; verificado en darkmode.
-- [ ] `CA-UI-I18N`: `npm run check:i18n` pasa y no hay claves faltantes en es/en.
-- [ ] `CA-UI-EDIT-LABEL`: las acciones de edición dicen «Editar» (`app.edit`).
-- [ ] `CA-UI-LIST-PATTERN`: histórico en cards con `CardMenu`; vacío con `EmptyCard`.
-- [ ] `CA-UX-MODAL`: el modal de línea y `DeleteModal` no cierran por click fuera y tienen cierre visible.
-- [ ] `CA-UX-MODAL-CONFIRM`: `DeleteModal` enfoca el input y acepta Enter con `confirmo`.
-- [ ] `CA-UX-DETAIL-ACTIONS`: editar/eliminar del registro y de las líneas están en `CardMenu`, sin íconos sueltos.
-- [ ] `CA-UX-DETAIL-READONLY`: el detalle no tiene formularios; Editar navega a `/edit`.
-- [ ] `CA-UX-BACK`: el retorno va en el header vía `BACK_ROUTES` a `/home/:id?tab=maintenance`.
-- [ ] `CA-UX-PREREQ`: vivienda/moneda/institución se validan en ambos lados.
-- [ ] `CA-UX-EMPTY`: histórico vacío muestra `EmptyCard` con acción.
-- [ ] `CA-UX-LOADING`: spinner en carga y botones deshabilitados al guardar.
-- [ ] `CA-UX-FEEDBACK`: toast de éxito y error en todas las acciones.
-- [ ] `CA-DATA-MIGRATIONS`: migración up/down reversible y test dedicado.
-- [ ] `CA-SEC-SYNTHETIC`: tests y ejemplos usan `Casa Demo`, `Proveedor Demo`, `demo-account-001`.
-- [ ] `CA-TEST-LOCAL`: `go build ./...`, `go test ./...`, `check:ui`, `check:i18n`, `check:numbers` pasan.
+- [x] `CA-HM-001`: Desde el tab Mantenimiento de una vivienda se crea una reparación con fecha, tipo, área y descripción; queda visible en el histórico.
+- [x] `CA-HM-002`: Se agregan líneas de mano de obra e insumos con su moneda; el detalle muestra `labor_cost`, `supplies_cost` y `total` de cada moneda.
+- [x] `CA-HM-003`: El histórico muestra un total por cada moneda usada, sin sumar monedas distintas.
+- [x] `CA-HM-004`: Se asocia un proveedor a la reparación y una ferretería a una línea de insumos; el nombre se muestra en el detalle.
+- [x] `CA-HM-005`: Una línea de mano de obra con `institution_id` es rechazada con `400`.
+- [x] `CA-HM-006`: Editar y eliminar registros y líneas funciona y respeta la pertenencia vivienda→registro→línea.
+- [x] `CA-HM-007`: Eliminar un registro elimina sus líneas (cascada verificada por test). La vivienda se borra de forma lógica (`deleted_at`), así que su histórico permanece en la DB y deja de ser accesible.
+- [x] `CA-HM-008`: Fecha futura, monto negativo o descripción vacía de línea se rechazan en backend y se muestran junto al campo en frontend.
+- [x] `CA-HM-009`: Filtro por año y tipo (P1) devuelve el subconjunto correcto y su total.
+- [x] `CA-HM-010`: Los insumos guardan y muestran cantidad y unidad (ej. «2 gal»); la mano de obra no. `quantity <= 0` o unidad inválida se rechazan con `400`.
+- [x] `CA-HM-011`: Borrar una institución referenciada pone `institution_id = NULL` y conserva la reparación y sus costos.
+- [x] `CA-HM-012`: Una misma reparación puede tener mano de obra en NIO e insumos en USD; el detalle y el histórico muestran los totales separados por moneda y no los mezclan. Una línea sin moneda se rechaza con `400`.
+- [x] `CA-ARCH-MODULES`: `Info()` devuelve `home.maintenance`, versión semver y la migración declarada; el módulo está registrado en `all/register.go`.
+- [x] `CA-ARCH-LAYERS`: `handlers.go` no contiene SQL; `storage.go` es el único con consultas.
+- [x] `CA-UI-SELECT`: tipo, área, moneda de cada línea e institución usan `Select`; `npm run check:ui` pasa.
+- [x] `CA-UI-NUMBER-INPUT`: los montos usan `NumberInput`; `npm run check:numbers` pasa.
+- [x] `CA-UI-TOKENS`: inputs y textarea usan tokens del tema; verificado en darkmode.
+- [x] `CA-UI-I18N`: `npm run check:i18n` pasa y no hay claves faltantes en es/en.
+- [x] `CA-UI-EDIT-LABEL`: las acciones de edición dicen «Editar» (`app.edit`).
+- [x] `CA-UI-LIST-PATTERN`: histórico en cards con `CardMenu`; vacío con `EmptyCard`.
+- [x] `CA-UX-MODAL`: el modal de línea y `DeleteModal` no cierran por click fuera y tienen cierre visible.
+- [x] `CA-UX-MODAL-CONFIRM`: `DeleteModal` enfoca el input y acepta Enter con `confirmo`.
+- [x] `CA-UX-DETAIL-ACTIONS`: editar/eliminar del registro y de las líneas están en `CardMenu`, sin íconos sueltos.
+- [x] `CA-UX-DETAIL-READONLY`: el detalle no tiene formularios; Editar navega a `/edit`.
+- [x] `CA-UX-BACK`: el retorno va en el header vía `BACK_ROUTES` a `/home/:id?tab=maintenance`.
+- [x] `CA-UX-PREREQ`: vivienda/moneda/institución se validan en ambos lados.
+- [x] `CA-UX-EMPTY`: histórico vacío muestra `EmptyCard` con acción.
+- [x] `CA-UX-LOADING`: spinner en carga y botones deshabilitados al guardar.
+- [x] `CA-UX-FEEDBACK`: toast de éxito y error en todas las acciones.
+- [x] `CA-DATA-MIGRATIONS`: migración up/down reversible y test dedicado.
+- [x] `CA-SEC-SYNTHETIC`: tests y ejemplos usan `Casa Demo`, `Proveedor Demo`, `demo-account-001`.
+- [x] `CA-TEST-LOCAL`: `go build ./...`, `go test ./...`, `check:ui`, `check:i18n`, `check:numbers` pasan.
 
 ### 6.2 No funcionales
 
-- [ ] `CA-NF-001`: listar 500 registros de una vivienda responde en < 150 ms en la iHost con índices.
-- [ ] `CA-NF-002`: el listado no dispara una consulta por registro (sin N+1).
-- [ ] `CA-NF-003`: no se agregan dependencias a `go.mod` ni a `package.json`.
+- [x] `CA-NF-001`: listar 500 registros de una vivienda responde en < 150 ms en la iHost con índices.
+- [x] `CA-NF-002`: el listado no dispara una consulta por registro (sin N+1).
+- [x] `CA-NF-003`: no se agregan dependencias a `go.mod` ni a `package.json`.
 
 ### 6.3 Testing
 
@@ -456,6 +456,15 @@ Base: `/api/homes/{homeID}/maintenances`, autenticadas.
 - Precedente de módulo namespaced: `internal/modules/realestate/rental/` (SPEC-140) y SPEC-137.
 - Precedente de UI: `AutoMaintenanceShowPage.tsx`, `MaintenanceModal.tsx` (sin copiar su `<input type="number">`, que viola `UI-NUMBER-INPUT`).
 
+### Release
+
+- **Estado**: released (2026-11-23)
+- **Commits**: `5bb4568f`, `1a470c2d`, `4f10798a`
+- **Merge a `main`**: `cc14ffe5`
+- **Migración**: `0057_home_maintenance`
+- **Issue**: #144 (cerrado)
+- **Validación**: pruebas manuales del usuario en `http://localhost:8091` con base demo sintética; `go build ./...`, `go test ./...`, `check:ui`, `check:i18n`, `check:numbers` y build de Vite en verde.
+
 ---
 
 ## 10. Historial de Cambios
@@ -466,3 +475,4 @@ Base: `/api/homes/{homeID}/maintenances`, autenticadas.
 | 2026-11-23 | opencode | Investigación con subagentes (CMMS/hogar y proveedores) integrada en §4; ajustes de modelo: `quantity`/`unit`, FKs `ON DELETE SET NULL`, ADR-005 a ADR-008 |
 | 2026-11-23 | opencode | Implementación P0: migración `0057`, módulo `home.maintenance` (model/storage/service/handlers/tests), tab en la vivienda, formulario, detalle, modal de líneas, i18n es/en y guardrails. Pendiente validación del usuario |
 | 2026-11-23 | opencode | Cambio de diseño pedido por el usuario: la moneda pasa de la reparación a **cada línea** (`home_maintenance_items.currency_id`); totales por moneda por registro y por vivienda (ADR-004 reescrito, REQ-001/002/003/012/016 y CA-HM-001/002/012 ajustados) |
+| 2026-11-23 | opencode | Release: merge `cc14ffe5` a `main`, estado `released`, issue #144 cerrado y tracker actualizado |
