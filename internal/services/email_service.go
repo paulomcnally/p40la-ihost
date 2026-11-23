@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"mime/multipart"
@@ -248,4 +249,112 @@ func stripHTML(html string) string {
 	out := b.String()
 	out = strings.Join(strings.Fields(out), " ")
 	return strings.TrimSpace(out)
+}
+
+// EmailAttachment es un archivo adjunto a un email.
+type EmailAttachment struct {
+	Name        string
+	ContentType string
+	Data        []byte
+}
+
+// SendWithAttachments envía un email HTML con adjuntos vía SMTP.
+// Los adjuntos se codifican en base64 dentro de multipart/mixed.
+func (s *EmailService) SendWithAttachments(ctx context.Context, to []string, subject, htmlContent string, attachments []EmailAttachment) error {
+	if len(to) == 0 {
+		return fmt.Errorf("no hay destinatarios")
+	}
+	cfg, err := s.settings.GetSMTPConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("obtener config SMTP: %w", err)
+	}
+	if !s.settings.isConfigured(cfg) {
+		return fmt.Errorf("config SMTP incompleta (falta host, user o password)")
+	}
+	msg, err := buildMessageWithAttachments(cfg, to, subject, htmlContent, attachments)
+	if err != nil {
+		return fmt.Errorf("construir mensaje: %w", err)
+	}
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	auth := smtp.PlainAuth("", cfg.User, cfg.Password, cfg.Host)
+	slog.Info("email: enviando con adjuntos", "host", cfg.Host, "port", cfg.Port, "to", strings.Join(to, ","), "subject", subject, "attachments", len(attachments))
+	if err := smtp.SendMail(addr, auth, cfg.FromEmail, to, msg); err != nil {
+		slog.Error("email: fallo SMTP", "host", cfg.Host, "error", err.Error())
+		return fmt.Errorf("error al enviar email via SMTP: %w", err)
+	}
+	slog.Info("email: enviado con adjuntos", "to", strings.Join(to, ","), "subject", subject)
+	return nil
+}
+
+// buildMessageWithAttachments arma multipart/mixed con una parte
+// multipart/alternative (texto + HTML) y los adjuntos en base64.
+func buildMessageWithAttachments(cfg *models.SMTPConfig, to []string, subject, htmlContent string, attachments []EmailAttachment) ([]byte, error) {
+	fromHeader := cfg.FromName
+	if fromHeader == "" {
+		fromHeader = cfg.FromEmail
+	}
+	if fromHeader != cfg.FromEmail {
+		fromHeader = fmt.Sprintf("%s <%s>", fromHeader, cfg.FromEmail)
+	}
+
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "From: %s\r\n", fromHeader)
+	fmt.Fprintf(&buf, "To: %s\r\n", strings.Join(to, ", "))
+	fmt.Fprintf(&buf, "Subject: %s\r\n", subject)
+	fmt.Fprintf(&buf, "MIME-Version: 1.0\r\n")
+
+	mixed := multipart.NewWriter(&buf)
+	fmt.Fprintf(&buf, "Content-Type: multipart/mixed; boundary=%q\r\n\r\n", mixed.Boundary())
+
+	altHeader := textproto.MIMEHeader{}
+	altHeader.Set("Content-Type", `multipart/alternative; boundary="alt-boundary"`)
+	altPart, err := mixed.CreatePart(altHeader)
+	if err != nil {
+		return nil, err
+	}
+	var alt bytes.Buffer
+	fmt.Fprintf(&alt, "Content-Type: multipart/alternative; boundary=\"alt-boundary\"\r\n\r\n")
+	fmt.Fprintf(&alt, "--alt-boundary\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n%s\r\n", stripHTML(htmlContent))
+	fmt.Fprintf(&alt, "--alt-boundary\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n%s\r\n", htmlContent)
+	fmt.Fprintf(&alt, "--alt-boundary--\r\n")
+	if _, err := altPart.Write(alt.Bytes()); err != nil {
+		return nil, err
+	}
+
+	for _, att := range attachments {
+		if len(att.Data) == 0 {
+			continue
+		}
+		name := strings.ReplaceAll(att.Name, `"`, "")
+		if name == "" {
+			name = "adjunto.pdf"
+		}
+		ct := att.ContentType
+		if ct == "" {
+			ct = "application/octet-stream"
+		}
+		h := textproto.MIMEHeader{}
+		h.Set("Content-Type", fmt.Sprintf("%s; name=%q", ct, name))
+		h.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+		h.Set("Content-Transfer-Encoding", "base64")
+		part, err := mixed.CreatePart(h)
+		if err != nil {
+			return nil, err
+		}
+		encoded := base64.StdEncoding.EncodeToString(att.Data)
+		for len(encoded) > 76 {
+			if _, err := part.Write([]byte(encoded[:76] + "\r\n")); err != nil {
+				return nil, err
+			}
+			encoded = encoded[76:]
+		}
+		if _, err := part.Write([]byte(encoded + "\r\n")); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := mixed.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
