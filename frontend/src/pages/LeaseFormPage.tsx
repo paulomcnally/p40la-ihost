@@ -362,11 +362,28 @@ export default function LeaseFormPage() {
                   setAgencyModalOpen(true)
                   return
                 }
+                if (value === 0) {
+                  setForm((prev) => ({
+                    ...prev,
+                    agency_institution_id: 0,
+                    agent_person_id: 0,
+                    commission_type: 'percent',
+                    commission_percent: 0,
+                    commission_amount: 0,
+                    commission_base: 'collected',
+                  }))
+                  return
+                }
                 set('agency_institution_id', value)
               }}
               searchable
             />
           </Field>
+          {form.agency_institution_id === 0 && (
+            <p className="text-xs text-text-secondary sm:col-span-2">{t('rental.lease.no_agency_hint')}</p>
+          )}
+          {form.agency_institution_id > 0 && (
+            <>
           <Field label={t('rental.agent')}>
             <Select
               options={agentOptions}
@@ -412,6 +429,8 @@ export default function LeaseFormPage() {
             <Field label={t('rental.commission_amount')} hint={t('rental.commission_amount_hint')}>
               <TextInput type="number" min={0} step="0.01" value={form.commission_amount} onChange={(e) => set('commission_amount', Number(e.target.value))} />
             </Field>
+          )}
+            </>
           )}
         </div>
       </SectionCard>
