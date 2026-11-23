@@ -351,7 +351,7 @@ export default function LeaseShowPage() {
         ) : undefined}
       >
         {charges.length === 0 ? (
-          <EmptyBlock title={t('rental.charges_empty')} subtitle={t('rental.charges_empty_hint')} />
+          <EmptyBlock title={t('rental.charges.empty')} subtitle={t('rental.charges.empty_hint')} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

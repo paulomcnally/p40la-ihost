@@ -48,7 +48,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 | `UI-LIST-PATTERN` | Listados de contratos/cargos/documentos con cards y `CardMenu`; sin formularios inline; `EmptyCard` local | `CA-UI-LIST-PATTERN` |
 | `UI-CREATE-MENU` | Crear contrato/apartado/recordatorio desde `CreateMenu` del header o de la pestaña | `CA-UI-CREATE-MENU` |
 | `UI-EDIT-LABEL` | Toda acción de edición usa `app.edit` («Editar») | `CA-UI-EDIT-LABEL` |
-| `UI-I18N` | Claves nuevas en `frontend/public/i18n/{es,en}.json`, namespace `rental.*`; nunca en `public/i18n/` | `CA-UI-I18N` |
+| `UI-I18N` | Claves nuevas en `frontend/public/i18n/{es,en}.json`, namespace `rental.*`; nunca en `public/i18n/`. Toda clave usada existe como string en ambos idiomas y no apunta a objetos padre; guardrail `npm run check:i18n` | `CA-UI-I18N` |
 | `UI-STYLE` | Cards `rounded-ios` / `shadow-ios`, badges de estado y menú de 3 puntos | `CA-UI-STYLE` |
 | `UI-GUARDRAIL` | `npm run check:ui` limpio; sin `<select>` ni checkbox nativo | `CA-UI-GUARDRAIL` |
 | `UX-BACK` | `/home/:id`, `/leases/:id`, `/leases/:id/edit`, `/reservations/:id`, `/invoices/:id` registradas en `BACK_ROUTES`; sin «← Título» en contenido | `CA-UX-BACK` |
@@ -628,3 +628,4 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 | 2026-11-23 | OpenCode | Formularios de contrato y apartado: la vivienda se muestra como dato fijo (sin dropdown) cuando se llega desde `?home=ID` o en edición. |
 | 2026-11-23 | OpenCode | Comisión de intermediación con dos modos: porcentaje (con base cobrado/facturado) o monto fijo (por ejemplo, un mes de renta). Migración `0056`, validación y visualización en el detalle. |
 | 2026-11-23 | OpenCode | Facturación automática por período al vencer, envío automático con deduplicación diaria y toggles en Configuración → Alquiler. Pagos sin factura se imputan a la impaga más antigua o generan la del período vencido. |
+| 2026-11-23 | OpenCode | Guardrail `check:i18n`: valida que toda clave estática usada exista como string en es/en, que no apunte a objetos padre y que ambos idiomas tengan paridad. Se integró al build y al pre-commit; se corrigieron `rental.reference`, `rental.charges.empty*` y claves de presupuesto. |
