@@ -30,9 +30,19 @@ const emptyParty = (role: PartyRole = 'tenant'): PartyDraft => ({
 export default function LeaseFormPage() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const isEdit = Boolean(id)
   const queryHomeID = Number(searchParams.get('home') || 0)
+  type LeaseTab = 'general' | 'terms' | 'parties'
+  const activeTab: LeaseTab = searchParams.get('tab') === 'terms'
+    ? 'terms'
+    : searchParams.get('tab') === 'parties' ? 'parties' : 'general'
+  const setActiveTab = (tab: LeaseTab) => {
+    const next = new URLSearchParams(searchParams)
+    if (tab === 'general') next.delete('tab')
+    else next.set('tab', tab)
+    setSearchParams(next, { replace: true })
+  }
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const { homes, loadHomes, currencies, loadCurrencies } = useAppStore()
@@ -213,10 +223,12 @@ export default function LeaseFormPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.home_id) {
+      setActiveTab('general')
       showToast(t('rental.lease.home_required'), 'error')
       return
     }
     if (form.rent_amount <= 0 && form.maintenance_amount <= 0) {
+      setActiveTab('terms')
       showToast(t('rental.lease.amount_required'), 'error')
       return
     }
@@ -305,6 +317,24 @@ export default function LeaseFormPage() {
     <form onSubmit={submit} className="max-w-3xl mx-auto space-y-4" noValidate>
       <h2 className="text-lg sm:text-xl font-bold">{isEdit ? t('rental.lease.edit') : t('rental.lease.create')}</h2>
 
+      <div className="flex gap-1 p-1 bg-bg rounded-ios-sm" role="tablist">
+        {(['general', 'terms', 'parties'] as LeaseTab[]).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 px-3 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
+              activeTab === tab ? 'bg-card text-primary shadow-ios' : 'text-text-secondary hover:text-text'
+            }`}
+          >
+            {t(`rental.lease.tab_${tab}`)}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'general' && (
       <SectionCard title={t('rental.lease.property')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label={t('rental.home')}>
@@ -385,7 +415,9 @@ export default function LeaseFormPage() {
           )}
         </div>
       </SectionCard>
+      )}
 
+      {activeTab === 'terms' && (
       <SectionCard title={t('rental.lease.terms')}>
         {lockedTerms && (
           <p className="text-xs text-text-secondary mb-3 rounded-ios-sm bg-bg/60 px-3 py-2">
@@ -482,7 +514,9 @@ export default function LeaseFormPage() {
           </Field>
         </div>
       </SectionCard>
+      )}
 
+      {activeTab === 'parties' && (
       <SectionCard
         title={t('rental.parties')}
         action={
@@ -544,6 +578,7 @@ export default function LeaseFormPage() {
           ))}
         </div>
       </SectionCard>
+      )}
 
       <div className="flex justify-end gap-2">
         <SecondaryButton type="button" onClick={() => navigate(-1)}>
