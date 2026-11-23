@@ -758,6 +758,14 @@ func (s *Service) prepareLease(ctx context.Context, l *Lease) error {
 	if l.LateFeeType == "percent" && l.LateFeeValue > 100 {
 		return invalid("invalid_late_fee", "El porcentaje de mora no puede superar 100")
 	}
+	// Sin inmobiliaria no hay agente ni comisión de intermediación.
+	if l.AgencyInstitutionID == nil {
+		l.AgentPersonID = nil
+		l.CommissionType = "percent"
+		l.CommissionPercent = 0
+		l.CommissionAmount = 0
+		l.CommissionBase = "collected"
+	}
 	if l.CommissionType == "" {
 		l.CommissionType = "percent"
 	}

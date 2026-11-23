@@ -35,6 +35,20 @@ func createHome(t *testing.T, svc *Service, name string) int64 {
 	return id
 }
 
+func createRealEstateAgency(t *testing.T, svc *Service, name string) int64 {
+	t.Helper()
+	var categoryID int64
+	if err := svc.storage.db.QueryRow(`SELECT id FROM institution_categories WHERE key = 'real_estate'`).Scan(&categoryID); err != nil {
+		t.Fatalf("categoría real_estate: %v", err)
+	}
+	res, err := svc.storage.db.Exec(`INSERT INTO institutions (name, category_id) VALUES (?, ?)`, name, categoryID)
+	if err != nil {
+		t.Fatalf("crear inmobiliaria: %v", err)
+	}
+	id, _ := res.LastInsertId()
+	return id
+}
+
 func TestLeaseLifecycleInvoiceAndReceipt(t *testing.T) {
 	svc, cleanup := newTestService(t)
 	defer cleanup()
@@ -346,11 +360,13 @@ func TestCommissionPercentOrFixed(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 	homeID := createHome(t, svc, "Casa Comisión")
+	agencyID := createRealEstateAgency(t, svc, "Inmobiliaria Comisión")
 
 	fixed, err := svc.CreateLease(ctx, &Lease{
 		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 12,
 		RentAmount: 500, Currency: "USD", PaymentDay: 1,
-		CommissionType: "fixed", CommissionAmount: 500,
+		AgencyInstitutionID: &agencyID,
+		CommissionType:      "fixed", CommissionAmount: 500,
 	})
 	if err != nil {
 		t.Fatalf("contrato con comisión fija: %v", err)
@@ -362,7 +378,8 @@ func TestCommissionPercentOrFixed(t *testing.T) {
 	percent, err := svc.CreateLease(ctx, &Lease{
 		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 6,
 		RentAmount: 400, Currency: "USD", PaymentDay: 1,
-		CommissionType: "percent", CommissionPercent: 8.5, CommissionAmount: 999,
+		AgencyInstitutionID: &agencyID,
+		CommissionType:      "percent", CommissionPercent: 8.5, CommissionAmount: 999,
 	})
 	if err != nil {
 		t.Fatalf("contrato con comisión porcentual: %v", err)
@@ -373,7 +390,8 @@ func TestCommissionPercentOrFixed(t *testing.T) {
 
 	if _, err := svc.CreateLease(ctx, &Lease{
 		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 6,
-		RentAmount: 400, Currency: "USD", PaymentDay: 1, CommissionType: "other",
+		RentAmount: 400, Currency: "USD", PaymentDay: 1,
+		AgencyInstitutionID: &agencyID, CommissionType: "other",
 	}); err == nil {
 		t.Fatal("se aceptó un tipo de comisión inválido")
 	}
@@ -480,12 +498,14 @@ func TestActiveLeaseAllowsSafeEditsButKeepsFinancials(t *testing.T) {
 	ctx := context.Background()
 	svc.now = func() time.Time { return time.Date(2026, 11, 23, 12, 0, 0, 0, time.UTC) }
 	homeID := createHome(t, svc, "Casa Edición Activa")
+	agencyID := createRealEstateAgency(t, svc, "Inmobiliaria Edición")
 	person, _ := svc.CreatePerson(ctx, &Person{FullName: "Inquilino Demo", Email: "demo@example.com"})
 	lease, err := svc.CreateLease(ctx, &Lease{
 		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 12,
 		RentAmount: 500, MaintenanceAmount: 50, Currency: "USD",
 		PaymentDay: 1, DepositAmount: 1000,
-		Parties: []LeaseParty{{PersonID: person.ID, Role: RoleTenant, NotifyEmail: true}},
+		AgencyInstitutionID: &agencyID,
+		Parties:             []LeaseParty{{PersonID: person.ID, Role: RoleTenant, NotifyEmail: true}},
 	})
 	if err != nil {
 		t.Fatalf("crear: %v", err)
@@ -499,7 +519,8 @@ func TestActiveLeaseAllowsSafeEditsButKeepsFinancials(t *testing.T) {
 		StartDate: "2020-01-01", TermMonths: 1,
 		RentAmount: 9999, MaintenanceAmount: 9999, Currency: "EUR",
 		PaymentDay: 28, DepositAmount: 1,
-		CommissionType: "fixed", CommissionAmount: 700,
+		AgencyInstitutionID: &agencyID,
+		CommissionType:      "fixed", CommissionAmount: 700,
 		Notes: "actualizado",
 	})
 	if err != nil {
@@ -512,5 +533,28 @@ func TestActiveLeaseAllowsSafeEditsButKeepsFinancials(t *testing.T) {
 	}
 	if updated.CommissionType != "fixed" || updated.CommissionAmount != 700 || updated.Notes != "actualizado" {
 		t.Fatalf("no se guardaron los campos editables: %+v", updated)
+	}
+}
+
+func TestNoAgencyClearsAgentAndCommission(t *testing.T) {
+	svc, cleanup := newTestService(t)
+	defer cleanup()
+	ctx := context.Background()
+	homeID := createHome(t, svc, "Casa Sin Inmobiliaria")
+	agent, _ := svc.CreatePerson(ctx, &Person{FullName: "Agente Demo", Email: "agente@example.com"})
+	lease, err := svc.CreateLease(ctx, &Lease{
+		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 12,
+		RentAmount: 500, Currency: "USD", PaymentDay: 1,
+		AgentPersonID:  &agent.ID,
+		CommissionType: "fixed", CommissionAmount: 500,
+	})
+	if err != nil {
+		t.Fatalf("crear: %v", err)
+	}
+	if lease.AgentPersonID != nil {
+		t.Fatal("se guardó un agente sin inmobiliaria")
+	}
+	if lease.CommissionType != "percent" || lease.CommissionPercent != 0 || lease.CommissionAmount != 0 {
+		t.Fatalf("se guardó comisión sin inmobiliaria: %+v", lease)
 	}
 }
