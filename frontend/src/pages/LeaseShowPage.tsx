@@ -311,6 +311,7 @@ export default function LeaseShowPage() {
         )}
       </SectionCard>
 
+      {lease.agency_institution_id ? (
       <SectionCard title={t('rental.intermediation')}>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
@@ -337,6 +338,7 @@ export default function LeaseShowPage() {
           )}
         </dl>
       </SectionCard>
+      ) : null}
 
       <SectionCard
         title={t('rental.charges_title')}
