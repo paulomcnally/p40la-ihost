@@ -9,6 +9,7 @@ import (
 	bacimport "github.com/paulomcnally/p40la-ihost/internal/modules/bank/bac/ni/creditcard/statement/import"
 	banproimport "github.com/paulomcnally/p40la-ihost/internal/modules/bank/banpro/ni/creditcard/statement/import"
 	"github.com/paulomcnally/p40la-ihost/internal/modules/bank/creditcard"
+	homemaintenance "github.com/paulomcnally/p40la-ihost/internal/modules/home/maintenance"
 	"github.com/paulomcnally/p40la-ihost/internal/modules/realestate/rental"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 )
@@ -19,4 +20,5 @@ func Register(registry *modules.Registry, db *sql.DB, email *services.EmailServi
 	registry.Register(bacimport.New())
 	registry.Register(banproimport.New())
 	registry.Register(rental.New(db, email, settings, dataDir))
+	registry.Register(homemaintenance.New(db))
 }
