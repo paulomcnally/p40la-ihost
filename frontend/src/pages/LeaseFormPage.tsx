@@ -9,7 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import Select from '../components/Select'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
-import { Field, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
+import { Field, Modal, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
 import type { Institution, InstitutionCategory } from '../types'
 import type { Lease, LeaseParty, PartyRole, RentalPerson } from '../types/rental'
 
@@ -41,6 +41,11 @@ export default function LeaseFormPage() {
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [categories, setCategories] = useState<InstitutionCategory[]>([])
   const [people, setPeople] = useState<RentalPerson[]>([])
+  const [agencyModalOpen, setAgencyModalOpen] = useState(false)
+  const [agentModalOpen, setAgentModalOpen] = useState(false)
+  const [quickAgencyName, setQuickAgencyName] = useState('')
+  const [quickAgent, setQuickAgent] = useState({ full_name: '', email: '', phone: '' })
+  const [quickSaving, setQuickSaving] = useState(false)
   const [parties, setParties] = useState<PartyDraft[]>([emptyParty('tenant')])
   const [initialPartyIds, setInitialPartyIds] = useState<number[]>([])
   const [customTerm, setCustomTerm] = useState(false)
@@ -130,6 +135,70 @@ export default function LeaseFormPage() {
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
+  const closeAgencyModal = () => {
+    setAgencyModalOpen(false)
+    setQuickAgencyName('')
+  }
+
+  const closeAgentModal = () => {
+    setAgentModalOpen(false)
+    setQuickAgent({ full_name: '', email: '', phone: '' })
+  }
+
+  const createAgency = async () => {
+    const name = quickAgencyName.trim()
+    if (!name) {
+      showToast(t('rental.name_required'), 'error')
+      return
+    }
+    if (!realEstateCategoryID) {
+      showToast(t('rental.agency_category_missing'), 'error')
+      return
+    }
+    setQuickSaving(true)
+    try {
+      const created = await api.institutions.create({ name, category_id: realEstateCategoryID })
+      const list = await api.institutions.list()
+      setInstitutions(list || [])
+      if (created) {
+        set('agency_institution_id', created.id)
+        closeAgencyModal()
+        showToast(t('rental.agency_created'), 'success')
+      }
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
+    } finally {
+      setQuickSaving(false)
+    }
+  }
+
+  const createAgent = async () => {
+    const name = quickAgent.full_name.trim()
+    if (!name) {
+      showToast(t('rental.name_required'), 'error')
+      return
+    }
+    setQuickSaving(true)
+    try {
+      const created = await api.rental.people.create({
+        full_name: name,
+        email: quickAgent.email.trim(),
+        phone: quickAgent.phone.trim(),
+      })
+      const list = await api.rental.people.list()
+      setPeople(list || [])
+      if (created) {
+        set('agent_person_id', created.id)
+        closeAgentModal()
+        showToast(t('rental.agent_created'), 'success')
+      }
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
+    } finally {
+      setQuickSaving(false)
+    }
+  }
+
   const updateParty = (index: number, patch: Partial<PartyDraft>) => {
     setParties((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)))
   }
@@ -200,8 +269,16 @@ export default function LeaseFormPage() {
   const homeOptions = homes.map((h) => ({ value: h.id, label: h.name }))
   const realEstateCategoryID = categories.find((c) => c.key === 'real_estate')?.id
   const agencies = institutions.filter((i) => realEstateCategoryID && i.category_id === realEstateCategoryID)
-  const agencyOptions = [{ value: 0, label: t('rental.none') }, ...agencies.map((i) => ({ value: i.id, label: i.name }))]
-  const agentOptions = [{ value: 0, label: t('rental.none') }, ...people.map((p) => ({ value: p.id, label: p.full_name }))]
+  const agencyOptions = [
+    { value: 0, label: t('rental.none') },
+    ...agencies.map((i) => ({ value: i.id, label: i.name })),
+    { value: -1, label: t('rental.agency_add') },
+  ]
+  const agentOptions = [
+    { value: 0, label: t('rental.none') },
+    ...people.map((p) => ({ value: p.id, label: p.full_name })),
+    { value: -1, label: t('rental.agent_add') },
+  ]
   const currencyOptions = (currencies.length > 0 ? currencies.map((c) => c.code) : ['USD', 'NIO', 'EUR'])
     .map((code) => ({ value: code, label: code }))
   const roleOptions = [
@@ -212,6 +289,7 @@ export default function LeaseFormPage() {
   ]
 
   return (
+    <>
     <form onSubmit={submit} className="max-w-3xl mx-auto space-y-4" noValidate>
       <h2 className="text-lg sm:text-xl font-bold">{isEdit ? t('rental.lease.edit') : t('rental.lease.create')}</h2>
 
@@ -221,18 +299,42 @@ export default function LeaseFormPage() {
             <Select options={homeOptions} value={form.home_id} onChange={(v) => set('home_id', Number(v))} searchable placeholder={t('home.select')} />
           </Field>
           <Field label={t('rental.agency')} hint={t('rental.agency_hint')}>
-            <Select options={agencyOptions} value={form.agency_institution_id} onChange={(v) => set('agency_institution_id', Number(v))} searchable />
+            <Select
+              options={agencyOptions}
+              value={form.agency_institution_id}
+              onChange={(v) => {
+                const value = Number(v)
+                if (value === -1) {
+                  setAgencyModalOpen(true)
+                  return
+                }
+                set('agency_institution_id', value)
+              }}
+              searchable
+            />
             {agencies.length === 0 && (
               <p className="text-xs text-text-secondary mt-1">
                 {t('rental.agency_empty')}{' '}
-                <button type="button" className="text-primary underline" onClick={() => navigate('/institutions/new')}>
+                <button type="button" className="text-primary underline" onClick={() => setAgencyModalOpen(true)}>
                   {t('rental.agency_manage')}
                 </button>
               </p>
             )}
           </Field>
           <Field label={t('rental.agent')}>
-            <Select options={agentOptions} value={form.agent_person_id} onChange={(v) => set('agent_person_id', Number(v))} searchable />
+            <Select
+              options={agentOptions}
+              value={form.agent_person_id}
+              onChange={(v) => {
+                const value = Number(v)
+                if (value === -1) {
+                  setAgentModalOpen(true)
+                  return
+                }
+                set('agent_person_id', value)
+              }}
+              searchable
+            />
           </Field>
           <Field label={t('rental.commission_base')}>
             <Select
@@ -413,5 +515,58 @@ export default function LeaseFormPage() {
         </PrimaryButton>
       </div>
     </form>
+
+    <Modal
+      open={agencyModalOpen}
+      title={t('rental.agency_add')}
+      onClose={closeAgencyModal}
+      footer={(
+        <>
+          <SecondaryButton type="button" onClick={closeAgencyModal}>{t('app.cancel')}</SecondaryButton>
+          <PrimaryButton type="button" disabled={quickSaving} onClick={createAgency}>
+            {quickSaving ? t('app.saving') : t('app.create')}
+          </PrimaryButton>
+        </>
+      )}
+    >
+      <p className="text-sm text-text-secondary">{t('rental.agency_fixed_hint')}</p>
+      <Field label={t('rental.person_name')}>
+        <TextInput
+          autoFocus
+          value={quickAgencyName}
+          onChange={(e) => setQuickAgencyName(e.target.value)}
+          placeholder={t('rental.agency_name_placeholder')}
+        />
+      </Field>
+    </Modal>
+
+    <Modal
+      open={agentModalOpen}
+      title={t('rental.agent_add')}
+      onClose={closeAgentModal}
+      footer={(
+        <>
+          <SecondaryButton type="button" onClick={closeAgentModal}>{t('app.cancel')}</SecondaryButton>
+          <PrimaryButton type="button" disabled={quickSaving} onClick={createAgent}>
+            {quickSaving ? t('app.saving') : t('app.create')}
+          </PrimaryButton>
+        </>
+      )}
+    >
+      <Field label={t('rental.person_name')}>
+        <TextInput
+          autoFocus
+          value={quickAgent.full_name}
+          onChange={(e) => setQuickAgent((prev) => ({ ...prev, full_name: e.target.value }))}
+        />
+      </Field>
+      <Field label={t('rental.email')}>
+        <TextInput type="email" value={quickAgent.email} onChange={(e) => setQuickAgent((prev) => ({ ...prev, email: e.target.value }))} />
+      </Field>
+      <Field label={t('rental.phone')}>
+        <TextInput value={quickAgent.phone} onChange={(e) => setQuickAgent((prev) => ({ ...prev, phone: e.target.value }))} />
+      </Field>
+    </Modal>
+    </>
   )
 }
