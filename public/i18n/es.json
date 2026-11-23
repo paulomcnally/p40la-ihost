@@ -2062,7 +2062,9 @@
       "forfeitable": "Retenible",
       "custom": "Personalizada"
     },
-    "role": {
+    "role_label": "Rol",
+  "charges_title": "Cargos",
+  "role": {
       "tenant": "Inquilino",
       "guarantor": "Garante",
       "owner": "Propietario",

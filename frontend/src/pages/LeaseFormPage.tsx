@@ -485,7 +485,7 @@ export default function LeaseFormPage() {
           {parties.map((party, index) => (
             <div key={index} className="border border-border rounded-ios p-3 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label={t('rental.role')}>
+                <Field label={t('rental.role_label')}>
                   <Select options={roleOptions} value={party.role} onChange={(v) => updateParty(index, { role: v as PartyRole })} />
                 </Field>
                 <Field label={t('rental.person')}>

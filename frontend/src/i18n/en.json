@@ -2061,7 +2061,9 @@
       "forfeitable": "Forfeitable",
       "custom": "Custom"
     },
-    "role": {
+    "role_label": "Role",
+  "charges_title": "Charges",
+  "role": {
       "tenant": "Tenant",
       "guarantor": "Guarantor",
       "owner": "Owner",
