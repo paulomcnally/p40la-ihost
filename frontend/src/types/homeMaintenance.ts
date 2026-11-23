@@ -24,6 +24,14 @@ export type HomeMaintenanceUnit =
   | 'sack'
   | 'box'
 
+export interface HomeMaintenanceCurrencyTotal {
+  currency_id: number
+  currency_code: string
+  labor_cost: number
+  supplies_cost: number
+  total: number
+}
+
 export interface HomeMaintenanceItem {
   id: number
   maintenance_id: number
@@ -32,6 +40,8 @@ export interface HomeMaintenanceItem {
   quantity: number
   unit: HomeMaintenanceUnit
   amount: number
+  currency_id: number
+  currency_code: string
   institution_id: number | null
   institution_name: string
   created_at: string
@@ -44,6 +54,7 @@ export interface HomeMaintenanceItemInput {
   quantity: number
   unit: HomeMaintenanceUnit
   amount: number
+  currency_id: number
   institution_id: number | null
 }
 
@@ -53,7 +64,6 @@ export interface HomeMaintenanceInput {
   area: HomeMaintenanceArea
   institution_id: number | null
   description: string
-  currency_id: number
 }
 
 export interface HomeMaintenance {
@@ -65,20 +75,10 @@ export interface HomeMaintenance {
   institution_id: number | null
   institution_name: string
   description: string
-  labor_cost: number
-  supplies_cost: number
-  total_cost: number
-  currency_id: number
-  currency_code: string
+  totals_by_currency: HomeMaintenanceCurrencyTotal[]
   items: HomeMaintenanceItem[]
   created_at: string
   updated_at: string
-}
-
-export interface HomeMaintenanceCurrencyTotal {
-  currency_id: number
-  currency_code: string
-  total: number
 }
 
 export interface HomeMaintenanceList {

@@ -24,6 +24,36 @@ func TestMigrate057HomeMaintenance(t *testing.T) {
 		t.Fatalf("categoría hardware: %v", err)
 	}
 
+	// SPEC-141: la moneda vive en cada línea, no en la reparación.
+	var currencyInMaintenance int
+	if err := database.QueryRow(
+		"SELECT COUNT(*) FROM pragma_table_info('home_maintenances') WHERE name = 'currency_id'",
+	).Scan(&currencyInMaintenance); err != nil {
+		t.Fatal(err)
+	}
+	if currencyInMaintenance != 0 {
+		t.Fatal("home_maintenances no debería tener currency_id")
+	}
+	var currencyInItem int
+	if err := database.QueryRow(
+		"SELECT COUNT(*) FROM pragma_table_info('home_maintenance_items') WHERE name = 'currency_id'",
+	).Scan(&currencyInItem); err != nil {
+		t.Fatal(err)
+	}
+	if currencyInItem != 1 {
+		t.Fatal("home_maintenance_items debería tener currency_id")
+	}
+	var currencyOnDelete string
+	if err := database.QueryRow(`
+		SELECT "on_delete" FROM pragma_foreign_key_list('home_maintenance_items')
+		WHERE "table" = 'currencies'
+	`).Scan(&currencyOnDelete); err != nil {
+		t.Fatalf("fk moneda: %v", err)
+	}
+	if currencyOnDelete == "" {
+		t.Fatal("home_maintenance_items.currency_id debería referenciar currencies")
+	}
+
 	// La FK de institución debe preservar el histórico al borrar.
 	var onDelete string
 	if err := database.QueryRow(`

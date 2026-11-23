@@ -90,22 +90,18 @@ func invalid(code, message string) error {
 
 // Maintenance es una reparación o mantenimiento registrado.
 type Maintenance struct {
-	ID              int64     `json:"id"`
-	HomeID          int64     `json:"home_id"`
-	PerformedAt     string    `json:"performed_at"`
-	Kind            string    `json:"kind"`
-	Area            string    `json:"area"`
-	InstitutionID   *int64    `json:"institution_id"`
-	InstitutionName string    `json:"institution_name"`
-	Description     string    `json:"description"`
-	LaborCost       float64   `json:"labor_cost"`
-	SuppliesCost    float64   `json:"supplies_cost"`
-	TotalCost       float64   `json:"total_cost"`
-	CurrencyID      int64     `json:"currency_id"`
-	CurrencyCode    string    `json:"currency_code"`
-	Items           []Item    `json:"items"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID               int64           `json:"id"`
+	HomeID           int64           `json:"home_id"`
+	PerformedAt      string          `json:"performed_at"`
+	Kind             string          `json:"kind"`
+	Area             string          `json:"area"`
+	InstitutionID    *int64          `json:"institution_id"`
+	InstitutionName  string          `json:"institution_name"`
+	Description      string          `json:"description"`
+	TotalsByCurrency []CurrencyTotal `json:"totals_by_currency"`
+	Items            []Item          `json:"items"`
+	CreatedAt        time.Time       `json:"created_at"`
+	UpdatedAt        time.Time       `json:"updated_at"`
 }
 
 // Item es una línea de mano de obra o insumos.
@@ -117,6 +113,8 @@ type Item struct {
 	Quantity        float64   `json:"quantity"`
 	Unit            string    `json:"unit"`
 	Amount          float64   `json:"amount"`
+	CurrencyID      int64     `json:"currency_id"`
+	CurrencyCode    string    `json:"currency_code"`
 	InstitutionID   *int64    `json:"institution_id"`
 	InstitutionName string    `json:"institution_name"`
 	CreatedAt       time.Time `json:"created_at"`
@@ -124,13 +122,13 @@ type Item struct {
 }
 
 // Input es el cuerpo para crear o actualizar un mantenimiento.
+// La moneda no se define acá: cada línea lleva la suya.
 type Input struct {
 	PerformedAt   string `json:"performed_at"`
 	Kind          string `json:"kind"`
 	Area          string `json:"area"`
 	InstitutionID *int64 `json:"institution_id"`
 	Description   string `json:"description"`
-	CurrencyID    int64  `json:"currency_id"`
 }
 
 // ItemInput es el cuerpo para crear o actualizar una línea.
@@ -140,13 +138,16 @@ type ItemInput struct {
 	Quantity      float64 `json:"quantity"`
 	Unit          string  `json:"unit"`
 	Amount        float64 `json:"amount"`
+	CurrencyID    int64   `json:"currency_id"`
 	InstitutionID *int64  `json:"institution_id"`
 }
 
-// CurrencyTotal es el total de una moneda en el histórico.
+// CurrencyTotal es el total de una moneda, con desglose por tipo de gasto.
 type CurrencyTotal struct {
 	CurrencyID   int64   `json:"currency_id"`
 	CurrencyCode string  `json:"currency_code"`
+	LaborCost    float64 `json:"labor_cost"`
+	SuppliesCost float64 `json:"supplies_cost"`
 	Total        float64 `json:"total"`
 }
 

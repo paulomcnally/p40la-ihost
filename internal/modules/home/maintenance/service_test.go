@@ -55,6 +55,15 @@ func currencyID(t *testing.T, database *sql.DB, code string) int64 {
 	return id
 }
 
+func totalFor(totals []CurrencyTotal, code string) (CurrencyTotal, bool) {
+	for _, total := range totals {
+		if total.CurrencyCode == code {
+			return total, true
+		}
+	}
+	return CurrencyTotal{}, false
+}
+
 func TestCreateMaintenanceWithItemsAndTotals(t *testing.T) {
 	ctx := context.Background()
 	service, database, homeID, institutionID := newTestService(t)
@@ -66,7 +75,6 @@ func TestCreateMaintenanceWithItemsAndTotals(t *testing.T) {
 		Area:          AreaPlumbing,
 		InstitutionID: &institutionID,
 		Description:   "Cambio de llave de paso",
-		CurrencyID:    usd,
 	})
 	if err != nil {
 		t.Fatalf("crear mantenimiento: %v", err)
@@ -76,13 +84,13 @@ func TestCreateMaintenanceWithItemsAndTotals(t *testing.T) {
 	}
 
 	if _, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
-		ItemType: ItemLabor, Description: "Mano de obra", Amount: 40,
+		ItemType: ItemLabor, Description: "Mano de obra", Amount: 40, CurrencyID: usd,
 	}); err != nil {
 		t.Fatalf("crear mano de obra: %v", err)
 	}
 	if _, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
 		ItemType: ItemSupplies, Description: "Pintura blanca", Quantity: 2, Unit: UnitGallon,
-		Amount: 25.55, InstitutionID: &institutionID,
+		Amount: 25.55, CurrencyID: usd, InstitutionID: &institutionID,
 	}); err != nil {
 		t.Fatalf("crear insumo: %v", err)
 	}
@@ -94,14 +102,15 @@ func TestCreateMaintenanceWithItemsAndTotals(t *testing.T) {
 	if len(detail.Items) != 2 {
 		t.Fatalf("líneas = %d, quería 2", len(detail.Items))
 	}
-	if detail.LaborCost != 40 {
-		t.Fatalf("mano de obra = %v", detail.LaborCost)
+	if len(detail.TotalsByCurrency) != 1 {
+		t.Fatalf("monedas en el detalle = %d", len(detail.TotalsByCurrency))
 	}
-	if detail.SuppliesCost != 25.55 {
-		t.Fatalf("insumos = %v", detail.SuppliesCost)
+	usdTotal, ok := totalFor(detail.TotalsByCurrency, "USD")
+	if !ok {
+		t.Fatal("falta el total en USD")
 	}
-	if detail.TotalCost != 65.55 {
-		t.Fatalf("total = %v", detail.TotalCost)
+	if usdTotal.LaborCost != 40 || usdTotal.SuppliesCost != 25.55 || usdTotal.Total != 65.55 {
+		t.Fatalf("totales USD = %+v", usdTotal)
 	}
 
 	list, err := service.List(ctx, homeID, Filter{})
@@ -111,11 +120,88 @@ func TestCreateMaintenanceWithItemsAndTotals(t *testing.T) {
 	if len(list.Items) != 1 {
 		t.Fatalf("registros = %d", len(list.Items))
 	}
+	if len(list.Items[0].TotalsByCurrency) != 1 {
+		t.Fatalf("totales por registro = %+v", list.Items[0].TotalsByCurrency)
+	}
 	if len(list.TotalsByCurrency) != 1 || list.TotalsByCurrency[0].Total != 65.55 {
 		t.Fatalf("totales = %+v", list.TotalsByCurrency)
 	}
-	if list.TotalsByCurrency[0].CurrencyCode != "USD" {
-		t.Fatalf("moneda = %q", list.TotalsByCurrency[0].CurrencyCode)
+}
+
+func TestMultiCurrencyRepair(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+	nio := currencyID(t, database, "NIO")
+
+	record, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-08-10", Kind: KindCorrective, Area: AreaRoof,
+		Description: "Techo con mano de obra local e insumo importado",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Instalación", Amount: 500, CurrencyID: nio,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Lámina", Quantity: 3, Unit: UnitUnit,
+		Amount: 900, CurrencyID: nio,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Tornillería importada", Amount: 12.5, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	detail, err := service.Get(ctx, homeID, record.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(detail.TotalsByCurrency) != 2 {
+		t.Fatalf("monedas = %d, quería 2", len(detail.TotalsByCurrency))
+	}
+	nioTotal, _ := totalFor(detail.TotalsByCurrency, "NIO")
+	if nioTotal.LaborCost != 500 || nioTotal.SuppliesCost != 900 || nioTotal.Total != 1400 {
+		t.Fatalf("totales NIO = %+v", nioTotal)
+	}
+	usdTotal, _ := totalFor(detail.TotalsByCurrency, "USD")
+	if usdTotal.LaborCost != 0 || usdTotal.SuppliesCost != 12.5 || usdTotal.Total != 12.5 {
+		t.Fatalf("totales USD = %+v", usdTotal)
+	}
+
+	list, err := service.List(ctx, homeID, Filter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list.TotalsByCurrency) != 2 {
+		t.Fatalf("totales del histórico = %+v", list.TotalsByCurrency)
+	}
+}
+
+func TestItemRequiresCurrency(t *testing.T) {
+	ctx := context.Background()
+	service, _, homeID, _ := newTestService(t)
+	record, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-15", Kind: KindCorrective, Area: AreaOther,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = service.CreateItem(ctx, homeID, record.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra", Amount: 10,
+	})
+	if err == nil {
+		t.Fatal("se esperaba error sin moneda")
+	}
+	var validation *ValidationError
+	if !asValidation(err, &validation) || validation.Code != "currency_required" {
+		t.Fatalf("error = %v", err)
 	}
 }
 
@@ -124,7 +210,6 @@ func TestLaborRejectsInstitution(t *testing.T) {
 	service, database, homeID, institutionID := newTestService(t)
 	record, err := service.Create(ctx, homeID, Input{
 		PerformedAt: "2026-03-15", Kind: KindCorrective, Area: AreaOther,
-		CurrencyID: currencyID(t, database, "USD"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +217,7 @@ func TestLaborRejectsInstitution(t *testing.T) {
 
 	_, err = service.CreateItem(ctx, homeID, record.ID, ItemInput{
 		ItemType: ItemLabor, Description: "Mano de obra", Amount: 10,
-		InstitutionID: &institutionID,
+		CurrencyID: currencyID(t, database, "USD"), InstitutionID: &institutionID,
 	})
 	if err == nil {
 		t.Fatal("se esperaba error al asociar institución a mano de obra")
@@ -145,11 +230,10 @@ func TestLaborRejectsInstitution(t *testing.T) {
 
 func TestFutureDateRejected(t *testing.T) {
 	ctx := context.Background()
-	service, database, homeID, _ := newTestService(t)
+	service, _, homeID, _ := newTestService(t)
 
 	_, err := service.Create(ctx, homeID, Input{
 		PerformedAt: "2026-11-24", Kind: KindCorrective, Area: AreaOther,
-		CurrencyID: currencyID(t, database, "USD"),
 	})
 	if err == nil {
 		t.Fatal("se esperaba error con fecha futura")
@@ -163,15 +247,16 @@ func TestFutureDateRejected(t *testing.T) {
 func TestDeleteMaintenanceCascadesItems(t *testing.T) {
 	ctx := context.Background()
 	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
 	record, err := service.Create(ctx, homeID, Input{
 		PerformedAt: "2026-03-15", Kind: KindPreventive, Area: AreaGarden,
-		CurrencyID: currencyID(t, database, "USD"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
-		ItemType: ItemSupplies, Description: "Tierra", Quantity: 3, Unit: UnitSack, Amount: 15,
+		ItemType: ItemSupplies, Description: "Tierra", Quantity: 3, Unit: UnitSack,
+		Amount: 15, CurrencyID: usd,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -194,17 +279,17 @@ func TestDeleteMaintenanceCascadesItems(t *testing.T) {
 func TestDeletingInstitutionKeepsHistory(t *testing.T) {
 	ctx := context.Background()
 	service, database, homeID, institutionID := newTestService(t)
+	usd := currencyID(t, database, "USD")
 	record, err := service.Create(ctx, homeID, Input{
 		PerformedAt: "2026-03-15", Kind: KindCorrective, Area: AreaElectrical,
 		InstitutionID: &institutionID,
-		CurrencyID:    currencyID(t, database, "USD"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
 		ItemType: ItemSupplies, Description: "Cable", Quantity: 10, Unit: UnitMeter,
-		Amount: 12, InstitutionID: &institutionID,
+		Amount: 12, CurrencyID: usd, InstitutionID: &institutionID,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -220,8 +305,8 @@ func TestDeletingInstitutionKeepsHistory(t *testing.T) {
 	if detail.InstitutionID != nil {
 		t.Fatalf("institution_id = %v, quería NULL", *detail.InstitutionID)
 	}
-	if detail.TotalCost != 12 {
-		t.Fatalf("total = %v", detail.TotalCost)
+	if len(detail.TotalsByCurrency) != 1 || detail.TotalsByCurrency[0].Total != 12 {
+		t.Fatalf("totales = %+v", detail.TotalsByCurrency)
 	}
 	if detail.Items[0].InstitutionID != nil {
 		t.Fatal("la línea debería quedar sin institución")
@@ -234,19 +319,19 @@ func TestItemOwnershipScopedToMaintenance(t *testing.T) {
 	usd := currencyID(t, database, "USD")
 
 	first, err := service.Create(ctx, homeID, Input{
-		PerformedAt: "2026-01-10", Kind: KindCorrective, Area: AreaOther, CurrencyID: usd,
+		PerformedAt: "2026-01-10", Kind: KindCorrective, Area: AreaOther,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	second, err := service.Create(ctx, homeID, Input{
-		PerformedAt: "2026-02-10", Kind: KindCorrective, Area: AreaOther, CurrencyID: usd,
+		PerformedAt: "2026-02-10", Kind: KindCorrective, Area: AreaOther,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	item, err := service.CreateItem(ctx, homeID, second.ID, ItemInput{
-		ItemType: ItemLabor, Description: "Trabajo", Amount: 5,
+		ItemType: ItemLabor, Description: "Trabajo", Amount: 5, CurrencyID: usd,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -262,13 +347,13 @@ func TestQuantityMustBePositive(t *testing.T) {
 	service, database, homeID, _ := newTestService(t)
 	record, err := service.Create(ctx, homeID, Input{
 		PerformedAt: "2026-03-15", Kind: KindCorrective, Area: AreaOther,
-		CurrencyID: currencyID(t, database, "USD"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, err = service.CreateItem(ctx, homeID, record.ID, ItemInput{
-		ItemType: ItemSupplies, Description: "Cemento", Quantity: -1, Unit: UnitSack, Amount: 10,
+		ItemType: ItemSupplies, Description: "Cemento", Quantity: -1, Unit: UnitSack,
+		Amount: 10, CurrencyID: currencyID(t, database, "USD"),
 	})
 	if err == nil {
 		t.Fatal("se esperaba error con cantidad negativa")
@@ -281,18 +366,18 @@ func TestListFiltersByYearAndKind(t *testing.T) {
 	usd := currencyID(t, database, "USD")
 
 	first, err := service.Create(ctx, homeID, Input{
-		PerformedAt: "2025-05-01", Kind: KindCorrective, Area: AreaOther, CurrencyID: usd,
+		PerformedAt: "2025-05-01", Kind: KindCorrective, Area: AreaOther,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := service.CreateItem(ctx, homeID, first.ID, ItemInput{
-		ItemType: ItemLabor, Description: "Trabajo", Amount: 30,
+		ItemType: ItemLabor, Description: "Trabajo", Amount: 30, CurrencyID: usd,
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := service.Create(ctx, homeID, Input{
-		PerformedAt: "2026-05-01", Kind: KindPreventive, Area: AreaGarden, CurrencyID: usd,
+		PerformedAt: "2026-05-01", Kind: KindPreventive, Area: AreaGarden,
 	}); err != nil {
 		t.Fatal(err)
 	}

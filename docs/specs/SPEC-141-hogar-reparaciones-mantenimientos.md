@@ -20,7 +20,9 @@ github_issue: 144
 
 ## 1. Resumen Ejecutivo
 
-La aplicación ya administra viviendas (`homes`), instituciones y monedas, pero no conserva qué se reparó en cada casa, cuánto costó ni quién lo hizo. El usuario necesita un módulo de **reparaciones y mantenimientos del hogar** donde cada trabajo quede registrado como un hecho histórico con dos tipos de gasto: **insumos** (materiales comprados) y **mano de obra** (lo que cobra el técnico o contratista). No se trata de un cronograma de tareas pendientes: es un **histórico de reparaciones** consultable por vivienda, con totales por moneda.
+La aplicación ya administra viviendas (`homes`), instituciones y monedas, pero no conserva qué se reparó en cada casa, cuánto costó ni quién lo hizo. El usuario necesita un módulo de **reparaciones y mantenimientos del hogar** donde cada trabajo quede registrado como un hecho histórico con dos tipos de gasto: **insumos** (materiales comprados) y **mano de obra** (lo que cobra el técnico o contratista). No se trata de un cronograma de tareas pendientes: es un **histórico de reparaciones** consultable por vivienda, con totales agrupados por moneda.
+
+Cada línea de detalle lleva **su propia moneda**, porque una reparación puede combinar córdobas y dólares (mano de obra local e insumos importados). La reparación no impone una moneda única y la app nunca suma monedas distintas: muestra un total por moneda.
 
 Como el gasto en insumos casi siempre ocurre en un comercio concreto (ferretería, ferretería eléctrica, depósito de materiales), el módulo se **pega a las instituciones existentes**: cada reparación puede indicar el proveedor/contratista y cada línea de insumo puede indicar en qué institución se compró. No se crea un maestro de proveedores paralelo ni se duplican datos de contacto. Se agrega una categoría de institución `hardware` («Ferretería») para clasificar esos comercios, pero el vínculo no se restringe a esa categoría para no bloquear casos reales.
 
@@ -39,7 +41,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`). 
 | `ARCH-MODULES` | Módulo nuevo `home.maintenance` en `internal/modules/home/maintenance/` con los 5 archivos obligatorios + tests; registrado en `internal/modules/all/register.go`; rutas montadas por el propio módulo. | `CA-ARCH-MODULES` |
 | `ARCH-GO` | `gofmt`, nombres de código en inglés, errores explícitos, `log/slog` si hace falta. | `CA-ARCH-GO` |
 | `ARCH-IHOST` | Migración aditiva, índices, sin cron ni proceso extra, sin dependencias de red; memoria acotada en listados. | `CA-ARCH-IHOST` |
-| `UI-SELECT` | Tipo de mantenimiento (`kind`), área (`area`), unidad de insumo (`unit`), moneda y proveedor/institución usan `Select`; los de muchas opciones son `searchable`. | `CA-UI-SELECT` |
+| `UI-SELECT` | Tipo de mantenimiento (`kind`), área (`area`), unidad de insumo (`unit`), **moneda de cada línea** y proveedor/institución usan `Select`; los de muchas opciones son `searchable`. | `CA-UI-SELECT` |
 | `UI-SELECT-ADD` | `N/A`: el selector de instituciones no crea entidades; muestra un enlace «Crear institución» fuera del dropdown. | — |
 | `UI-NUMBER-INPUT` | Los montos (`amount`) y la cantidad de insumos (`quantity`) usan `NumberInput`. Prohibido `type="number"`. | `CA-UI-NUMBER-INPUT` |
 | `UI-INPUT-TOKENS` | Inputs, textarea y selects usan `bg-card`, `text-text`, `text-text-secondary`, `border-border`. | `CA-UI-TOKENS` |
@@ -80,9 +82,9 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`). 
 
 ### 3.1 Requerimientos Funcionales (P0 - Obligatorios)
 
-1. **REQ-001**: Registrar reparaciones/mantenimientos por vivienda con: fecha de realización (`performed_at`, no futura), tipo (`kind`: `corrective` reparación / `preventive` mantenimiento), área (`area`), descripción (`description`, opcional) y moneda (`currency_id`).
-2. **REQ-002**: Cada registro guarda líneas de detalle en `home_maintenance_items` con tipo `labor` (mano de obra) o `supplies` (insumos), descripción y monto total de la línea (`amount >= 0`). Las líneas de insumos aceptan además `quantity` (> 0, default 1) y `unit` (clave corta: `unit`, `m`, `m2`, `kg`, `lb`, `l`, `gal`, `sack`, `box`); la mano de obra los ignora.
-3. **REQ-003**: Calcular y exponer `labor_cost`, `supplies_cost` y `total_cost` por registro, y `totals_by_currency` para el histórico completo de la vivienda, agrupando por moneda (nunca sumando monedas distintas).
+1. **REQ-001**: Registrar reparaciones/mantenimientos por vivienda con: fecha de realización (`performed_at`, no futura), tipo (`kind`: `corrective` reparación / `preventive` mantenimiento), área (`area`) y descripción (`description`, opcional). **La moneda no vive en la reparación**: cada línea de detalle lleva la suya, porque una misma reparación puede mezclar monedas (ej. mano de obra en NIO e insumos comprados en USD).
+2. **REQ-002**: Cada registro guarda líneas de detalle en `home_maintenance_items` con tipo `labor` (mano de obra) o `supplies` (insumos), descripción, **moneda obligatoria (`currency_id`)** y monto total de la línea (`amount >= 0`). Las líneas de insumos aceptan además `quantity` (> 0, default 1) y `unit` (clave corta: `unit`, `m`, `m2`, `kg`, `lb`, `l`, `gal`, `sack`, `box`); la mano de obra los ignora.
+3. **REQ-003**: Calcular y exponer `totals_by_currency` por registro (con `labor_cost`, `supplies_cost` y `total` de cada moneda) y `totals_by_currency` para el histórico completo de la vivienda, agrupando siempre por moneda. **Nunca** se suman monedas distintas.
 4. **REQ-004**: Permitir asociar la reparación completa a una institución (`institution_id`): el contratista, taller o proveedor principal. Es **opcional** (permite registro DIY). Si se indica, debe existir y se guarda por referencia, sin campo de texto duplicado.
 5. **REQ-005**: Permitir asociar cada **línea de insumos** a una institución (`institution_id`) que identifica dónde se compró el material. Es opcional. Las líneas de mano de obra no aceptan institución (se rechaza `400`).
 6. **REQ-006**: Agregar la categoría de institución `hardware` («Ferretería» / «Hardware store») en la migración, sin modificar categorías existentes. El selector de proveedor muestra todas las instituciones (búsqueda por nombre) y las de `hardware`/`maintenance` primero.
@@ -91,11 +93,11 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`). 
 9. **REQ-009**: Agregar un tab **Mantenimiento** en el detalle de la vivienda (`/home/:id?tab=maintenance`) con el histórico en cards, totales por moneda y acción de alta.
 10. **REQ-010**: Página de detalle de solo lectura (`/home/:id/maintenances/:maintenanceId`) con desglose de mano de obra e insumos, totales y acciones en `CardMenu`.
 11. **REQ-011**: Páginas de formulario `/home/:id/maintenances/new` y `/home/:id/maintenances/:maintenanceId/edit`.
-12. **REQ-012**: Validar en backend y frontend: vivienda existente, moneda existente, institución existente cuando se indica, fecha no futura, monto numérico no negativo y descripciones no vacías en las líneas.
+12. **REQ-012**: Validar en backend y frontend: vivienda existente, moneda existente **en cada línea**, institución existente cuando se indica, fecha no futura, monto numérico no negativo y descripciones no vacías en las líneas. Una línea sin `currency_id` se rechaza con `400`.
 13. **REQ-013**: Al eliminar un mantenimiento, eliminar en cascada sus líneas. La vivienda usa borrado lógico (`homes.deleted_at`), por lo que el histórico no se borra; la FK `ON DELETE CASCADE` queda como red de seguridad si en el futuro se hace borrado físico.
 14. **REQ-014**: Todas las rutas usan el middleware de autenticación existente.
 15. **REQ-015**: Agregar todas las cadenas a `frontend/public/i18n/es.json` y `en.json`; sin texto hardcodeado.
-16. **REQ-016**: Usar `Select` para tipo, área, moneda e instituciones; `NumberInput` para montos; tokens de tema y verificación en darkmode.
+16. **REQ-016**: Usar `Select` para tipo, área, **moneda de cada línea** e instituciones; `NumberInput` para montos y cantidades; tokens de tema y verificación en darkmode.
 
 ### 3.2 Requerimientos Funcionales (P1 - Importantes)
 
@@ -193,10 +195,10 @@ Fuentes principales:
 - **Decisión**: `institution_id` es nullable tanto en el registro como en las líneas de insumos; si viene, se valida existencia pero no categoría. Se siembra `hardware` para clasificar ferreterías y ordenar el selector.
 - **Consecuencias**: no se bloquean casos reales; los reportes por proveedor siguen funcionando.
 
-**ADR-004: Moneda por registro, totales agrupados**
-- **Contexto**: el proyecto maneja múltiples monedas y no debe sumar valores heterogéneos.
-- **Decisión**: `currency_id` por mantenimiento; los totales se devuelven como `totals_by_currency`.
-- **Consecuencias**: consistente con autos; el frontend muestra una línea por moneda. La investigación recomendaba “moneda por propiedad”, pero el registro por hecho permite cambiar de moneda sin migrar datos.
+**ADR-004: Moneda por línea, totales agrupados**
+- **Contexto**: una misma reparación puede combinar monedas (mano de obra cobrada en córdobas e insumos comprados en dólares). Poner la moneda en la reparación obliga a partir el registro o a convertir mentalmente.
+- **Decisión**: `currency_id` vive en `home_maintenance_items` (obligatoria). La reparación no tiene moneda. Las respuestas exponen `totals_by_currency` tanto por registro como para el histórico, con `labor_cost`, `supplies_cost` y `total` por moneda.
+- **Consecuencias**: el registro refleja la realidad multi-moneda; la UI suma y muestra una línea por moneda y nunca mezcla valores. Las reparaciones de una sola moneda se ven igual que antes (una sola línea de total).
 
 **ADR-005: Importes en `REAL`, no en centavos enteros**
 - **Contexto**: la investigación de CMMS recomienda enteros de centavos para evitar errores de coma flotante. El proyecto ya almacena importes en `REAL` (servicios, autos, alquileres).
@@ -274,12 +276,10 @@ CREATE TABLE home_maintenances (
                         'appliances','garden','cleaning','other')),
     institution_id INTEGER,
     description TEXT NOT NULL DEFAULT '',
-    currency_id INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (home_id) REFERENCES homes(id) ON DELETE CASCADE,
-    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL,
-    FOREIGN KEY (currency_id) REFERENCES currencies(id)
+    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL
 );
 
 CREATE TABLE home_maintenance_items (
@@ -291,15 +291,17 @@ CREATE TABLE home_maintenance_items (
     unit TEXT NOT NULL DEFAULT 'unit'
         CHECK (unit IN ('unit','m','m2','kg','lb','l','gal','sack','box')),
     amount REAL NOT NULL DEFAULT 0 CHECK (amount >= 0),
+    currency_id INTEGER NOT NULL,
     institution_id INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (maintenance_id) REFERENCES home_maintenances(id) ON DELETE CASCADE,
+    FOREIGN KEY (currency_id) REFERENCES currencies(id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL
 );
 ```
 
-Índices: `(home_id, performed_at DESC, id DESC)`, `(institution_id)`, `(maintenance_id, item_type, id)`.
+Índices: `(home_id, performed_at DESC, id DESC)`, `(institution_id)`, `(maintenance_id, item_type, id)`, `(currency_id)`.
 
 ### 5.4 APIs / Contratos
 
@@ -318,25 +320,26 @@ Base: `/api/homes/{homeID}/maintenances`, autenticadas.
     "institution_id": 10,
     "institution_name": "Proveedor Demo",
     "description": "Cambio de llave de paso",
-    "labor_cost": 40,
-    "supplies_cost": 25.5,
-    "total_cost": 65.5,
-    "currency_id": 1,
-    "currency_code": "USD",
+    "totals_by_currency": [
+      { "currency_id": 2, "currency_code": "USD", "labor_cost": 40, "supplies_cost": 25.5, "total": 65.5 }
+    ],
     "items": [],
     "created_at": "2026-03-15T10:00:00Z",
     "updated_at": "2026-03-15T10:00:00Z"
   }],
-  "totals_by_currency": [{ "currency_id": 1, "currency_code": "USD", "total": 65.5 }]
+  "totals_by_currency": [
+    { "currency_id": 1, "currency_code": "NIO", "labor_cost": 500, "supplies_cost": 900, "total": 1400 },
+    { "currency_id": 2, "currency_code": "USD", "labor_cost": 150, "supplies_cost": 82.55, "total": 232.55 }
+  ]
 }
 ```
 
 #### `POST /api/homes/{homeID}/maintenances`
 ```json
 { "performed_at": "2026-03-15", "kind": "corrective", "area": "plumbing",
-  "institution_id": 10, "description": "Cambio de llave de paso", "currency_id": 1 }
+  "institution_id": 10, "description": "Cambio de llave de paso" }
 ```
-`201` con el registro creado. Errores: `400` validación, `404` vivienda/moneda/institución inexistente.
+`201` con el registro creado. Errores: `400` validación, `404` vivienda/institución inexistente.
 
 #### `GET|PUT|DELETE /api/homes/{homeID}/maintenances/{id}`
 `PUT` acepta el mismo body; `DELETE` responde `204`.
@@ -344,9 +347,9 @@ Base: `/api/homes/{homeID}/maintenances`, autenticadas.
 #### `POST /api/homes/{homeID}/maintenances/{id}/items`
 ```json
 { "item_type": "supplies", "description": "Pintura blanca", "quantity": 2, "unit": "gal",
-  "amount": 25.5, "institution_id": 11 }
+  "amount": 25.5, "currency_id": 2, "institution_id": 11 }
 ```
-`201`; `400` si `item_type=labor` con `institution_id`, si `quantity <= 0` o si `unit` no es una clave válida.
+`201`; `400` si falta `currency_id`, si `item_type=labor` con `institution_id`, si `quantity <= 0` o si `unit` no es una clave válida; `404` si la moneda o la institución no existen.
 
 #### `PUT|DELETE /api/homes/{homeID}/maintenances/{id}/items/{itemID}`
 `PUT` mismo body; `DELETE` responde `204`.
@@ -362,8 +365,8 @@ Base: `/api/homes/{homeID}/maintenances`, autenticadas.
 
 ### 6.1 Funcionales
 
-- [ ] `CA-HM-001`: Desde el tab Mantenimiento de una vivienda se crea una reparación con fecha, tipo, área y moneda; queda visible en el histórico.
-- [ ] `CA-HM-002`: Se agregan líneas de mano de obra e insumos; el detalle muestra `labor_cost`, `supplies_cost` y `total_cost` correctos.
+- [ ] `CA-HM-001`: Desde el tab Mantenimiento de una vivienda se crea una reparación con fecha, tipo, área y descripción; queda visible en el histórico.
+- [ ] `CA-HM-002`: Se agregan líneas de mano de obra e insumos con su moneda; el detalle muestra `labor_cost`, `supplies_cost` y `total` de cada moneda.
 - [ ] `CA-HM-003`: El histórico muestra un total por cada moneda usada, sin sumar monedas distintas.
 - [ ] `CA-HM-004`: Se asocia un proveedor a la reparación y una ferretería a una línea de insumos; el nombre se muestra en el detalle.
 - [ ] `CA-HM-005`: Una línea de mano de obra con `institution_id` es rechazada con `400`.
@@ -373,9 +376,10 @@ Base: `/api/homes/{homeID}/maintenances`, autenticadas.
 - [ ] `CA-HM-009`: Filtro por año y tipo (P1) devuelve el subconjunto correcto y su total.
 - [ ] `CA-HM-010`: Los insumos guardan y muestran cantidad y unidad (ej. «2 gal»); la mano de obra no. `quantity <= 0` o unidad inválida se rechazan con `400`.
 - [ ] `CA-HM-011`: Borrar una institución referenciada pone `institution_id = NULL` y conserva la reparación y sus costos.
+- [ ] `CA-HM-012`: Una misma reparación puede tener mano de obra en NIO e insumos en USD; el detalle y el histórico muestran los totales separados por moneda y no los mezclan. Una línea sin moneda se rechaza con `400`.
 - [ ] `CA-ARCH-MODULES`: `Info()` devuelve `home.maintenance`, versión semver y la migración declarada; el módulo está registrado en `all/register.go`.
 - [ ] `CA-ARCH-LAYERS`: `handlers.go` no contiene SQL; `storage.go` es el único con consultas.
-- [ ] `CA-UI-SELECT`: tipo, área, moneda e institución usan `Select`; `npm run check:ui` pasa.
+- [ ] `CA-UI-SELECT`: tipo, área, moneda de cada línea e institución usan `Select`; `npm run check:ui` pasa.
 - [ ] `CA-UI-NUMBER-INPUT`: los montos usan `NumberInput`; `npm run check:numbers` pasa.
 - [ ] `CA-UI-TOKENS`: inputs y textarea usan tokens del tema; verificado en darkmode.
 - [ ] `CA-UI-I18N`: `npm run check:i18n` pasa y no hay claves faltantes en es/en.
@@ -461,3 +465,4 @@ Base: `/api/homes/{homeID}/maintenances`, autenticadas.
 | 2026-11-23 | opencode | Creación inicial de la especificación |
 | 2026-11-23 | opencode | Investigación con subagentes (CMMS/hogar y proveedores) integrada en §4; ajustes de modelo: `quantity`/`unit`, FKs `ON DELETE SET NULL`, ADR-005 a ADR-008 |
 | 2026-11-23 | opencode | Implementación P0: migración `0057`, módulo `home.maintenance` (model/storage/service/handlers/tests), tab en la vivienda, formulario, detalle, modal de líneas, i18n es/en y guardrails. Pendiente validación del usuario |
+| 2026-11-23 | opencode | Cambio de diseño pedido por el usuario: la moneda pasa de la reparación a **cada línea** (`home_maintenance_items.currency_id`); totales por moneda por registro y por vivienda (ADR-004 reescrito, REQ-001/002/003/012/016 y CA-HM-001/002/012 ajustados) |

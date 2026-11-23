@@ -100,13 +100,20 @@ export default function HomeMaintenanceShowPage() {
     )
   }
 
-  const resolved = resolveCurrency(currencies, { id: record.currency_id, code: record.currency_code })
-  const symbol = resolved.symbol || resolved.code || record.currency_code
+  const symbolFor = (code: string) => {
+    const resolved = resolveCurrency(currencies, { code })
+    return resolved.symbol || resolved.code || code
+  }
 
   const renderItems = (itemType: HomeMaintenanceItemType) => {
     const rows = record.items.filter((item) => item.item_type === itemType)
     const isLabor = itemType === 'labor'
-    const total = isLabor ? record.labor_cost : record.supplies_cost
+    const typeTotals = record.totals_by_currency
+      .map((total) => ({
+        code: total.currency_code,
+        amount: isLabor ? total.labor_cost : total.supplies_cost,
+      }))
+      .filter((total) => total.amount > 0)
 
     return (
       <div className="bg-card rounded-ios shadow-ios p-4 sm:p-6">
@@ -116,7 +123,11 @@ export default function HomeMaintenanceShowPage() {
             <h3 className="text-lg font-bold truncate">
               {isLabor ? t('homeMaintenance.labor') : t('homeMaintenance.supplies')}
             </h3>
-            <span className="text-sm text-text-secondary">{formatMoney(total, symbol)}</span>
+            <span className="flex flex-wrap gap-x-3 text-sm text-text-secondary">
+              {typeTotals.map((total) => (
+                <span key={total.code}>{formatMoney(total.amount, symbolFor(total.code))}</span>
+              ))}
+            </span>
           </div>
           <button
             type="button"
@@ -149,7 +160,7 @@ export default function HomeMaintenanceShowPage() {
                   </p>
                 </div>
                 <span className="text-sm font-semibold flex-shrink-0">
-                  {formatMoney(item.amount, symbol)}
+                  {formatMoney(item.amount, symbolFor(item.currency_code))}
                 </span>
                 <CardMenu
                   options={[
@@ -212,18 +223,30 @@ export default function HomeMaintenanceShowPage() {
           {record.description && (
             <p className="text-sm text-text-secondary mt-2 break-words">{record.description}</p>
           )}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm">
-            <span className="text-text-secondary">
-              {t('homeMaintenance.labor_cost')}:{' '}
-              <strong className="text-text">{formatMoney(record.labor_cost, symbol)}</strong>
-            </span>
-            <span className="text-text-secondary">
-              {t('homeMaintenance.supplies_cost')}:{' '}
-              <strong className="text-text">{formatMoney(record.supplies_cost, symbol)}</strong>
-            </span>
-            <span className="font-semibold">
-              {t('homeMaintenance.total')}: {formatMoney(record.total_cost, symbol)}
-            </span>
+          <div className="mt-3 space-y-1 text-sm">
+            {record.totals_by_currency.length === 0 ? (
+              <p className="text-text-secondary">{t('homeMaintenance.no_currency_totals')}</p>
+            ) : (
+              record.totals_by_currency.map((total) => (
+                <div key={total.currency_id} className="flex flex-wrap gap-x-4 gap-y-1">
+                  <span className="text-text-secondary">
+                    {t('homeMaintenance.labor_cost')}:{' '}
+                    <strong className="text-text">
+                      {formatMoney(total.labor_cost, symbolFor(total.currency_code))}
+                    </strong>
+                  </span>
+                  <span className="text-text-secondary">
+                    {t('homeMaintenance.supplies_cost')}:{' '}
+                    <strong className="text-text">
+                      {formatMoney(total.supplies_cost, symbolFor(total.currency_code))}
+                    </strong>
+                  </span>
+                  <span className="font-semibold">
+                    {t('homeMaintenance.total')}: {formatMoney(total.total, symbolFor(total.currency_code))}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
