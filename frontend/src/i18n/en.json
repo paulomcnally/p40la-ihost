@@ -2254,6 +2254,7 @@
     "empty_action": "Add repair",
     "total_history": "Lifetime total",
     "records": "records",
+    "last": "Last",
     "no_currency_totals": "No expenses recorded",
     "retry": "Retry",
     "kind": "Type",

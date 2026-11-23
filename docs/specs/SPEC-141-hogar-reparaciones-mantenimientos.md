@@ -24,7 +24,7 @@ La aplicación ya administra viviendas (`homes`), instituciones y monedas, pero 
 
 Como el gasto en insumos casi siempre ocurre en un comercio concreto (ferretería, ferretería eléctrica, depósito de materiales), el módulo se **pega a las instituciones existentes**: cada reparación puede indicar el proveedor/contratista y cada línea de insumo puede indicar en qué institución se compró. No se crea un maestro de proveedores paralelo ni se duplican datos de contacto. Se agrega una categoría de institución `hardware` («Ferretería») para clasificar esos comercios, pero el vínculo no se restringe a esa categoría para no bloquear casos reales.
 
-La implementación respeta los límites del iHost: **cero dependencias nuevas**, una migración aditiva de dos tablas SQLite, consultas indexadas por `home_id` y `performed_at`, cálculo de totales en SQL/Go sin cargar históricos completos en memoria, y UI con los componentes obligatorios (`Select`, `NumberInput`, `Toggle`, `CardMenu`), i18n es/en, darkmode y page de detalle de solo lectura.
+La implementación respeta los límites del iHost: **cero dependencias nuevas**, una migración aditiva de dos tablas SQLite, consultas indexadas por `home_id` y `performed_at`, cálculo de totales en SQL/Go sin cargar históricos completos en memoria, y UI con los componentes obligatorios (`Select`, `NumberInput`, `CardMenu`), i18n es/en, darkmode y page de detalle de solo lectura.
 
 ---
 
@@ -92,7 +92,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`). 
 10. **REQ-010**: Página de detalle de solo lectura (`/home/:id/maintenances/:maintenanceId`) con desglose de mano de obra e insumos, totales y acciones en `CardMenu`.
 11. **REQ-011**: Páginas de formulario `/home/:id/maintenances/new` y `/home/:id/maintenances/:maintenanceId/edit`.
 12. **REQ-012**: Validar en backend y frontend: vivienda existente, moneda existente, institución existente cuando se indica, fecha no futura, monto numérico no negativo y descripciones no vacías en las líneas.
-13. **REQ-013**: Al eliminar un mantenimiento, eliminar en cascada sus líneas. Al eliminar una vivienda, eliminar sus mantenimientos (FK `ON DELETE CASCADE`).
+13. **REQ-013**: Al eliminar un mantenimiento, eliminar en cascada sus líneas. La vivienda usa borrado lógico (`homes.deleted_at`), por lo que el histórico no se borra; la FK `ON DELETE CASCADE` queda como red de seguridad si en el futuro se hace borrado físico.
 14. **REQ-014**: Todas las rutas usan el middleware de autenticación existente.
 15. **REQ-015**: Agregar todas las cadenas a `frontend/public/i18n/es.json` y `en.json`; sin texto hardcodeado.
 16. **REQ-016**: Usar `Select` para tipo, área, moneda e instituciones; `NumberInput` para montos; tokens de tema y verificación en darkmode.
@@ -368,7 +368,7 @@ Base: `/api/homes/{homeID}/maintenances`, autenticadas.
 - [ ] `CA-HM-004`: Se asocia un proveedor a la reparación y una ferretería a una línea de insumos; el nombre se muestra en el detalle.
 - [ ] `CA-HM-005`: Una línea de mano de obra con `institution_id` es rechazada con `400`.
 - [ ] `CA-HM-006`: Editar y eliminar registros y líneas funciona y respeta la pertenencia vivienda→registro→línea.
-- [ ] `CA-HM-007`: Eliminar una vivienda o un registro elimina sus líneas (cascada verificada por test).
+- [ ] `CA-HM-007`: Eliminar un registro elimina sus líneas (cascada verificada por test). La vivienda se borra de forma lógica (`deleted_at`), así que su histórico permanece en la DB y deja de ser accesible.
 - [ ] `CA-HM-008`: Fecha futura, monto negativo o descripción vacía de línea se rechazan en backend y se muestran junto al campo en frontend.
 - [ ] `CA-HM-009`: Filtro por año y tipo (P1) devuelve el subconjunto correcto y su total.
 - [ ] `CA-HM-010`: Los insumos guardan y muestran cantidad y unidad (ej. «2 gal»); la mano de obra no. `quantity <= 0` o unidad inválida se rechazan con `400`.

@@ -169,6 +169,7 @@ export default function HomeMaintenanceTab({ homeId }: { homeId: number }) {
             </div>
             <p className="text-xs text-text-secondary mt-1">
               {visible.length} {t('homeMaintenance.records')}
+              {visible.length > 0 && ` · ${t('homeMaintenance.last')}: ${visible[0].performed_at}`}
             </p>
           </div>
 
