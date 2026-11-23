@@ -252,7 +252,7 @@ const leaseColumns = `
 	l.status, l.start_date, l.end_date, l.term_months,
 	l.rent_amount, l.maintenance_amount, l.currency, l.payment_day,
 	l.deposit_amount, l.late_fee_type, l.late_fee_value, l.late_fee_cap,
-	l.auto_renew, l.notice_days, l.commission_percent, l.commission_base,
+	l.auto_renew, l.notice_days, l.commission_percent, l.commission_type, l.commission_amount, l.commission_base,
 	l.owner_bank_account, l.notes, l.deleted_at, l.created_at, l.updated_at,
 	(SELECT COUNT(*) FROM rental_charges c WHERE c.lease_id = l.id),
 	(SELECT COUNT(*) FROM rental_invoices i2 WHERE i2.lease_id = l.id)
@@ -275,7 +275,7 @@ func scanLease(row interface{ Scan(...any) error }) (*Lease, error) {
 		&l.Status, &l.StartDate, &l.EndDate, &l.TermMonths,
 		&l.RentAmount, &l.MaintenanceAmount, &l.Currency, &l.PaymentDay,
 		&l.DepositAmount, &l.LateFeeType, &l.LateFeeValue, &l.LateFeeCap,
-		&l.AutoRenew, &l.NoticeDays, &l.CommissionPercent, &l.CommissionBase,
+		&l.AutoRenew, &l.NoticeDays, &l.CommissionPercent, &l.CommissionType, &l.CommissionAmount, &l.CommissionBase,
 		&l.OwnerBankAccount, &l.Notes, &deletedAt, &l.CreatedAt, &l.UpdatedAt,
 		&l.ChargeCount, &l.InvoiceCount,
 	)
@@ -341,12 +341,12 @@ func (s *Storage) CreateLease(ctx context.Context, l *Lease) (*Lease, error) {
 			home_id, agency_institution_id, agent_person_id, status, start_date, end_date,
 			term_months, rent_amount, maintenance_amount, currency, payment_day, deposit_amount,
 			late_fee_type, late_fee_value, late_fee_cap, auto_renew, notice_days,
-			commission_percent, commission_base, owner_bank_account, notes
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			commission_percent, commission_type, commission_amount, commission_base, owner_bank_account, notes
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, l.HomeID, nullableID(l.AgencyInstitutionID), nullableID(l.AgentPersonID), l.Status, l.StartDate, l.EndDate,
 		l.TermMonths, l.RentAmount, l.MaintenanceAmount, l.Currency, l.PaymentDay, l.DepositAmount,
 		l.LateFeeType, l.LateFeeValue, l.LateFeeCap, boolInt(l.AutoRenew), l.NoticeDays,
-		l.CommissionPercent, l.CommissionBase, l.OwnerBankAccount, l.Notes)
+		l.CommissionPercent, l.CommissionType, l.CommissionAmount, l.CommissionBase, l.OwnerBankAccount, l.Notes)
 	if err != nil {
 		return nil, fmt.Errorf("insertar contrato: %w", err)
 	}
@@ -364,14 +364,15 @@ func (s *Storage) UpdateLease(ctx context.Context, l *Lease) (*Lease, error) {
 			agency_institution_id = ?, agent_person_id = ?, start_date = ?, end_date = ?,
 			term_months = ?, rent_amount = ?, maintenance_amount = ?, currency = ?, payment_day = ?,
 			deposit_amount = ?, late_fee_type = ?, late_fee_value = ?, late_fee_cap = ?,
-			auto_renew = ?, notice_days = ?, commission_percent = ?, commission_base = ?,
-			owner_bank_account = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+			auto_renew = ?, notice_days = ?, commission_percent = ?, commission_type = ?,
+			commission_amount = ?, commission_base = ?, owner_bank_account = ?, notes = ?,
+			updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND deleted_at IS NULL
 	`, nullableID(l.AgencyInstitutionID), nullableID(l.AgentPersonID), l.StartDate, l.EndDate,
 		l.TermMonths, l.RentAmount, l.MaintenanceAmount, l.Currency, l.PaymentDay,
 		l.DepositAmount, l.LateFeeType, l.LateFeeValue, l.LateFeeCap,
-		boolInt(l.AutoRenew), l.NoticeDays, l.CommissionPercent, l.CommissionBase,
-		l.OwnerBankAccount, l.Notes, l.ID)
+		boolInt(l.AutoRenew), l.NoticeDays, l.CommissionPercent, l.CommissionType,
+		l.CommissionAmount, l.CommissionBase, l.OwnerBankAccount, l.Notes, l.ID)
 	if err != nil {
 		return nil, fmt.Errorf("actualizar contrato: %w", err)
 	}

@@ -340,3 +340,41 @@ func TestAgencyMustHaveRealEstateCategory(t *testing.T) {
 		t.Fatalf("no se aceptó una inmobiliaria válida: %v", err)
 	}
 }
+
+func TestCommissionPercentOrFixed(t *testing.T) {
+	svc, cleanup := newTestService(t)
+	defer cleanup()
+	ctx := context.Background()
+	homeID := createHome(t, svc, "Casa Comisión")
+
+	fixed, err := svc.CreateLease(ctx, &Lease{
+		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 12,
+		RentAmount: 500, Currency: "USD", PaymentDay: 1,
+		CommissionType: "fixed", CommissionAmount: 500,
+	})
+	if err != nil {
+		t.Fatalf("contrato con comisión fija: %v", err)
+	}
+	if fixed.CommissionType != "fixed" || fixed.CommissionAmount != 500 || fixed.CommissionPercent != 0 {
+		t.Fatalf("comisión fija persistida mal: %+v", fixed)
+	}
+
+	percent, err := svc.CreateLease(ctx, &Lease{
+		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 6,
+		RentAmount: 400, Currency: "USD", PaymentDay: 1,
+		CommissionType: "percent", CommissionPercent: 8.5, CommissionAmount: 999,
+	})
+	if err != nil {
+		t.Fatalf("contrato con comisión porcentual: %v", err)
+	}
+	if percent.CommissionType != "percent" || percent.CommissionPercent != 8.5 || percent.CommissionAmount != 0 {
+		t.Fatalf("comisión porcentual persistida mal: %+v", percent)
+	}
+
+	if _, err := svc.CreateLease(ctx, &Lease{
+		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 6,
+		RentAmount: 400, Currency: "USD", PaymentDay: 1, CommissionType: "other",
+	}); err == nil {
+		t.Fatal("se aceptó un tipo de comisión inválido")
+	}
+}

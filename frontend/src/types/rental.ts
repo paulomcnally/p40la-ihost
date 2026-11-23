@@ -52,6 +52,8 @@ export interface Lease {
   auto_renew: boolean
   notice_days: number
   commission_percent: number
+  commission_type: 'percent' | 'fixed'
+  commission_amount: number
   commission_base: 'collected' | 'invoiced'
   owner_bank_account: string
   notes: string

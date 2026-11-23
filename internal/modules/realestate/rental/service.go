@@ -688,6 +688,7 @@ func (s *Service) prepareLease(ctx context.Context, l *Lease) error {
 	l.OwnerBankAccount = strings.TrimSpace(l.OwnerBankAccount)
 	l.Notes = strings.TrimSpace(l.Notes)
 	l.CommissionBase = strings.ToLower(strings.TrimSpace(l.CommissionBase))
+	l.CommissionType = strings.ToLower(strings.TrimSpace(l.CommissionType))
 	l.LateFeeType = strings.ToLower(strings.TrimSpace(l.LateFeeType))
 
 	if l.HomeID <= 0 {
@@ -740,8 +741,22 @@ func (s *Service) prepareLease(ctx context.Context, l *Lease) error {
 	if l.LateFeeType == "percent" && l.LateFeeValue > 100 {
 		return invalid("invalid_late_fee", "El porcentaje de mora no puede superar 100")
 	}
-	if l.CommissionPercent < 0 || l.CommissionPercent > 100 {
-		return invalid("invalid_commission", "La comisión debe estar entre 0 y 100")
+	if l.CommissionType == "" {
+		l.CommissionType = "percent"
+	}
+	switch l.CommissionType {
+	case "percent":
+		if l.CommissionPercent < 0 || l.CommissionPercent > 100 {
+			return invalid("invalid_commission", "El porcentaje de comisión debe estar entre 0 y 100")
+		}
+		l.CommissionAmount = 0
+	case "fixed":
+		if l.CommissionAmount < 0 {
+			return invalid("invalid_commission", "El monto de la comisión no puede ser negativo")
+		}
+		l.CommissionPercent = 0
+	default:
+		return invalid("invalid_commission", "Tipo de comisión inválido")
 	}
 	if l.CommissionBase == "" {
 		l.CommissionBase = "collected"
@@ -780,6 +795,7 @@ func (s *Service) prepareLease(ctx context.Context, l *Lease) error {
 	l.MaintenanceAmount = round2(l.MaintenanceAmount)
 	l.DepositAmount = round2(l.DepositAmount)
 	l.CommissionPercent = round2(l.CommissionPercent)
+	l.CommissionAmount = round2(l.CommissionAmount)
 	return nil
 }
 
@@ -892,6 +908,8 @@ type ConvertReservationInput struct {
 	PaymentDay        int     `json:"payment_day"`
 	DepositAmount     float64 `json:"deposit_amount"`
 	CommissionPercent float64 `json:"commission_percent"`
+	CommissionType    string  `json:"commission_type"`
+	CommissionAmount  float64 `json:"commission_amount"`
 	OwnerBankAccount  string  `json:"owner_bank_account"`
 }
 

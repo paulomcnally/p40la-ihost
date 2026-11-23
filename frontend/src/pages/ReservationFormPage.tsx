@@ -25,6 +25,7 @@ export default function ReservationFormPage() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const isEdit = Boolean(id)
+  const queryHomeID = Number(searchParams.get('home') || 0)
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const { homes, loadHomes, currencies, loadCurrencies } = useAppStore()
@@ -165,6 +166,8 @@ export default function ReservationFormPage() {
   if (loading) return <LoadingSpinner />
 
   const homeOptions = homes.map((h) => ({ value: h.id, label: h.name }))
+  const lockedHomeID = isEdit ? form.home_id : queryHomeID
+  const selectedHome = homes.find((h) => h.id === lockedHomeID)
   const agentOptions = [{ value: 0, label: t('rental.none') }, ...people.map((p) => ({ value: p.id, label: p.full_name }))]
   const currencyOptions = (currencies.length > 0 ? currencies.map((c) => c.code) : ['USD', 'NIO', 'EUR'])
     .map((code) => ({ value: code, label: code }))
@@ -176,7 +179,19 @@ export default function ReservationFormPage() {
       <SectionCard title={t('rental.reservation.property')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label={t('rental.home')}>
-            <Select options={homeOptions} value={form.home_id} onChange={(v) => set('home_id', Number(v))} searchable placeholder={t('home.select')} />
+            {lockedHomeID > 0 ? (
+              <div className="flex items-center gap-2 min-h-[44px] px-3 py-2 border border-border rounded-ios-sm bg-bg/60 text-text">
+                <Icon name="home" className="w-4 h-4 text-text-secondary shrink-0" />
+                <span className="truncate font-medium">
+                  {selectedHome?.name || `${t('rental.home')} #${lockedHomeID}`}
+                </span>
+                {selectedHome?.address && (
+                  <span className="text-xs text-text-secondary truncate">· {selectedHome.address}</span>
+                )}
+              </div>
+            ) : (
+              <Select options={homeOptions} value={form.home_id} onChange={(v) => set('home_id', Number(v))} searchable placeholder={t('home.select')} />
+            )}
           </Field>
           <Field label={t('rental.agent')}>
             <Select options={agentOptions} value={form.agent_person_id} onChange={(v) => set('agent_person_id', Number(v))} searchable />

@@ -91,7 +91,7 @@ export const rentalApi = {
     get: (id: number) => get<Reservation>(`/api/rental/reservations/${id}`),
     create: (body: Partial<Reservation>) => post<Reservation>('/api/rental/reservations', body),
     update: (id: number, body: Partial<Reservation>) => put<Reservation>(`/api/rental/reservations/${id}`, body),
-    convert: (id: number, body: { term_months?: number; payment_day?: number; deposit_amount?: number }) =>
+    convert: (id: number, body: { term_months?: number; payment_day?: number; deposit_amount?: number; commission_type?: 'percent' | 'fixed'; commission_percent?: number; commission_amount?: number }) =>
       post<Lease>(`/api/rental/reservations/${id}/convert`, body),
     cancel: (id: number, reason: string) => post(`/api/rental/reservations/${id}/cancel`, { reason }),
     forfeit: (id: number, reason: string) => post(`/api/rental/reservations/${id}/forfeit`, { reason }),
