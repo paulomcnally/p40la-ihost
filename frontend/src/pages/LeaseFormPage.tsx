@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAppStore } from '../stores/appStore'
@@ -62,9 +62,11 @@ export default function LeaseFormPage() {
   const [quickSaving, setQuickSaving] = useState(false)
   const [removePartyIndex, setRemovePartyIndex] = useState<number | null>(null)
   const [partyModalOpen, setPartyModalOpen] = useState(false)
-  const [partySaving, setPartySaving] = useState(false)
+  const [personModalOpen, setPersonModalOpen] = useState(false)
+  const [personSaving, setPersonSaving] = useState(false)
+  const personSavingRef = useRef(false)
   const [partyForm, setPartyForm] = useState<PartyDraft>(emptyParty('tenant'))
-  const [partyMode, setPartyMode] = useState<'new' | 'existing'>('new')
+  const [newPerson, setNewPerson] = useState({ full_name: '', email: '', phone: '' })
   const [parties, setParties] = useState<PartyDraft[]>([])
   const [initialPartyIds, setInitialPartyIds] = useState<number[]>([])
   const [customTerm, setCustomTerm] = useState(false)
@@ -223,61 +225,91 @@ export default function LeaseFormPage() {
     }
   }
 
+  const closePartyModal = () => {
+    setPartyModalOpen(false)
+    setPersonModalOpen(false)
+    setPartyForm(emptyParty('tenant'))
+    setNewPerson({ full_name: '', email: '', phone: '' })
+  }
+
   const openPartyModal = () => {
     setPartyForm(emptyParty('tenant'))
-    setPartyMode('new')
+    setNewPerson({ full_name: '', email: '', phone: '' })
+    setPersonModalOpen(false)
     setPartyModalOpen(true)
   }
 
-  const savePartyModal = async () => {
-    if (partyMode === 'existing' && !partyForm.person_id) {
-      showToast(t('rental.person_required'), 'error')
-      return
-    }
-    if (partyMode === 'new' && !partyForm.full_name.trim()) {
+  const openPersonModal = () => {
+    setNewPerson({ full_name: '', email: '', phone: '' })
+    setPersonModalOpen(true)
+  }
+
+  const closePersonModal = () => {
+    setPersonModalOpen(false)
+    setNewPerson({ full_name: '', email: '', phone: '' })
+  }
+
+  const createPerson = async () => {
+    if (!newPerson.full_name.trim()) {
       showToast(t('rental.name_required'), 'error')
       return
     }
-    setPartySaving(true)
+    if (personSavingRef.current) return
+    personSavingRef.current = true
+    setPersonSaving(true)
     try {
-      let personID = partyForm.person_id || 0
-      let fullName = partyForm.full_name.trim()
-      let email = partyForm.email.trim()
-      let phone = partyForm.phone.trim()
-      if (!personID) {
-        const created = await api.rental.people.create({ full_name: fullName, email, phone })
-        if (!created) return
-        personID = created.id
-        const list = await api.rental.people.list()
-        setPeople(list || [])
-      } else {
-        const person = people.find((p) => p.id === personID)
-        if (person) {
-          fullName = person.full_name
-          email = person.email
-          phone = person.phone
-        }
-      }
-      if (parties.some((p) => p.role === partyForm.role && p.person_id === personID)) {
-        showToast(t('rental.party_exists'), 'error')
-        return
-      }
-      setParties((prev) => [...prev, {
-        person_id: personID,
-        role: partyForm.role,
-        notify_email: partyForm.notify_email,
-        full_name: fullName,
-        email,
-        phone,
-      }])
-      setPartyModalOpen(false)
-      setPartyForm(emptyParty('tenant'))
-      showToast(t('rental.party_added'), 'success')
+      const created = await api.rental.people.create({
+        full_name: newPerson.full_name.trim(),
+        email: newPerson.email.trim(),
+        phone: newPerson.phone.trim(),
+      })
+      if (!created) return
+      const list = await api.rental.people.list().catch(() => null)
+      const merged = list && list.length > 0
+        ? [created, ...list.filter((p) => p.id !== created.id)]
+        : [created]
+      setPeople(merged)
+      setPartyForm((prev) => ({
+        ...prev,
+        person_id: created.id,
+        full_name: created.full_name,
+        email: created.email,
+        phone: created.phone,
+      }))
+      closePersonModal()
+      showToast(t('rental.person_created'), 'success')
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
     } finally {
-      setPartySaving(false)
+      personSavingRef.current = false
+      setPersonSaving(false)
     }
+  }
+
+  const savePartyModal = () => {
+    if (!partyForm.person_id) {
+      showToast(t('rental.person_required'), 'error')
+      return
+    }
+    const person = people.find((p) => p.id === partyForm.person_id)
+    if (!person) {
+      showToast(t('rental.person_required'), 'error')
+      return
+    }
+    if (parties.some((p) => p.role === partyForm.role && p.person_id === person.id)) {
+      showToast(t('rental.party_exists'), 'error')
+      return
+    }
+    setParties((prev) => [...prev, {
+      person_id: person.id,
+      role: partyForm.role,
+      notify_email: partyForm.notify_email,
+      full_name: person.full_name,
+      email: person.email,
+      phone: person.phone,
+    }])
+    closePartyModal()
+    showToast(t('rental.party_added'), 'success')
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -698,12 +730,12 @@ export default function LeaseFormPage() {
     <Modal
       open={partyModalOpen}
       title={t('rental.add_party')}
-      onClose={() => setPartyModalOpen(false)}
+      onClose={closePartyModal}
       footer={(
         <>
-          <SecondaryButton type="button" onClick={() => setPartyModalOpen(false)}>{t('app.cancel')}</SecondaryButton>
-          <PrimaryButton type="button" disabled={partySaving} onClick={savePartyModal}>
-            {partySaving ? t('app.saving') : t('app.add')}
+          <SecondaryButton type="button" onClick={closePartyModal}>{t('app.cancel')}</SecondaryButton>
+          <PrimaryButton type="button" disabled={!partyForm.person_id} onClick={savePartyModal}>
+            {t('app.add')}
           </PrimaryButton>
         </>
       )}
@@ -715,69 +747,29 @@ export default function LeaseFormPage() {
           onChange={(v) => setPartyForm((prev) => ({ ...prev, role: v as PartyRole }))}
         />
       </Field>
-      <div className="flex gap-1 p-1 bg-bg rounded-ios-sm" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={partyMode === 'new'}
-          onClick={() => {
-            setPartyMode('new')
-            setPartyForm((prev) => ({ ...prev, person_id: undefined, full_name: '', email: '', phone: '' }))
+      <Field label={t('rental.person')}>
+        <Select
+          options={[...people.map((p) => ({ value: p.id, label: p.full_name })), addOption(t('app.add'))]}
+          value={partyForm.person_id || 0}
+          onChange={(v) => {
+            const pid = Number(v)
+            if (pid === -1) {
+              openPersonModal()
+              return
+            }
+            const person = people.find((p) => p.id === pid)
+            setPartyForm((prev) => ({
+              ...prev,
+              person_id: pid || undefined,
+              full_name: person?.full_name || '',
+              email: person?.email || '',
+              phone: person?.phone || '',
+            }))
           }}
-          className={`flex-1 px-3 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
-            partyMode === 'new' ? 'bg-card text-primary shadow-ios' : 'text-text-secondary hover:text-text'
-          }`}
-        >
-          {t('rental.new_person')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={partyMode === 'existing'}
-          onClick={() => {
-            setPartyMode('existing')
-            setPartyForm((prev) => ({ ...prev, person_id: undefined, full_name: '', email: '', phone: '' }))
-          }}
-          className={`flex-1 px-3 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
-            partyMode === 'existing' ? 'bg-card text-primary shadow-ios' : 'text-text-secondary hover:text-text'
-          }`}
-        >
-          {t('rental.existing_person')}
-        </button>
-      </div>
-      {partyMode === 'existing' ? (
-        <Field label={t('rental.person')}>
-          <Select
-            options={people.map((p) => ({ value: p.id, label: p.full_name }))}
-            value={partyForm.person_id || 0}
-            onChange={(v) => {
-              const pid = Number(v)
-              const person = people.find((p) => p.id === pid)
-              setPartyForm((prev) => ({
-                ...prev,
-                person_id: pid || undefined,
-                full_name: person?.full_name || '',
-                email: person?.email || '',
-                phone: person?.phone || '',
-              }))
-            }}
-            searchable
-            placeholder={t('rental.select_person')}
-          />
-        </Field>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Field label={t('rental.person_name')}>
-            <TextInput value={partyForm.full_name} onChange={(e) => setPartyForm((prev) => ({ ...prev, full_name: e.target.value }))} />
-          </Field>
-          <Field label={t('rental.email')}>
-            <TextInput type="email" value={partyForm.email} onChange={(e) => setPartyForm((prev) => ({ ...prev, email: e.target.value }))} />
-          </Field>
-          <Field label={t('rental.phone')}>
-            <TextInput value={partyForm.phone} onChange={(e) => setPartyForm((prev) => ({ ...prev, phone: e.target.value }))} />
-          </Field>
-        </div>
-      )}
+          searchable
+          placeholder={t('rental.select_person')}
+        />
+      </Field>
       <label className="flex items-center justify-between gap-3 text-sm">
         <span>{t('rental.notify_email')}</span>
         <Toggle
@@ -786,6 +778,35 @@ export default function LeaseFormPage() {
           ariaLabel={t('rental.notify_email')}
         />
       </label>
+    </Modal>
+
+    <Modal
+      open={personModalOpen}
+      title={t('rental.new_person')}
+      onClose={closePersonModal}
+      zIndex="z-[70]"
+      footer={(
+        <>
+          <SecondaryButton type="button" onClick={closePersonModal}>{t('app.cancel')}</SecondaryButton>
+          <PrimaryButton type="button" disabled={personSaving} onClick={createPerson}>
+            {personSaving ? t('app.saving') : t('app.create')}
+          </PrimaryButton>
+        </>
+      )}
+    >
+      <Field label={t('rental.person_name')}>
+        <TextInput
+          autoFocus
+          value={newPerson.full_name}
+          onChange={(e) => setNewPerson((prev) => ({ ...prev, full_name: e.target.value }))}
+        />
+      </Field>
+      <Field label={t('rental.email')}>
+        <TextInput type="email" value={newPerson.email} onChange={(e) => setNewPerson((prev) => ({ ...prev, email: e.target.value }))} />
+      </Field>
+      <Field label={t('rental.phone')}>
+        <TextInput value={newPerson.phone} onChange={(e) => setNewPerson((prev) => ({ ...prev, phone: e.target.value }))} />
+      </Field>
     </Modal>
 
     {removePartyIndex !== null && (
