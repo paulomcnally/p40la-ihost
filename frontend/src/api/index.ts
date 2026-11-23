@@ -1,6 +1,7 @@
 import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Settings, Institution, InstitutionCategory, AnalyzerInfo, Auto, AutoService, ServiceAuto, AutoAttachment, AutoMaintenance, AutoMaintenanceInput, AutoMaintenanceItem, AutoMaintenanceItemInput, AutoMaintenanceList, AutoInspection, AutoInspectionList, AutoInspectionAlert, Alert, Notification, Child, Salary, PensionCategory, PensionCategoryKeyword, PensionImportPreview, PensionImportBatch, PensionImportConfirmRow, PensionImportConfirmResult, SupportRecord, SalaryPayment, MonthClosing, ChildSupportConfig, Debt, DebtBill, DebtHistoryResponse, DebtInformationTemplate, DebtInformationField, DebtPaymentInformation, DebtInformationToken, DebtInformationVariable, DebtInformationValue, Bank, BankAccount, BankTransferFormat, BankTransferKind, CategoryGroup, BudgetCategory, Account, Assignment, BudgetTransaction, BudgetMonthView, RecurringRule, SuggestedAssignment, Transfer, AutomationAccount, AutomationAccountOption, AutomationPlugin, AutomationBill, AutomationWebhookLog, AutomationCredentialField, AutomationBillItem, AutomationAccountInput, ServiceBillDetail, ServiceBillSummaryResponse, ServiceProjectionResponse, DocumentRecognition, ConfirmRecognitionInput, AssociationResult } from '../types'
 
 import { rentalApi } from './rental'
+import { homeMaintenanceApi } from './homeMaintenance'
 
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -71,6 +72,7 @@ function periodParams(filters?: { year?: number; month?: number; id?: number }):
 
 export const api = {
   rental: rentalApi,
+  homeMaintenance: homeMaintenanceApi,
   settings: {
     get: () => get<Settings>('/api/settings'),
     setLanguage: (language: string) => post('/api/settings/language', { language }),

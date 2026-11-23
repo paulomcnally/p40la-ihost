@@ -77,6 +77,20 @@ const BACK_ROUTES: { pattern: RegExp; to: string | ((pathname: string) => string
   { pattern: /^\/autos\/\d+$/, to: '/autos' },
   { pattern: /^\/autos\/(new|edit\/\d+)$/, to: '/autos' },
   { pattern: /^\/home\/(new|edit\/\d+)$/, to: '/home' },
+  {
+    pattern: /^\/home\/\d+\/maintenances\/new$/,
+    to: (pathname) => `/home/${pathname.split('/')[2]}?tab=maintenance`,
+  },
+  {
+    pattern: /^\/home\/\d+\/maintenances\/\d+\/edit$/,
+    desktopBack: true,
+    to: (pathname) => `/home/${pathname.split('/')[2]}?tab=maintenance`,
+  },
+  {
+    pattern: /^\/home\/\d+\/maintenances\/\d+$/,
+    desktopBack: true,
+    to: (pathname) => `/home/${pathname.split('/')[2]}?tab=maintenance`,
+  },
   { pattern: /^\/home\/\d+$/, to: '/home' },
   { pattern: /^\/leases\/new$/, to: '/home' },
   { pattern: /^\/leases\/\d+\/edit$/, to: (pathname) => `/leases/${pathname.split('/')[2]}` },
