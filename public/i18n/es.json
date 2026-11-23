@@ -2254,6 +2254,7 @@
     "empty_action": "Agregar reparación",
     "total_history": "Total histórico",
     "records": "registros",
+    "last": "Última",
     "no_currency_totals": "Sin gastos registrados",
     "retry": "Reintentar",
     "kind": "Tipo",
