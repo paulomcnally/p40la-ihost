@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import Select, { addOption } from '../components/Select'
 import DeleteModal from '../components/DeleteModal'
 import NumberInput from '../components/NumberInput'
+import PhoneInput from '../components/PhoneInput'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Badge, EmptyBlock, Field, Modal, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
@@ -723,7 +724,7 @@ export default function LeaseFormPage() {
         <TextInput type="email" value={quickAgent.email} onChange={(e) => setQuickAgent((prev) => ({ ...prev, email: e.target.value }))} />
       </Field>
       <Field label={t('rental.phone')}>
-        <TextInput value={quickAgent.phone} onChange={(e) => setQuickAgent((prev) => ({ ...prev, phone: e.target.value }))} />
+        <PhoneInput value={quickAgent.phone} onChange={(v) => setQuickAgent((prev) => ({ ...prev, phone: v }))} />
       </Field>
     </Modal>
 
@@ -805,7 +806,7 @@ export default function LeaseFormPage() {
         <TextInput type="email" value={newPerson.email} onChange={(e) => setNewPerson((prev) => ({ ...prev, email: e.target.value }))} />
       </Field>
       <Field label={t('rental.phone')}>
-        <TextInput value={newPerson.phone} onChange={(e) => setNewPerson((prev) => ({ ...prev, phone: e.target.value }))} />
+        <PhoneInput value={newPerson.phone} onChange={(v) => setNewPerson((prev) => ({ ...prev, phone: v }))} />
       </Field>
     </Modal>
 

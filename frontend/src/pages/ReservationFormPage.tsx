@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select, { addOption } from '../components/Select'
 import NumberInput from '../components/NumberInput'
+import PhoneInput from '../components/PhoneInput'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Field, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
@@ -239,7 +240,7 @@ export default function ReservationFormPage() {
               <TextInput type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
             </Field>
             <Field label={t('rental.phone')}>
-              <TextInput value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+              <PhoneInput value={form.phone} onChange={(v) => set('phone', v)} />
             </Field>
           </div>
         )}

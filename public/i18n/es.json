@@ -1953,6 +1953,8 @@
     "person_name": "Nombre completo",
     "email": "Email",
     "phone": "Teléfono",
+    "country": "País",
+    "phone_placeholder": "Ej.: +1 555 0100",
     "notify_email": "Notificar por email",
     "notify_short": "Notifica",
     "none": "Ninguna",
