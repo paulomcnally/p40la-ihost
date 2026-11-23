@@ -298,7 +298,7 @@ export default function LeaseFormPage() {
           <Field label={t('rental.home')}>
             <Select options={homeOptions} value={form.home_id} onChange={(v) => set('home_id', Number(v))} searchable placeholder={t('home.select')} />
           </Field>
-          <Field label={t('rental.agency')} hint={t('rental.agency_hint')}>
+          <Field label={t('rental.agency')}>
             <Select
               options={agencyOptions}
               value={form.agency_institution_id}
@@ -312,14 +312,6 @@ export default function LeaseFormPage() {
               }}
               searchable
             />
-            {agencies.length === 0 && (
-              <p className="text-xs text-text-secondary mt-1">
-                {t('rental.agency_empty')}{' '}
-                <button type="button" className="text-primary underline" onClick={() => setAgencyModalOpen(true)}>
-                  {t('rental.agency_manage')}
-                </button>
-              </p>
-            )}
           </Field>
           <Field label={t('rental.agent')}>
             <Select
