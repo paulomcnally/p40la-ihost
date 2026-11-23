@@ -6,7 +6,7 @@ import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
-import Select from '../components/Select'
+import Select, { addOption } from '../components/Select'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Field, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
@@ -200,7 +200,7 @@ export default function ReservationFormPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label={t('rental.person')}>
               <Select
-                options={[{ value: 0, label: t('rental.new_person') }, ...people.map((p) => ({ value: p.id, label: p.full_name }))]}
+                options={[addOption(t('app.add'), 0), ...people.map((p) => ({ value: p.id, label: p.full_name }))]}
                 value={0}
                 onChange={(v) => {
                   const pid = Number(v)

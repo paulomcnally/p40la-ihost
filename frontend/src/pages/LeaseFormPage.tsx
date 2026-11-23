@@ -6,7 +6,7 @@ import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
-import Select from '../components/Select'
+import Select, { addOption } from '../components/Select'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Field, Modal, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
@@ -272,12 +272,12 @@ export default function LeaseFormPage() {
   const agencyOptions = [
     { value: 0, label: t('rental.none') },
     ...agencies.map((i) => ({ value: i.id, label: i.name })),
-    { value: -1, label: t('rental.agency_add') },
+    addOption(t('app.add')),
   ]
   const agentOptions = [
     { value: 0, label: t('rental.none') },
     ...people.map((p) => ({ value: p.id, label: p.full_name })),
-    { value: -1, label: t('rental.agent_add') },
+    addOption(t('app.add')),
   ]
   const currencyOptions = (currencies.length > 0 ? currencies.map((c) => c.code) : ['USD', 'NIO', 'EUR'])
     .map((code) => ({ value: code, label: code }))
@@ -451,7 +451,7 @@ export default function LeaseFormPage() {
                 </Field>
                 <Field label={t('rental.person')}>
                   <Select
-                    options={[{ value: 0, label: t('rental.new_person') }, ...people.map((p) => ({ value: p.id, label: p.full_name }))]}
+                    options={[addOption(t('app.add'), 0), ...people.map((p) => ({ value: p.id, label: p.full_name }))]}
                     value={party.person_id || 0}
                     onChange={(v) => {
                       const pid = Number(v)
