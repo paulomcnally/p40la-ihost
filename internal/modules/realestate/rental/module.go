@@ -37,6 +37,7 @@ func (m *Module) Info() modules.Info {
 			"0052_rental_reservations",
 			"0053_rental_billing",
 			"0054_rental_reminders",
+			"0055_real_estate_category",
 		},
 	}
 }

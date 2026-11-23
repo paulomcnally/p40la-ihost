@@ -301,3 +301,42 @@ func TestVoidInvoiceKeepsNumber(t *testing.T) {
 		t.Fatalf("numeración tras anular = %d, quería %d", second.Number, inv.Number+1)
 	}
 }
+
+func TestAgencyMustHaveRealEstateCategory(t *testing.T) {
+	svc, cleanup := newTestService(t)
+	defer cleanup()
+	ctx := context.Background()
+	homeID := createHome(t, svc, "Casa Inmobiliaria")
+
+	var insuranceID, realEstateID int64
+	if err := svc.storage.db.QueryRow(`SELECT id FROM institution_categories WHERE key = 'insurance'`).Scan(&insuranceID); err != nil {
+		t.Fatalf("categoría insurance: %v", err)
+	}
+	if err := svc.storage.db.QueryRow(`SELECT id FROM institution_categories WHERE key = 'real_estate'`).Scan(&realEstateID); err != nil {
+		t.Fatalf("categoría real_estate: %v", err)
+	}
+	insertAgency := func(name string, categoryID int64) int64 {
+		res, err := svc.storage.db.Exec(`INSERT INTO institutions (name, category_id) VALUES (?, ?)`, name, categoryID)
+		if err != nil {
+			t.Fatalf("crear institución: %v", err)
+		}
+		id, _ := res.LastInsertId()
+		return id
+	}
+	insurerID := insertAgency("Aseguradora Demo", insuranceID)
+	if _, err := svc.CreateLease(ctx, &Lease{
+		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 12,
+		RentAmount: 500, Currency: "USD", PaymentDay: 1,
+		AgencyInstitutionID: &insurerID,
+	}); err == nil {
+		t.Fatal("se aceptó una aseguradora como inmobiliaria")
+	}
+	agencyID := insertAgency("Inmobiliaria Demo", realEstateID)
+	if _, err := svc.CreateLease(ctx, &Lease{
+		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 12,
+		RentAmount: 500, Currency: "USD", PaymentDay: 1,
+		AgencyInstitutionID: &agencyID,
+	}); err != nil {
+		t.Fatalf("no se aceptó una inmobiliaria válida: %v", err)
+	}
+}

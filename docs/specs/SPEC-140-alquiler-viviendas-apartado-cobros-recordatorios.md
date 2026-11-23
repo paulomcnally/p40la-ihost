@@ -103,7 +103,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 4. **REQ-004 — Ciclo del apartado.** Estados: `active → converted | expired | cancelled | forfeited`. El scheduler marca `expired` al vencer y libera la casa. La conversión crea un contrato en `draft` vinculado, imputando la seña al depósito si el usuario lo indica.
 5. **REQ-005 — Contrato de alquiler.** CRUD de contratos con: casa, inmobiliaria opcional, agente opcional, fecha de inicio, plazo en meses (`6`, `12` o `N` de 1 a 120), fecha de fin calculada, renta base, cuota mensual de mantenimiento/vigilancia, moneda, día de pago, depósito de garantía, mora opcional, renovación automática, días de preaviso, cuenta bancaria para el cobro y notas.
 6. **REQ-006 — Partes del contrato.** Personas asociadas con rol `tenant`, `guarantor`, `owner`, `agency_contact` o `agent`, con nombre, email, teléfono, documento, estado civil, domicilio, ocupación, empleador e ingreso mensual declarado (campos del perfil, opcionales). Cada parte define si recibe notificaciones (`notify_email`). Un contrato debe tener al menos un `tenant` con email válido para poder activarse.
-7. **REQ-007 — Inmobiliaria como institución.** Las inmobiliarias se reutilizan desde `institutions` con la categoría `real_estate` («Inmobiliaria»). El contrato guarda `agency_institution_id`, `commission_percent` y `commission_base` (`collected` o `invoiced`) para dejar registrada la intermediación.
+7. **REQ-007 — Inmobiliaria como institución.** Las inmobiliarias se reutilizan desde `institutions` con la categoría `real_estate` («Inmobiliaria»), creada de forma idempotente por la migración `0055`. El selector del contrato **solo lista** instituciones de esa categoría y el backend **rechaza** cualquier otra con `422 agency_category`. El contrato guarda `agency_institution_id`, `commission_percent` y `commission_base` (`collected` o `invoiced`) para dejar registrada la intermediación.
 8. **REQ-008 — Cargos mensuales.** Al activar un contrato se generan los cargos de renta de cada período del plazo, de forma idempotente (único por contrato + período + tipo). Tipos: `rent`, `deposit`, `late_fee`, `utility`, `other`.
 9. **REQ-009 — Factura interna de cobro.** Se emite una factura interna agrupando cargos pendientes del contrato. Tiene serie y número secuencial **inmutable**, fecha de emisión, vencimiento, líneas, total y moneda. Un documento emitido no se edita ni se borra.
 10. **REQ-010 — PDF de factura.** La factura se genera como PDF A4 con datos del emisor configurables, referencia al contrato y la vivienda, parte cobrada, detalle de líneas, total y leyenda «Documento interno de cobro — no constituye factura fiscal». Se guarda con hash SHA-256.
@@ -244,7 +244,7 @@ Investigación de dominio (subagentes, 2026-11-23) y del código existente:
 
 #### 5.2.1 Módulo `realestate.rental`
 - **Responsabilidad**: contratos, apartados, partes, cargos, facturas, recibos, pagos, documentos y recordatorios.
-- **Interfaz**: `Info()` con `ID: "realestate.rental"`, versión `1.0.0`, `Kind: "core"`, `Migrations: ["0051_rental_leases", "0052_rental_reservations", "0053_rental_billing", "0054_rental_reminders"]`; `RegisterRoutes(mux, auth)`.
+- **Interfaz**: `Info()` con `ID: "realestate.rental"`, versión `1.0.0`, `Kind: "core"`, `Migrations: ["0051_rental_leases", "0052_rental_reservations", "0053_rental_billing", "0054_rental_reminders", "0055_real_estate_category"]`; `RegisterRoutes(mux, auth)`.
 - **Dependencias**: `*sql.DB`, `*services.EmailService`, `*services.SystemSettings`, `DATA_DIR`, reloj inyectable.
 - **Ubicación**: `internal/modules/realestate/rental/`.
 - **Archivos**: `module.go`, `model.go`, `storage_lease.go`, `storage_billing.go`, `storage_reminders.go`, `service.go`, `billing.go`, `pdf.go`, `reminders.go`, `handlers.go`, `*_test.go`.
@@ -521,7 +521,7 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 - [ ] CA-RENTAL-RESERVATION-CONVERT: convertir un apartado crea un contrato `draft` con la misma casa y partes, y marca el apartado `converted`.
 - [ ] CA-RENTAL-LEASE-TERM: un contrato de 6 meses desde `2026-12-01` termina `2027-05-31`; uno de 12 meses termina `2027-11-30`; un plazo personalizado de 18 meses calcula el fin correcto.
 - [ ] CA-RENTAL-LEASE-ACTIVATE: activar sin `tenant` con email devuelve 422 con error junto al campo; activar correctamente genera un cargo `rent` por período y es idempotente al reintentar.
-- [ ] CA-RENTAL-AGENCY: la inmobiliaria se elige con `Select` buscable entre instituciones de categoría `real_estate`; comisión y base quedan guardadas en el contrato.
+- [ ] CA-RENTAL-AGENCY: la inmobiliaria se elige con `Select` buscable **solo** entre instituciones de categoría `real_estate`; una institución de otra categoría no aparece en la lista y el backend responde `422 agency_category`. Comisión y base quedan guardadas en el contrato.
 - [ ] CA-RENTAL-INVOICE-NUMBER: dos emisiones concurrentes producen números distintos y consecutivos; el número no se reutiliza al anular.
 - [ ] CA-RENTAL-INVOICE-IMMUTABLE: una factura `issued` no admite edición ni borrado (405/409); anular exige motivo y conserva el número.
 - [ ] CA-RENTAL-PDF: el PDF de factura se genera en ≤ 1 s, contiene emisor, número, vivienda, parte, líneas, total y la leyenda de documento interno; el hash coincide con el archivo.
@@ -615,3 +615,4 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 |-------|-------|-------------|
 | 2026-11-23 | OpenCode | Creación inicial de la especificación (draft) |
 | 2026-11-23 | OpenCode | Implementación: migraciones 0051–0054, módulo `realestate.rental`, PDF, email con adjuntos, scheduler y frontend. Corrección: los cargos se generan por `term_months` exactos aunque el contrato empiece a mitad de mes. Estado → `in_progress`. |
+| 2026-11-23 | OpenCode | Corrección del selector de inmobiliarias: migración `0055` crea la categoría `real_estate`, el formulario filtra por esa categoría y el backend rechaza instituciones de otro tipo. También se corrigió la verificación de existencia de instituciones (la tabla no tiene `deleted_at`). |

@@ -217,10 +217,30 @@ func (s *Storage) GetHomeListing(ctx context.Context, homeID int64) (*HomeRental
 // AgencyExists indica si la institución existe.
 func (s *Storage) AgencyExists(ctx context.Context, id int64) (bool, error) {
 	var n int
-	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM institutions WHERE id = ? AND deleted_at IS NULL`, id).Scan(&n); err != nil {
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM institutions WHERE id = ?`, id).Scan(&n); err != nil {
 		return false, fmt.Errorf("verificar inmobiliaria: %w", err)
 	}
 	return n > 0, nil
+}
+
+// AgencyIsRealEstate indica si la institución existe y tiene la categoría
+// canónica real_estate (SPEC-140).
+func (s *Storage) AgencyIsRealEstate(ctx context.Context, id int64) (bool, bool, error) {
+	var key sql.NullString
+	err := s.db.QueryRowContext(ctx, `
+		SELECT c.key
+		FROM institutions i
+		LEFT JOIN institution_categories c ON c.id = i.category_id
+		WHERE i.id = ?
+	`, id).Scan(&key)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, false, nil
+	}
+	if err != nil {
+		return false, false, fmt.Errorf("verificar categoría de inmobiliaria: %w", err)
+	}
+	// Los keys se guardan en minúsculas; comparamos normalizado por robustez.
+	return true, strings.EqualFold(strings.TrimSpace(key.String), "real_estate"), nil
 }
 
 // ---------------------------------------------------------------- contratos
