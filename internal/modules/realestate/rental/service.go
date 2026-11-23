@@ -753,12 +753,15 @@ func (s *Service) prepareLease(ctx context.Context, l *Lease) error {
 		return invalid("invalid_notice", "Los días de preaviso no pueden ser negativos")
 	}
 	if l.AgencyInstitutionID != nil {
-		ok, err := s.storage.AgencyExists(ctx, *l.AgencyInstitutionID)
+		exists, realEstate, err := s.storage.AgencyIsRealEstate(ctx, *l.AgencyInstitutionID)
 		if err != nil {
 			return err
 		}
-		if !ok {
+		if !exists {
 			return ErrAgencyNotFound
+		}
+		if !realEstate {
+			return invalid("agency_category", "La institución seleccionada no tiene la categoría Inmobiliaria")
 		}
 	}
 	if l.AgentPersonID != nil {

@@ -10,7 +10,7 @@ import Select from '../components/Select'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Field, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
-import type { Institution } from '../types'
+import type { Institution, InstitutionCategory } from '../types'
 import type { Lease, LeaseParty, PartyRole, RentalPerson } from '../types/rental'
 
 interface PartyDraft {
@@ -39,6 +39,7 @@ export default function LeaseFormPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [institutions, setInstitutions] = useState<Institution[]>([])
+  const [categories, setCategories] = useState<InstitutionCategory[]>([])
   const [people, setPeople] = useState<RentalPerson[]>([])
   const [parties, setParties] = useState<PartyDraft[]>([emptyParty('tenant')])
   const [initialPartyIds, setInitialPartyIds] = useState<number[]>([])
@@ -71,6 +72,7 @@ export default function LeaseFormPage() {
     loadHomes()
     loadCurrencies()
     api.institutions.list().then((list) => setInstitutions(list || [])).catch(() => undefined)
+    api.institutionCategories.list().then((list) => setCategories(list || [])).catch(() => undefined)
     api.rental.people.list().then((list) => setPeople(list || [])).catch(() => undefined)
   }, [])
 
@@ -196,7 +198,9 @@ export default function LeaseFormPage() {
   if (loading) return <LoadingSpinner />
 
   const homeOptions = homes.map((h) => ({ value: h.id, label: h.name }))
-  const agencyOptions = [{ value: 0, label: t('rental.none') }, ...institutions.map((i) => ({ value: i.id, label: i.name }))]
+  const realEstateCategoryID = categories.find((c) => c.key === 'real_estate')?.id
+  const agencies = institutions.filter((i) => realEstateCategoryID && i.category_id === realEstateCategoryID)
+  const agencyOptions = [{ value: 0, label: t('rental.none') }, ...agencies.map((i) => ({ value: i.id, label: i.name }))]
   const agentOptions = [{ value: 0, label: t('rental.none') }, ...people.map((p) => ({ value: p.id, label: p.full_name }))]
   const currencyOptions = (currencies.length > 0 ? currencies.map((c) => c.code) : ['USD', 'NIO', 'EUR'])
     .map((code) => ({ value: code, label: code }))
@@ -218,6 +222,14 @@ export default function LeaseFormPage() {
           </Field>
           <Field label={t('rental.agency')} hint={t('rental.agency_hint')}>
             <Select options={agencyOptions} value={form.agency_institution_id} onChange={(v) => set('agency_institution_id', Number(v))} searchable />
+            {agencies.length === 0 && (
+              <p className="text-xs text-text-secondary mt-1">
+                {t('rental.agency_empty')}{' '}
+                <button type="button" className="text-primary underline" onClick={() => navigate('/institutions/new')}>
+                  {t('rental.agency_manage')}
+                </button>
+              </p>
+            )}
           </Field>
           <Field label={t('rental.agent')}>
             <Select options={agentOptions} value={form.agent_person_id} onChange={(v) => set('agent_person_id', Number(v))} searchable />
