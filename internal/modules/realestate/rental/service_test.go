@@ -473,3 +473,44 @@ func TestPaymentCreatesInvoiceForDueChargesWhenNoneExists(t *testing.T) {
 		t.Fatalf("factura inesperada: %+v", invoices)
 	}
 }
+
+func TestActiveLeaseAllowsSafeEditsButKeepsFinancials(t *testing.T) {
+	svc, cleanup := newTestService(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc.now = func() time.Time { return time.Date(2026, 11, 23, 12, 0, 0, 0, time.UTC) }
+	homeID := createHome(t, svc, "Casa Edición Activa")
+	person, _ := svc.CreatePerson(ctx, &Person{FullName: "Inquilino Demo", Email: "demo@example.com"})
+	lease, err := svc.CreateLease(ctx, &Lease{
+		HomeID: homeID, StartDate: "2026-12-01", TermMonths: 12,
+		RentAmount: 500, MaintenanceAmount: 50, Currency: "USD",
+		PaymentDay: 1, DepositAmount: 1000,
+		Parties: []LeaseParty{{PersonID: person.ID, Role: RoleTenant, NotifyEmail: true}},
+	})
+	if err != nil {
+		t.Fatalf("crear: %v", err)
+	}
+	if _, err := svc.ActivateLease(ctx, lease.ID); err != nil {
+		t.Fatalf("activar: %v", err)
+	}
+
+	updated, err := svc.UpdateLease(ctx, &Lease{
+		ID: lease.ID, HomeID: homeID,
+		StartDate: "2020-01-01", TermMonths: 1,
+		RentAmount: 9999, MaintenanceAmount: 9999, Currency: "EUR",
+		PaymentDay: 28, DepositAmount: 1,
+		CommissionType: "fixed", CommissionAmount: 700,
+		Notes: "actualizado",
+	})
+	if err != nil {
+		t.Fatalf("editar activo: %v", err)
+	}
+	if updated.RentAmount != 500 || updated.MaintenanceAmount != 50 || updated.TermMonths != 12 ||
+		updated.StartDate != "2026-12-01" || updated.EndDate != "2027-11-30" ||
+		updated.Currency != "USD" || updated.PaymentDay != 1 || updated.DepositAmount != 1000 {
+		t.Fatalf("se alteraron condiciones bloqueadas: %+v", updated)
+	}
+	if updated.CommissionType != "fixed" || updated.CommissionAmount != 700 || updated.Notes != "actualizado" {
+		t.Fatalf("no se guardaron los campos editables: %+v", updated)
+	}
+}

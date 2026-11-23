@@ -33,7 +33,7 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...rest}
-      className={`w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text placeholder:text-text-secondary focus:outline-none focus:border-primary min-h-[44px] ${className}`}
+      className={`w-full px-3 py-2 border border-border rounded-ios-sm bg-card text-text placeholder:text-text-secondary focus:outline-none focus:border-primary min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
     />
   )
 }

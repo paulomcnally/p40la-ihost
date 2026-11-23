@@ -25,6 +25,7 @@ export interface SelectProps {
   searchPlaceholder?: string
   emptyLabel?: string
   zIndex?: string
+  disabled?: boolean
 }
 
 // normalizeText quita acentos y mayúsculas para que el buscador encuentre
@@ -42,6 +43,7 @@ export default function Select({
   searchPlaceholder = 'Buscar...',
   emptyLabel = 'Sin resultados',
   zIndex = 'z-[90]',
+  disabled = false,
 }: SelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -100,8 +102,11 @@ export default function Select({
     <div className="relative" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full min-h-[44px] flex items-center justify-between px-3 py-2 border border-border rounded-ios-sm bg-card hover:border-primary/50 focus:outline-none focus:border-primary transition-colors text-left text-text"
+        onClick={() => { if (!disabled) setOpen(!open) }}
+        disabled={disabled}
+        className={`w-full min-h-[44px] flex items-center justify-between px-3 py-2 border border-border rounded-ios-sm bg-card focus:outline-none focus:border-primary transition-colors text-left text-text ${
+          disabled ? 'opacity-60 cursor-not-allowed' : 'hover:border-primary/50'
+        }`}
       >
         <span className={`flex items-center gap-2 min-w-0 ${selected ? '' : 'text-text-secondary'}`}>
           {selected?.icon && <Icon name={selected.icon} className="w-4 h-4 shrink-0" />}
