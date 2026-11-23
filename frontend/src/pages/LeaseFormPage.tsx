@@ -32,6 +32,7 @@ export default function LeaseFormPage() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const isEdit = Boolean(id)
+  const queryHomeID = Number(searchParams.get('home') || 0)
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const { homes, loadHomes, currencies, loadCurrencies } = useAppStore()
@@ -66,6 +67,8 @@ export default function LeaseFormPage() {
     auto_renew: false,
     notice_days: 30,
     commission_percent: 0,
+    commission_type: 'percent' as 'percent' | 'fixed',
+    commission_amount: 0,
     commission_base: 'collected' as 'collected' | 'invoiced',
     owner_bank_account: '',
     notes: '',
@@ -107,6 +110,8 @@ export default function LeaseFormPage() {
           auto_renew: lease.auto_renew,
           notice_days: lease.notice_days,
           commission_percent: lease.commission_percent,
+          commission_type: lease.commission_type || 'percent',
+          commission_amount: lease.commission_amount || 0,
           commission_base: lease.commission_base,
           owner_bank_account: lease.owner_bank_account,
           notes: lease.notes,
@@ -232,6 +237,8 @@ export default function LeaseFormPage() {
         auto_renew: form.auto_renew,
         notice_days: form.notice_days,
         commission_percent: form.commission_percent,
+        commission_type: form.commission_type,
+        commission_amount: form.commission_amount,
         commission_base: form.commission_base,
         owner_bank_account: form.owner_bank_account,
         notes: form.notes,
@@ -267,6 +274,8 @@ export default function LeaseFormPage() {
   if (loading) return <LoadingSpinner />
 
   const homeOptions = homes.map((h) => ({ value: h.id, label: h.name }))
+  const lockedHomeID = isEdit ? form.home_id : queryHomeID
+  const selectedHome = homes.find((h) => h.id === lockedHomeID)
   const realEstateCategoryID = categories.find((c) => c.key === 'real_estate')?.id
   const agencies = institutions.filter((i) => realEstateCategoryID && i.category_id === realEstateCategoryID)
   const agencyOptions = [
@@ -296,7 +305,19 @@ export default function LeaseFormPage() {
       <SectionCard title={t('rental.lease.property')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label={t('rental.home')}>
-            <Select options={homeOptions} value={form.home_id} onChange={(v) => set('home_id', Number(v))} searchable placeholder={t('home.select')} />
+            {lockedHomeID > 0 ? (
+              <div className="flex items-center gap-2 min-h-[44px] px-3 py-2 border border-border rounded-ios-sm bg-bg/60 text-text">
+                <Icon name="home" className="w-4 h-4 text-text-secondary shrink-0" />
+                <span className="truncate font-medium">
+                  {selectedHome?.name || `${t('rental.home')} #${lockedHomeID}`}
+                </span>
+                {selectedHome?.address && (
+                  <span className="text-xs text-text-secondary truncate">· {selectedHome.address}</span>
+                )}
+              </div>
+            ) : (
+              <Select options={homeOptions} value={form.home_id} onChange={(v) => set('home_id', Number(v))} searchable placeholder={t('home.select')} />
+            )}
           </Field>
           <Field label={t('rental.agency')}>
             <Select
@@ -328,19 +349,37 @@ export default function LeaseFormPage() {
               searchable
             />
           </Field>
-          <Field label={t('rental.commission_base')}>
+          <Field label={t('rental.commission_type')}>
             <Select
               options={[
-                { value: 'collected', label: t('rental.commission.collected') },
-                { value: 'invoiced', label: t('rental.commission.invoiced') },
+                { value: 'percent', label: t('rental.commission_type_percent') },
+                { value: 'fixed', label: t('rental.commission_type_fixed') },
               ]}
-              value={form.commission_base}
-              onChange={(v) => set('commission_base', v as 'collected' | 'invoiced')}
+              value={form.commission_type}
+              onChange={(v) => set('commission_type', v as 'percent' | 'fixed')}
             />
           </Field>
-          <Field label={t('rental.commission_percent')}>
-            <TextInput type="number" min={0} max={100} step="0.01" value={form.commission_percent} onChange={(e) => set('commission_percent', Number(e.target.value))} />
-          </Field>
+          {form.commission_type === 'percent' ? (
+            <>
+              <Field label={t('rental.commission_percent')}>
+                <TextInput type="number" min={0} max={100} step="0.01" value={form.commission_percent} onChange={(e) => set('commission_percent', Number(e.target.value))} />
+              </Field>
+              <Field label={t('rental.commission_base')}>
+                <Select
+                  options={[
+                    { value: 'collected', label: t('rental.commission.collected') },
+                    { value: 'invoiced', label: t('rental.commission.invoiced') },
+                  ]}
+                  value={form.commission_base}
+                  onChange={(v) => set('commission_base', v as 'collected' | 'invoiced')}
+                />
+              </Field>
+            </>
+          ) : (
+            <Field label={t('rental.commission_amount')} hint={t('rental.commission_amount_hint')}>
+              <TextInput type="number" min={0} step="0.01" value={form.commission_amount} onChange={(e) => set('commission_amount', Number(e.target.value))} />
+            </Field>
+          )}
         </div>
       </SectionCard>
 

@@ -2070,6 +2070,13 @@
     },
     "commission_base": "Commission base",
     "commission_percent": "Commission (%)",
+  "commission_type": "Commission type",
+  "commission_type_percent": "Percentage",
+  "commission_type_fixed": "Fixed amount",
+  "commission_amount": "Commission amount",
+  "commission_amount_hint": "E.g. one month's rent.",
+  "commission_label": "Commission",
+  "intermediation": "Brokerage",
     "commission": {
       "collected": "On collected",
       "invoiced": "On invoiced"

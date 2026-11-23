@@ -310,6 +310,33 @@ export default function LeaseShowPage() {
         )}
       </SectionCard>
 
+      <SectionCard title={t('rental.intermediation')}>
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div>
+            <dt className="text-text-secondary">{t('rental.agency')}</dt>
+            <dd className="font-medium mt-0.5">{lease.agency_name || '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-text-secondary">{t('rental.agent')}</dt>
+            <dd className="font-medium mt-0.5">{lease.agent_name || '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-text-secondary">{t('rental.commission_label')}</dt>
+            <dd className="font-medium mt-0.5">
+              {lease.commission_type === 'fixed'
+                ? <Money amount={lease.commission_amount} currency={lease.currency} />
+                : `${lease.commission_percent}%`}
+            </dd>
+          </div>
+          {lease.commission_type !== 'fixed' && (
+            <div>
+              <dt className="text-text-secondary">{t('rental.commission_base')}</dt>
+              <dd className="font-medium mt-0.5">{t(`rental.commission.${lease.commission_base}`)}</dd>
+            </div>
+          )}
+        </dl>
+      </SectionCard>
+
       <SectionCard
         title={t('rental.charges')}
         action={lease.status === 'active' ? (

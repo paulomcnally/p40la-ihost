@@ -2071,6 +2071,13 @@
     },
     "commission_base": "Base de comisión",
     "commission_percent": "Comisión (%)",
+  "commission_type": "Tipo de comisión",
+  "commission_type_percent": "Porcentaje",
+  "commission_type_fixed": "Monto fijo",
+  "commission_amount": "Monto de la comisión",
+  "commission_amount_hint": "Ej.: el valor de un mes de alquiler.",
+  "commission_label": "Comisión",
+  "intermediation": "Intermediación",
     "commission": {
       "collected": "Sobre lo cobrado",
       "invoiced": "Sobre lo facturado"

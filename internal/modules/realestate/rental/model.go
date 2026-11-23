@@ -169,6 +169,8 @@ type Lease struct {
 	AutoRenew           bool       `json:"auto_renew"`
 	NoticeDays          int        `json:"notice_days"`
 	CommissionPercent   float64    `json:"commission_percent"`
+	CommissionType      string     `json:"commission_type"`
+	CommissionAmount    float64    `json:"commission_amount"`
 	CommissionBase      string     `json:"commission_base"`
 	OwnerBankAccount    string     `json:"owner_bank_account"`
 	Notes               string     `json:"notes"`

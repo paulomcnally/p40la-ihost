@@ -102,9 +102,9 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 
 **REQ-003.1 — Acuerdo de reserva (basado en documento real aportado por el usuario).** El apartado debe soportar: referencia bancaria de la seña, `applied_to_deposit` (la seña se imputa al depósito de garantía), fecha de firma y entrega de llaves, fecha de inicio de contrato, plazo pactado, desglose de renta + cuota de mantenimiento/vigilancia, reparto de la compensación por desistimiento entre propietario y agencia (`owner_split_percent` + `agency_split_percent`), política de devolución (`refundable`, `forfeitable`, `custom`) y lista de documentos exigidos al firmar (contrato de trabajo, estados de cuenta, identificación, etc.). El PDF del acuerdo se genera desde estos datos, sin texto fijo inventado.
 4. **REQ-004 — Ciclo del apartado.** Estados: `active → converted | expired | cancelled | forfeited`. El scheduler marca `expired` al vencer y libera la casa. La conversión crea un contrato en `draft` vinculado, imputando la seña al depósito si el usuario lo indica.
-5. **REQ-005 — Contrato de alquiler.** CRUD de contratos con: casa, inmobiliaria opcional, agente opcional, fecha de inicio, plazo en meses (`6`, `12` o `N` de 1 a 120), fecha de fin calculada, renta base, cuota mensual de mantenimiento/vigilancia, moneda, día de pago, depósito de garantía, mora opcional, renovación automática, días de preaviso, cuenta bancaria para el cobro y notas.
+5. **REQ-005 — Contrato de alquiler.** CRUD de contratos con: casa (fija cuando el formulario se abre desde `?home=ID` o en edición; selector solo si se crea sin contexto), inmobiliaria opcional, agente opcional, fecha de inicio, plazo en meses (`6`, `12` o `N` de 1 a 120), fecha de fin calculada, renta base, cuota mensual de mantenimiento/vigilancia, moneda, día de pago, depósito de garantía, mora opcional, renovación automática, días de preaviso, cuenta bancaria para el cobro y notas.
 6. **REQ-006 — Partes del contrato.** Personas asociadas con rol `tenant`, `guarantor`, `owner`, `agency_contact` o `agent`, con nombre, email, teléfono, documento, estado civil, domicilio, ocupación, empleador e ingreso mensual declarado (campos del perfil, opcionales). Cada parte define si recibe notificaciones (`notify_email`). Un contrato debe tener al menos un `tenant` con email válido para poder activarse. El formulario permite crear un agente en un modal y seleccionarlo sin salir del contrato.
-7. **REQ-007 — Inmobiliaria como institución.** Las inmobiliarias se reutilizan desde `institutions` con la categoría `real_estate` («Inmobiliaria»), creada de forma idempotente por la migración `0055`. El selector del contrato **solo lista** instituciones de esa categoría y el backend **rechaza** cualquier otra con `422 agency_category`. El formulario permite crear una inmobiliaria en un modal con la categoría fija y solo el nombre, sin salir del contrato. El contrato guarda `agency_institution_id`, `commission_percent` y `commission_base` (`collected` o `invoiced`) para dejar registrada la intermediación.
+7. **REQ-007 — Inmobiliaria como institución.** Las inmobiliarias se reutilizan desde `institutions` con la categoría `real_estate` («Inmobiliaria»), creada de forma idempotente por la migración `0055`. El selector del contrato **solo lista** instituciones de esa categoría y el backend **rechaza** cualquier otra con `422 agency_category`. El formulario permite crear una inmobiliaria en un modal con la categoría fija y solo el nombre, sin salir del contrato. El contrato guarda `agency_institution_id`, el tipo de comisión (`percent` o `fixed`), el valor correspondiente (`commission_percent` o `commission_amount`) y la base (`collected` o `invoiced`, solo aplicable al porcentaje) para dejar registrada la intermediación. El modo fijo cubre casos como «un mes de alquiler» o un depósito pactado.
 8. **REQ-008 — Cargos mensuales.** Al activar un contrato se generan los cargos de renta de cada período del plazo, de forma idempotente (único por contrato + período + tipo). Tipos: `rent`, `deposit`, `late_fee`, `utility`, `other`.
 9. **REQ-009 — Factura interna de cobro.** Se emite una factura interna agrupando cargos pendientes del contrato. Tiene serie y número secuencial **inmutable**, fecha de emisión, vencimiento, líneas, total y moneda. Un documento emitido no se edita ni se borra.
 10. **REQ-010 — PDF de factura.** La factura se genera como PDF A4 con datos del emisor configurables, referencia al contrato y la vivienda, parte cobrada, detalle de líneas, total y leyenda «Documento interno de cobro — no constituye factura fiscal». Se guarda con hash SHA-256.
@@ -245,7 +245,7 @@ Investigación de dominio (subagentes, 2026-11-23) y del código existente:
 
 #### 5.2.1 Módulo `realestate.rental`
 - **Responsabilidad**: contratos, apartados, partes, cargos, facturas, recibos, pagos, documentos y recordatorios.
-- **Interfaz**: `Info()` con `ID: "realestate.rental"`, versión `1.0.0`, `Kind: "core"`, `Migrations: ["0051_rental_leases", "0052_rental_reservations", "0053_rental_billing", "0054_rental_reminders", "0055_real_estate_category"]`; `RegisterRoutes(mux, auth)`.
+- **Interfaz**: `Info()` con `ID: "realestate.rental"`, versión `1.0.0`, `Kind: "core"`, `Migrations: ["0051_rental_leases", "0052_rental_reservations", "0053_rental_billing", "0054_rental_reminders", "0055_real_estate_category", "0056_rental_commission_type"]`; `RegisterRoutes(mux, auth)`.
 - **Dependencias**: `*sql.DB`, `*services.EmailService`, `*services.SystemSettings`, `DATA_DIR`, reloj inyectable.
 - **Ubicación**: `internal/modules/realestate/rental/`.
 - **Archivos**: `module.go`, `model.go`, `storage_lease.go`, `storage_billing.go`, `storage_reminders.go`, `service.go`, `billing.go`, `pdf.go`, `reminders.go`, `handlers.go`, `*_test.go`.
@@ -295,7 +295,7 @@ rental_leases
 - start_date, end_date, term_months (1..120)
 - rent_amount, maintenance_amount, currency, payment_day (1..28)
 - deposit_amount, late_fee_type (none|fixed|percent), late_fee_value, late_fee_cap
-- auto_renew, notice_days, commission_percent, commission_base (collected|invoiced)
+- auto_renew, notice_days, commission_type (percent|fixed), commission_percent, commission_amount, commission_base (collected|invoiced)
 - owner_bank_account, notes, created_at, updated_at, deleted_at
 - CHECK: end_date > start_date; term_months between 1 and 120
 
@@ -458,7 +458,9 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
   "deposit_amount_minor": 100000,
   "auto_renew": false,
   "notice_days": 30,
+  "commission_type": "percent",
   "commission_percent": 8.5,
+  "commission_amount": 0,
   "commission_base": "collected",
   "parties": [
     {"person": {"full_name": "Inquilino Demo", "email": "demo@example.com"}, "role": "tenant", "notify_email": true},
@@ -522,7 +524,8 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 - [ ] CA-RENTAL-RESERVATION-CONVERT: convertir un apartado crea un contrato `draft` con la misma casa y partes, y marca el apartado `converted`.
 - [ ] CA-RENTAL-LEASE-TERM: un contrato de 6 meses desde `2026-12-01` termina `2027-05-31`; uno de 12 meses termina `2027-11-30`; un plazo personalizado de 18 meses calcula el fin correcto.
 - [ ] CA-RENTAL-LEASE-ACTIVATE: activar sin `tenant` con email devuelve 422 con error junto al campo; activar correctamente genera un cargo `rent` por período y es idempotente al reintentar.
-- [ ] CA-RENTAL-AGENCY: la inmobiliaria se elige con `Select` buscable **solo** entre instituciones de categoría `real_estate`; una institución de otra categoría no aparece en la lista y el backend responde `422 agency_category`. Comisión y base quedan guardadas en el contrato.
+- [ ] CA-RENTAL-AGENCY: la inmobiliaria se elige con `Select` buscable **solo** entre instituciones de categoría `real_estate`; una institución de otra categoría no aparece en la lista y el backend responde `422 agency_category`.
+- [ ] CA-RENTAL-COMMISSION: la comisión se guarda como porcentaje (0–100 con base cobrado/facturado) o como monto fijo en la moneda del contrato; el tipo inválido se rechaza y el detalle muestra el valor correcto.
 - [ ] CA-RENTAL-INVOICE-NUMBER: dos emisiones concurrentes producen números distintos y consecutivos; el número no se reutiliza al anular.
 - [ ] CA-RENTAL-INVOICE-IMMUTABLE: una factura `issued` no admite edición ni borrado (405/409); anular exige motivo y conserva el número.
 - [ ] CA-RENTAL-PDF: el PDF de factura se genera en ≤ 1 s, contiene emisor, número, vivienda, parte, líneas, total y la leyenda de documento interno; el hash coincide con el archivo.
@@ -619,3 +622,5 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 | 2026-11-23 | OpenCode | Corrección del selector de inmobiliarias: migración `0055` crea la categoría `real_estate`, el formulario filtra por esa categoría y el backend rechaza instituciones de otro tipo. También se corrigió la verificación de existencia de instituciones (la tabla no tiene `deleted_at`). |
 | 2026-11-23 | OpenCode | Alta rápida desde el formulario de contrato: «Agregar inmobiliaria» (categoría fija) y «Agregar agente» en un modal, con selección automática del registro creado. |
 | 2026-11-23 | OpenCode | Regla `UI-SELECT-ADD`: toda opción de alta dentro de un dropdown usa «Agregar» + ícono `plus` mediante `addOption()`. Se aplicó a inmobiliaria, agente, persona y categoría de importación. |
+| 2026-11-23 | OpenCode | Formularios de contrato y apartado: la vivienda se muestra como dato fijo (sin dropdown) cuando se llega desde `?home=ID` o en edición. |
+| 2026-11-23 | OpenCode | Comisión de intermediación con dos modos: porcentaje (con base cobrado/facturado) o monto fijo (por ejemplo, un mes de renta). Migración `0056`, validación y visualización en el detalle. |
