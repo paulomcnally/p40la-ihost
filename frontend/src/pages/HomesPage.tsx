@@ -83,6 +83,7 @@ export default function HomesPage() {
           >
             <CardMenu
               options={[
+                { label: t('app.view'), onClick: () => navigate(`/home/${home.id}`) },
                 { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/home/edit/${home.id}`) },
                 { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget({ id: home.id, name: home.name }) },
               ]}
@@ -90,7 +91,13 @@ export default function HomesPage() {
             <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center mb-3">
               <Icon name="home" className="w-6 h-6" />
             </div>
-            <h3 className="font-semibold text-base truncate">{home.name}</h3>
+            <button
+              type="button"
+              onClick={() => navigate(`/home/${home.id}`)}
+              className="font-semibold text-base truncate text-left hover:text-primary transition-colors"
+            >
+              {home.name}
+            </button>
             {home.address && (
               <p className="text-sm text-text-secondary mt-1">{home.address}</p>
             )}

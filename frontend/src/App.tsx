@@ -8,6 +8,13 @@ import LoginPage from './pages/LoginPage'
 import SetupPage from './pages/SetupPage'
 import HomesPage from './pages/HomesPage'
 import HomeFormPage from './pages/HomeFormPage'
+import HomeShowPage from './pages/HomeShowPage'
+import LeaseFormPage from './pages/LeaseFormPage'
+import LeaseShowPage from './pages/LeaseShowPage'
+import ReservationFormPage from './pages/ReservationFormPage'
+import ReservationShowPage from './pages/ReservationShowPage'
+import InvoiceShowPage from './pages/InvoiceShowPage'
+import RentalSettingsPage from './pages/RentalSettingsPage'
 import ServicesPage from './pages/ServicesPage'
 import ServiceFormPage from './pages/ServiceFormPage'
 import BillsPage from './pages/BillsPage'
@@ -114,6 +121,15 @@ function App() {
                   <Route path="home" element={<HomesPage />} />
                   <Route path="home/new" element={<HomeFormPage />} />
                   <Route path="home/edit/:id" element={<HomeFormPage />} />
+                  <Route path="home/:id" element={<HomeShowPage />} />
+                  <Route path="leases/new" element={<LeaseFormPage />} />
+                  <Route path="leases/:id" element={<LeaseShowPage />} />
+                  <Route path="leases/:id/edit" element={<LeaseFormPage />} />
+                  <Route path="reservations/new" element={<ReservationFormPage />} />
+                  <Route path="reservations/:id" element={<ReservationShowPage />} />
+                  <Route path="reservations/:id/edit" element={<ReservationFormPage />} />
+                  <Route path="invoices/:id" element={<InvoiceShowPage />} />
+                  <Route path="settings/alquiler" element={<RentalSettingsPage />} />
                   <Route path="services" element={<ServicesPage />} />
                   <Route path="services/new" element={<ServiceFormPage />} />
                   <Route path="services/edit/:id" element={<ServiceFormPage />} />
