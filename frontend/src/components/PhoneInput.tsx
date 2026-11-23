@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  AsYouType, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode,
+  AsYouType, getCountryCallingCode, parsePhoneNumberFromString, validatePhoneNumberLength, type CountryCode,
 } from 'libphonenumber-js/min'
 import { api } from '../api'
 import { COUNTRIES, DEFAULT_COUNTRY_CODE, countryName, resolveCountryCode } from '../constants/countries'
@@ -40,8 +40,8 @@ function onlyDigits(value: string): string {
 }
 
 // PhoneInput es el único control válido para teléfonos (UI-PHONE-INPUT).
-// Muestra selector de país con código telefónico, autoselecciona el país del
-// sistema y guarda el número en formato E.164 (+código+número).
+// Selector de país con código telefónico, autoselección del país del sistema,
+// validación de longitud/formato y persistencia en E.164 (+código+número).
 export default function PhoneInput({
   value,
   onChange,
@@ -54,6 +54,7 @@ export default function PhoneInput({
   const initialCountry = resolveCountryCode(defaultCountry || '') || DEFAULT_COUNTRY_CODE
   const [country, setCountry] = useState(initialCountry)
   const [national, setNational] = useState('')
+  const [validationError, setValidationError] = useState('')
   const countryRef = useRef(initialCountry)
   const lastEmitted = useRef('')
 
@@ -66,17 +67,38 @@ export default function PhoneInput({
     [lang],
   )
 
-  const emit = (nextCountry: string, nextNational: string) => {
-    const digits = onlyDigits(nextNational)
-    const dial = dialCode(nextCountry)
-    const next = digits && dial ? `+${dial}${digits}` : ''
-    lastEmitted.current = next
-    onChange(next)
+  const parseNational = (digits: string, code: string) =>
+    parsePhoneNumberFromString(digits, code as CountryCode)
+
+  const emitNational = (code: string, formatted: string) => {
+    const digits = onlyDigits(formatted)
+    if (!digits) {
+      setValidationError('')
+      lastEmitted.current = ''
+      onChange('')
+      return
+    }
+    if (validatePhoneNumberLength(digits, code as CountryCode) === 'TOO_LONG') {
+      setValidationError(t('rental.phone_too_long'))
+      return
+    }
+    const parsed = parseNational(digits, code)
+    if (parsed?.isValid()) {
+      setValidationError('')
+      lastEmitted.current = parsed.number
+      onChange(parsed.number)
+      return
+    }
+    // Incompleto o inválido: no se persiste un número a medias.
+    setValidationError('')
+    lastEmitted.current = ''
+    onChange('')
   }
 
   const hydrate = (raw: string, fallbackCountry: string) => {
     if (!raw) {
       setNational('')
+      setValidationError('')
       return
     }
     const parsed = parsePhoneNumberFromString(raw, fallbackCountry as CountryCode)
@@ -84,9 +106,11 @@ export default function PhoneInput({
       countryRef.current = parsed.country
       setCountry(parsed.country)
       setNational(new AsYouType(parsed.country).input(parsed.nationalNumber))
+      setValidationError('')
       return
     }
     setNational(new AsYouType(fallbackCountry as CountryCode).input(raw))
+    setValidationError('')
   }
 
   useEffect(() => {
@@ -111,7 +135,7 @@ export default function PhoneInput({
       // Si había un número local precargado, se reemite con el país correcto.
       if (value && !value.trim().startsWith('+')) {
         hydrate(value, code)
-        emit(code, value)
+        emitNational(code, value)
       }
     })
     return () => { active = false }
@@ -124,7 +148,7 @@ export default function PhoneInput({
     setCountry(code)
     const formatted = new AsYouType(code as CountryCode).input(onlyDigits(national))
     setNational(formatted)
-    emit(code, formatted)
+    emitNational(code, formatted)
   }
 
   const handlePhone = (raw: string) => {
@@ -132,20 +156,40 @@ export default function PhoneInput({
     if (raw.trim().startsWith('+')) {
       const parsed = parsePhoneNumberFromString(raw)
       if (parsed?.country) {
+        if (validatePhoneNumberLength(parsed.nationalNumber, parsed.country) === 'TOO_LONG') {
+          setValidationError(t('rental.phone_too_long'))
+          return
+        }
         countryRef.current = parsed.country
         setCountry(parsed.country)
         const formatted = new AsYouType(parsed.country).input(parsed.nationalNumber)
         setNational(formatted)
-        emit(parsed.country, formatted)
+        emitNational(parsed.country, formatted)
         return
       }
     }
-    const formatted = new AsYouType(countryRef.current as CountryCode).input(onlyDigits(raw))
+    const digits = onlyDigits(raw)
+    if (validatePhoneNumberLength(digits, countryRef.current as CountryCode) === 'TOO_LONG') {
+      setValidationError(t('rental.phone_too_long'))
+      return
+    }
+    const formatted = new AsYouType(countryRef.current as CountryCode).input(digits)
     setNational(formatted)
-    emit(countryRef.current, formatted)
+    emitNational(countryRef.current, formatted)
+  }
+
+  const handleBlur = () => {
+    const digits = onlyDigits(national)
+    if (!digits) {
+      setValidationError('')
+      return
+    }
+    const parsed = parseNational(digits, countryRef.current)
+    setValidationError(parsed?.isValid() ? '' : t('rental.phone_invalid'))
   }
 
   const dial = dialCode(country)
+  const hasError = error || Boolean(validationError)
 
   return (
     <div className="space-y-1">
@@ -168,16 +212,22 @@ export default function PhoneInput({
             inputMode="tel"
             value={national}
             onChange={(e) => handlePhone(e.target.value)}
+            onBlur={handleBlur}
             disabled={disabled}
+            maxLength={20}
             placeholder={placeholder ?? t('rental.phone_placeholder')}
-            aria-invalid={error}
+            aria-invalid={hasError}
             className={`w-full px-3 py-2 border rounded-ios-sm bg-card text-text placeholder:text-text-secondary focus:outline-none min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed ${
-              error ? 'border-danger focus:border-danger' : 'border-border focus:border-primary'
+              hasError ? 'border-danger focus:border-danger' : 'border-border focus:border-primary'
             }`}
           />
         </div>
       </div>
-      {dial && <p className="text-xs text-text-secondary pl-1">+{dial}</p>}
+      {validationError ? (
+        <p className="text-xs text-danger pl-1">{validationError}</p>
+      ) : dial ? (
+        <p className="text-xs text-text-secondary pl-1">+{dial}</p>
+      ) : null}
     </div>
   )
 }

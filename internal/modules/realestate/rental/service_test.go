@@ -558,3 +558,25 @@ func TestNoAgencyClearsAgentAndCommission(t *testing.T) {
 		t.Fatalf("se guardó comisión sin inmobiliaria: %+v", lease)
 	}
 }
+
+func TestPersonPhoneValidation(t *testing.T) {
+	svc, cleanup := newTestService(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	if _, err := svc.CreatePerson(ctx, &Person{
+		FullName: "Persona Demo", Phone: "87888888888888888888888888",
+	}); err == nil {
+		t.Fatal("se aceptó un teléfono de 26 dígitos")
+	}
+	if _, err := svc.CreatePerson(ctx, &Person{
+		FullName: "Persona Demo", Phone: "+505 8888 8888",
+	}); err != nil {
+		t.Fatalf("se rechazó un teléfono válido: %v", err)
+	}
+	if _, err := svc.CreatePerson(ctx, &Person{
+		FullName: "Persona Demo", Phone: "abc123",
+	}); err == nil {
+		t.Fatal("se aceptó un teléfono con letras")
+	}
+}

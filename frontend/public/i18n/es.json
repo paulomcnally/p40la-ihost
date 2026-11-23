@@ -1955,6 +1955,8 @@
     "phone": "Teléfono",
     "country": "País",
     "phone_placeholder": "Ej.: +1 555 0100",
+    "phone_invalid": "Número de teléfono inválido",
+    "phone_too_long": "El número de teléfono es demasiado largo",
     "notify_email": "Notificar por email",
     "notify_short": "Notifica",
     "none": "Ninguna",
