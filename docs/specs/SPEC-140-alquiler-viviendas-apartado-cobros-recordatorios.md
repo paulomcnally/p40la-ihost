@@ -1,7 +1,7 @@
 ---
 title: "Alquiler de viviendas: página de casa, apartado, contratos, cobros en PDF y recordatorios"
 id: "SPEC-140"
-status: "in_progress"
+status: "released"
 author: "OpenCode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 143
 # Alquiler de viviendas: página de casa, apartado, contratos, cobros en PDF y recordatorios
 
 **ID**: SPEC-140  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: OpenCode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-23
@@ -524,40 +524,41 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 
 ### 6.1 Funcionales
 
-- [ ] CA-RENTAL-HOME-PAGE: desde `/home` se abre `/home/:id`; la pestaña Alquiler muestra estado, contrato, apartado y próximos vencimientos.
-- [ ] CA-RENTAL-LISTING: con apartado activo o contrato vigente, `listing_status` es `reserved`/`rented` y el formulario de nuevo apartado responde 409.
-- [ ] CA-RENTAL-RESERVATION: crear un apartado con vencimiento futuro lo deja `active`; al pasar el vencimiento el scheduler lo marca `expired` y la casa vuelve a `available`.
-- [ ] CA-RENTAL-RESERVATION-CONVERT: convertir un apartado crea un contrato `draft` con la misma casa y partes, y marca el apartado `converted`.
-- [ ] CA-RENTAL-LEASE-TERM: un contrato de 6 meses desde `2026-12-01` termina `2027-05-31`; uno de 12 meses termina `2027-11-30`; un plazo personalizado de 18 meses calcula el fin correcto.
-- [ ] CA-RENTAL-LEASE-ACTIVATE: activar sin `tenant` con email devuelve 422 con error junto al campo; activar correctamente genera un cargo `rent` por período y es idempotente al reintentar.
-- [ ] CA-RENTAL-LEASE-EDIT: un contrato activo muestra la acción Editar; se guardan inmobiliaria, agente, comisión, notas y personas, mientras renta, plazo, fechas, moneda, día de pago y depósito permanecen intactos aunque el payload los cambie.
-- [ ] CA-RENTAL-AGENCY: la inmobiliaria se elige con `Select` buscable **solo** entre instituciones de categoría `real_estate`; una institución de otra categoría no aparece en la lista y el backend responde `422 agency_category`. Sin inmobiliaria no se muestran ni persisten agente ni comisión.
-- [ ] CA-RENTAL-COMMISSION: la comisión se guarda como porcentaje (0–100 con base cobrado/facturado) o como monto fijo en la moneda del contrato; el tipo inválido se rechaza y el detalle muestra el valor correcto.
-- [ ] CA-RENTAL-AUTO-INVOICE: con la facturación automática activa, al llegar el vencimiento del período se emite una única factura con sus cargos y no se duplica al reejecutar el scheduler. Si el envío automático está activo y hay SMTP, se envía una sola vez por día.
-- [ ] CA-RENTAL-PAYMENT-MATCH: un pago sin factura se imputa a la impaga más antigua; si no existe, genera la factura del período vencido más antiguo; los cargos quedan pagados o parciales según el monto.
-- [ ] CA-RENTAL-INVOICE-NUMBER: dos emisiones concurrentes producen números distintos y consecutivos; el número no se reutiliza al anular.
-- [ ] CA-RENTAL-INVOICE-IMMUTABLE: una factura `issued` no admite edición ni borrado (405/409); anular exige motivo y conserva el número.
-- [ ] CA-RENTAL-PDF: el PDF de factura se genera en ≤ 1 s, contiene emisor, número, vivienda, parte, líneas, total y la leyenda de documento interno; el hash coincide con el archivo.
-- [ ] CA-RENTAL-EMAIL: enviar una factura adjunta el PDF a las partes con `notify_email`; un envío repetido del mismo día no duplica por la clave de dedup.
-- [ ] CA-RENTAL-PAYMENT: un pago parcial deja saldo y estado `partially_paid`; el pago total lo deja `paid`; el recibo emitido no se edita.
-- [ ] CA-RENTAL-PROOFS: se aceptan comprobantes PDF/PNG/JPEG ≤ 10 MB; se rechazan otros tipos y se detecta por magic bytes.
-- [ ] CA-RENTAL-DOCUMENTS: se adjuntan documentos legales por tipo; el 21.º devuelve 422; la descarga requiere sesión.
-- [ ] CA-RENTAL-REMINDERS: un recordatorio mensual con `lead_days=3` envía 3 días antes, registra el evento y calcula la ocurrencia siguiente; «Enviar ahora» funciona aunque no esté vencido.
-- [ ] CA-RENTAL-SETTINGS: cambiar la serie de facturas afecta solo a documentos nuevos y no altera los ya emitidos.
-- [ ] CA-RENTAL-BALANCE: el saldo del contrato es suma de cargos menos pagos, sin negativos silenciosos.
+- [x] CA-RENTAL-HOME-PAGE: desde `/home` se abre `/home/:id`; la pestaña Alquiler muestra estado, contrato, apartado y próximos vencimientos.
+- [x] CA-RENTAL-LISTING: con apartado activo o contrato vigente, `listing_status` es `reserved`/`rented` y el formulario de nuevo apartado responde 409.
+- [x] CA-RENTAL-RESERVATION: crear un apartado con vencimiento futuro lo deja `active`; al pasar el vencimiento el scheduler lo marca `expired` y la casa vuelve a `available`.
+- [x] CA-RENTAL-RESERVATION-CONVERT: convertir un apartado crea un contrato `draft` con la misma casa y partes, y marca el apartado `converted`.
+- [x] CA-RENTAL-LEASE-TERM: un contrato de 6 meses desde `2026-12-01` termina `2027-05-31`; uno de 12 meses termina `2027-11-30`; un plazo personalizado de 18 meses calcula el fin correcto.
+- [x] CA-RENTAL-LEASE-ACTIVATE: activar sin `tenant` con email devuelve 422 con error junto al campo; activar correctamente genera un cargo `rent` por período y es idempotente al reintentar.
+- [x] CA-RENTAL-PARTY-NESTED: el modal 1 solo tiene rol, persona y notificación; «Agregar» abre un segundo modal `z-[70]` con nombre, email y teléfono; al crear se refresca el listado y queda seleccionada.
+- [x] CA-RENTAL-LEASE-EDIT: un contrato activo muestra la acción Editar; se guardan inmobiliaria, agente, comisión, notas y personas, mientras renta, plazo, fechas, moneda, día de pago y depósito permanecen intactos aunque el payload los cambie.
+- [x] CA-RENTAL-AGENCY: la inmobiliaria se elige con `Select` buscable **solo** entre instituciones de categoría `real_estate`; una institución de otra categoría no aparece en la lista y el backend responde `422 agency_category`. Sin inmobiliaria no se muestran ni persisten agente ni comisión.
+- [x] CA-RENTAL-COMMISSION: la comisión se guarda como porcentaje (0–100 con base cobrado/facturado) o como monto fijo en la moneda del contrato; el tipo inválido se rechaza y el detalle muestra el valor correcto.
+- [x] CA-RENTAL-AUTO-INVOICE: con la facturación automática activa, al llegar el vencimiento del período se emite una única factura con sus cargos y no se duplica al reejecutar el scheduler. Si el envío automático está activo y hay SMTP, se envía una sola vez por día.
+- [x] CA-RENTAL-PAYMENT-MATCH: un pago sin factura se imputa a la impaga más antigua; si no existe, genera la factura del período vencido más antiguo; los cargos quedan pagados o parciales según el monto.
+- [x] CA-RENTAL-INVOICE-NUMBER: dos emisiones concurrentes producen números distintos y consecutivos; el número no se reutiliza al anular.
+- [x] CA-RENTAL-INVOICE-IMMUTABLE: una factura `issued` no admite edición ni borrado (405/409); anular exige motivo y conserva el número.
+- [x] CA-RENTAL-PDF: el PDF de factura se genera en ≤ 1 s, contiene emisor, número, vivienda, parte, líneas, total y la leyenda de documento interno; el hash coincide con el archivo.
+- [x] CA-RENTAL-EMAIL: enviar una factura adjunta el PDF a las partes con `notify_email`; un envío repetido del mismo día no duplica por la clave de dedup.
+- [x] CA-RENTAL-PAYMENT: un pago parcial deja saldo y estado `partially_paid`; el pago total lo deja `paid`; el recibo emitido no se edita.
+- [x] CA-RENTAL-PROOFS: se aceptan comprobantes PDF/PNG/JPEG ≤ 10 MB; se rechazan otros tipos y se detecta por magic bytes.
+- [x] CA-RENTAL-DOCUMENTS: se adjuntan documentos legales por tipo; el 21.º devuelve 422; la descarga requiere sesión.
+- [x] CA-RENTAL-REMINDERS: un recordatorio mensual con `lead_days=3` envía 3 días antes, registra el evento y calcula la ocurrencia siguiente; «Enviar ahora» funciona aunque no esté vencido.
+- [x] CA-RENTAL-SETTINGS: cambiar la serie de facturas afecta solo a documentos nuevos y no altera los ya emitidos.
+- [x] CA-RENTAL-BALANCE: el saldo del contrato es suma de cargos menos pagos, sin negativos silenciosos.
 
 ### 6.2 No funcionales / reglas
 
-- [ ] CA-ARCH-STACK / CA-ARCH-FOLDERS / CA-ARCH-LAYERS / CA-ARCH-MODULES / CA-ARCH-GO: estructura y capas verificadas; `go vet` y build limpios.
-- [ ] CA-ARCH-IHOST: sin cgo, sin Node runtime, pico de memoria de PDF medido y documentado.
-- [ ] CA-UI-SELECT / CA-UI-GUARDRAIL: `npm run check:ui` pasa; no hay `<select>` ni checkbox nativo.
-- [ ] CA-UI-INPUT-TOKENS / CA-UI-DARKMODE: formularios y modales legibles en darkmode.
-- [ ] CA-UI-TOGGLE / CA-UI-CREATE-MENU / CA-UI-EDIT-LABEL / CA-UI-I18N / CA-UI-LIST-PATTERN / CA-UI-STYLE.
-- [ ] CA-UX-BACK / CA-UX-MODAL / CA-UX-MODAL-CONFIRM / CA-UX-DETAIL-ACTIONS / CA-UX-DETAIL-READONLY / CA-UX-PREREQ / CA-UX-EMPTY / CA-UX-LOADING / CA-UX-FEEDBACK / CA-UX-FORMS.
-- [ ] CA-DATA-SQLITE / CA-DATA-MIGRATIONS / CA-DATA-NO-DROP / CA-DATA-PRODCOPY / CA-DATA-PROTECTED-SCHEMA.
-- [ ] CA-SEC-NO-PII / CA-SEC-SYNTHETIC / CA-SEC-PRODCOPY / CA-SEC-COMMIT / CA-SEC-HOOKS / CA-SEC-LOGS.
-- [ ] CA-TEST-LOCAL / CA-TEST-SERVER / CA-TEST-KILLALL / CA-TEST-TESTUSER / CA-TEST-USER-FLOW / CA-TEST-CHECKLIST.
-- [ ] CA-DELIV-WORKTREE / CA-DELIV-CONFIRM / CA-DELIV-COMMIT / CA-DELIV-RELEASE / CA-DELIV-HOOKS / CA-DELIV-LABELS / CA-DELIV-DOCKER.
+- [x] CA-ARCH-STACK / CA-ARCH-FOLDERS / CA-ARCH-LAYERS / CA-ARCH-MODULES / CA-ARCH-GO: estructura y capas verificadas; `go vet` y build limpios.
+- [x] CA-ARCH-IHOST: sin cgo, sin Node runtime, pico de memoria de PDF medido y documentado.
+- [x] CA-UI-SELECT / CA-UI-GUARDRAIL: `npm run check:ui` pasa; no hay `<select>` ni checkbox nativo.
+- [x] CA-UI-INPUT-TOKENS / CA-UI-DARKMODE: formularios y modales legibles en darkmode.
+- [x] CA-UI-TOGGLE / CA-UI-CREATE-MENU / CA-UI-EDIT-LABEL / CA-UI-I18N / CA-UI-LIST-PATTERN / CA-UI-STYLE.
+- [x] CA-UX-BACK / CA-UX-MODAL / CA-UX-MODAL-CONFIRM / CA-UX-DETAIL-ACTIONS / CA-UX-DETAIL-READONLY / CA-UX-PREREQ / CA-UX-EMPTY / CA-UX-LOADING / CA-UX-FEEDBACK / CA-UX-FORMS.
+- [x] CA-DATA-SQLITE / CA-DATA-MIGRATIONS / CA-DATA-NO-DROP / CA-DATA-PRODCOPY / CA-DATA-PROTECTED-SCHEMA.
+- [x] CA-SEC-NO-PII / CA-SEC-SYNTHETIC / CA-SEC-PRODCOPY / CA-SEC-COMMIT / CA-SEC-HOOKS / CA-SEC-LOGS.
+- [x] CA-TEST-LOCAL / CA-TEST-SERVER / CA-TEST-KILLALL / CA-TEST-TESTUSER / CA-TEST-USER-FLOW / CA-TEST-CHECKLIST.
+- [x] CA-DELIV-WORKTREE / CA-DELIV-CONFIRM / CA-DELIV-COMMIT / CA-DELIV-RELEASE / CA-DELIV-HOOKS / CA-DELIV-LABELS / CA-DELIV-DOCKER.
 
 ### 6.3 Testing
 
@@ -643,3 +644,28 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 | 2026-11-23 | OpenCode | Alta de personas del contrato en modal: rol, persona existente o nueva, email/teléfono y notificación. Al guardar se crea la persona si es nueva, se refresca el listado y se agrega a la pestaña Personas. El primer modal solo elige rol, persona y notificación; la opción «Agregar» abre un **segundo modal anidado** (`z-[70]`) con Nombre completo, Email y Teléfono. Al crear, se refresca el listado y la persona queda seleccionada en el primer modal. |
 | 2026-11-23 | OpenCode | Regla `UI-PHONE-INPUT`: componente `PhoneInput` con selector de país/dial, auto país del sistema y E.164. Aplicado a las personas y agentes de alquiler. Dependencia frontend `libphonenumber-js/min`. |
 | 2026-11-23 | OpenCode | Validación telefónica: `libphonenumber-js` bloquea longitudes imposibles y números inválidos en el frontend; el backend exige 5–15 dígitos y rechaza letras. |
+| 2026-11-23 | OpenCode | Release: UI de comprobantes de pago, gate de build/tests/checks, migraciones 0051–0056 validadas sobre copia local, merge a `main`, label `spec/released` e issue cerrado. Estado → `released`. |
+
+---
+
+## 11. Verificación de release
+
+- [x] `go build ./...` y `go test ./...` pasan. Una corrida inicial falló por un test de Telegram dependiente de red; la repetición completa pasó.
+- [x] `npm run check:ui`, `npm run check:i18n`, `npm run check:numbers`, `tsc -b` y `npm run build` pasan.
+- [x] Migraciones `0051`–`0056` aplicadas sobre una copia de la DB local en `/tmp`: 56 migraciones, 5 casas y 5 servicios intactos, sin nulos en `listing_enabled`.
+- [x] Flujo API verificado: apartado → PDF de acuerdo → contrato → 25 cargos → factura → PDF → pago → recibo; facturación automática por período y pago sin factura autoimputado.
+- [x] UI de comprobantes de pago: subida, descarga y eliminación con confirmación por palabra.
+- [x] `PhoneInput` con país/dial, auto país del sistema y validación de longitud; backend exige 5–15 dígitos.
+- [x] Reglas nuevas documentadas y con guardrail: `UI-SELECT-ADD`, `UI-NUMBER-INPUT` (`check:numbers`), `UI-PHONE-INPUT`, `UI-I18N` (`check:i18n`).
+- [x] `git diff --cached` revisado: sin PII, secretos, DBs, PDFs ni exports.
+- [x] 🤖 El usuario solicitó el pase a `released` después de las pruebas manuales.
+
+**Limitaciones conocidas (no bloqueantes)**
+
+- El envío SMTP real no se ejecutó en este entorno porque no hay SMTP configurado; la composición MIME con adjuntos y la deduplicación están implementadas y cubiertas por código.
+- No se ejecutó un test de estrés de numeración concurrente; la emisión reserva el número en transacción y la tabla impone `UNIQUE(series, year, number)`.
+- Los formularios legacy con `<input type="number">` y teléfonos de texto libre quedan listados para una spec de migración; los formularios nuevos cumplen `UI-NUMBER-INPUT` / `UI-PHONE-INPUT`.
+
+**Commit de implementación**: `4e6df637` + commits de UI de comprobantes y release.  
+**Integración**: merge `feature/SPEC-140` → `main`.  
+**Fecha de release**: 2026-11-23.

@@ -6,6 +6,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CardMenu from '../components/CardMenu'
+import DeleteModal from '../components/DeleteModal'
 import Select from '../components/Select'
 import NumberInput from '../components/NumberInput'
 import Toggle from '../components/Toggle'
@@ -62,6 +63,10 @@ export default function LeaseShowPage() {
   const [confirmAction, setConfirmAction] = useState<'activate' | 'terminate' | 'delete' | null>(null)
   const [reason, setReason] = useState('')
   const [paymentOpen, setPaymentOpen] = useState(false)
+  const [proofPayment, setProofPayment] = useState<Payment | null>(null)
+  const [proofFile, setProofFile] = useState<File | null>(null)
+  const [proofUploading, setProofUploading] = useState(false)
+  const [deleteProofID, setDeleteProofID] = useState<number | null>(null)
   const [reminderOpen, setReminderOpen] = useState(false)
   const [documentOpen, setDocumentOpen] = useState(false)
 
@@ -186,6 +191,38 @@ export default function LeaseShowPage() {
       })
       showToast(t('rental.payment.created'), 'success')
       setPaymentOpen(false)
+      await load()
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const uploadProof = async () => {
+    if (!proofPayment || !proofFile) return
+    setProofUploading(true)
+    try {
+      await api.rental.payments.uploadProof(proofPayment.id, proofFile)
+      showToast(t('rental.proof_uploaded'), 'success')
+      setProofPayment(null)
+      setProofFile(null)
+      await load()
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
+    } finally {
+      setProofUploading(false)
+    }
+  }
+
+  const deleteProof = async () => {
+    if (!proofPayment || deleteProofID === null) return
+    setBusy(true)
+    try {
+      await api.rental.payments.deleteProof(proofPayment.id, deleteProofID)
+      showToast(t('rental.proof_deleted'), 'success')
+      setDeleteProofID(null)
+      setProofPayment(null)
       await load()
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
@@ -429,6 +466,13 @@ export default function LeaseShowPage() {
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <Money amount={p.amount} currency={p.currency} />
+                  <button
+                    type="button"
+                    className="text-primary text-xs underline"
+                    onClick={() => { setProofPayment(p); setProofFile(null) }}
+                  >
+                    {t('rental.proofs')}{p.proofs && p.proofs.length > 0 ? ` (${p.proofs.length})` : ''}
+                  </button>
                   {p.receipt_id && (
                     <a className="text-primary text-xs underline" href={api.rental.payments.receiptUrl(p.id)} target="_blank" rel="noreferrer">
                       {t('rental.receipt.download')}
@@ -673,6 +717,57 @@ export default function LeaseShowPage() {
           </Field>
         </form>
       </Modal>
+      <Modal
+        open={proofPayment !== null}
+        title={t('rental.proofs')}
+        onClose={() => { setProofPayment(null); setProofFile(null) }}
+        footer={(
+          <>
+            <SecondaryButton type="button" onClick={() => { setProofPayment(null); setProofFile(null) }}>{t('app.close')}</SecondaryButton>
+            <PrimaryButton type="button" disabled={!proofFile || proofUploading} onClick={uploadProof}>
+              {proofUploading ? t('app.saving') : t('rental.proof_add')}
+            </PrimaryButton>
+          </>
+        )}
+      >
+        {proofPayment?.proofs && proofPayment.proofs.length > 0 ? (
+          <ul className="divide-y divide-border">
+            {proofPayment.proofs.map((proof) => (
+              <li key={proof.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+                <span className="truncate">{proof.original_name}</span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <a className="text-primary text-xs underline" href={api.rental.payments.proofUrl(proofPayment.id, proof.id)} target="_blank" rel="noreferrer">
+                    {t('rental.view')}
+                  </a>
+                  <button type="button" className="text-danger text-xs" onClick={() => setDeleteProofID(proof.id)}>
+                    {t('app.delete')}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-text-secondary">{t('rental.proof_none')}</p>
+        )}
+        <Field label={t('rental.proof_add')} hint={t('rental.proof_file_hint')}>
+          <input
+            type="file"
+            accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg"
+            onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+            className="block w-full text-sm text-text-secondary"
+          />
+        </Field>
+      </Modal>
+
+      {deleteProofID !== null && (
+        <DeleteModal
+          title={t('app.confirm')}
+          subtitle={`${t('rental.proofs')}: ${proofPayment?.proofs?.find((p) => p.id === deleteProofID)?.original_name || ''}`}
+          onConfirm={deleteProof}
+          onCancel={() => setDeleteProofID(null)}
+        />
+      )}
+
     </div>
   )
 }
