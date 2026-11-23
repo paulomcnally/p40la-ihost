@@ -756,3 +756,20 @@ func (s *Storage) SetInvoiceSnapshot(ctx context.Context, id int64, snapshot str
 	}
 	return nil
 }
+
+// OldestUnpaidInvoice devuelve la factura emitida con saldo pendiente más antigua.
+func (s *Storage) OldestUnpaidInvoice(ctx context.Context, leaseID int64) (*Invoice, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT `+invoiceColumns+`
+		FROM rental_invoices i
+		WHERE i.lease_id = ? AND i.status = 'issued'
+			AND i.total > (
+				SELECT COALESCE(SUM(p.amount), 0)
+				FROM rental_payments p
+				WHERE p.invoice_id = i.id
+			)
+		ORDER BY i.issue_date ASC, i.year ASC, i.number ASC
+		LIMIT 1
+	`, leaseID)
+	return scanInvoice(row)
+}

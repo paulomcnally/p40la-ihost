@@ -550,6 +550,9 @@ export default function LeaseShowPage() {
               value={paymentForm.invoice_id}
               onChange={(v) => setPaymentForm((p) => ({ ...p, invoice_id: Number(v) }))}
             />
+            {paymentForm.invoice_id === 0 && (
+              <p className="text-xs text-text-secondary mt-1">{t('rental.payment.auto_apply_hint')}</p>
+            )}
           </Field>
           <Field label={t('rental.reference')}>
             <TextInput value={paymentForm.reference} onChange={(e) => setPaymentForm((p) => ({ ...p, reference: e.target.value }))} />

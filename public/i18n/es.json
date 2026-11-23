@@ -2125,6 +2125,7 @@
       "created": "Pago registrado",
       "date": "Fecha de pago",
       "with_receipt": "Emitir recibo",
+    "auto_apply_hint": "Si no elegís factura, se imputa a la impaga más antigua o se genera la del período vencido.",
       "invoice": "Imputar a factura"
     },
     "payment_date": "Fecha de pago",
@@ -2206,6 +2207,11 @@
       "owner_split": "Reparto propietario (%)",
       "agency_split": "Reparto agencia (%)",
       "splits_hint": "Se usa como valor inicial en apartados nuevos.",
+    "automation": "Automatización",
+    "auto_invoice": "Facturación automática",
+    "auto_invoice_hint": "Emite una factura por período cuando llega el vencimiento.",
+    "auto_send_invoice": "Envío automático de facturas",
+    "auto_send_invoice_hint": "Envía la factura al inquilino y garantes si el SMTP está configurado.",
       "saved": "Configuración guardada"
     }
   }

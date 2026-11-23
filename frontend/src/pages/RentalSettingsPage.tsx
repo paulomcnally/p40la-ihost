@@ -7,6 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select from '../components/Select'
+import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Field, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
 import type { RentalSettings } from '../types/rental'
@@ -22,6 +23,7 @@ export default function RentalSettingsPage() {
     issuer_name: '', issuer_tax_id: '', issuer_address: '', issuer_email: '',
     invoice_series: 'ALQ', receipt_series: 'REC', default_currency: 'USD',
     default_lead_days: 3, default_owner_split_percent: 50, default_agency_split_percent: 50,
+    auto_invoice: true, auto_send_invoice: true,
   })
 
   usePageTitle(t('rental.settings.title'))
@@ -102,6 +104,34 @@ export default function RentalSettingsPage() {
           </Field>
         </div>
         <p className="text-xs text-text-secondary mt-3">{t('rental.settings.splits_hint')}</p>
+      </SectionCard>
+
+      <SectionCard title={t('rental.settings.automation')}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">{t('rental.settings.auto_invoice')}</p>
+              <p className="text-xs text-text-secondary mt-0.5">{t('rental.settings.auto_invoice_hint')}</p>
+            </div>
+            <Toggle
+              checked={form.auto_invoice}
+              onChange={(v) => set('auto_invoice', v)}
+              ariaLabel={t('rental.settings.auto_invoice')}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
+            <div>
+              <p className="text-sm font-medium">{t('rental.settings.auto_send_invoice')}</p>
+              <p className="text-xs text-text-secondary mt-0.5">{t('rental.settings.auto_send_invoice_hint')}</p>
+            </div>
+            <Toggle
+              checked={form.auto_send_invoice}
+              onChange={(v) => set('auto_send_invoice', v)}
+              disabled={!form.auto_invoice}
+              ariaLabel={t('rental.settings.auto_send_invoice')}
+            />
+          </div>
+        </div>
       </SectionCard>
 
       <div className="flex justify-end gap-2">

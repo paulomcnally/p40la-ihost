@@ -2124,6 +2124,7 @@
       "created": "Payment recorded",
       "date": "Payment date",
       "with_receipt": "Issue receipt",
+    "auto_apply_hint": "If no invoice is selected, it is applied to the oldest unpaid one or a due-period invoice is created.",
       "invoice": "Apply to invoice"
     },
     "payment_date": "Payment date",
@@ -2205,6 +2206,11 @@
       "owner_split": "Owner split (%)",
       "agency_split": "Agency split (%)",
       "splits_hint": "Used as the initial value for new reservations.",
+    "automation": "Automation",
+    "auto_invoice": "Automatic invoicing",
+    "auto_invoice_hint": "Issues one invoice per period when it becomes due.",
+    "auto_send_invoice": "Automatic invoice email",
+    "auto_send_invoice_hint": "Sends the invoice to the tenant and guarantors when SMTP is configured.",
       "saved": "Settings saved"
     }
   }
