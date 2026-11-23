@@ -64,6 +64,7 @@ export default function LeaseFormPage() {
   const [partyModalOpen, setPartyModalOpen] = useState(false)
   const [partySaving, setPartySaving] = useState(false)
   const [partyForm, setPartyForm] = useState<PartyDraft>(emptyParty('tenant'))
+  const [partyMode, setPartyMode] = useState<'new' | 'existing'>('new')
   const [parties, setParties] = useState<PartyDraft[]>([])
   const [initialPartyIds, setInitialPartyIds] = useState<number[]>([])
   const [customTerm, setCustomTerm] = useState(false)
@@ -224,11 +225,16 @@ export default function LeaseFormPage() {
 
   const openPartyModal = () => {
     setPartyForm(emptyParty('tenant'))
+    setPartyMode('new')
     setPartyModalOpen(true)
   }
 
   const savePartyModal = async () => {
-    if (!partyForm.person_id && !partyForm.full_name.trim()) {
+    if (partyMode === 'existing' && !partyForm.person_id) {
+      showToast(t('rental.person_required'), 'error')
+      return
+    }
+    if (partyMode === 'new' && !partyForm.full_name.trim()) {
       showToast(t('rental.name_required'), 'error')
       return
     }
@@ -709,25 +715,57 @@ export default function LeaseFormPage() {
           onChange={(v) => setPartyForm((prev) => ({ ...prev, role: v as PartyRole }))}
         />
       </Field>
-      <Field label={t('rental.person')}>
-        <Select
-          options={[addOption(t('app.add'), 0), ...people.map((p) => ({ value: p.id, label: p.full_name }))]}
-          value={partyForm.person_id || 0}
-          onChange={(v) => {
-            const pid = Number(v)
-            const person = people.find((p) => p.id === pid)
-            setPartyForm((prev) => ({
-              ...prev,
-              person_id: pid || undefined,
-              full_name: person?.full_name || '',
-              email: person?.email || '',
-              phone: person?.phone || '',
-            }))
+      <div className="flex gap-1 p-1 bg-bg rounded-ios-sm" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={partyMode === 'new'}
+          onClick={() => {
+            setPartyMode('new')
+            setPartyForm((prev) => ({ ...prev, person_id: undefined, full_name: '', email: '', phone: '' }))
           }}
-          searchable
-        />
-      </Field>
-      {!partyForm.person_id && (
+          className={`flex-1 px-3 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
+            partyMode === 'new' ? 'bg-card text-primary shadow-ios' : 'text-text-secondary hover:text-text'
+          }`}
+        >
+          {t('rental.new_person')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={partyMode === 'existing'}
+          onClick={() => {
+            setPartyMode('existing')
+            setPartyForm((prev) => ({ ...prev, person_id: undefined, full_name: '', email: '', phone: '' }))
+          }}
+          className={`flex-1 px-3 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
+            partyMode === 'existing' ? 'bg-card text-primary shadow-ios' : 'text-text-secondary hover:text-text'
+          }`}
+        >
+          {t('rental.existing_person')}
+        </button>
+      </div>
+      {partyMode === 'existing' ? (
+        <Field label={t('rental.person')}>
+          <Select
+            options={people.map((p) => ({ value: p.id, label: p.full_name }))}
+            value={partyForm.person_id || 0}
+            onChange={(v) => {
+              const pid = Number(v)
+              const person = people.find((p) => p.id === pid)
+              setPartyForm((prev) => ({
+                ...prev,
+                person_id: pid || undefined,
+                full_name: person?.full_name || '',
+                email: person?.email || '',
+                phone: person?.phone || '',
+              }))
+            }}
+            searchable
+            placeholder={t('rental.select_person')}
+          />
+        </Field>
+      ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label={t('rental.person_name')}>
             <TextInput value={partyForm.full_name} onChange={(e) => setPartyForm((prev) => ({ ...prev, full_name: e.target.value }))} />
