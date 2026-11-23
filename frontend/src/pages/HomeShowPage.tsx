@@ -9,10 +9,11 @@ import CardMenu from '../components/CardMenu'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Badge, Money, PrimaryButton, SectionCard } from '../components/rental/RentalUI'
+import HomeMaintenanceTab from '../components/home/HomeMaintenanceTab'
 import type { Home } from '../types'
 import type { HomeRentalStatus } from '../types/rental'
 
-type Tab = 'summary' | 'rental'
+type Tab = 'summary' | 'maintenance' | 'rental'
 
 export default function HomeShowPage() {
   const navigate = useNavigate()
@@ -21,7 +22,8 @@ export default function HomeShowPage() {
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
-  const tab: Tab = searchParams.get('tab') === 'rental' ? 'rental' : 'summary'
+  const rawTab = searchParams.get('tab')
+  const tab: Tab = rawTab === 'rental' ? 'rental' : rawTab === 'maintenance' ? 'maintenance' : 'summary'
   const [home, setHome] = useState<Home | null>(null)
   const [status, setStatus] = useState<HomeRentalStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -103,18 +105,22 @@ export default function HomeShowPage() {
       </div>
 
       <div className="flex gap-1 p-1 bg-bg rounded-ios-sm" role="tablist">
-        {(['summary', 'rental'] as Tab[]).map((key) => (
+        {([
+          { key: 'summary' as Tab, label: t('rental.tab_summary') },
+          { key: 'maintenance' as Tab, label: t('homeMaintenance.tab') },
+          { key: 'rental' as Tab, label: t('rental.tab_rental') },
+        ]).map((item) => (
           <button
-            key={key}
+            key={item.key}
             type="button"
             role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={`flex-1 px-3 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
-              tab === key ? 'bg-card text-primary shadow-ios' : 'text-text-secondary hover:text-text'
+            aria-selected={tab === item.key}
+            onClick={() => setTab(item.key)}
+            className={`flex-1 px-2 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
+              tab === item.key ? 'bg-card text-primary shadow-ios' : 'text-text-secondary hover:text-text'
             }`}
           >
-            {t(key === 'summary' ? 'rental.tab_summary' : 'rental.tab_rental')}
+            {item.label}
           </button>
         ))}
       </div>
@@ -132,6 +138,8 @@ export default function HomeShowPage() {
             </div>
           </dl>
         </SectionCard>
+      ) : tab === 'maintenance' ? (
+        <HomeMaintenanceTab homeId={homeId} />
       ) : (
         <div className="space-y-4">
           <SectionCard
