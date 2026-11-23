@@ -4,7 +4,8 @@ import { useAppStore } from '../../stores/appStore'
 import { useI18nStore } from '../../stores/i18nStore'
 import { Icon } from '../Icons'
 import NumberInput from '../NumberInput'
-import Select from '../Select'
+import Select, { ADD_OPTION_VALUE, addOption } from '../Select'
+import { useToast } from '../Toast'
 import type {
   HomeMaintenanceItem,
   HomeMaintenanceItemType,
@@ -32,6 +33,7 @@ export default function HomeMaintenanceItemModal({
 }) {
   const { t } = useI18nStore()
   const { currencies, loadCurrencies } = useAppStore()
+  const { showToast } = useToast()
   const isEditing = !!item
   const isSupplies = itemType === 'supplies'
 
@@ -46,6 +48,11 @@ export default function HomeMaintenanceItemModal({
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [quickName, setQuickName] = useState('')
+  const [quickCategoryId, setQuickCategoryId] = useState<number | ''>('')
+  const [quickSaving, setQuickSaving] = useState(false)
+  const [quickError, setQuickError] = useState('')
 
   useEffect(() => {
     loadCurrencies()
@@ -82,8 +89,56 @@ export default function HomeMaintenanceItemModal({
       if (aPriority !== bPriority) return aPriority - bPriority
       return a.name.localeCompare(b.name)
     })
-    return sorted.map((institution) => ({ value: institution.id, label: institution.name }))
-  }, [institutions, categoryKeyById])
+    return [
+      ...sorted.map((institution) => ({ value: institution.id, label: institution.name })),
+      addOption(t('app.add')),
+    ]
+  }, [institutions, categoryKeyById, t])
+
+  const categoryOptions = useMemo(
+    () => [
+      { value: '', label: t('institutions.uncategorized') },
+      ...categories.map((category) => ({ value: category.id, label: category.name })),
+    ],
+    [categories, t],
+  )
+
+  const openQuickCreate = () => {
+    const preferred = categories.find(
+      (category) => category.key === (isSupplies ? 'hardware' : 'maintenance'),
+    )
+    setQuickName('')
+    setQuickCategoryId(preferred ? preferred.id : '')
+    setQuickError('')
+    setQuickOpen(true)
+  }
+
+  const handleQuickCreate = async () => {
+    const name = quickName.trim()
+    if (!name) {
+      setQuickError(t('institutions.name_required'))
+      return
+    }
+    setQuickSaving(true)
+    setQuickError('')
+    try {
+      const created = await api.institutions.create({
+        name,
+        category_id: quickCategoryId === '' ? null : Number(quickCategoryId),
+      })
+      const list = await api.institutions.list()
+      setInstitutions(list || [])
+      if (created) {
+        setInstitutionId(created.id)
+        showToast(t('institutions.created'), 'success')
+      }
+      setQuickOpen(false)
+    } catch (err) {
+      setQuickError(err instanceof Error ? err.message : t('errors.generic'))
+    } finally {
+      setQuickSaving(false)
+    }
+  }
 
   const unitOptions = UNITS.map((value) => ({
     value,
@@ -122,7 +177,7 @@ export default function HomeMaintenanceItemModal({
         unit: isSupplies ? unit : ('unit' as HomeMaintenanceUnit),
         amount: Number(amount),
         currency_id: Number(currencyId),
-        institution_id: isSupplies && institutionId !== '' ? Number(institutionId) : null,
+        institution_id: institutionId === '' ? null : Number(institutionId),
       }
       if (isEditing && item) {
         await api.homeMaintenance.updateItem(homeId, maintenanceId, item.id, body)
@@ -138,6 +193,7 @@ export default function HomeMaintenanceItemModal({
   }
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
       <div className="bg-card rounded-ios shadow-ios w-full max-w-md max-h-[90vh] flex flex-col">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
@@ -222,33 +278,29 @@ export default function HomeMaintenanceItemModal({
                 </div>
               </div>
 
-              {isSupplies && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('homeMaintenance.item_provider')}</label>
-                  <Select
-                    options={institutionOptions}
-                    value={institutionId}
-                    onChange={(value) => setInstitutionId(value === '' ? '' : Number(value))}
-                    placeholder={t('homeMaintenance.select_institution')}
-                    searchable
-                    searchPlaceholder={t('app.search')}
-                    emptyLabel={t('app.no_results')}
-                  />
-                  <p className="text-xs text-text-secondary mt-1">
-                    {t('homeMaintenance.item_provider_hint')}
-                  </p>
-                  {institutions.length === 0 && (
-                    <a
-                      href="/institutions/new"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary hover:underline"
-                    >
-                      {t('homeMaintenance.create_institution')}
-                    </a>
-                  )}
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {isSupplies ? t('homeMaintenance.item_provider') : t('homeMaintenance.item_contractor')}
+                </label>
+                <Select
+                  options={institutionOptions}
+                  value={institutionId}
+                  onChange={(value) => {
+                    if (value === ADD_OPTION_VALUE) {
+                      openQuickCreate()
+                      return
+                    }
+                    setInstitutionId(value === '' ? '' : Number(value))
+                  }}
+                  placeholder={t('homeMaintenance.select_institution')}
+                  searchable
+                  searchPlaceholder={t('app.search')}
+                  emptyLabel={t('app.no_results')}
+                />
+                <p className="text-xs text-text-secondary mt-1">
+                  {isSupplies ? t('homeMaintenance.item_provider_hint') : t('homeMaintenance.item_contractor_hint')}
+                </p>
+              </div>
 
               {error && <p className="text-sm text-danger">{error}</p>}
             </>
@@ -274,5 +326,69 @@ export default function HomeMaintenanceItemModal({
         </div>
       </div>
     </div>
+
+    {quickOpen && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
+        <div className="bg-card rounded-ios shadow-ios w-full max-w-sm max-h-[90vh] flex flex-col">
+          <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+            <h3 className="text-lg font-bold">{t('homeMaintenance.add_institution')}</h3>
+            <button
+              type="button"
+              onClick={() => setQuickOpen(false)}
+              className="p-2 text-text-secondary hover:text-text rounded-full transition-colors"
+              aria-label={t('app.cancel')}
+            >
+              <Icon name="cancel" className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('institutions.name')}</label>
+              <input
+                type="text"
+                value={quickName}
+                onChange={(event) => setQuickName(event.target.value)}
+                placeholder={t('institutions.name_placeholder')}
+                className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] placeholder:text-text-secondary"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('institutions.category')}</label>
+              <Select
+                options={categoryOptions}
+                value={quickCategoryId}
+                onChange={(value) => setQuickCategoryId(value === '' ? '' : Number(value))}
+                placeholder={t('institutions.select_category')}
+                searchable
+                searchPlaceholder={t('app.search')}
+                emptyLabel={t('app.no_results')}
+              />
+            </div>
+            {quickError && <p className="text-sm text-danger">{quickError}</p>}
+          </div>
+
+          <div className="p-4 border-t border-border flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setQuickOpen(false)}
+              className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors min-h-[44px]"
+            >
+              {t('app.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={handleQuickCreate}
+              disabled={quickSaving}
+              className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors min-h-[44px]"
+            >
+              {quickSaving ? t('app.saving') : t('app.save')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

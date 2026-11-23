@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
@@ -7,7 +7,6 @@ import { useToast } from '../components/Toast'
 import { Icon } from '../components/Icons'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Select from '../components/Select'
-import type { Institution, InstitutionCategory } from '../types'
 import type {
   HomeMaintenanceArea,
   HomeMaintenanceKind,
@@ -19,7 +18,6 @@ const AREAS: HomeMaintenanceArea[] = [
   'plumbing', 'electrical', 'roof', 'paint', 'carpentry',
   'appliances', 'garden', 'cleaning', 'other',
 ]
-const PRIORITY_CATEGORIES = new Set(['hardware', 'maintenance'])
 
 function todayISO(): string {
   const now = new Date()
@@ -36,12 +34,9 @@ export default function HomeMaintenanceFormPage() {
   const { showToast } = useToast()
 
   const [homeName, setHomeName] = useState('')
-  const [institutions, setInstitutions] = useState<Institution[]>([])
-  const [categories, setCategories] = useState<InstitutionCategory[]>([])
   const [performedAt, setPerformedAt] = useState(todayISO())
   const [kind, setKind] = useState<HomeMaintenanceKind>('corrective')
   const [area, setArea] = useState<HomeMaintenanceArea>('other')
-  const [institutionId, setInstitutionId] = useState<number | ''>('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -55,8 +50,6 @@ export default function HomeMaintenanceFormPage() {
 
   useEffect(() => {
     const tasks: Promise<unknown>[] = [
-      api.institutions.list().then((list) => setInstitutions(list || [])),
-      api.institutionCategories.list().then((list) => setCategories(list || [])),
       api.homes.get(homeId).then((home) => setHomeName(home?.name ?? '')),
     ]
     if (isEdit) {
@@ -66,32 +59,12 @@ export default function HomeMaintenanceFormPage() {
           setPerformedAt(record.performed_at)
           setKind(record.kind)
           setArea(record.area)
-          setInstitutionId(record.institution_id ?? '')
           setDescription(record.description)
         }),
       )
     }
     Promise.all(tasks).finally(() => setLoading(false))
   }, [homeId, isEdit, maintenanceId])
-
-  const categoryKeyById = useMemo(() => {
-    const map = new Map<number, string>()
-    for (const category of categories) map.set(category.id, category.key)
-    return map
-  }, [categories])
-
-  const institutionOptions = useMemo(() => {
-    const sorted = [...institutions].sort((a, b) => {
-      const aPriority = PRIORITY_CATEGORIES.has(categoryKeyById.get(a.category_id ?? -1) ?? '') ? 0 : 1
-      const bPriority = PRIORITY_CATEGORIES.has(categoryKeyById.get(b.category_id ?? -1) ?? '') ? 0 : 1
-      if (aPriority !== bPriority) return aPriority - bPriority
-      return a.name.localeCompare(b.name)
-    })
-    return [
-      { value: '', label: t('homeMaintenance.no_provider') },
-      ...sorted.map((institution) => ({ value: institution.id, label: institution.name })),
-    ]
-  }, [institutions, categoryKeyById, t])
 
   const kindOptions = KINDS.map((value) => ({
     value,
@@ -122,7 +95,7 @@ export default function HomeMaintenanceFormPage() {
         performed_at: performedAt,
         kind,
         area,
-        institution_id: institutionId === '' ? null : Number(institutionId),
+        institution_id: null,
         description: description.trim(),
       }
       const saved = isEdit
@@ -191,20 +164,6 @@ export default function HomeMaintenanceFormPage() {
               emptyLabel={t('app.no_results')}
             />
           </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">{t('homeMaintenance.provider')}</label>
-          <Select
-            options={institutionOptions}
-            value={institutionId}
-            onChange={(value) => setInstitutionId(value === '' ? '' : Number(value))}
-            placeholder={t('homeMaintenance.select_provider')}
-            searchable
-            searchPlaceholder={t('app.search')}
-            emptyLabel={t('app.no_results')}
-          />
-          <p className="text-xs text-text-secondary mt-1">{t('homeMaintenance.provider_hint')}</p>
         </div>
 
         <div>
