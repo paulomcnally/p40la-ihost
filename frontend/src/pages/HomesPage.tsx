@@ -108,10 +108,6 @@ export default function HomesPage() {
               {home.address && (
                 <p className="text-sm text-text-secondary mt-1">{home.address}</p>
               )}
-              <span className="inline-flex items-center gap-1 text-sm text-primary mt-2">
-                {t('app.view')}
-                <Icon name="chevron" className="w-4 h-4 -rotate-90" />
-              </span>
             </div>
           </SortableCard>
         )}
