@@ -45,11 +45,18 @@ func (s *Service) List(ctx context.Context, homeID int64, filter Filter) (*List,
 	if err != nil {
 		return nil, err
 	}
+	grouped, err := s.storage.TotalsByMaintenance(ctx, homeID, filter)
+	if err != nil {
+		return nil, err
+	}
+	for index := range items {
+		items[index].TotalsByCurrency = roundTotals(grouped[items[index].ID])
+	}
 	totals, err := s.storage.TotalsByCurrency(ctx, homeID, filter)
 	if err != nil {
 		return nil, err
 	}
-	return &List{Items: items, TotalsByCurrency: totals}, nil
+	return &List{Items: items, TotalsByCurrency: roundTotals(totals)}, nil
 }
 
 // Get devuelve un mantenimiento con sus líneas.
@@ -69,6 +76,7 @@ func (s *Service) Get(ctx context.Context, homeID, id int64) (*Maintenance, erro
 		return nil, err
 	}
 	item.Items = details
+	item.TotalsByCurrency = roundTotals(totalsFromItems(details))
 	return item, nil
 }
 
@@ -199,17 +207,6 @@ func (s *Service) prepare(ctx context.Context, input *Input) error {
 		return invalid("description_too_long", "La descripción supera el máximo permitido")
 	}
 
-	if input.CurrencyID <= 0 {
-		return invalid("currency_required", "La moneda es requerida")
-	}
-	ok, err := s.storage.CurrencyExists(ctx, input.CurrencyID)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return ErrCurrencyNotFound
-	}
-
 	if input.InstitutionID != nil && *input.InstitutionID > 0 {
 		ok, err := s.storage.InstitutionExists(ctx, *input.InstitutionID)
 		if err != nil {
@@ -245,6 +242,17 @@ func (s *Service) prepareItem(ctx context.Context, input *ItemInput) error {
 		return invalid("invalid_amount", "El monto de la línea no puede ser negativo")
 	}
 	input.Amount = round2(input.Amount)
+
+	if input.CurrencyID <= 0 {
+		return invalid("currency_required", "La moneda de la línea es requerida")
+	}
+	ok, err := s.storage.CurrencyExists(ctx, input.CurrencyID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrCurrencyNotFound
+	}
 
 	if input.ItemType == ItemLabor {
 		if input.InstitutionID != nil && *input.InstitutionID > 0 {
@@ -327,6 +335,45 @@ func contains(values []string, value string) bool {
 
 func round2(value float64) float64 {
 	return math.Round(value*100) / 100
+}
+
+// totalsFromItems agrupa las líneas por moneda con desglose labor/supplies.
+func totalsFromItems(items []Item) []CurrencyTotal {
+	order := make([]int64, 0)
+	byID := make(map[int64]*CurrencyTotal)
+	for _, item := range items {
+		total, ok := byID[item.CurrencyID]
+		if !ok {
+			total = &CurrencyTotal{CurrencyID: item.CurrencyID, CurrencyCode: item.CurrencyCode}
+			byID[item.CurrencyID] = total
+			order = append(order, item.CurrencyID)
+		}
+		if item.ItemType == ItemLabor {
+			total.LaborCost += item.Amount
+		} else {
+			total.SuppliesCost += item.Amount
+		}
+	}
+	out := make([]CurrencyTotal, 0, len(order))
+	for _, id := range order {
+		total := byID[id]
+		total.LaborCost = round2(total.LaborCost)
+		total.SuppliesCost = round2(total.SuppliesCost)
+		total.Total = round2(total.LaborCost + total.SuppliesCost)
+		out = append(out, *total)
+	}
+	return out
+}
+
+func roundTotals(totals []CurrencyTotal) []CurrencyTotal {
+	out := make([]CurrencyTotal, 0, len(totals))
+	for _, total := range totals {
+		total.LaborCost = round2(total.LaborCost)
+		total.SuppliesCost = round2(total.SuppliesCost)
+		total.Total = round2(total.LaborCost + total.SuppliesCost)
+		out = append(out, total)
+	}
+	return out
 }
 
 // AreaOptions devuelve las áreas válidas (útil para tests y handlers).

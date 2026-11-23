@@ -62,12 +62,17 @@ export default function HomeMaintenanceTab({ homeId }: { homeId: number }) {
   )
 
   const totals = useMemo(() => {
-    const grouped = new Map<string, number>()
+    const grouped = new Map<number, { code: string; total: number }>()
     for (const item of visible) {
-      const key = item.currency_code || String(item.currency_id)
-      grouped.set(key, (grouped.get(key) ?? 0) + item.total_cost)
+      for (const total of item.totals_by_currency) {
+        const previous = grouped.get(total.currency_id)
+        grouped.set(total.currency_id, {
+          code: total.currency_code,
+          total: (previous?.total ?? 0) + total.total,
+        })
+      }
     }
-    return Array.from(grouped.entries()).map(([code, total]) => ({ code, total }))
+    return Array.from(grouped.values())
   }, [visible])
 
   const symbolFor = (code: string) => {
@@ -219,23 +224,17 @@ export default function HomeMaintenanceTab({ homeId }: { homeId: number }) {
                     {item.institution_name && (
                       <p className="text-xs text-text-secondary mt-1 break-words">{item.institution_name}</p>
                     )}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
-                      <span className="text-text-secondary">
-                        {t('homeMaintenance.labor_cost')}:{' '}
-                        <strong className="text-text">
-                          {formatMoney(item.labor_cost, symbolFor(item.currency_code))}
-                        </strong>
-                      </span>
-                      <span className="text-text-secondary">
-                        {t('homeMaintenance.supplies_cost')}:{' '}
-                        <strong className="text-text">
-                          {formatMoney(item.supplies_cost, symbolFor(item.currency_code))}
-                        </strong>
-                      </span>
-                      <span className="font-semibold">
-                        {t('homeMaintenance.total')}:{' '}
-                        {formatMoney(item.total_cost, symbolFor(item.currency_code))}
-                      </span>
+                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mt-2 text-sm">
+                      <span className="text-text-secondary">{t('homeMaintenance.total')}:</span>
+                      {item.totals_by_currency.length === 0 ? (
+                        <span className="text-text-secondary">—</span>
+                      ) : (
+                        item.totals_by_currency.map((total) => (
+                          <span key={total.currency_id} className="font-semibold">
+                            {formatMoney(total.total, symbolFor(total.currency_code))}
+                          </span>
+                        ))
+                      )}
                     </div>
                   </button>
                 </div>

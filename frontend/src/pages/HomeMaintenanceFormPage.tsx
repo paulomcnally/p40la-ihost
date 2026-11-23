@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
-import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
@@ -35,7 +34,6 @@ export default function HomeMaintenanceFormPage() {
   const isEdit = !!maintenanceId
   const { t } = useI18nStore()
   const { showToast } = useToast()
-  const { currencies, loadCurrencies } = useAppStore()
 
   const [homeName, setHomeName] = useState('')
   const [institutions, setInstitutions] = useState<Institution[]>([])
@@ -45,7 +43,6 @@ export default function HomeMaintenanceFormPage() {
   const [area, setArea] = useState<HomeMaintenanceArea>('other')
   const [institutionId, setInstitutionId] = useState<number | ''>('')
   const [description, setDescription] = useState('')
-  const [currencyId, setCurrencyId] = useState<number | ''>('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -57,7 +54,6 @@ export default function HomeMaintenanceFormPage() {
   )
 
   useEffect(() => {
-    loadCurrencies()
     const tasks: Promise<unknown>[] = [
       api.institutions.list().then((list) => setInstitutions(list || [])),
       api.institutionCategories.list().then((list) => setCategories(list || [])),
@@ -72,18 +68,11 @@ export default function HomeMaintenanceFormPage() {
           setArea(record.area)
           setInstitutionId(record.institution_id ?? '')
           setDescription(record.description)
-          setCurrencyId(record.currency_id)
         }),
       )
     }
     Promise.all(tasks).finally(() => setLoading(false))
-  }, [homeId, isEdit, maintenanceId, loadCurrencies])
-
-  useEffect(() => {
-    if (!isEdit && currencyId === '' && currencies.length > 0) {
-      setCurrencyId(currencies[0].id)
-    }
-  }, [currencies, currencyId, isEdit])
+  }, [homeId, isEdit, maintenanceId])
 
   const categoryKeyById = useMemo(() => {
     const map = new Map<number, string>()
@@ -112,10 +101,6 @@ export default function HomeMaintenanceFormPage() {
     value,
     label: t(`homeMaintenance.area_${value}`),
   }))
-  const currencyOptions = currencies.map((currency) => ({
-    value: currency.id,
-    label: `${currency.code} (${currency.symbol})`,
-  }))
 
   const backToHome = () => navigate(`/home/${homeId}?tab=maintenance`)
 
@@ -130,10 +115,6 @@ export default function HomeMaintenanceFormPage() {
       setError(t('homeMaintenance.date_future'))
       return
     }
-    if (!currencyId) {
-      setError(t('homeMaintenance.currency_required'))
-      return
-    }
 
     setSubmitting(true)
     try {
@@ -143,7 +124,6 @@ export default function HomeMaintenanceFormPage() {
         area,
         institution_id: institutionId === '' ? null : Number(institutionId),
         description: description.trim(),
-        currency_id: Number(currencyId),
       }
       const saved = isEdit
         ? await api.homeMaintenance.update(homeId, Number(maintenanceId), body)
@@ -187,18 +167,6 @@ export default function HomeMaintenanceFormPage() {
               onChange={(event) => setPerformedAt(event.target.value)}
               className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
               required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('homeMaintenance.currency')}</label>
-            <Select
-              options={currencyOptions}
-              value={currencyId}
-              onChange={(value) => setCurrencyId(Number(value))}
-              placeholder={t('homeMaintenance.select_currency')}
-              searchable
-              searchPlaceholder={t('app.search')}
-              emptyLabel={t('app.no_results')}
             />
           </div>
           <div>

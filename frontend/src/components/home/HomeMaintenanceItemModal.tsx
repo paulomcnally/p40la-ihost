@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../api'
+import { useAppStore } from '../../stores/appStore'
 import { useI18nStore } from '../../stores/i18nStore'
 import { Icon } from '../Icons'
 import NumberInput from '../NumberInput'
@@ -30,6 +31,7 @@ export default function HomeMaintenanceItemModal({
   onCancel: () => void
 }) {
   const { t } = useI18nStore()
+  const { currencies, loadCurrencies } = useAppStore()
   const isEditing = !!item
   const isSupplies = itemType === 'supplies'
 
@@ -37,6 +39,7 @@ export default function HomeMaintenanceItemModal({
   const [quantity, setQuantity] = useState<number | ''>(item?.quantity ?? 1)
   const [unit, setUnit] = useState<HomeMaintenanceUnit>(item?.unit ?? 'unit')
   const [amount, setAmount] = useState<number | ''>(item ? item.amount : '')
+  const [currencyId, setCurrencyId] = useState<number | ''>(item?.currency_id ?? '')
   const [institutionId, setInstitutionId] = useState<number | ''>(item?.institution_id ?? '')
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [categories, setCategories] = useState<InstitutionCategory[]>([])
@@ -45,13 +48,20 @@ export default function HomeMaintenanceItemModal({
   const [error, setError] = useState('')
 
   useEffect(() => {
+    loadCurrencies()
     Promise.all([api.institutions.list(), api.institutionCategories.list()])
       .then(([institutionList, categoryList]) => {
         setInstitutions(institutionList || [])
         setCategories(categoryList || [])
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [loadCurrencies])
+
+  useEffect(() => {
+    if (currencyId === '' && currencies.length > 0) {
+      setCurrencyId(currencies[0].id)
+    }
+  }, [currencies, currencyId])
 
   const title = isEditing
     ? t('homeMaintenance.edit_item')
@@ -79,6 +89,10 @@ export default function HomeMaintenanceItemModal({
     value,
     label: t(`homeMaintenance.unit_${value}`),
   }))
+  const currencyOptions = currencies.map((currency) => ({
+    value: currency.id,
+    label: `${currency.code} (${currency.symbol})`,
+  }))
 
   const handleSubmit = async () => {
     setError('')
@@ -88,6 +102,10 @@ export default function HomeMaintenanceItemModal({
     }
     if (amount === '' || amount < 0) {
       setError(t('homeMaintenance.item_amount_invalid'))
+      return
+    }
+    if (!currencyId) {
+      setError(t('homeMaintenance.currency_required'))
       return
     }
     if (isSupplies && (quantity === '' || quantity <= 0)) {
@@ -103,6 +121,7 @@ export default function HomeMaintenanceItemModal({
         quantity: isSupplies ? Number(quantity) : 1,
         unit: isSupplies ? unit : ('unit' as HomeMaintenanceUnit),
         amount: Number(amount),
+        currency_id: Number(currencyId),
         institution_id: isSupplies && institutionId !== '' ? Number(institutionId) : null,
       }
       if (isEditing && item) {
@@ -178,15 +197,29 @@ export default function HomeMaintenanceItemModal({
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('homeMaintenance.amount')}</label>
-                <NumberInput
-                  min={0}
-                  step="0.01"
-                  value={amount}
-                  onValueChange={(value) => setAmount(value)}
-                  placeholder="0.00"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('homeMaintenance.amount')}</label>
+                  <NumberInput
+                    min={0}
+                    step="0.01"
+                    value={amount}
+                    onValueChange={(value) => setAmount(value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('homeMaintenance.currency')}</label>
+                  <Select
+                    options={currencyOptions}
+                    value={currencyId}
+                    onChange={(value) => setCurrencyId(Number(value))}
+                    placeholder={t('homeMaintenance.select_currency')}
+                    searchable
+                    searchPlaceholder={t('app.search')}
+                    emptyLabel={t('app.no_results')}
+                  />
+                </div>
               </div>
 
               {isSupplies && (

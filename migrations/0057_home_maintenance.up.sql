@@ -16,12 +16,10 @@ CREATE TABLE IF NOT EXISTS home_maintenances (
                         'appliances', 'garden', 'cleaning', 'other')),
     institution_id INTEGER,
     description TEXT NOT NULL DEFAULT '',
-    currency_id INTEGER NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (home_id) REFERENCES homes(id) ON DELETE CASCADE,
-    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL,
-    FOREIGN KEY (currency_id) REFERENCES currencies(id)
+    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_home_maintenances_home_date
@@ -38,12 +36,16 @@ CREATE TABLE IF NOT EXISTS home_maintenance_items (
     unit TEXT NOT NULL DEFAULT 'unit'
         CHECK (unit IN ('unit', 'm', 'm2', 'kg', 'lb', 'l', 'gal', 'sack', 'box')),
     amount REAL NOT NULL DEFAULT 0 CHECK (amount >= 0),
+    currency_id INTEGER NOT NULL,
     institution_id INTEGER,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (maintenance_id) REFERENCES home_maintenances(id) ON DELETE CASCADE,
+    FOREIGN KEY (currency_id) REFERENCES currencies(id),
     FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_home_maintenance_items_maintenance
     ON home_maintenance_items(maintenance_id, item_type, id);
+CREATE INDEX IF NOT EXISTS idx_home_maintenance_items_currency
+    ON home_maintenance_items(currency_id);

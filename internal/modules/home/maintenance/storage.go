@@ -21,17 +21,12 @@ func NewStorage(db *sql.DB) *Storage {
 const maintenanceColumns = `
 	m.id, m.home_id, m.performed_at, m.kind, m.area,
 	m.institution_id, COALESCE(i.name, ''),
-	m.description, m.currency_id, c.code,
-	COALESCE(SUM(CASE WHEN it.item_type = 'labor' THEN it.amount END), 0),
-	COALESCE(SUM(CASE WHEN it.item_type = 'supplies' THEN it.amount END), 0),
-	m.created_at, m.updated_at
+	m.description, m.created_at, m.updated_at
 `
 
 const maintenanceFrom = `
 	FROM home_maintenances m
-	JOIN currencies c ON c.id = m.currency_id
 	LEFT JOIN institutions i ON i.id = m.institution_id
-	LEFT JOIN home_maintenance_items it ON it.maintenance_id = m.id
 `
 
 func scanMaintenance(row interface{ Scan(...any) error }) (*Maintenance, error) {
@@ -39,9 +34,7 @@ func scanMaintenance(row interface{ Scan(...any) error }) (*Maintenance, error) 
 	var institutionID sql.NullInt64
 	err := row.Scan(
 		&item.ID, &item.HomeID, &item.PerformedAt, &item.Kind, &item.Area,
-		&institutionID, &item.InstitutionName,
-		&item.Description, &item.CurrencyID, &item.CurrencyCode,
-		&item.LaborCost, &item.SuppliesCost,
+		&institutionID, &item.InstitutionName, &item.Description,
 		&item.CreatedAt, &item.UpdatedAt,
 	)
 	if err != nil {
@@ -53,7 +46,9 @@ func scanMaintenance(row interface{ Scan(...any) error }) (*Maintenance, error) 
 	if institutionID.Valid {
 		item.InstitutionID = &institutionID.Int64
 	}
-	item.TotalCost = item.LaborCost + item.SuppliesCost
+	if item.TotalsByCurrency == nil {
+		item.TotalsByCurrency = []CurrencyTotal{}
+	}
 	if item.Items == nil {
 		item.Items = []Item{}
 	}
@@ -74,12 +69,11 @@ func filterClause(homeID int64, filter Filter) (string, []any) {
 	return " WHERE " + strings.Join(where, " AND "), args
 }
 
-// List devuelve el histórico de una vivienda con los costos calculados.
+// List devuelve el histórico de una vivienda sin las líneas.
 func (s *Storage) List(ctx context.Context, homeID int64, filter Filter) ([]Maintenance, error) {
 	clause, args := filterClause(homeID, filter)
 	query := `
 		SELECT ` + maintenanceColumns + maintenanceFrom + clause + `
-		GROUP BY m.id
 		ORDER BY m.performed_at DESC, m.id DESC
 	`
 	rows, err := s.db.QueryContext(ctx, query, args...)
@@ -104,16 +98,18 @@ func (s *Storage) List(ctx context.Context, homeID int64, filter Filter) ([]Main
 	return items, nil
 }
 
-// TotalsByCurrency agrupa el gasto del histórico por moneda.
-func (s *Storage) TotalsByCurrency(ctx context.Context, homeID int64, filter Filter) ([]CurrencyTotal, error) {
+// TotalsByMaintenance agrupa el gasto por moneda de cada registro del histórico.
+func (s *Storage) TotalsByMaintenance(ctx context.Context, homeID int64, filter Filter) (map[int64][]CurrencyTotal, error) {
 	clause, args := filterClause(homeID, filter)
 	query := `
-		SELECT m.currency_id, c.code, COALESCE(SUM(it.amount), 0)
+		SELECT it.maintenance_id, it.currency_id, c.code,
+			COALESCE(SUM(CASE WHEN it.item_type = 'labor' THEN it.amount END), 0),
+			COALESCE(SUM(CASE WHEN it.item_type = 'supplies' THEN it.amount END), 0)
 		FROM home_maintenances m
-		JOIN currencies c ON c.id = m.currency_id
-		LEFT JOIN home_maintenance_items it ON it.maintenance_id = m.id
+		JOIN home_maintenance_items it ON it.maintenance_id = m.id
+		JOIN currencies c ON c.id = it.currency_id
 	` + clause + `
-		GROUP BY m.currency_id, c.code
+		GROUP BY it.maintenance_id, it.currency_id, c.code
 		ORDER BY c.code
 	`
 	rows, err := s.db.QueryContext(ctx, query, args...)
@@ -122,12 +118,51 @@ func (s *Storage) TotalsByCurrency(ctx context.Context, homeID int64, filter Fil
 	}
 	defer rows.Close()
 
+	grouped := make(map[int64][]CurrencyTotal)
+	for rows.Next() {
+		var maintenanceID int64
+		var total CurrencyTotal
+		if err := rows.Scan(&maintenanceID, &total.CurrencyID, &total.CurrencyCode,
+			&total.LaborCost, &total.SuppliesCost); err != nil {
+			return nil, fmt.Errorf("escanear total de mantenimiento: %w", err)
+		}
+		total.Total = total.LaborCost + total.SuppliesCost
+		grouped[maintenanceID] = append(grouped[maintenanceID], total)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("recorrer totales de mantenimiento: %w", err)
+	}
+	return grouped, nil
+}
+
+// TotalsByCurrency agrupa todo el gasto del histórico por moneda.
+func (s *Storage) TotalsByCurrency(ctx context.Context, homeID int64, filter Filter) ([]CurrencyTotal, error) {
+	clause, args := filterClause(homeID, filter)
+	query := `
+		SELECT it.currency_id, c.code,
+			COALESCE(SUM(CASE WHEN it.item_type = 'labor' THEN it.amount END), 0),
+			COALESCE(SUM(CASE WHEN it.item_type = 'supplies' THEN it.amount END), 0)
+		FROM home_maintenances m
+		JOIN home_maintenance_items it ON it.maintenance_id = m.id
+		JOIN currencies c ON c.id = it.currency_id
+	` + clause + `
+		GROUP BY it.currency_id, c.code
+		ORDER BY c.code
+	`
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("totalizar histórico: %w", err)
+	}
+	defer rows.Close()
+
 	totals := make([]CurrencyTotal, 0)
 	for rows.Next() {
 		var total CurrencyTotal
-		if err := rows.Scan(&total.CurrencyID, &total.CurrencyCode, &total.Total); err != nil {
+		if err := rows.Scan(&total.CurrencyID, &total.CurrencyCode,
+			&total.LaborCost, &total.SuppliesCost); err != nil {
 			return nil, fmt.Errorf("escanear total: %w", err)
 		}
+		total.Total = total.LaborCost + total.SuppliesCost
 		totals = append(totals, total)
 	}
 	if err := rows.Err(); err != nil {
@@ -141,7 +176,6 @@ func (s *Storage) Get(ctx context.Context, homeID, id int64) (*Maintenance, erro
 	query := `
 		SELECT ` + maintenanceColumns + maintenanceFrom + `
 		WHERE m.home_id = ? AND m.id = ?
-		GROUP BY m.id
 	`
 	return scanMaintenance(s.db.QueryRowContext(ctx, query, homeID, id))
 }
@@ -150,11 +184,11 @@ func (s *Storage) Get(ctx context.Context, homeID, id int64) (*Maintenance, erro
 func (s *Storage) Create(ctx context.Context, homeID int64, input Input) (int64, error) {
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO home_maintenances
-			(home_id, performed_at, kind, area, institution_id, description, currency_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(home_id, performed_at, kind, area, institution_id, description)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`,
 		homeID, input.PerformedAt, input.Kind, input.Area,
-		nullableID(input.InstitutionID), input.Description, input.CurrencyID,
+		nullableID(input.InstitutionID), input.Description,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("crear mantenimiento: %w", err)
@@ -171,11 +205,11 @@ func (s *Storage) Update(ctx context.Context, homeID, id int64, input Input) (bo
 	res, err := s.db.ExecContext(ctx, `
 		UPDATE home_maintenances
 		SET performed_at = ?, kind = ?, area = ?, institution_id = ?,
-		    description = ?, currency_id = ?, updated_at = CURRENT_TIMESTAMP
+		    description = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND home_id = ?
 	`,
 		input.PerformedAt, input.Kind, input.Area, nullableID(input.InstitutionID),
-		input.Description, input.CurrencyID, id, homeID,
+		input.Description, id, homeID,
 	)
 	if err != nil {
 		return false, fmt.Errorf("actualizar mantenimiento: %w", err)
@@ -197,11 +231,13 @@ func (s *Storage) Delete(ctx context.Context, homeID, id int64) (bool, error) {
 
 const itemColumns = `
 	it.id, it.maintenance_id, it.item_type, it.description, it.quantity, it.unit,
-	it.amount, it.institution_id, COALESCE(i.name, ''), it.created_at, it.updated_at
+	it.amount, it.currency_id, c.code, it.institution_id, COALESCE(i.name, ''),
+	it.created_at, it.updated_at
 `
 
 const itemFrom = `
 	FROM home_maintenance_items it
+	JOIN currencies c ON c.id = it.currency_id
 	LEFT JOIN institutions i ON i.id = it.institution_id
 `
 
@@ -211,6 +247,7 @@ func scanItem(row interface{ Scan(...any) error }) (*Item, error) {
 	err := row.Scan(
 		&item.ID, &item.MaintenanceID, &item.ItemType, &item.Description,
 		&item.Quantity, &item.Unit, &item.Amount,
+		&item.CurrencyID, &item.CurrencyCode,
 		&institutionID, &item.InstitutionName, &item.CreatedAt, &item.UpdatedAt,
 	)
 	if err != nil {
@@ -265,11 +302,11 @@ func (s *Storage) GetItem(ctx context.Context, maintenanceID, itemID int64) (*It
 func (s *Storage) CreateItem(ctx context.Context, maintenanceID int64, input ItemInput) (*Item, error) {
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO home_maintenance_items
-			(maintenance_id, item_type, description, quantity, unit, amount, institution_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(maintenance_id, item_type, description, quantity, unit, amount, currency_id, institution_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		maintenanceID, input.ItemType, input.Description, input.Quantity,
-		input.Unit, input.Amount, nullableID(input.InstitutionID),
+		input.Unit, input.Amount, input.CurrencyID, nullableID(input.InstitutionID),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("crear línea: %w", err)
@@ -286,11 +323,11 @@ func (s *Storage) UpdateItem(ctx context.Context, maintenanceID, itemID int64, i
 	res, err := s.db.ExecContext(ctx, `
 		UPDATE home_maintenance_items
 		SET item_type = ?, description = ?, quantity = ?, unit = ?, amount = ?,
-		    institution_id = ?, updated_at = CURRENT_TIMESTAMP
+		    currency_id = ?, institution_id = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND maintenance_id = ?
 	`,
 		input.ItemType, input.Description, input.Quantity, input.Unit,
-		input.Amount, nullableID(input.InstitutionID), itemID, maintenanceID,
+		input.Amount, input.CurrencyID, nullableID(input.InstitutionID), itemID, maintenanceID,
 	)
 	if err != nil {
 		return false, fmt.Errorf("actualizar línea: %w", err)
