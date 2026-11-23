@@ -11,7 +11,7 @@ import DeleteModal from '../components/DeleteModal'
 import NumberInput from '../components/NumberInput'
 import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
-import { Field, Modal, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
+import { Badge, EmptyBlock, Field, Modal, PrimaryButton, SecondaryButton, SectionCard, TextArea, TextInput } from '../components/rental/RentalUI'
 import type { Institution, InstitutionCategory } from '../types'
 import type { Lease, LeaseParty, PartyRole, RentalPerson } from '../types/rental'
 
@@ -61,7 +61,10 @@ export default function LeaseFormPage() {
   const [quickAgent, setQuickAgent] = useState({ full_name: '', email: '', phone: '' })
   const [quickSaving, setQuickSaving] = useState(false)
   const [removePartyIndex, setRemovePartyIndex] = useState<number | null>(null)
-  const [parties, setParties] = useState<PartyDraft[]>([emptyParty('tenant')])
+  const [partyModalOpen, setPartyModalOpen] = useState(false)
+  const [partySaving, setPartySaving] = useState(false)
+  const [partyForm, setPartyForm] = useState<PartyDraft>(emptyParty('tenant'))
+  const [parties, setParties] = useState<PartyDraft[]>([])
   const [initialPartyIds, setInitialPartyIds] = useState<number[]>([])
   const [customTerm, setCustomTerm] = useState(false)
   const [form, setForm] = useState({
@@ -141,7 +144,7 @@ export default function LeaseFormPage() {
           email: p.person?.email || '',
           phone: p.person?.phone || '',
         }))
-        setParties(loaded.length > 0 ? loaded : [emptyParty('tenant')])
+        setParties(loaded)
         setInitialPartyIds((lease.parties || []).map((p) => p.id))
       } catch (err: unknown) {
         showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
@@ -219,8 +222,56 @@ export default function LeaseFormPage() {
     }
   }
 
-  const updateParty = (index: number, patch: Partial<PartyDraft>) => {
-    setParties((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)))
+  const openPartyModal = () => {
+    setPartyForm(emptyParty('tenant'))
+    setPartyModalOpen(true)
+  }
+
+  const savePartyModal = async () => {
+    if (!partyForm.person_id && !partyForm.full_name.trim()) {
+      showToast(t('rental.name_required'), 'error')
+      return
+    }
+    setPartySaving(true)
+    try {
+      let personID = partyForm.person_id || 0
+      let fullName = partyForm.full_name.trim()
+      let email = partyForm.email.trim()
+      let phone = partyForm.phone.trim()
+      if (!personID) {
+        const created = await api.rental.people.create({ full_name: fullName, email, phone })
+        if (!created) return
+        personID = created.id
+        const list = await api.rental.people.list()
+        setPeople(list || [])
+      } else {
+        const person = people.find((p) => p.id === personID)
+        if (person) {
+          fullName = person.full_name
+          email = person.email
+          phone = person.phone
+        }
+      }
+      if (parties.some((p) => p.role === partyForm.role && p.person_id === personID)) {
+        showToast(t('rental.party_exists'), 'error')
+        return
+      }
+      setParties((prev) => [...prev, {
+        person_id: personID,
+        role: partyForm.role,
+        notify_email: partyForm.notify_email,
+        full_name: fullName,
+        email,
+        phone,
+      }])
+      setPartyModalOpen(false)
+      setPartyForm(emptyParty('tenant'))
+      showToast(t('rental.party_added'), 'success')
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
+    } finally {
+      setPartySaving(false)
+    }
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -542,63 +593,36 @@ export default function LeaseFormPage() {
       <SectionCard
         title={t('rental.parties')}
         action={
-          <button type="button" onClick={() => setParties((p) => [...p, emptyParty('guarantor')])} className="text-sm text-primary font-medium">
+          <button type="button" onClick={openPartyModal} className="text-sm text-primary font-medium">
             + {t('rental.add_party')}
           </button>
         }
       >
-        <div className="space-y-3">
-          {parties.map((party, index) => (
-            <div key={index} className="border border-border rounded-ios p-3 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label={t('rental.role_label')}>
-                  <Select options={roleOptions} value={party.role} onChange={(v) => updateParty(index, { role: v as PartyRole })} />
-                </Field>
-                <Field label={t('rental.person')}>
-                  <Select
-                    options={[addOption(t('app.add'), 0), ...people.map((p) => ({ value: p.id, label: p.full_name }))]}
-                    value={party.person_id || 0}
-                    onChange={(v) => {
-                      const pid = Number(v)
-                      const person = people.find((p) => p.id === pid)
-                      updateParty(index, {
-                        person_id: pid || undefined,
-                        full_name: person?.full_name || '',
-                        email: person?.email || '',
-                        phone: person?.phone || '',
-                      })
-                    }}
-                    searchable
-                  />
-                </Field>
-              </div>
-              {!party.person_id && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Field label={t('rental.person_name')}>
-                    <TextInput value={party.full_name} onChange={(e) => updateParty(index, { full_name: e.target.value })} />
-                  </Field>
-                  <Field label={t('rental.email')}>
-                    <TextInput type="email" value={party.email} onChange={(e) => updateParty(index, { email: e.target.value })} />
-                  </Field>
-                  <Field label={t('rental.phone')}>
-                    <TextInput value={party.phone} onChange={(e) => updateParty(index, { phone: e.target.value })} />
-                  </Field>
+        {parties.length === 0 ? (
+          <EmptyBlock
+            title={t('rental.parties_empty')}
+            subtitle={t('rental.parties_empty_hint')}
+            action={<PrimaryButton type="button" onClick={openPartyModal}>{t('rental.add_party')}</PrimaryButton>}
+          />
+        ) : (
+          <ul className="divide-y divide-border">
+            {parties.map((party, index) => (
+              <li key={`${party.person_id || party.full_name}-${party.role}-${index}`} className="py-2 flex items-center justify-between gap-3 text-sm">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{party.full_name || `#${index + 1}`}</p>
+                  <p className="text-xs text-text-secondary truncate">{party.email || '—'}</p>
                 </div>
-              )}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm">
-                  <Toggle checked={party.notify_email} onChange={(v) => updateParty(index, { notify_email: v })} ariaLabel={t('rental.notify_email')} />
-                  {t('rental.notify_email')}
-                </label>
-                {parties.length > 1 && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge tone="neutral">{t(`rental.role.${party.role}`)}</Badge>
+                  {party.notify_email && <Badge tone="info">{t('rental.notify_short')}</Badge>}
                   <button type="button" onClick={() => setRemovePartyIndex(index)} className="text-sm text-danger">
                     {t('app.remove')}
                   </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </SectionCard>
       )}
 
@@ -663,6 +687,67 @@ export default function LeaseFormPage() {
       <Field label={t('rental.phone')}>
         <TextInput value={quickAgent.phone} onChange={(e) => setQuickAgent((prev) => ({ ...prev, phone: e.target.value }))} />
       </Field>
+    </Modal>
+
+    <Modal
+      open={partyModalOpen}
+      title={t('rental.add_party')}
+      onClose={() => setPartyModalOpen(false)}
+      footer={(
+        <>
+          <SecondaryButton type="button" onClick={() => setPartyModalOpen(false)}>{t('app.cancel')}</SecondaryButton>
+          <PrimaryButton type="button" disabled={partySaving} onClick={savePartyModal}>
+            {partySaving ? t('app.saving') : t('app.add')}
+          </PrimaryButton>
+        </>
+      )}
+    >
+      <Field label={t('rental.role_label')}>
+        <Select
+          options={roleOptions}
+          value={partyForm.role}
+          onChange={(v) => setPartyForm((prev) => ({ ...prev, role: v as PartyRole }))}
+        />
+      </Field>
+      <Field label={t('rental.person')}>
+        <Select
+          options={[addOption(t('app.add'), 0), ...people.map((p) => ({ value: p.id, label: p.full_name }))]}
+          value={partyForm.person_id || 0}
+          onChange={(v) => {
+            const pid = Number(v)
+            const person = people.find((p) => p.id === pid)
+            setPartyForm((prev) => ({
+              ...prev,
+              person_id: pid || undefined,
+              full_name: person?.full_name || '',
+              email: person?.email || '',
+              phone: person?.phone || '',
+            }))
+          }}
+          searchable
+        />
+      </Field>
+      {!partyForm.person_id && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Field label={t('rental.person_name')}>
+            <TextInput value={partyForm.full_name} onChange={(e) => setPartyForm((prev) => ({ ...prev, full_name: e.target.value }))} />
+          </Field>
+          <Field label={t('rental.email')}>
+            <TextInput type="email" value={partyForm.email} onChange={(e) => setPartyForm((prev) => ({ ...prev, email: e.target.value }))} />
+          </Field>
+          <Field label={t('rental.phone')}>
+            <TextInput value={partyForm.phone} onChange={(e) => setPartyForm((prev) => ({ ...prev, phone: e.target.value }))} />
+          </Field>
+        </div>
+      )}
+      <label className="flex items-center justify-between gap-3 text-sm">
+        <span>{t('rental.notify_email')}</span>
+        <Toggle
+          checked={partyForm.notify_email}
+          onChange={(v) => setPartyForm((prev) => ({ ...prev, notify_email: v }))}
+          ariaLabel={t('rental.notify_email')}
+        />
+      </label>
     </Modal>
 
     {removePartyIndex !== null && (

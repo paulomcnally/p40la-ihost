@@ -1943,6 +1943,8 @@
     "parties_empty": "No people linked",
     "parties_empty_hint": "Add at least one tenant with an email.",
     "add_party": "Add person",
+    "party_added": "Person added",
+    "party_exists": "That person already has that role in the lease.",
     "person": "Person",
     "person_name": "Full name",
     "email": "Email",
