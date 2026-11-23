@@ -326,11 +326,15 @@ func (s *Service) RunOnce(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	sent, err := s.ProcessDueReminders(ctx)
+	invoiced, err := s.AutoInvoiceDuePeriods(ctx)
 	if err != nil {
 		return expired, err
 	}
-	return expired + sent, nil
+	sent, err := s.ProcessDueReminders(ctx)
+	if err != nil {
+		return expired + invoiced, err
+	}
+	return expired + invoiced + sent, nil
 }
 
 // RunOnce del scheduler delega en el servicio.

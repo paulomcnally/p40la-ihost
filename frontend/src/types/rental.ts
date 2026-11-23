@@ -208,6 +208,8 @@ export interface RentalSettings {
   default_lead_days: number
   default_owner_split_percent: number
   default_agency_split_percent: number
+  auto_invoice: boolean
+  auto_send_invoice: boolean
 }
 
 export interface RentalBalance {

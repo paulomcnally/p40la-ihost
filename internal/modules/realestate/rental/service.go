@@ -599,6 +599,8 @@ func (s *Service) GetSettings(ctx context.Context) (*RentalSettings, error) {
 	}
 	lead := DefaultLeadDays
 	fmt.Sscanf(get(SettingDefaultLeadDays, "3"), "%d", &lead)
+	autoInvoice := get(SettingAutoInvoice, "true") != "false"
+	autoSendInvoice := get(SettingAutoSendInvoice, "true") != "false"
 	owner := DefaultOwnerSplit
 	fmt.Sscanf(get(SettingDefaultOwnerSplit, "50"), "%f", &owner)
 	agency := DefaultAgencySplit
@@ -614,6 +616,8 @@ func (s *Service) GetSettings(ctx context.Context) (*RentalSettings, error) {
 		DefaultLeadDays:    lead,
 		DefaultOwnerSplit:  owner,
 		DefaultAgencySplit: agency,
+		AutoInvoice:        autoInvoice,
+		AutoSendInvoice:    autoSendInvoice,
 	}, nil
 }
 
@@ -649,6 +653,8 @@ func (s *Service) UpdateSettings(ctx context.Context, in *RentalSettings) (*Rent
 		SettingDefaultLeadDays:    fmt.Sprintf("%d", in.DefaultLeadDays),
 		SettingDefaultOwnerSplit:  fmt.Sprintf("%.2f", in.DefaultOwnerSplit),
 		SettingDefaultAgencySplit: fmt.Sprintf("%.2f", in.DefaultAgencySplit),
+		SettingAutoInvoice:        fmt.Sprintf("%t", in.AutoInvoice),
+		SettingAutoSendInvoice:    fmt.Sprintf("%t", in.AutoSendInvoice),
 	}
 	for k, v := range values {
 		if err := s.settings.Set(ctx, k, v); err != nil {

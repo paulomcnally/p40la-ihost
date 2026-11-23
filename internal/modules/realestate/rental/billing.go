@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -432,6 +434,128 @@ func (s *Service) VoidInvoice(ctx context.Context, id int64, reason string) (*In
 	return s.GetInvoice(ctx, id)
 }
 
+// AutoInvoiceDuePeriods emite una factura por cada período con cargos vencidos
+// y, si está configurado, la envía automáticamente.
+func (s *Service) AutoInvoiceDuePeriods(ctx context.Context) (int, error) {
+	settings, err := s.GetSettings(ctx)
+	if err != nil {
+		return 0, err
+	}
+	if !settings.AutoInvoice {
+		return 0, nil
+	}
+	leases, err := s.storage.ListLeases(ctx, LeaseActive, 0)
+	if err != nil {
+		return 0, err
+	}
+	today := s.now().UTC().Format("2006-01-02")
+	created := 0
+	for _, lease := range leases {
+		charges, err := s.storage.ListChargesByStatus(ctx, lease.ID, ChargePending)
+		if err != nil {
+			slog.Warn("facturación automática: no se pudieron leer cargos", "lease_id", lease.ID, "error", err.Error())
+			continue
+		}
+		groups := map[string][]Charge{}
+		for _, c := range charges {
+			if c.DueDate <= today {
+				groups[c.Period] = append(groups[c.Period], c)
+			}
+		}
+		periods := make([]string, 0, len(groups))
+		for period := range groups {
+			periods = append(periods, period)
+		}
+		sort.Strings(periods)
+		for _, period := range periods {
+			group := groups[period]
+			ids := make([]int64, 0, len(group))
+			due := ""
+			for _, c := range group {
+				ids = append(ids, c.ID)
+				if due == "" || c.DueDate < due {
+					due = c.DueDate
+				}
+			}
+			if due == "" {
+				due = today
+			}
+			inv, err := s.IssueInvoice(ctx, IssueInvoiceInput{
+				LeaseID: lease.ID, ChargeIDs: ids, DueDate: due,
+				Notes: "Factura automática del período " + period,
+			})
+			if err != nil {
+				slog.Warn("facturación automática falló", "lease_id", lease.ID, "period", period, "error", err.Error())
+				continue
+			}
+			created++
+			if !settings.AutoSendInvoice {
+				continue
+			}
+			configured, err := s.settings.IsSMTPConfigured(ctx)
+			if err != nil || !configured {
+				continue
+			}
+			if _, err := s.SendInvoice(ctx, inv.ID); err != nil {
+				slog.Warn("envío automático de factura falló", "invoice_id", inv.ID, "error", err.Error())
+			}
+		}
+	}
+	return created, nil
+}
+
+// resolvePaymentInvoice elige la factura impaga más antigua o emite una con
+// los cargos vencidos del período más antiguo. Devuelve nil si no hay nada
+// que imputar y el pago solo reduce el saldo del contrato.
+func (s *Service) resolvePaymentInvoice(ctx context.Context, lease *Lease, invoiceID *int64) *int64 {
+	if invoiceID != nil {
+		return invoiceID
+	}
+	oldest, err := s.storage.OldestUnpaidInvoice(ctx, lease.ID)
+	if err == nil && oldest != nil {
+		return &oldest.ID
+	}
+	if lease.Status != LeaseActive {
+		return nil
+	}
+	charges, err := s.storage.ListChargesByStatus(ctx, lease.ID, ChargePending)
+	if err != nil {
+		return nil
+	}
+	today := s.now().UTC().Format("2006-01-02")
+	groups := map[string][]Charge{}
+	for _, c := range charges {
+		if c.DueDate <= today {
+			groups[c.Period] = append(groups[c.Period], c)
+		}
+	}
+	if len(groups) == 0 {
+		return nil
+	}
+	periods := make([]string, 0, len(groups))
+	for period := range groups {
+		periods = append(periods, period)
+	}
+	sort.Strings(periods)
+	group := groups[periods[0]]
+	ids := make([]int64, 0, len(group))
+	due := ""
+	for _, c := range group {
+		ids = append(ids, c.ID)
+		if due == "" || c.DueDate < due {
+			due = c.DueDate
+		}
+	}
+	inv, err := s.IssueInvoice(ctx, IssueInvoiceInput{
+		LeaseID: lease.ID, ChargeIDs: ids, DueDate: due,
+		Notes: "Factura generada al registrar el pago",
+	})
+	if err != nil || inv == nil {
+		return nil
+	}
+	return &inv.ID
+}
+
 // ---------------------------------------------------------------- pagos
 
 // ListPayments lista pagos de un contrato o factura.
@@ -497,6 +621,7 @@ func (s *Service) CreatePayment(ctx context.Context, in CreatePaymentInput) (*Pa
 			return nil, invalid("invoice_void", "No se puede pagar una factura anulada")
 		}
 	}
+	in.InvoiceID = s.resolvePaymentInvoice(ctx, lease, in.InvoiceID)
 	payment := &Payment{
 		LeaseID: lease.ID, InvoiceID: in.InvoiceID, PaidAt: paidAt,
 		Amount: round2(in.Amount), Currency: in.Currency, Method: in.Method,

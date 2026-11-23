@@ -104,6 +104,8 @@ const (
 	SettingDefaultLeadDays    = "rental_default_lead_days"
 	SettingDefaultOwnerSplit  = "rental_owner_split_percent"
 	SettingDefaultAgencySplit = "rental_agency_split_percent"
+	SettingAutoInvoice        = "rental_auto_invoice"
+	SettingAutoSendInvoice    = "rental_auto_send_invoice"
 	DefaultInvoiceSeries      = "ALQ"
 	DefaultReceiptSeries      = "REC"
 	DefaultCurrency           = "USD"
@@ -371,6 +373,8 @@ type RentalSettings struct {
 	DefaultLeadDays    int     `json:"default_lead_days"`
 	DefaultOwnerSplit  float64 `json:"default_owner_split_percent"`
 	DefaultAgencySplit float64 `json:"default_agency_split_percent"`
+	AutoInvoice        bool    `json:"auto_invoice"`
+	AutoSendInvoice    bool    `json:"auto_send_invoice"`
 }
 
 // Balance resume cargos y pagos de un contrato.

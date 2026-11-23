@@ -378,3 +378,98 @@ func TestCommissionPercentOrFixed(t *testing.T) {
 		t.Fatal("se aceptó un tipo de comisión inválido")
 	}
 }
+
+func TestAutoInvoiceDuePeriodAndPaymentMarksPaid(t *testing.T) {
+	svc, cleanup := newTestService(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc.now = func() time.Time { return time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC) }
+
+	homeID := createHome(t, svc, "Casa Automática")
+	person, _ := svc.CreatePerson(ctx, &Person{FullName: "Inquilino Demo", Email: "demo@example.com"})
+	lease, err := svc.CreateLease(ctx, &Lease{
+		HomeID: homeID, StartDate: "2026-11-01", TermMonths: 12,
+		RentAmount: 500, MaintenanceAmount: 50, Currency: "USD",
+		PaymentDay: 1, DepositAmount: 1000,
+		Parties: []LeaseParty{{PersonID: person.ID, Role: RoleTenant, NotifyEmail: true}},
+	})
+	if err != nil {
+		t.Fatalf("crear contrato: %v", err)
+	}
+	if _, err := svc.ActivateLease(ctx, lease.ID); err != nil {
+		t.Fatalf("activar: %v", err)
+	}
+
+	created, err := svc.AutoInvoiceDuePeriods(ctx)
+	if err != nil {
+		t.Fatalf("facturación automática: %v", err)
+	}
+	if created != 1 {
+		t.Fatalf("facturas creadas = %d, quería 1 (solo el período de noviembre)", created)
+	}
+	again, err := svc.AutoInvoiceDuePeriods(ctx)
+	if err != nil || again != 0 {
+		t.Fatalf("segunda pasada creó %d facturas (err=%v)", again, err)
+	}
+	invoices, _ := svc.ListInvoices(ctx, lease.ID, "")
+	if len(invoices) != 1 {
+		t.Fatalf("facturas = %d", len(invoices))
+	}
+	if invoices[0].Total != 1550 {
+		t.Fatalf("total = %.2f, quería 1550 (renta + mantenimiento + depósito)", invoices[0].Total)
+	}
+
+	payment, err := svc.CreatePayment(ctx, CreatePaymentInput{
+		LeaseID: lease.ID, Amount: 1550, Currency: "USD",
+		Method: "transfer", PaidAt: "2026-11-15",
+	})
+	if err != nil {
+		t.Fatalf("pago: %v", err)
+	}
+	if payment.InvoiceID == nil || *payment.InvoiceID != invoices[0].ID {
+		t.Fatalf("el pago no se imputó a la factura más antigua: %+v", payment)
+	}
+	charges, _ := svc.ListCharges(ctx, lease.ID)
+	paid := 0
+	for _, c := range charges {
+		if c.Status == ChargePaid {
+			paid++
+		}
+	}
+	if paid != 3 {
+		t.Fatalf("cargos pagados = %d, quería 3 (renta, mantenimiento y depósito)", paid)
+	}
+}
+
+func TestPaymentCreatesInvoiceForDueChargesWhenNoneExists(t *testing.T) {
+	svc, cleanup := newTestService(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc.now = func() time.Time { return time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC) }
+	homeID := createHome(t, svc, "Casa Pago Directo")
+	person, _ := svc.CreatePerson(ctx, &Person{FullName: "Inquilino Demo", Email: "demo@example.com"})
+	lease, err := svc.CreateLease(ctx, &Lease{
+		HomeID: homeID, StartDate: "2026-11-01", TermMonths: 6,
+		RentAmount: 500, Currency: "USD", PaymentDay: 1,
+		Parties: []LeaseParty{{PersonID: person.ID, Role: RoleTenant, NotifyEmail: true}},
+	})
+	if err != nil {
+		t.Fatalf("crear contrato: %v", err)
+	}
+	if _, err := svc.ActivateLease(ctx, lease.ID); err != nil {
+		t.Fatalf("activar: %v", err)
+	}
+	payment, err := svc.CreatePayment(ctx, CreatePaymentInput{
+		LeaseID: lease.ID, Amount: 500, Currency: "USD", Method: "cash", PaidAt: "2026-11-15",
+	})
+	if err != nil {
+		t.Fatalf("pago: %v", err)
+	}
+	if payment.InvoiceID == nil {
+		t.Fatal("el pago no generó ni imputó una factura")
+	}
+	invoices, _ := svc.ListInvoices(ctx, lease.ID, "")
+	if len(invoices) != 1 || invoices[0].Total != 500 {
+		t.Fatalf("factura inesperada: %+v", invoices)
+	}
+}
