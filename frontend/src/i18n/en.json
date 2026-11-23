@@ -2005,7 +2005,8 @@
       "home_required": "Select a property",
       "amount_required": "Rent or maintenance must be greater than zero",
       "created": "Lease created",
-      "updated": "Lease updated"
+      "updated": "Lease updated",
+    "active_edit_hint": "You can edit the agency, agent, commission, collection details, notes and people. Financial terms are locked because charges were already generated."
     },
     "lease_status": {
       "draft": "Draft",

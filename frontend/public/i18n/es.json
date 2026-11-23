@@ -2005,7 +2005,8 @@
       "home_required": "Seleccioná una vivienda",
       "amount_required": "La renta o el mantenimiento debe ser mayor que cero",
       "created": "Contrato creado",
-      "updated": "Contrato actualizado"
+      "updated": "Contrato actualizado",
+    "active_edit_hint": "Podés editar inmobiliaria, agente, comisión, datos de cobro, notas y personas. Las condiciones económicas quedan bloqueadas porque ya generaron cargos."
     },
     "lease_status": {
       "draft": "Borrador",

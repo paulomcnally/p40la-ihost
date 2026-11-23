@@ -257,6 +257,7 @@ export default function LeaseShowPage() {
     menuOptions.push({ label: t('app.delete'), danger: true, onClick: () => setConfirmAction('delete') })
   }
   if (lease.status === 'active') {
+    menuOptions.push({ label: t('app.edit'), onClick: () => navigate(`/leases/${lease.id}/edit`) })
     menuOptions.push({ label: t('rental.lease.terminate'), danger: true, onClick: () => setConfirmAction('terminate') })
   }
 

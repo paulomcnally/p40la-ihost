@@ -139,11 +139,22 @@ func (s *Service) UpdateLease(ctx context.Context, l *Lease) (*Lease, error) {
 	if existing == nil {
 		return nil, ErrLeaseNotFound
 	}
-	if existing.Status != LeaseDraft {
+	if existing.Status != LeaseDraft && existing.Status != LeaseActive {
 		return nil, ErrLeaseNotDraft
 	}
 	l.HomeID = existing.HomeID
 	l.Status = existing.Status
+	if existing.Status == LeaseActive {
+		// Las condiciones que ya generaron cargos/facturas no se editan en caliente.
+		l.StartDate = existing.StartDate
+		l.EndDate = existing.EndDate
+		l.TermMonths = existing.TermMonths
+		l.RentAmount = existing.RentAmount
+		l.MaintenanceAmount = existing.MaintenanceAmount
+		l.Currency = existing.Currency
+		l.PaymentDay = existing.PaymentDay
+		l.DepositAmount = existing.DepositAmount
+	}
 	if err := s.prepareLease(ctx, l); err != nil {
 		return nil, err
 	}

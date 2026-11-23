@@ -39,6 +39,7 @@ export default function LeaseFormPage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [leaseStatus, setLeaseStatus] = useState('')
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [categories, setCategories] = useState<InstitutionCategory[]>([])
   const [people, setPeople] = useState<RentalPerson[]>([])
@@ -93,6 +94,7 @@ export default function LeaseFormPage() {
       try {
         const lease = await api.rental.leases.get(Number(id))
         if (!lease) return
+        setLeaseStatus(lease.status)
         setForm({
           home_id: lease.home_id,
           agency_institution_id: lease.agency_institution_id || 0,
@@ -276,6 +278,7 @@ export default function LeaseFormPage() {
   const homeOptions = homes.map((h) => ({ value: h.id, label: h.name }))
   const lockedHomeID = isEdit ? form.home_id : queryHomeID
   const selectedHome = homes.find((h) => h.id === lockedHomeID)
+  const lockedTerms = isEdit && leaseStatus === 'active'
   const realEstateCategoryID = categories.find((c) => c.key === 'real_estate')?.id
   const agencies = institutions.filter((i) => realEstateCategoryID && i.category_id === realEstateCategoryID)
   const agencyOptions = [
@@ -384,9 +387,14 @@ export default function LeaseFormPage() {
       </SectionCard>
 
       <SectionCard title={t('rental.lease.terms')}>
+        {lockedTerms && (
+          <p className="text-xs text-text-secondary mb-3 rounded-ios-sm bg-bg/60 px-3 py-2">
+            {t('rental.lease.active_edit_hint')}
+          </p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label={t('rental.start_date')}>
-            <TextInput type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} required />
+            <TextInput type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} disabled={lockedTerms} required />
           </Field>
           <Field label={t('rental.term_months')}>
             <Select
@@ -399,6 +407,7 @@ export default function LeaseFormPage() {
                 { value: -1, label: t('rental.custom') },
               ]}
               value={customTerm ? -1 : form.term_months}
+              disabled={lockedTerms}
               onChange={(v) => {
                 if (Number(v) === -1) setCustomTerm(true)
                 else { setCustomTerm(false); set('term_months', Number(v)) }
@@ -412,24 +421,25 @@ export default function LeaseFormPage() {
                 max={120}
                 value={form.term_months}
                 onChange={(e) => set('term_months', Number(e.target.value))}
+                disabled={lockedTerms}
                 aria-label={t('rental.term_months')}
               />
             )}
           </Field>
           <Field label={t('rental.rent')}>
-            <TextInput type="number" min={0} step="0.01" value={form.rent_amount} onChange={(e) => set('rent_amount', Number(e.target.value))} />
+            <TextInput type="number" min={0} step="0.01" value={form.rent_amount} onChange={(e) => set('rent_amount', Number(e.target.value))} disabled={lockedTerms} />
           </Field>
           <Field label={t('rental.maintenance')} hint={t('rental.maintenance_hint')}>
-            <TextInput type="number" min={0} step="0.01" value={form.maintenance_amount} onChange={(e) => set('maintenance_amount', Number(e.target.value))} />
+            <TextInput type="number" min={0} step="0.01" value={form.maintenance_amount} onChange={(e) => set('maintenance_amount', Number(e.target.value))} disabled={lockedTerms} />
           </Field>
           <Field label={t('rental.currency')}>
-            <Select options={currencyOptions} value={form.currency} onChange={(v) => set('currency', String(v))} searchable />
+            <Select options={currencyOptions} value={form.currency} onChange={(v) => set('currency', String(v))} disabled={lockedTerms} searchable />
           </Field>
           <Field label={t('rental.payment_day')} hint={t('rental.payment_day_hint')}>
-            <TextInput type="number" min={1} max={28} value={form.payment_day} onChange={(e) => set('payment_day', Number(e.target.value))} />
+            <TextInput type="number" min={1} max={28} value={form.payment_day} onChange={(e) => set('payment_day', Number(e.target.value))} disabled={lockedTerms} />
           </Field>
           <Field label={t('rental.deposit')}>
-            <TextInput type="number" min={0} step="0.01" value={form.deposit_amount} onChange={(e) => set('deposit_amount', Number(e.target.value))} />
+            <TextInput type="number" min={0} step="0.01" value={form.deposit_amount} onChange={(e) => set('deposit_amount', Number(e.target.value))} disabled={lockedTerms} />
           </Field>
           <Field label={t('rental.notice_days')}>
             <TextInput type="number" min={0} value={form.notice_days} onChange={(e) => set('notice_days', Number(e.target.value))} />
