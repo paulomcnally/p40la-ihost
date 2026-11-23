@@ -41,6 +41,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 | `ARCH-GO` | `gofmt`, nombres en inglés, errores explícitos, `log/slog` | `CA-ARCH-GO` |
 | `ARCH-IHOST` | PDF en Go puro, envío acotado, sin servicios externos obligatorios; estado en el volumen | `CA-ARCH-IHOST` |
 | `UI-SELECT` | Vivienda, inmobiliaria, moneda, rol de parte, tipo de documento y frecuencia usan `Select` (buscable cuando aplica) | `CA-UI-SELECT` |
+| `UI-SELECT-ADD` | Las opciones «Agregar inmobiliaria / agente / persona / categoría» dentro de un `Select` se rotulan `app.add` («Agregar») con ícono `plus`, usando `addOption()` | `CA-UI-SELECT-ADD` |
 | `UI-INPUT-TOKENS` | Inputs con `bg-card` / `text-text`; sin colores hardcodeados | `CA-UI-INPUT-TOKENS` |
 | `UI-DARKMODE` | Formularios, modales y pestaña Alquiler verificados en darkmode | `CA-UI-DARKMODE` |
 | `UI-TOGGLE` | «Publicar vivienda», «Renovación automática», «Notificar por email», «Recordatorio activo» usan `Toggle` | `CA-UI-TOGGLE` |
@@ -617,3 +618,4 @@ Todas bajo `/api/rental`, autenticadas con el middleware existente. Errores con 
 | 2026-11-23 | OpenCode | Implementación: migraciones 0051–0054, módulo `realestate.rental`, PDF, email con adjuntos, scheduler y frontend. Corrección: los cargos se generan por `term_months` exactos aunque el contrato empiece a mitad de mes. Estado → `in_progress`. |
 | 2026-11-23 | OpenCode | Corrección del selector de inmobiliarias: migración `0055` crea la categoría `real_estate`, el formulario filtra por esa categoría y el backend rechaza instituciones de otro tipo. También se corrigió la verificación de existencia de instituciones (la tabla no tiene `deleted_at`). |
 | 2026-11-23 | OpenCode | Alta rápida desde el formulario de contrato: «Agregar inmobiliaria» (categoría fija) y «Agregar agente» en un modal, con selección automática del registro creado. |
+| 2026-11-23 | OpenCode | Regla `UI-SELECT-ADD`: toda opción de alta dentro de un dropdown usa «Agregar» + ícono `plus` mediante `addOption()`. Se aplicó a inmobiliaria, agente, persona y categoría de importación. |
