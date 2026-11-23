@@ -71,6 +71,7 @@ Comandos que el gate de pre-release ejecuta cuando están disponibles. Si un com
 | Guardrail | Regla | Comando | Cuándo |
 |---|---|---|---|
 | `check:ui` | `UI-SELECT` | `cd frontend && npm run check:ui` | La spec toca UI |
+| `check:i18n` | `UI-I18N` | `cd frontend && npm run check:i18n` | La spec toca UI o i18n |
 | `build` | `TEST-LOCAL` | `go build ./...` | Siempre |
 | `tests` | `TEST-LOCAL` | `go test ./...` | Siempre |
 | `server` | `TEST-SERVER` | `./scripts/check-server.sh` | Antes de avisar al usuario |
