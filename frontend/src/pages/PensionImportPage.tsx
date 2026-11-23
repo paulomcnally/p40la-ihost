@@ -5,7 +5,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useCurrencyFormatStore } from '../stores/currencyFormatStore'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
-import Select from '../components/Select'
+import Select, { addOption } from '../components/Select'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../components/Toast'
 import type {
@@ -98,7 +98,7 @@ export default function PensionImportPage() {
   const categoryOptions = useMemo(
     () => [
       ...categories.map(c => ({ value: c.id, label: `${c.name} · ${c.share_percent}%` })),
-      { value: NEW_CATEGORY, label: t('pensionImport.new_category_option') },
+      addOption(t('app.add'), NEW_CATEGORY),
     ],
     [categories, t],
   )

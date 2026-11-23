@@ -83,17 +83,36 @@ export default function HomesPage() {
           >
             <CardMenu
               options={[
+                { label: t('app.view'), onClick: () => navigate(`/home/${home.id}`) },
                 { label: t('app.edit'), icon: 'edit', onClick: () => navigate(`/home/edit/${home.id}`) },
                 { label: t('app.delete'), icon: 'delete', danger: true, onClick: () => setDeleteTarget({ id: home.id, name: home.name }) },
               ]}
             />
-            <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center mb-3">
-              <Icon name="home" className="w-6 h-6" />
+            <div
+              role="link"
+              tabIndex={0}
+              onClick={() => navigate(`/home/${home.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  navigate(`/home/${home.id}`)
+                }
+              }}
+              className="cursor-pointer"
+              aria-label={`${t('app.view')}: ${home.name}`}
+            >
+              <div className="w-11 h-11 rounded-ios bg-primary/10 text-primary flex items-center justify-center mb-3">
+                <Icon name="home" className="w-6 h-6" />
+              </div>
+              <h3 className="font-semibold text-base truncate">{home.name}</h3>
+              {home.address && (
+                <p className="text-sm text-text-secondary mt-1">{home.address}</p>
+              )}
+              <span className="inline-flex items-center gap-1 text-sm text-primary mt-2">
+                {t('app.view')}
+                <Icon name="chevron" className="w-4 h-4 -rotate-90" />
+              </span>
             </div>
-            <h3 className="font-semibold text-base truncate">{home.name}</h3>
-            {home.address && (
-              <p className="text-sm text-text-secondary mt-1">{home.address}</p>
-            )}
           </SortableCard>
         )}
       </SortableGrid>

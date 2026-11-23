@@ -7,6 +7,8 @@
 #   2. Secretos y PII en las líneas agregadas.
 #   3. Cambios directos en public/i18n/ (generado por el build).
 #   4. Guardrail de UI (<select> nativo / checkbox nativo) si hay .tsx staged.
+#   5. Guardrail de i18n (claves usadas existen en es/en y no apuntan a objetos).
+#   6. Guardrail de campos numéricos (NumberInput, sin <input type="number"> nuevo).
 #
 # Fail-safe: si el hook falla internamente, NO bloquea el commit.
 # Omitir (solo con autorización explícita del usuario): git commit --no-verify
@@ -14,7 +16,25 @@
 set -uo pipefail
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
-cd "$ROOT" 2>/dev/null || exit 0
+cd "$ROOT" 2>/dev/null || # ---------------------------------------------------------------------------
+# 6. Guardrail de campos numéricos (UI-NUMBER-INPUT)
+# ---------------------------------------------------------------------------
+
+if printf '%s\n' "${staged}" | grep -Eq '^frontend/src/.*\.(tsx|jsx)$'; then
+  if [ -d frontend/node_modules ]; then
+    if ! (cd frontend && npm run --silent check:numbers >/dev/null 2>&1); then
+      echo "" >&2
+      (cd frontend && npm run --silent check:numbers) >&2 || true
+      fail "El guardrail de campos numéricos falló." \
+           "  Usá NumberInput en lugar de <input type=\"number\">." \
+           "UI-NUMBER-INPUT"
+    fi
+  else
+    echo "[pre-commit] aviso: frontend/node_modules no existe; se omite check:numbers." >&2
+  fi
+fi
+
+exit 0
 
 staged="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)"
 [ -z "${staged}" ] && exit 0
@@ -97,6 +117,24 @@ if printf '%s\n' "${staged}" | grep -Eq '^frontend/src/.*\.(tsx|jsx)$'; then
     fi
   else
     echo "[pre-commit] aviso: frontend/node_modules no existe; se omite check:ui." >&2
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# 5. Guardrail de i18n (UI-I18N)
+# ---------------------------------------------------------------------------
+
+if printf '%s\n' "${staged}" | grep -Eq '^frontend/(src/.*\.(ts|tsx)|public/i18n/.*\.json)$'; then
+  if [ -d frontend/node_modules ]; then
+    if ! (cd frontend && npm run --silent check:i18n >/dev/null 2>&1); then
+      echo "" >&2
+      (cd frontend && npm run --silent check:i18n) >&2 || true
+      fail "El guardrail de i18n falló." \
+           "  Corregí claves faltantes o que apuntan a un objeto padre." \
+           "UI-I18N"
+    fi
+  else
+    echo "[pre-commit] aviso: frontend/node_modules no existe; se omite check:i18n." >&2
   fi
 fi
 

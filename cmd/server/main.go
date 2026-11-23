@@ -168,8 +168,16 @@ func main() {
 	debtInformationService := services.NewDebtInformationService(debtInformationStorage, debtStorage)
 	bankService := services.NewBankService(bankStorage, currencyStorage)
 	moduleRegistry := modules.NewRegistry()
-	modulesall.Register(moduleRegistry, database)
+	modulesall.Register(moduleRegistry, database, emailService, systemSettingsService, cfg.DataDir)
 	documentRecognitionService := services.NewDocumentRecognitionService(documentRecognitionStorage, debtBillStorage, cfg.DataDir)
+
+	// SPEC-140: scheduler de alquileres (apartados vencidos y recordatorios).
+	if mod, ok := moduleRegistry.Get("realestate.rental"); ok {
+		if starter, ok := mod.(interface{ Start() }); ok {
+			starter.Start()
+			defer mod.(interface{ Stop() }).Stop()
+		}
+	}
 
 	// Seed del catálogo de alertas (idempotente, no borra toggles del usuario).
 	if err := alertService.Seed(context.Background()); err != nil {
