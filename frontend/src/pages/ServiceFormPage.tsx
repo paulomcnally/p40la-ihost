@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '../stores/appStore'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -7,9 +7,9 @@ import { useToast } from '../components/Toast'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
 import IconPickerModal from '../components/IconPickerModal'
-import Select from '../components/Select'
+import Select, { ADD_OPTION_VALUE, addOption } from '../components/Select'
 import Toggle from '../components/Toggle'
-import type { Service, Institution, AnalyzerInfo } from '../types'
+import type { Service, Institution, InstitutionCategory, AnalyzerInfo } from '../types'
 
 export default function ServiceFormPage() {
   const navigate = useNavigate()
@@ -18,6 +18,9 @@ export default function ServiceFormPage() {
   const { t } = useI18nStore()
   const { showToast } = useToast()
   const isEdit = !!id
+  const [searchParams] = useSearchParams()
+  const rawQueryHomeId = Number(searchParams.get('home') || 0)
+  const queryHomeId = Number.isInteger(rawQueryHomeId) && rawQueryHomeId > 0 ? rawQueryHomeId : 0
   const [formData, setFormData] = useState({
     home_id: 0,
     name: '',
@@ -42,21 +45,35 @@ export default function ServiceFormPage() {
   const [loading, setLoading] = useState(false)
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [noInstitutions, setNoInstitutions] = useState(false)
+  const [categories, setCategories] = useState<InstitutionCategory[]>([])
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [quickName, setQuickName] = useState('')
+  const [quickCategoryId, setQuickCategoryId] = useState<number | ''>('')
+  const [quickSaving, setQuickSaving] = useState(false)
+  const [quickError, setQuickError] = useState('')
 
   useEffect(() => {
     loadAll()
-    loadInstitutions()
+    loadInstitutions(true)
+    loadCategories()
   }, [])
 
-  const loadInstitutions = async () => {
+  const loadInstitutions = async (initial = false) => {
     try {
       const list = await api.institutions.list()
       setInstitutions(list || [])
-      if (!list || list.length === 0) {
-        setNoInstitutions(true)
-      }
+      setNoInstitutions(!list || list.length === 0)
     } catch {
-      setNoInstitutions(true)
+      if (initial) setNoInstitutions(true)
+    }
+  }
+
+  const loadCategories = async () => {
+    try {
+      const list = await api.institutionCategories.list()
+      setCategories(list || [])
+    } catch {
+      setCategories([])
     }
   }
 
@@ -105,13 +122,14 @@ export default function ServiceFormPage() {
       }
       load()
     } else if (!isEdit && homes.length > 0 && currencies.length > 0) {
+      const filteredHome = homes.find((h) => h.id === queryHomeId)
       setFormData(prev => ({
         ...prev,
-        home_id: homes[0].id,
+        home_id: filteredHome ? filteredHome.id : homes[0].id,
         currency_id: currencies[0].id,
       }))
     }
-  }, [id, isEdit, homes, currencies])
+  }, [id, isEdit, homes, currencies, queryHomeId])
 
   usePageTitle(isEdit ? (formData.name || null) : t('services.create'))
 
@@ -141,6 +159,49 @@ export default function ServiceFormPage() {
 
   const handleChange = (field: string, value: string | number | boolean | null) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const filteredHomeId = !isEdit && homes.some((h) => h.id === queryHomeId) ? queryHomeId : 0
+  const servicesPath = filteredHomeId ? `/services?home=${filteredHomeId}` : '/services'
+
+  const openQuickCreate = () => {
+    setQuickName('')
+    setQuickCategoryId('')
+    setQuickError('')
+    setQuickOpen(true)
+  }
+
+  const handleQuickCreate = async () => {
+    const name = quickName.trim()
+    if (!name) {
+      setQuickError(t('institutions.name_required'))
+      return
+    }
+    setQuickSaving(true)
+    setQuickError('')
+    try {
+      const created = await api.institutions.create({
+        name,
+        category_id: quickCategoryId === '' ? null : Number(quickCategoryId),
+      })
+      if (created) {
+        setInstitutions(prev => (
+          prev.some((institution) => institution.id === created.id)
+            ? prev
+            : [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
+        ))
+        setNoInstitutions(false)
+        handleChange('institution_id', created.id)
+        handleChange('institution_analyzer_id', 0)
+        showToast(t('institutions.created'), 'success')
+      }
+      setQuickOpen(false)
+      loadInstitutions()
+    } catch (err: unknown) {
+      setQuickError(err instanceof Error ? err.message : t('errors.generic'))
+    } finally {
+      setQuickSaving(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -179,7 +240,7 @@ export default function ServiceFormPage() {
         await api.services.create(data)
       }
       showToast(t('services.saved_success') || 'Servicio guardado', 'success')
-      navigate('/services')
+      navigate(servicesPath)
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message || t('errors.generic')
       showToast(message, 'error')
@@ -189,6 +250,7 @@ export default function ServiceFormPage() {
   }
 
   return (
+    <>
     <div className="max-w-xl mx-auto bg-card rounded-ios shadow-ios p-4 sm:p-6">
       <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">{t(isEdit ? 'services.edit' : 'services.create')}</h2>
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -214,9 +276,16 @@ export default function ServiceFormPage() {
         <div>
           <label className="block text-sm font-medium mb-1">{t('services.institution')}</label>
           <Select
-            options={institutions.map(i => ({ value: i.id, label: i.name }))}
+            options={[
+              ...institutions.map(i => ({ value: i.id, label: i.name })),
+              addOption(t('app.add')),
+            ]}
             value={formData.institution_id}
             onChange={(v) => {
+              if (v === ADD_OPTION_VALUE) {
+                openQuickCreate()
+                return
+              }
               handleChange('institution_id', v as number)
               handleChange('institution_analyzer_id', 0)
             }}
@@ -367,7 +436,7 @@ export default function ServiceFormPage() {
         <div className="flex justify-end gap-3 pt-4 border-t border-border">
           <button
             type="button"
-            onClick={() => navigate('/services')}
+            onClick={() => navigate(servicesPath)}
             className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors flex items-center gap-2 min-h-[44px]"
           >
             <Icon name="cancel" className="w-4 h-4" />
@@ -384,6 +453,78 @@ export default function ServiceFormPage() {
         </div>
       </form>
     </div>
+
+    {quickOpen && (
+      <div
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-institution-title"
+      >
+        <div className="bg-card rounded-ios shadow-ios w-full max-w-sm max-h-[90vh] flex flex-col">
+          <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+            <h3 id="quick-institution-title" className="text-lg font-bold">{t('institutions.create')}</h3>
+            <button
+              type="button"
+              onClick={() => setQuickOpen(false)}
+              className="p-2 text-text-secondary hover:text-text rounded-full transition-colors"
+              aria-label={t('app.close')}
+            >
+              <Icon name="cancel" className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('institutions.name')}</label>
+              <input
+                type="text"
+                value={quickName}
+                onChange={(event) => setQuickName(event.target.value)}
+                placeholder={t('institutions.name_placeholder')}
+                className="w-full px-3 py-2 bg-card text-text border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px] placeholder:text-text-secondary"
+                autoFocus
+              />
+              {quickError && <p className="text-sm text-danger mt-1">{quickError}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('institutions.category')}</label>
+              <Select
+                options={[
+                  { value: '', label: t('institutions.uncategorized') },
+                  ...categories.map((category) => ({ value: category.id, label: category.name })),
+                ]}
+                value={quickCategoryId}
+                onChange={(value) => setQuickCategoryId(value === '' ? '' : Number(value))}
+                placeholder={t('institutions.select_category')}
+                searchable
+                searchPlaceholder={t('app.search')}
+                emptyLabel={t('app.no_results')}
+              />
+            </div>
+          </div>
+
+          <div className="p-4 border-t border-border flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setQuickOpen(false)}
+              className="px-4 py-2 bg-bg text-text rounded-ios-sm hover:bg-border transition-colors min-h-[44px]"
+            >
+              {t('app.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={handleQuickCreate}
+              disabled={quickSaving}
+              className="px-4 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover disabled:opacity-50 transition-colors min-h-[44px]"
+            >
+              {quickSaving ? t('app.saving') : t('app.create')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 
