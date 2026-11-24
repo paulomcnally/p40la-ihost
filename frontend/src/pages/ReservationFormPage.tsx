@@ -167,7 +167,7 @@ export default function ReservationFormPage() {
 
   if (loading) return <LoadingSpinner />
 
-  const homeOptions = homes.map((h) => ({ value: h.id, label: h.name }))
+  const homeOptions = homes.filter((h) => h.usage === 'rental').map((h) => ({ value: h.id, label: h.name }))
   const lockedHomeID = isEdit ? form.home_id : queryHomeID
   const selectedHome = homes.find((h) => h.id === lockedHomeID)
   const agentOptions = [{ value: 0, label: t('rental.none') }, ...people.map((p) => ({ value: p.id, label: p.full_name }))]
@@ -180,7 +180,7 @@ export default function ReservationFormPage() {
 
       <SectionCard title={t('rental.reservation.property')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label={t('rental.home')}>
+          <Field label={t('rental.home')} hint={homeOptions.length === 0 ? t('home.no_rental_homes') : undefined}>
             {lockedHomeID > 0 ? (
               <div className="flex items-center gap-2 min-h-[44px] px-3 py-2 border border-border rounded-ios-sm bg-bg/60 text-text">
                 <Icon name="home" className="w-4 h-4 text-text-secondary shrink-0" />

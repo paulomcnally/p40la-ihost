@@ -172,7 +172,11 @@ func main() {
 	documentRecognitionService := services.NewDocumentRecognitionService(documentRecognitionStorage, debtBillStorage, cfg.DataDir)
 
 	// SPEC-140: scheduler de alquileres (apartados vencidos y recordatorios).
+	// SPEC-143: el módulo de alquiler también bloquea cambios de uso de casas.
 	if mod, ok := moduleRegistry.Get("realestate.rental"); ok {
+		if guard, ok := mod.(services.HomeRentalGuard); ok {
+			homeService.SetRentalGuard(guard)
+		}
 		if starter, ok := mod.(interface{ Start() }); ok {
 			starter.Start()
 			defer mod.(interface{ Stop() }).Stop()
