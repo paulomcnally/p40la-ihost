@@ -1,25 +1,28 @@
 ---
 title: "Seguridad"
-sidebar_position: 4
-description: "Credenciales, compuerta de escritura, datos y protocolo de incidentes"
+sidebar_position: 5
+description: "API key global, compuerta de escritura, datos y protocolo de incidentes"
 ---
 
 # Seguridad
 
 ## Principios
 
-1. **Menor privilegio**: por defecto el MCP solo lee. Las escrituras requieren una variable explícita.
-2. **Sin acceso directo a datos**: no abre SQLite, no lee el volumen, no escribe archivos de estado.
+1. **Sin contraseña en el MCP**: el agente usa una API key global, no las credenciales del usuario.
+2. **Menor exposición**: la key se guarda hasheada, se muestra una vez y se puede revocar.
 3. **Confirmación humana**: las tools de escritura previsualizan con `dry_run` y el agente debe pedir confirmación antes de ejecutar.
-4. **Datos mínimos**: los logs no incluyen montos, emails, cookies, contraseñas ni payloads.
+4. **Datos mínimos**: los logs no incluyen montos, API keys, cookies ni payloads.
 
-## Credenciales
+## API key global
 
-- `P40LA_EMAIL` y `P40LA_PASSWORD`, o `P40LA_SESSION_COOKIE`.
-- Solo por variables de entorno o un archivo `0600`; nunca por argumentos.
-- La cookie de sesión vive en memoria (`http.CookieJar`) y no se persiste.
-- Si se filtra una cookie o contraseña, se rota la contraseña del usuario y se invalida la sesión.
-- En redes no confiables, usá HTTPS mediante un proxy inverso (Tailscale, Caddy, Nginx). El valor por defecto es HTTP en LAN.
+- La key tiene **todos los permisos**; equivale a un usuario con acceso completo.
+- Se guarda como hash SHA-256 en `system_settings`; el texto plano solo existe al generarla.
+- Se crea/rota con `scripts/create-api-key.sh` o `POST /api/api-key/regenerate` (sesión).
+- Se revoca con `DELETE /api/api-key` o rotándola.
+- `last_used_at` permite detectar uso inesperado.
+- Si se filtra: rotar de inmediato, revisar `last_used_at` y avisar al usuario.
+
+La administración de la key es **solo por sesión**: una key no puede crear ni rotar otras keys.
 
 ## Compuerta de escritura
 
@@ -31,7 +34,7 @@ description: "Credenciales, compuerta de escritura, datos y protocolo de inciden
 | `dry_run=false` + compuerta apagada | Error `writes_disabled`; no llama a la API |
 | `dry_run=false` + compuerta encendida | Ejecuta con origen de auditoría `mcp` |
 
-La compuerta se valida en el MCP **y** el backend valida el origen; no es una defensa criptográfica contra un usuario con la contraseña, sino una protección contra escrituras accidentales del agente.
+La compuerta se valida en el MCP **y** el backend valida el origen. No protege contra un usuario que ya tiene la key: es una defensa contra escrituras accidentales del agente.
 
 ## Datos y PII
 
@@ -56,17 +59,17 @@ Nunca se valida con escrituras contra la DB local del usuario ni se usa `data/ap
 ## Auditoría
 
 - `bill_history.source = mcp` identifica las operaciones del agente.
-- El header `X-P40LA-Source` tiene allowlist (`dashboard`, `mcp`); cualquier otro valor devuelve `invalid_source`.
+- Una petición autenticada por API key fuerza `source=mcp`; el header `X-P40LA-Source` no puede simular `dashboard`.
 - El historial conserva el diff de campos en altas y pagos.
 
 ## Protocolo de incidente
 
-Si se commitea o se filtra una credencial, cookie o dato real:
+Si se filtra la API key, una cookie o un dato real:
 
-1. Rotar la credencial o contraseña de inmediato.
-2. Eliminar el dato del árbol **y de la historia** de git.
+1. Rotar/revocar la API key de inmediato.
+2. Eliminar el dato del árbol **y de la historia** de git si se commiteó.
 3. Documentar el incidente y avisar al usuario.
-4. Revisar logs y accesos por si hubo uso indebido.
+4. Revisar `last_used_at` y accesos por si hubo uso indebido.
 
 Ver `docs/rules/50-security.md` (`SEC-INCIDENT`).
 
@@ -76,7 +79,7 @@ El MCP no devuelve stack traces ni SQL. Los errores tienen código estable y men
 
 | Código | Significado |
 |---|---|
-| `auth_failed` | Credenciales o cookie inválidas |
+| `auth_failed` | API key inválida, revocada o rotada |
 | `writes_disabled` | Escritura sin compuerta |
 | `invalid_range` | Rango de períodos inválido o futuro |
 | `invalid_selector` | Selector de pago ausente o múltiple |

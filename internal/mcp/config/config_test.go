@@ -11,8 +11,7 @@ func testEnv(values map[string]string) func(string) string {
 
 func TestLoadDefaults(t *testing.T) {
 	cfg, err := Load(testEnv(map[string]string{
-		"P40LA_EMAIL":    "demo@example.com",
-		"P40LA_PASSWORD": "demo-password",
+		"P40LA_API_KEY": "p40la_demo-demo-demo-demo-demo-demo-demo",
 	}))
 	if err != nil {
 		t.Fatalf("cargar configuración: %v", err)
@@ -31,20 +30,20 @@ func TestLoadDefaults(t *testing.T) {
 	}
 }
 
-func TestLoadRequiresCredentials(t *testing.T) {
+func TestLoadRequiresAPIKey(t *testing.T) {
 	if _, err := Load(testEnv(map[string]string{})); err == nil {
-		t.Fatal("quiero error sin credenciales")
+		t.Fatal("quiero error sin API key")
 	}
-	if _, err := Load(testEnv(map[string]string{"P40LA_EMAIL": "demo@example.com"})); err == nil {
-		t.Fatal("quiero error con email sin contraseña")
+	if _, err := Load(testEnv(map[string]string{"P40LA_API_KEY": "otra-cosa"})); err == nil {
+		t.Fatal("quiero error con API key sin prefijo")
 	}
-	if _, err := Load(testEnv(map[string]string{"P40LA_SESSION_COOKIE": "demo-cookie"})); err != nil {
-		t.Fatalf("la cookie debe ser suficiente: %v", err)
+	if _, err := Load(testEnv(map[string]string{"P40LA_API_KEY": "p40la_corta"})); err == nil {
+		t.Fatal("quiero error con API key demasiado corta")
 	}
 }
 
 func TestLoadValidation(t *testing.T) {
-	base := map[string]string{"P40LA_EMAIL": "demo@example.com", "P40LA_PASSWORD": "demo-password"}
+	base := map[string]string{"P40LA_API_KEY": "p40la_demo-demo-demo-demo-demo-demo-demo"}
 
 	cases := []map[string]string{
 		{"P40LA_BASE_URL": "ihost.local:8088"},
@@ -71,7 +70,7 @@ func TestLoadValidation(t *testing.T) {
 func TestLoadCustom(t *testing.T) {
 	cfg, err := Load(testEnv(map[string]string{
 		"P40LA_BASE_URL":         "https://demo.example.com/p40la/",
-		"P40LA_SESSION_COOKIE":   "demo-cookie",
+		"P40LA_API_KEY":          "p40la_demo-demo-demo-demo-demo-demo-demo",
 		"P40LA_MCP_ALLOW_WRITES": "true",
 		"P40LA_TIMEOUT":          "20s",
 		"P40LA_TIMEZONE":         "UTC",
@@ -90,8 +89,5 @@ func TestLoadCustom(t *testing.T) {
 	}
 	if cfg.Location.String() != "UTC" {
 		t.Fatalf("timezone = %s", cfg.Location)
-	}
-	if cfg.Email != "" || cfg.Password != "" {
-		t.Fatal("la cookie debe tener prioridad sobre usuario/clave")
 	}
 }

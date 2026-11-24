@@ -15,19 +15,18 @@ const (
 	defaultTimeout  = 15 * time.Second
 	defaultTimezone = "America/Managua"
 	maxTimeout      = 60 * time.Second
+	apiKeyPrefix    = "p40la_"
 )
 
-// Config es la configuración efectiva del binario MCP. Las credenciales nunca
-// se imprimen ni se pasan por argumentos de línea de comandos.
+// Config es la configuración efectiva del binario MCP. La API key nunca se
+// imprime ni se pasa por argumentos de línea de comandos.
 type Config struct {
-	BaseURL       string
-	Email         string
-	Password      string
-	SessionCookie string
-	AllowWrites   bool
-	Timeout       time.Duration
-	Timezone      string
-	Location      *time.Location
+	BaseURL     string
+	APIKey      string
+	AllowWrites bool
+	Timeout     time.Duration
+	Timezone    string
+	Location    *time.Location
 }
 
 // Load lee la configuración desde las variables de entorno usando getenv.
@@ -37,12 +36,10 @@ func Load(getenv func(string) string) (Config, error) {
 		getenv = os.Getenv
 	}
 	cfg := Config{
-		BaseURL:       strings.TrimSpace(getenv("P40LA_BASE_URL")),
-		Email:         strings.TrimSpace(getenv("P40LA_EMAIL")),
-		Password:      getenv("P40LA_PASSWORD"),
-		SessionCookie: strings.TrimSpace(getenv("P40LA_SESSION_COOKIE")),
-		Timeout:       defaultTimeout,
-		Timezone:      defaultTimezone,
+		BaseURL:  strings.TrimSpace(getenv("P40LA_BASE_URL")),
+		APIKey:   strings.TrimSpace(getenv("P40LA_API_KEY")),
+		Timeout:  defaultTimeout,
+		Timezone: defaultTimezone,
 	}
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = defaultBaseURL
@@ -56,14 +53,11 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/")
 
-	if cfg.SessionCookie == "" {
-		if cfg.Email == "" || cfg.Password == "" {
-			return Config{}, fmt.Errorf("configurá P40LA_EMAIL y P40LA_PASSWORD, o P40LA_SESSION_COOKIE")
-		}
-	} else if cfg.Email != "" || cfg.Password != "" {
-		// La cookie tiene prioridad; no es un error, pero se evita ambigüedad.
-		cfg.Email = ""
-		cfg.Password = ""
+	if cfg.APIKey == "" {
+		return Config{}, fmt.Errorf("P40LA_API_KEY es obligatoria; generá una con scripts/create-api-key.sh")
+	}
+	if !strings.HasPrefix(cfg.APIKey, apiKeyPrefix) || len(cfg.APIKey) < 20 || len(cfg.APIKey) > 200 {
+		return Config{}, fmt.Errorf("P40LA_API_KEY debe tener el formato p40la_...")
 	}
 
 	if raw := strings.TrimSpace(getenv("P40LA_MCP_ALLOW_WRITES")); raw != "" {

@@ -78,11 +78,36 @@ Antes de declarar terminada una spec y después de cada release, ejecutar `/spec
 ## DELIV-HOOKS — Enforcement automático
 
 - Los hooks viven en `.githooks/` y se instalan con `./scripts/install-hooks.sh` (`git config core.hooksPath .githooks`). Es idempotente.
-- `pre-commit` bloquea: DBs (`*.db`, `-wal`, `-shm`), PDFs, dumps, `backups/`, `data/`; secretos y PII; `public/i18n/` editado sin su fuente (el build legítimo que staged `frontend/public/i18n/` se permite); y ejecuta el guardrail de UI si hay `.tsx` staged.
+- `pre-commit` bloquea: DBs (`*.db`, `-wal`, `-shm`), PDFs, dumps, `backups/`, `data/`; secretos y PII; `public/i18n/` editado sin su fuente (el build legítimo que staged `frontend/public/i18n/` se permite); ejecuta el guardrail de UI si hay `.tsx` staged y exige `docs/mcp/` si se toca el MCP (`DELIV-MCP-DOCS`).
 - `commit-msg` exige `SPEC-XXX: descripción` (o `Merge `, `Revert `, `bump `, `hotfix:`).
 - El plugin `.opencode/plugins/rules-guard/` bloquea en tiempo de ejecución: borrar `data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>` y checkbox nativo.
 - **Prohibido** `git commit --no-verify` salvo autorización explícita del usuario.
 - **Fail-safe**: si un hook o el plugin falla internamente, la operación continúa; solo los patrones positivos bloquean.
+
+---
+
+## DELIV-MCP-DOCS — Todo cambio del MCP actualiza su documentación
+
+- Se considera **superficie MCP**:
+  - `cmd/mcp-server/` (código, no tests)
+  - `internal/mcp/` (código, no tests)
+  - `scripts/create-api-key.sh`
+  - `internal/services/bill_bulk.go` y `internal/services/api_key.go`
+  - `internal/api/bill_bulk_handlers.go` y `internal/api/api_key_handlers.go`
+- Si se modifica cualquiera de esos archivos, el **mismo commit** DEBE incluir cambios en `docs/mcp/`.
+- El mapeo mínimo: tools nuevas o cambios de schema → `docs/mcp/tools/`; configuración/API key → `configuration.md` y `api-key.md`; operación → `operations.md`; seguridad → `security.md`; arquitectura → `architecture.md`; onboarding → `README.md`.
+- **Guardrail**: `./scripts/check-mcp-docs.sh --staged`, ejecutado por `.githooks/pre-commit`. Bloquea si hay superficie MCP sin `docs/mcp/`. Los `*_test.go` del MCP no disparan la regla por sí solos.
+- **Fail-safe**: si el script no existe o no es ejecutable, el hook avisa y continúa.
+- **Prohibido** `git commit --no-verify` para saltear este guardrail salvo autorización explícita del usuario.
+
+---
+
+## DELIV-MCP-DOCS-SUBAGENT — La documentación del MCP se delega a un subagente
+
+- Toda actualización de `docs/mcp/` DEBE delegarse a un **subagente** (`general` o `explore`) en paralelo con la implementación, para optimizar el paralelismo.
+- El brief del subagente DEBE incluir: archivos cambiados, contratos/tools nuevas, variables de entorno, ejemplos sintéticos (`SEC-SYNTHETIC`) y reglas `SEC-*` aplicables.
+- El agente principal **revisa e integra** la documentación; no la redacta él mismo salvo que el subagente no esté disponible, y en ese caso lo justifica en la spec o en el mensaje de commit.
+- Esta regla es de proceso: no tiene guardrail automático. El cumplimiento se declara en la tabla «Cumplimiento de reglas» de la spec.
 
 ---
 

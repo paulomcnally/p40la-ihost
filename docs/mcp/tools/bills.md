@@ -220,7 +220,7 @@ Se debe indicar **exactamente un** selector. `from` y `to` cuentan como uno solo
 | `amount_unresolved` | No hay monto explícito, última factura ni monto sugerido |
 | `deleted_slot` | El período está ocupado por una factura eliminada |
 | `writes_disabled` | `dry_run=false` sin `P40LA_MCP_ALLOW_WRITES=true` |
-| `auth_failed` | Credenciales o cookie inválidas |
+| `auth_failed` | API key inválida, revocada o rotada |
 | `upstream_error` | Error de red o del servidor |
 
 ## Flujo recomendado para un agente
