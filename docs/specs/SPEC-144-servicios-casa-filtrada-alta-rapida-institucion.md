@@ -1,7 +1,7 @@
 ---
 title: "Servicios: casa filtrada al crear y alta rápida de institución"
 id: "SPEC-144"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 147
 # Servicios: casa filtrada al crear y alta rápida de institución
 
 **ID**: SPEC-144  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-23
@@ -329,18 +329,20 @@ Sin cambios. Sigue devolviendo `412 NO_INSTITUTIONS` si no existe ninguna instit
 - Precedentes: SPEC-140 (`UI-SELECT-ADD`), SPEC-141 (alta rápida de institución en reparaciones), SPEC-142 (mismo patrón en líneas de reparación), SPEC-126 (`UX-MODAL`).
 - Issue de GitHub: #147.
 
-### Implementación (en curso)
+### Release
 
+- **Estado**: released (2026-11-23)
+- **Commit de implementación**: `689c0093`
+- **Merge a `main`**: `856b713c`
+- **Versión**: 0.5.17
+- **Migraciones**: ninguna
+- **Issue**: #147 (cerrado)
 - **Archivos modificados**:
   - `frontend/src/pages/ServicesPage.tsx`: `createServicePath` con `?home=` propagado al menú de crear y a los dos estados vacíos.
   - `frontend/src/pages/ServiceFormPage.tsx`: lectura de `?home=`, preselección de la casa filtrada, `addOption(t('app.add'))` en el dropdown de institución, modal de alta rápida y retorno al listado filtrado (REQ-008, P1).
 - **Backend**: sin cambios.
 - **i18n**: sin claves nuevas; se reutilizan `app.add`, `app.create`, `app.saving`, `app.cancel`, `app.close`, `institutions.*` y `errors.generic`.
-- **Validación automática**:
-  - `go build ./...` y `go test ./...`: OK.
-  - `npm run check:ui`, `check:i18n`, `check:numbers` y `npm run build`: OK.
-  - Servidor de prueba en `http://localhost:8090` con `DATA_DIR=/tmp/p40la-spec-144-data`: `GET /health` OK; alta de institución y servicio vía API OK.
-- **Pendiente**: validación manual del usuario (flujo filtrado, alta rápida y darkmode).
+- **Validación**: `go build ./...`, `go test ./...`, `check:ui`, `check:i18n`, `check:numbers` y build de Vite en verde; smoke test de API en `http://localhost:8090` con base sintética en `/tmp` (alta de institución y servicio). Release aprobado por el usuario.
 
 ---
 
@@ -351,3 +353,4 @@ Sin cambios. Sigue devolviendo `412 NO_INSTITUTIONS` si no existe ninguna instit
 | 2026-11-23 | opencode | Creación inicial de la especificación |
 | 2026-11-23 | opencode | Inicio de implementación; estado `in_progress` y label `spec/in-progress` |
 | 2026-11-23 | opencode | Implementación de P0 y P1; guardrails `go build`, `go test`, `check:ui`, `check:i18n`, `check:numbers` y build en verde. Pendiente validación manual del usuario |
+| 2026-11-23 | opencode | Release: merge `856b713c` a `main`, estado `released`, versión 0.5.17, issue #147 cerrado y tracker actualizado |
