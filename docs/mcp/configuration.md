@@ -178,7 +178,8 @@ Reemplazá el valor por tu key real solo en tu configuración local (nunca en el
 
 ## dry_run y compuerta de escritura
 
-- Todas las tools de escritura (`bills_generate`, `bills_pay`, `autos_create`, `autos_update`, `autos_maintenance_register`, `autos_inspection_register` y `autos_insurance_register`) tienen `dry_run=true` por defecto en el MCP.
+- Las tools de facturas y autos de escritura (`bills_generate`, `bills_pay`, `autos_create`, `autos_update`, `autos_maintenance_register`, `autos_inspection_register` y `autos_insurance_register`) tienen `dry_run=true` por defecto en el MCP.
+- Las tools de alta de entidades (`homes_create`, `institutions_create`, `banks_create` y `services_create`) no tienen `dry_run`: escriben directo si la compuerta está activa y verifican duplicados antes del POST.
 - Un `dry_run=true` funciona aunque las escrituras estén deshabilitadas.
 - En **stdio**, para ejecutar cambios se necesitan **dos** condiciones: `dry_run=false` en la llamada y `P40LA_MCP_ALLOW_WRITES=true` en el entorno.
 - En **HTTP**, se agrega una tercera: `P40LA_MCP_REMOTE_WRITES=true`. Sin ambas compuertas, la tool devuelve `writes_disabled`.

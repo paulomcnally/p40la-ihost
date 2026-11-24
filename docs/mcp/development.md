@@ -25,22 +25,30 @@ internal/mcp/
 ├── audit/                      # JSONL con rotación
 └── tools/
     ├── all/register.go         # único punto que importa los dominios
+    ├── toolkit/                # helpers compartidos (JSONResult, ToolError, APIError)
     ├── bills/                  # tools de facturas
     │   ├── tools.go            # Toolset + Register + writeMode
-    │   ├── results.go          # helpers de resultado/error
     │   ├── period.go           # períodos YYYY-MM
     │   ├── list.go
     │   ├── generate.go
     │   └── pay.go
-    └── autos/                  # tools de autos, mantenimientos, inspecciones y seguros
-        ├── tools.go            # Toolset + Register + writeMode
-        ├── results.go          # helpers de resultado/error
-        ├── list.go
-        ├── create.go
-        ├── update.go
-        ├── maintenance.go
-        ├── inspection.go
-        └── insurance.go
+    ├── autos/                  # tools de autos, mantenimientos, inspecciones y seguros
+    │   ├── tools.go            # Toolset + Register + writeMode
+    │   ├── results.go          # apiError y aliases al toolkit
+    │   ├── list.go
+    │   ├── create.go
+    │   ├── update.go
+    │   ├── maintenance.go
+    │   ├── inspection.go
+    │   └── insurance.go
+    └── entities/               # búsqueda y altas de hogares, instituciones, bancos y servicios
+        ├── tools.go            # Toolset + Register + checkWrites
+        ├── resolve.go          # resolución por nombre/ID y errores accionables
+        ├── search.go           # entities_search (solo lectura)
+        ├── homes.go
+        ├── institutions.go
+        ├── banks.go
+        └── services.go
 ```
 
 Las tools no saben por qué transporte llegan: `cmd/mcp-server` monta el mismo `mcp.Server` en stdio o en Streamable HTTP. La compuerta de escritura sí consulta el transporte (`Config.WritesEnabled()`), porque el modo HTTP exige la segunda variable.
@@ -52,7 +60,7 @@ Las tools no saben por qué transporte llegan: `cmd/mcp-server` monta el mismo `
 3. **Creá el paquete de tools** `internal/mcp/tools/<dominio>` con un `Toolset` y un `Register`.
 4. **Registrá el dominio** en `internal/mcp/tools/all/register.go` con un `r.Add(...)`.
 5. **Escribí tests** con una API falsa y, si aplica, un test de protocolo con `mcp.NewInMemoryTransports`.
-6. **Documentá** la tool en `docs/mcp/tools/<dominio>.md` y actualizá el catálogo.
+6. **Documentá** la tool en `docs/mcp/tools/<dominio>.md` y actualizá los catálogos de `docs/mcp/README.md` y `docs/mcp/tools/README.md`.
 
 ## Contrato de una tool
 
@@ -82,6 +90,7 @@ Reglas:
 - Los errores de la API se traducen con `apiError` para no filtrar detalles.
 - Las escrituras deben pasar por `writeMode` y respetar `P40LA_MCP_ALLOW_WRITES`.
 - Toda tool que escribe debe ser idempotente o explicar por qué no lo es.
+- Las tools que aceptan nombre o ID resuelven contra la API con un GET, comparan sin distinguir mayúsculas ni acentos y devuelven `not_found`/`ambiguous_reference` con opciones accionables. El patrón está en `internal/mcp/tools/entities/resolve.go`.
 
 ## Registro
 
@@ -212,7 +221,7 @@ Todo cambio en el código del MCP se documenta **en el mismo commit**. La superf
 
 **`DELIV-MCP-DOCS`** — agregar o cambiar una tool, un contrato HTTP, una variable de entorno o un flujo operativo exige actualizar `docs/mcp/` en el **mismo commit** que el código. Según el cambio:
 
-- Tool nueva o modificada → `docs/mcp/tools/<dominio>.md` y el catálogo de `docs/mcp/README.md`.
+- Tool nueva o modificada → `docs/mcp/tools/<dominio>.md` y los catálogos de `docs/mcp/README.md` y `docs/mcp/tools/README.md`.
 - Variable de entorno o configuración → `docs/mcp/configuration.md`.
 - Transporte HTTP, OAuth o límites → `docs/mcp/http.md`, `docs/mcp/oauth.md` y `docs/mcp/configuration.md`.
 - Publicación en Internet → `docs/mcp/funnel.md`.
@@ -246,6 +255,8 @@ El agente principal **revisa e integra** el resultado. Solo escribe la documenta
 - [ ] Input schema claro y con campos obligatorios/opcionales correctos.
 - [ ] Descripción con límites, defaults y requisitos de escritura.
 - [ ] Errores con código estable.
+- [ ] Si la tool acepta referencias por nombre, resuelve contra la API y devuelve `not_found`/`ambiguous_reference` con opciones.
+- [ ] Si la tool crea entidades con nombre, valida duplicados antes del POST (`already_exists` con el `id` existente).
 - [ ] Tests de éxito, validación y error de API.
 - [ ] Documentación en `docs/mcp/tools/`.
 - [ ] Si se tocó cualquier archivo de la superficie MCP, `docs/mcp/` se actualizó en el mismo commit y esa actualización se delegó a un subagente (`DELIV-MCP-DOCS`, `DELIV-MCP-DOCS-SUBAGENT`).

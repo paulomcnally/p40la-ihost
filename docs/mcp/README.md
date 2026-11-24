@@ -17,19 +17,24 @@ El binario tiene dos transportes con el mismo catálogo de tools:
 
 El modo remoto está pensado para conectores que Anthropic ejecuta desde su infraestructura: exige HTTPS público, OAuth 2.1 y una contraseña de administración. El modo local no necesita nada de eso. Ver [http.md](http.md), [oauth.md](oauth.md) y [funnel.md](funnel.md).
 
-El catálogo cubre facturas de servicios y autos:
+El catálogo cubre facturas de servicios, autos, búsqueda de entidades y altas de entidades base:
 
 | Tool | Tipo | Qué hace |
 |---|---|---|
 | `bills_list` | lectura | Lista facturas de un servicio con filtros de período y estado |
+| `entities_search` | lectura | Busca hogares, servicios, bancos o instituciones por nombre y devuelve sus IDs |
+| `autos_list` | lectura | Lista y filtra autos por marca, modelo, placa o VIN, o pide uno por ID |
 | `bills_generate` | escritura | Genera facturas de un rango de meses (por ejemplo, enero a la fecha) |
 | `bills_pay` | escritura | Paga una factura, un mes, un rango o todas las pendientes hasta una fecha |
-| `autos_list` | lectura | Lista y filtra autos por marca, modelo, placa o VIN, o pide uno por ID |
 | `autos_create` | escritura | Crea un auto |
 | `autos_update` | escritura | Reemplaza los datos de un auto existente |
 | `autos_maintenance_register` | escritura | Registra un mantenimiento y sus líneas de mano de obra e insumos |
 | `autos_inspection_register` | escritura | Registra una inspección mecánica y devuelve el cronograma |
 | `autos_insurance_register` | escritura | Asocia un servicio de seguro a un auto |
+| `homes_create` | escritura | Crea un hogar con nombre, dirección y uso |
+| `institutions_create` | escritura | Crea una institución o proveedor y resuelve su categoría |
+| `banks_create` | escritura | Crea un banco con código corto, país y estado |
+| `services_create` | escritura | Crea un servicio en un hogar, con moneda e institución por nombre o ID |
 
 ## Requisitos
 
@@ -116,6 +121,10 @@ El runbook completo —prerrequisitos, API key, hash OAuth, volúmenes, alta por
 
 En facturas, las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`. En autos, solo `autos_update` es idempotente: repetir un alta de auto, mantenimiento o inspección crea otro registro, y repetir un seguro devuelve `already_exists`.
 
+Antes de un alta, `entities_search` permite verificar si la entidad ya existe y obtener su `id`; es de solo lectura y no requiere la compuerta.
+
+Las tools de alta (`homes_create`, `institutions_create`, `banks_create`, `services_create`) **no tienen `dry_run`**: escriben en una sola llamada. Mostrá al usuario los datos que se van a crear y pedí confirmación antes de invocarlas; si el nombre ya existe, devuelven `already_exists` con el `id` de la entidad existente. Ver [tools/entities.md](tools/entities.md).
+
 ## Documentación
 
 - [API key global](api-key.md)
@@ -131,6 +140,7 @@ En facturas, las operaciones son idempotentes por período: repetir una generaci
 - [Catálogo de tools](tools/README.md)
 - [Tools de facturas](tools/bills.md)
 - [Tools de autos](tools/autos.md)
+- [Tools de entidades](tools/entities.md)
 
 ## Publicación web
 

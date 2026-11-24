@@ -7,6 +7,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/api"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/toolkit"
 )
 
 // PayInput es la entrada de bills_pay.
@@ -25,7 +26,7 @@ type PayInput struct {
 
 func (t *Toolset) pay(ctx context.Context, _ *mcp.CallToolRequest, input PayInput) (*mcp.CallToolResult, any, error) {
 	if input.ServiceID <= 0 {
-		return toolError("invalid_request", "service_id debe ser mayor que cero", "")
+		return toolkit.ToolError("invalid_request", "service_id debe ser mayor que cero", "")
 	}
 	req := api.PayRequest{
 		BillIDs: input.BillIDs,
@@ -46,7 +47,7 @@ func (t *Toolset) pay(ctx context.Context, _ *mcp.CallToolRequest, input PayInpu
 	if input.Month != nil && strings.TrimSpace(*input.Month) != "" {
 		parsed, err := parsePeriod(*input.Month)
 		if err != nil {
-			return toolError("invalid_selector", err.Error(), "")
+			return toolkit.ToolError("invalid_selector", err.Error(), "")
 		}
 		req.Month = parsed.String()
 		selectors++
@@ -55,18 +56,18 @@ func (t *Toolset) pay(ctx context.Context, _ *mcp.CallToolRequest, input PayInpu
 	hasTo := input.To != nil && strings.TrimSpace(*input.To) != ""
 	if hasFrom || hasTo {
 		if !hasFrom || !hasTo {
-			return toolError("invalid_selector", "el selector de rango requiere from y to", "")
+			return toolkit.ToolError("invalid_selector", "el selector de rango requiere from y to", "")
 		}
 		from, err := parsePeriod(*input.From)
 		if err != nil {
-			return toolError("invalid_selector", err.Error(), "")
+			return toolkit.ToolError("invalid_selector", err.Error(), "")
 		}
 		to, err := parsePeriod(*input.To)
 		if err != nil {
-			return toolError("invalid_selector", err.Error(), "")
+			return toolkit.ToolError("invalid_selector", err.Error(), "")
 		}
 		if to.before(from) {
-			return toolError("invalid_selector", "el período final no puede ser anterior al inicial", "")
+			return toolkit.ToolError("invalid_selector", "el período final no puede ser anterior al inicial", "")
 		}
 		req.From = from.String()
 		req.To = to.String()
@@ -75,13 +76,13 @@ func (t *Toolset) pay(ctx context.Context, _ *mcp.CallToolRequest, input PayInpu
 	if input.AllPendingUpTo != nil && strings.TrimSpace(*input.AllPendingUpTo) != "" {
 		parsed, err := parsePeriod(*input.AllPendingUpTo)
 		if err != nil {
-			return toolError("invalid_selector", err.Error(), "")
+			return toolkit.ToolError("invalid_selector", err.Error(), "")
 		}
 		req.AllPendingUpTo = parsed.String()
 		selectors++
 	}
 	if selectors != 1 {
-		return toolError("invalid_selector",
+		return toolkit.ToolError("invalid_selector",
 			"Indicá exactamente un selector: bill_ids, month, from+to o all_pending_up_to.", "")
 	}
 
@@ -89,14 +90,14 @@ func (t *Toolset) pay(ctx context.Context, _ *mcp.CallToolRequest, input PayInpu
 		raw := strings.TrimSpace(*input.PaidAt)
 		paidAt, err := time.ParseInLocation("2006-01-02", raw, t.cfg.Location)
 		if err != nil {
-			return toolError("invalid_paid_at", "paid_at debe tener formato YYYY-MM-DD", "")
+			return toolkit.ToolError("invalid_paid_at", "paid_at debe tener formato YYYY-MM-DD", "")
 		}
 		today, err := time.ParseInLocation("2006-01-02", t.today(), t.cfg.Location)
 		if err != nil {
-			return toolError("invalid_paid_at", "no se pudo resolver la fecha de hoy", "")
+			return toolkit.ToolError("invalid_paid_at", "no se pudo resolver la fecha de hoy", "")
 		}
 		if paidAt.After(today) {
-			return toolError("invalid_paid_at", "paid_at no puede ser una fecha futura", "")
+			return toolkit.ToolError("invalid_paid_at", "paid_at no puede ser una fecha futura", "")
 		}
 		req.PaidAt = raw
 	}
@@ -109,7 +110,7 @@ func (t *Toolset) pay(ctx context.Context, _ *mcp.CallToolRequest, input PayInpu
 
 	result, err := t.client.PayBills(ctx, input.ServiceID, req)
 	if err != nil {
-		return apiError(err)
+		return toolkit.APIError(err)
 	}
-	return jsonResult(result)
+	return toolkit.JSONResult(result)
 }

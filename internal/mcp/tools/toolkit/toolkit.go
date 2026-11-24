@@ -1,4 +1,5 @@
-package bills
+// Package toolkit agrupa helpers compartidos por las tools MCP.
+package toolkit
 
 import (
 	"encoding/json"
@@ -8,10 +9,11 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/api"
 )
 
-func jsonResult(value any) (*mcp.CallToolResult, any, error) {
+// JSONResult serializa un valor como contenido de texto y estructurado.
+func JSONResult(value any) (*mcp.CallToolResult, any, error) {
 	encoded, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
-		return toolError("internal_error", "no se pudo serializar el resultado", "")
+		return ToolError("internal_error", "no se pudo serializar el resultado", "")
 	}
 	return &mcp.CallToolResult{
 		Content:           []mcp.Content{&mcp.TextContent{Text: string(encoded)}},
@@ -19,7 +21,8 @@ func jsonResult(value any) (*mcp.CallToolResult, any, error) {
 	}, value, nil
 }
 
-func toolError(code, message, hint string) (*mcp.CallToolResult, any, error) {
+// ToolError construye un resultado de error con código estable y hint opcional.
+func ToolError(code, message, hint string) (*mcp.CallToolResult, any, error) {
 	payload := map[string]any{
 		"error":   code,
 		"message": message,
@@ -35,13 +38,14 @@ func toolError(code, message, hint string) (*mcp.CallToolResult, any, error) {
 	}, payload, nil
 }
 
-func apiError(err error) (*mcp.CallToolResult, any, error) {
+// APIError traduce un error del cliente HTTP a un ToolError accionable.
+func APIError(err error) (*mcp.CallToolResult, any, error) {
 	var apiErr *api.APIError
 	if errors.As(err, &apiErr) {
 		hint := ""
 		switch apiErr.Code {
 		case "auth_failed":
-			hint = "Revisá P40LA_EMAIL/P40LA_PASSWORD o P40LA_SESSION_COOKIE."
+			hint = "Revisá la API key del MCP (Configuración → MCP en p40la-ihost)."
 		case "service_not_found":
 			hint = "Verificá el service_id en la UI o con bills_list."
 		case "service_inactive":
@@ -51,8 +55,8 @@ func apiError(err error) (*mcp.CallToolResult, any, error) {
 		case "writes_disabled":
 			hint = "Definí P40LA_MCP_ALLOW_WRITES=true para ejecutar cambios."
 		}
-		return toolError(apiErr.Code, apiErr.Message, hint)
+		return ToolError(apiErr.Code, apiErr.Message, hint)
 	}
-	return toolError("upstream_error", "No se pudo contactar la API: "+err.Error(),
+	return ToolError("upstream_error", "No se pudo contactar la API: "+err.Error(),
 		"Verificá P40LA_BASE_URL y que GET /health responda.")
 }

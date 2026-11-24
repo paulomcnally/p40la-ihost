@@ -1,12 +1,19 @@
 package autos
 
 import (
-	"encoding/json"
 	"errors"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/api"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/toolkit"
+)
+
+// jsonResult y toolError delegan en el toolkit compartido para que todas las
+// tools devuelvan el mismo formato.
+var (
+	jsonResult = toolkit.JSONResult
+	toolError  = toolkit.ToolError
 )
 
 // AutoOutput es un auto resumido para las respuestas del MCP.
@@ -56,33 +63,6 @@ func autoOutput(auto *api.Auto) *AutoOutput {
 	}
 }
 
-func jsonResult(value any) (*mcp.CallToolResult, any, error) {
-	encoded, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
-		return toolError("internal_error", "no se pudo serializar el resultado", "")
-	}
-	return &mcp.CallToolResult{
-		Content:           []mcp.Content{&mcp.TextContent{Text: string(encoded)}},
-		StructuredContent: value,
-	}, value, nil
-}
-
-func toolError(code, message, hint string) (*mcp.CallToolResult, any, error) {
-	payload := map[string]any{
-		"error":   code,
-		"message": message,
-	}
-	if hint != "" {
-		payload["hint"] = hint
-	}
-	encoded, _ := json.Marshal(payload)
-	return &mcp.CallToolResult{
-		IsError:           true,
-		Content:           []mcp.Content{&mcp.TextContent{Text: string(encoded)}},
-		StructuredContent: payload,
-	}, payload, nil
-}
-
 func apiError(err error) (*mcp.CallToolResult, any, error) {
 	var apiErr *api.APIError
 	if errors.As(err, &apiErr) {
@@ -95,8 +75,7 @@ func apiError(err error) (*mcp.CallToolResult, any, error) {
 		}
 		return toolError(code, message, hint)
 	}
-	return toolError("upstream_error", "No se pudo contactar la API: "+err.Error(),
-		"Verificá P40LA_BASE_URL y que GET /health responda.")
+	return toolkit.APIError(err)
 }
 
 func hintForCode(code string) string {

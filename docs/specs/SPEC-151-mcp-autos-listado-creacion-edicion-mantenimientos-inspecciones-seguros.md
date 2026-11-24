@@ -187,7 +187,7 @@ internal/mcp/api (tipos y métodos)            internal/services
 #### 5.2.1 `internal/mcp/tools/autos`
 - **Responsabilidad**: definir las seis tools, sus schemas, validación de forma, `dry_run` y respuestas.
 - **Interfaz**: `Register(server, client, cfg)` y un `Toolset` con `now func() time.Time` para tests.
-- **Dependencias**: `internal/mcp/api`, `internal/mcp/config`, SDK MCP.
+- **Dependencias**: `internal/mcp/api`, `internal/mcp/config`, `internal/mcp/tools/toolkit`, SDK MCP.
 - **Ubicación**: `internal/mcp/tools/autos/`.
 
 #### 5.2.2 `internal/mcp/api` (extensión)

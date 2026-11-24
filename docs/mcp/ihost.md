@@ -75,7 +75,7 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 
 1. **App `0.5.17` o superior** desplegada en el iHost. Esa versión incluye los endpoints de API key de SPEC-145; sin ella no se puede provisionar la key.
 2. **Imágenes publicadas en Docker Hub y multi-arch** (`linux/amd64`, `linux/arm/v7`, `linux/arm64`):
-   - `paulomcnally/p40la-mcp:0.1.0` — servidor MCP.
+   - `paulomcnally/p40la-mcp:0.3.0` — servidor MCP.
    - `paulomcnally/p40la-mcp-tailscale:0.1.0` — nodo Tailscale dedicado con `serve.json` incluido.
    El iHost es `armv7l`; verificá que el manifiesto `arm/v7` exista antes de crear los contenedores.
 3. **Auth key de Tailscale** para el nodo nuevo. Recomendado: one-off, con tag `tag:p40la-mcp`. Si la key no trae tag, anunciá el tag con `TS_EXTRA_ARGS` (ver [contenedores](#52-tailscale-mcp)).
@@ -116,10 +116,24 @@ printf 'P40LA_MCP_OAUTH_PASSWORD_HASH=%s\n' "$HASH"
 También sirve un contenedor descartable:
 
 ```bash
-docker run --rm -it paulomcnally/p40la-mcp:0.1.0 -hash-password
+docker run --rm -it paulomcnally/p40la-mcp:0.3.0 -hash-password
 ```
 
 Guardá **solo el hash** en `/etc/p40la-mcp.env`. La contraseña en claro no se guarda en el iHost y debe ser única, larga y distinta de la del dashboard.
+
+### 2.1 Dónde vive la contraseña (convención del proyecto)
+
+La contraseña en claro **no se guarda en el iHost ni en el repositorio**. El operador la conserva en su equipo, fuera del repo:
+
+| Archivo local | Contenido | Permisos |
+|---|---|---|
+| `~/.config/p40la/mcp-oauth-password` | contraseña OAuth en claro | `0600` |
+| `~/.config/p40la/mcp-oauth-hash` | hash bcrypt que se inyecta como `P40LA_MCP_OAUTH_PASSWORD_HASH` | `0600` |
+| `~/.config/p40la/mcp-api-key` | API key global del MCP | `0600` |
+
+- Si el operador o un agente necesitan la contraseña para autorizar un conector, se lee de ese archivo; nunca se pega en specs, issues, commits ni capturas.
+- Si el archivo se pierde, la contraseña **no se puede recuperar** desde el hash: generá uno nuevo con `-hash-password`, actualizá `P40LA_MCP_OAUTH_PASSWORD_HASH` en el contenedor y reiniciá. Los conectores deberán autorizar de nuevo.
+- Estos archivos son locales del operador: no se copian al iHost ni al repo (`SEC-NO-PII`).
 
 ## 3. Archivo de entorno
 
@@ -204,18 +218,44 @@ Orden recomendado:
 | Campo | Valor |
 |---|---|
 | Nombre | `p40la-mcp` |
-| Imagen | `paulomcnally/p40la-mcp:0.1.0` |
+| Imagen | `paulomcnally/p40la-mcp:0.3.0` |
 | Red | `host` |
 | Restart | `unless-stopped` |
-| Volumen | `p40la-mcp-data` → `/data` (o bind mount con dueño `65532`) |
+| Volumen | `p40la-mcp-data` → `/data` (la imagen ya trae `/data` con dueño `nonroot`) |
 | Variables | las de `/etc/p40la-mcp.env` |
 | Puertos | ninguno publicado; los listeners quedan en `127.0.0.1:8090` y `127.0.0.1:8091` |
 
 Notas:
 
 - Con red host no se configuran `ports:`; el MCP escucha solo en loopback.
-- La imagen es distroless: no tiene shell ni `curl`. El health se consulta desde el host o desde el contenedor de Tailscale.
+- La imagen es distroless: no tiene shell ni `curl`. El health se consulta desde el host o desde un contenedor auxiliar con red host.
+- Desde `0.1.1` la imagen crea `/data` con dueño `nonroot:nonroot`. Docker copia ese dueño al volumen nombrado la primera vez que lo monta. Si el volumen se creó antes de `0.1.1` con dueño `root`, el MCP falla con `mkdir /data: permission denied`: recreá el volumen (perdés los clientes OAuth registrados) o usá uno nuevo.
 - Si el contenedor reinicia en loop, mirá los logs en la UI: suelen ser una variable faltante, un hash inválido o `P40LA_MCP_PUBLIC_URL` con path.
+
+#### 5.1.1 Alta por API del iHost (payload real, firmware 2.4.1)
+
+La UI de Docker y el API del iHost **no** aceptan el payload del `docker-compose.yml`. Estos son los campos medidos contra el iHost:
+
+```json
+{
+  "addon_id": 41,
+  "network": "host",
+  "dev_snd": false,
+  "volume_list": [{ "volume_name": "p40la-mcp-data", "mountpoint": "/data" }],
+  "environments": ["P40LA_API_KEY=demo-api-key", "P40LA_MCP_TRANSPORT=http"],
+  "cmd": [],
+  "port_list": [],
+  "usb_devices": []
+}
+```
+
+- `port_list` y `usb_devices` son **obligatorios** aunque estén vacíos; sin ellos el API responde `{"error":500}`.
+- `volume_list` usa `mountpoint` en el request. `addon_mountpoint` es rechazado (`is not allowed`), aunque la respuesta del API sí lo devuelve.
+- `environments` es una lista de strings `CLAVE=valor`.
+- `memory`, `cpu_shares` y `container_path` **provocan error 500** en este firmware. Se omiten; el iHost aplica sus límites globales.
+- El contenedor solo se puede crear cuando el add-on terminó de instalar (`state: 2`) y unos segundos después. Si se crea durante el install, devuelve 500.
+- `DELETE /api/v1/rest/docker/containers/{id}` responde 405. Para recrear el contenedor hay que desinstalar el add-on (`DELETE /api/v1/rest/docker/addons/{id}`), que también borra el contenedor.
+- La UI tiene un bug: el formulario *Run* envía la clave `mountpoint` pero no permite editar el listado de variables de entorno; para las 13 variables hay que usar el API.
 
 ### 5.2 `tailscale-mcp`
 
@@ -396,6 +436,9 @@ El modo userspace **no debería** bindear el 443 del host, pero si al arrancar `
 | Funnel activo pero Claude no llega | Sin A IPv4, DNS sin propagar o MCP caído | Esperar hasta 10 min; verificar con `1.1.1.1`; probar `/healthz` |
 | `502` desde Internet | Funnel proxya a un puerto cerrado | Revisar `P40LA_MCP_LISTEN` y el estado de `p40la-mcp` |
 | `401` en `/mcp` | Access token vencido o revocado | Reautorizar el conector; revisar `/admin/revoke` |
+| `403 Forbidden: invalid Host header` | Imagen anterior a `0.1.2`: la protección anti-DNS-rebinding del SDK rechaza el `Host` de Funnel | Actualizar a `0.1.2` o posterior; la allowlist acepta el host público y loopback (ADR-006) |
+| `response_type debe ser code` al autorizar en el navegador | Imagen anterior a `0.1.3`: el formulario `/authorize` no enviaba `response_type` ni `code_challenge_method` | Actualizar a `0.1.3` o posterior |
+| El botón «Autorizar» no hace nada | Imagen anterior a `0.1.4`: CSP `form-action 'self'` bloquea el redirect a claude.ai | Actualizar a `0.1.4` o posterior |
 | `writes_disabled` | Falta una de las dos compuertas | `P40LA_MCP_ALLOW_WRITES=true` **y** `P40LA_MCP_REMOTE_WRITES=true` |
 | El login OAuth falla | Hash mal copiado, contraseña equivocada o reloj desfasado | Regenerar el hash y reiniciar; revisar la hora del iHost |
 | RAM alta | MCP + Tailscale + app en un nodo pequeño | Medir RSS; limitar contenedores; si no hay margen, volver a la laptop |

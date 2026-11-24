@@ -65,7 +65,7 @@ La administración de la key es **solo por sesión**: una key no puede crear ni 
 
 ## Compuerta de escritura
 
-`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que las tools de escritura (`bills_generate`, `bills_pay` y las `autos_*` que escriben) ejecuten cambios con `dry_run=false`. En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
+`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que cualquier tool de escritura (`bills_generate`, `bills_pay`, las `autos_*` que escriben y las `*_create` de entidades) ejecute cambios. Las tools de facturas y autos requieren además `dry_run=false`; las de alta de entidades escriben directo. En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
 
 | Modo | `dry_run=false` + compuertas apagadas | `dry_run=false` + compuertas encendidas |
 |---|---|---|

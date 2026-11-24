@@ -9,6 +9,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/api"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/config"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/toolkit"
 )
 
 type fakeAPI struct {
@@ -284,7 +285,7 @@ func TestAPIErrorMapping(t *testing.T) {
 }
 
 func TestResultJSONContent(t *testing.T) {
-	result, _, err := jsonResult(map[string]string{"status": "ok"})
+	result, _, err := toolkit.JSONResult(map[string]string{"status": "ok"})
 	if err != nil {
 		t.Fatalf("jsonResult: %v", err)
 	}
@@ -331,4 +332,26 @@ func TestHTTPRemoteWritesRequireBothGates(t *testing.T) {
 	if fake.calls != 0 {
 		t.Fatalf("llamadas = %d, quiero 0", fake.calls)
 	}
+}
+
+// Stubs de las tools de entidades (SPEC-146); bills no las usa.
+func (f *fakeAPI) ListHomes(context.Context) ([]api.Home, error) { return nil, nil }
+func (f *fakeAPI) CreateHome(context.Context, api.HomeCreateRequest) (*api.Home, error) {
+	return nil, nil
+}
+func (f *fakeAPI) ListInstitutions(context.Context) ([]api.Institution, error) { return nil, nil }
+func (f *fakeAPI) CreateInstitution(context.Context, api.InstitutionCreateRequest) (*api.Institution, error) {
+	return nil, nil
+}
+func (f *fakeAPI) ListBanks(context.Context) ([]api.Bank, error) { return nil, nil }
+func (f *fakeAPI) CreateBank(context.Context, api.BankCreateRequest) (*api.Bank, error) {
+	return nil, nil
+}
+func (f *fakeAPI) ListCurrencies(context.Context) ([]api.Currency, error) { return nil, nil }
+func (f *fakeAPI) ListInstitutionCategories(context.Context) ([]api.InstitutionCategory, error) {
+	return nil, nil
+}
+func (f *fakeAPI) ListServices(context.Context, *int64) ([]api.Service, error) { return nil, nil }
+func (f *fakeAPI) CreateService(context.Context, api.ServiceCreateRequest) (*api.Service, error) {
+	return nil, nil
 }
