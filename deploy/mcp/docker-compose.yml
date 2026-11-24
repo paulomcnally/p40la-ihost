@@ -16,7 +16,9 @@ services:
     image: paulomcnally/p40la-mcp-tailscale:0.1.0
     container_name: tailscale-mcp
     # Primario: red host. Si el 443 choca con el Tailscale del dashboard,
-    # usar una red bridge propia y proxear a host.docker.internal:8090.
+    # detener este contenedor y seguir el fallback documentado en
+    # docs/mcp/ihost.md: el MCP solo escucha loopback y un bridge simple
+    # no lo alcanza sin un proxy en el host.
     network_mode: host
     restart: unless-stopped
     environment:

@@ -39,7 +39,7 @@ unset P40LA_MCP_PASSWORD
 mkdir -p /tmp/p40la-mcp-state && chmod 700 /tmp/p40la-mcp-state
 
 P40LA_BASE_URL="http://127.0.0.1:8088" \
-P40LA_API_KEY="p40la_demo-demo-demo-demo-demo-demo" \
+P40LA_API_KEY="demo-api-key" \
 P40LA_MCP_TRANSPORT=http \
 P40LA_MCP_PUBLIC_URL="http://127.0.0.1:8090" \
 P40LA_MCP_OAUTH_PASSWORD_HASH="$HASH" \
@@ -47,7 +47,7 @@ P40LA_MCP_STATE_DIR="/tmp/p40la-mcp-state" \
 ./bin/p40la-mcp
 ```
 
-En producción `P40LA_MCP_PUBLIC_URL` debe ser `https://<nodo>.<tailnet>.ts.net` (sin `/mcp`, sin query ni fragment). El binario rechaza HTTP público y cualquier host que no sea loopback para `http://`.
+En producción `P40LA_MCP_PUBLIC_URL` debe ser `https://demo-node.example.ts.net` (sin `/mcp`, sin query ni fragment). El binario rechaza HTTP público y cualquier host que no sea loopback para `http://`.
 
 Los logs van a **stderr**; stdout queda reservado para el protocolo en modo stdio.
 
@@ -58,7 +58,7 @@ Los logs van a **stderr**; stdout queda reservado para el protocolo en modo stdi
 | `P40LA_MCP_TRANSPORT` | `stdio` | `stdio` o `http` |
 | `P40LA_MCP_LISTEN` | `127.0.0.1:8090` | Listener público; debe ser loopback y distinto del admin |
 | `P40LA_MCP_ADMIN_LISTEN` | `127.0.0.1:8091` | Health y revocación; solo loopback, nunca en Funnel |
-| `P40LA_MCP_PUBLIC_URL` | — | Origen público exacto, obligatorio en HTTP (`https://<nodo>.<tailnet>.ts.net`) |
+| `P40LA_MCP_PUBLIC_URL` | — | Origen público exacto, obligatorio en HTTP (`https://demo-node.example.ts.net`) |
 | `P40LA_MCP_OAUTH_PASSWORD_HASH` | — | Hash bcrypt de la contraseña de administración (obligatorio) |
 | `P40LA_MCP_OAUTH_SUBJECT` | `owner` | Identificador opaco del usuario en la auditoría |
 | `P40LA_MCP_STATE_DIR` | `/data` | Directorio de `oauth.json` y `audit.jsonl` |
@@ -159,14 +159,14 @@ docker run -d --name p40la-mcp \
   --network host \
   -v /opt/p40la-mcp/data:/data \
   --env-file /etc/p40la-mcp.env \
-  ghcr.io/example/p40la-mcp:0.1.0
+  paulomcnally/p40la-mcp:0.1.0
 ```
 
 - `--network host` permite que Tailscale (en el host) alcance `127.0.0.1:8090` y deja el listener administrativo solo en loopback.
 - El directorio `/data` debe pertenecer al UID 65532 y tener permisos `0700`.
 - La imagen no incluye shell ni utilidades: el health check se ejecuta desde el host con `curl`.
 
-El build, el deploy en iHost y la rotación de la auditoría se detallan en [operations.md](operations.md).
+El build y la rotación de la auditoría se detallan en [operations.md](operations.md); el despliegue 24/7 en el iHost, en [ihost.md](ihost.md).
 
 ## Límites
 

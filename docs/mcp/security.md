@@ -99,7 +99,7 @@ Esto incluye datos financieros. El usuario debe aceptarlo antes de habilitar el 
 
 Este repositorio es público. Nunca commitees:
 
-- el FQDN real de la tailnet (`<nodo>.<tailnet>.ts.net`) ni nombres de nodos;
+- el FQDN real de la tailnet ni nombres de nodos;
 - direcciones del rango CGNAT de Tailscale (`100.64/10`), rangos privados (`192.168/16`, `10/8`) o MACs;
 - API keys, bearer tokens, refresh tokens, `client_id` reales, hashes bcrypt o contraseñas;
 - `oauth.json`, `audit.jsonl`, `.env`, capturas de la pantalla de autorización o de claude.ai con datos reales;

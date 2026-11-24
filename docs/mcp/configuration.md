@@ -25,7 +25,7 @@ description: "Variables de entorno y configuración de clientes MCP"
 |---|---|---|---|
 | `P40LA_MCP_LISTEN` | No | `127.0.0.1:8090` | Listener público; debe ser loopback y distinto del admin |
 | `P40LA_MCP_ADMIN_LISTEN` | No | `127.0.0.1:8091` | Listener administrativo (`/healthz`, revocación); loopback |
-| `P40LA_MCP_PUBLIC_URL` | Sí | — | Origen público exacto, `https://<nodo>.<tailnet>.ts.net`, sin `/mcp` |
+| `P40LA_MCP_PUBLIC_URL` | Sí | — | Origen público exacto, `https://demo-node.example.ts.net`, sin `/mcp` |
 | `P40LA_MCP_OAUTH_PASSWORD_HASH` | Sí | — | Hash bcrypt generado con `p40la-mcp -hash-password` |
 | `P40LA_MCP_OAUTH_SUBJECT` | No | `owner` | Identificador opaco del usuario en la auditoría |
 | `P40LA_MCP_STATE_DIR` | No | `/data` | Directorio de `oauth.json` y `audit.jsonl` |
@@ -66,7 +66,8 @@ Archivo sintético; reemplazá los valores por los de tu instalación y dejalo c
 ```dotenv
 # API de p40la-ihost
 P40LA_BASE_URL=http://ihost.local:8088
-P40LA_API_KEY=p40la_demo-demo-demo-demo-demo-demo
+# Placeholder: la key real empieza con p40la_
+P40LA_API_KEY=demo-api-key
 P40LA_TIMEOUT=15s
 P40LA_TIMEZONE=America/Managua
 
@@ -111,6 +112,25 @@ Para conectores remotos, el binario se arranca con `P40LA_MCP_TRANSPORT=http` y 
 
 El flujo completo, el formato del hash y los límites están en [http.md](http.md) y [oauth.md](oauth.md). La publicación en 443 se detalla en [funnel.md](funnel.md).
 
+### Despliegue en el iHost
+
+Cuando el MCP corre 24/7 en el iHost, se usa un **nodo Tailscale dedicado** para no tocar el nodo que publica el dashboard. Los valores cambian respecto de una laptop:
+
+| Variable | Valor en el iHost | Por qué |
+|---|---|---|
+| `P40LA_BASE_URL` | `http://127.0.0.1:8088` | El MCP comparte la red host con la app; no depende de MagicDNS ni del FQDN del dashboard |
+| `P40LA_MCP_PUBLIC_URL` | `https://p40la-mcp.example.ts.net` | Hostname del nodo dedicado, sin `/mcp`; debe coincidir con el FQDN de Funnel |
+| `P40LA_MCP_STATE_DIR` | `/data` | Volumen `p40la-mcp-data`, escribible por UID 65532 |
+| `P40LA_MCP_ALLOW_WRITES` | `true` solo con aprobación | Primera compuerta de escritura |
+| `P40LA_MCP_REMOTE_WRITES` | `true` solo con aprobación | Segunda compuerta para el transporte HTTP |
+
+Imágenes usadas en el iHost:
+
+- `paulomcnally/p40la-mcp:0.1.0` — servidor MCP, red host, estado en `/data`.
+- `paulomcnally/p40la-mcp-tailscale:0.1.0` — nodo Tailscale dedicado, basado en `tailscale/tailscale`, con `serve.json` incluido y estado en `/var/lib/tailscale`.
+
+No uses `ihost.example.ts.net` como `P40LA_MCP_PUBLIC_URL`: ese es el nodo del dashboard y **no se modifica**. El runbook completo está en [ihost.md](ihost.md).
+
 ## OpenCode
 
 Ejemplo sintético (`docs/mcp/examples/opencode.json`):
@@ -146,7 +166,7 @@ Ejemplo sintético (`docs/mcp/examples/claude-desktop.json`):
       "command": "/home/demo/bin/p40la-mcp",
       "env": {
         "P40LA_BASE_URL": "http://ihost.local:8088",
-        "P40LA_API_KEY": "p40la_demo-demo-demo-demo-demo-demo-demo",
+        "P40LA_API_KEY": "demo-api-key",
         "P40LA_MCP_ALLOW_WRITES": "false"
       }
     }

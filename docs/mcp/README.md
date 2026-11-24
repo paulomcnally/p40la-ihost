@@ -70,7 +70,7 @@ Configuración típica en OpenCode (ver [configuration.md](configuration.md)):
 
 ## Inicio rápido (remoto)
 
-Para claude.ai o Claude móvil no se configura un comando local: se publica `https://<nodo>.<tailnet>.ts.net/mcp` y se agrega como conector. El resumen es:
+Para claude.ai o Claude móvil no se configura un comando local: se publica `https://demo-node.example.ts.net/mcp` y se agrega como conector. El resumen es:
 
 ```bash
 # 1. Hash de la contraseña de administración
@@ -80,7 +80,7 @@ unset P40LA_MCP_PASSWORD
 
 # 2. Arrancar en modo HTTP (solo loopback)
 P40LA_BASE_URL="http://ihost.local:8088" \
-P40LA_API_KEY="p40la_demo-demo-demo-demo-demo-demo" \
+P40LA_API_KEY="demo-api-key" \
 P40LA_MCP_TRANSPORT=http \
 P40LA_MCP_PUBLIC_URL="https://demo-node.example.ts.net" \
 P40LA_MCP_OAUTH_PASSWORD_HASH="$HASH" \
@@ -91,9 +91,15 @@ P40LA_MCP_REMOTE_WRITES=false \
 tailscale funnel --bg 8090
 ```
 
-El paso 3 es una decisión explícita del usuario y deja el endpoint en Internet. Seguí el runbook de [funnel.md](funnel.md) y el checklist de [security.md](security.md). Claude Desktop local sigue usando **stdio**: el modo HTTP es para conectores remotos.
+El paso 3 es una decisión explícita del usuario y deja el endpoint en Internet. Seguí el runbook de [funnel.md](funnel.md) y el checklist de [security.md](security.md). En el iHost, el paso 3 se hace en el nodo dedicado, **nunca** en el nodo del dashboard: ver [ihost.md](ihost.md). Claude Desktop local sigue usando **stdio**: el modo HTTP es para conectores remotos.
 
 Si corrés el binario fuera del contenedor, definí `P40LA_MCP_STATE_DIR` en un directorio escribible por tu usuario (por ejemplo `/tmp/p40la-mcp-state`); el default `/data` es para la imagen Docker.
+
+## Despliegue 24/7 en el iHost
+
+Para dejarlo corriendo sin depender de una laptop, el MCP se despliega en el iHost con un **nodo Tailscale dedicado**. El nodo que ya sirve el dashboard (`ihost.example.ts.net`) conserva su Serve en 443 y **no se modifica**; el MCP usa otro hostname (`p40la-mcp.example.ts.net`) con su propio Funnel y su propio estado.
+
+El runbook completo —prerrequisitos, API key, hash OAuth, volúmenes, alta por UI, verificación, conector de claude.ai y rollback— está en [ihost.md](ihost.md). Los assets de referencia viven en [`deploy/mcp/`](https://github.com/paulomcnally/p40la-ihost/tree/main/deploy/mcp).
 
 ## Flujo seguro de escritura
 
@@ -115,6 +121,7 @@ Las operaciones son idempotentes por período: repetir una generación no duplic
 - [Servidor HTTP remoto](http.md)
 - [OAuth 2.1](oauth.md)
 - [Tailscale Funnel](funnel.md)
+- [Despliegue 24/7 en el iHost](ihost.md)
 - [Catálogo de tools](tools/README.md)
 - [Tools de facturas](tools/bills.md)
 

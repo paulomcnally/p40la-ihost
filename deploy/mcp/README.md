@@ -21,8 +21,9 @@ p40la-mcp.<tailnet>.ts.net ── Funnel 443 ──► 127.0.0.1:8090  (MCP, pú
 
 - Nodo actual: no se modifica, no se reinicia, no se le cambia el `serve.json`.
 - Nodo nuevo: contenedor `tailscale-mcp`, estado propio, hostname propio, Funnel propio.
-- Si el segundo Tailscale choca con el 443 del host, se aísla en una red bridge
-  y se proxea a `http://host.docker.internal:8090` (ver Troubleshooting).
+- Si el segundo Tailscale choca con el 443 del host, se detiene y se evalúa un
+  proxy en el host; el bridge simple no alcanza porque el MCP solo escucha
+  loopback. Ver `docs/mcp/ihost.md` → “Fallback si el 443 choca”.
 
 ## Prerrequisitos
 
@@ -183,7 +184,7 @@ curl -sSI https://p40la-mcp.<tailnet>.ts.net/mcp | grep -i '^www-authenticate'
 | Síntoma | Causa probable | Acción |
 |---|---|---|
 | `tailscale-mcp` no arranca | Auth key inválida/expirada o falta atributo funnel | Generar otra key, revisar Access Controls |
-| El dashboard deja de responder | El segundo Tailscale tomó el 443 del host | Detener `tailscale-mcp`; pasar a red bridge + `host.docker.internal` |
+| El dashboard deja de responder | El segundo Tailscale tomó el 443 del host | Detener `tailscale-mcp`; ver `docs/mcp/ihost.md` → fallback con proxy |
 | Funnel activo pero Claude no llega | Sin A IPv4 público o DNS sin propagar | Esperar hasta 10 min; verificar con 1.1.1.1 |
 | `401` en `/mcp` | Token vencido o no autorizado | Reautorizar el conector; revisar `/admin/revoke` |
 | `writes_disabled` | Falta uno de los dos flags | `ALLOW_WRITES=true` y `REMOTE_WRITES=true` |

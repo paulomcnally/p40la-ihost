@@ -118,7 +118,7 @@ unset P40LA_PASSWORD
 # 2. Arrancar con estado temporal
 mkdir -p /tmp/p40la-mcp-state && chmod 700 /tmp/p40la-mcp-state
 P40LA_BASE_URL="http://127.0.0.1:8088" \
-P40LA_API_KEY="p40la_demo-demo-demo-demo-demo-demo" \
+P40LA_API_KEY="demo-api-key" \
 P40LA_MCP_TRANSPORT=http \
 P40LA_MCP_PUBLIC_URL="http://127.0.0.1:8090" \
 P40LA_MCP_OAUTH_PASSWORD_HASH="$HASH" \
