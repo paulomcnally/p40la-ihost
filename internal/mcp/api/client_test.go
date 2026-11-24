@@ -37,7 +37,9 @@ func TestClientLoginAndCalls(t *testing.T) {
 			Password string `json:"password"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			t.Fatalf("decodificar login: %v", err)
+			t.Errorf("decodificar login: %v", err)
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
 		}
 		if payload.Email != "demo@example.com" || payload.Password != "demo-password" {
 			t.Errorf("credenciales inesperadas")
