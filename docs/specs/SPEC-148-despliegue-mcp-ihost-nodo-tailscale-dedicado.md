@@ -58,7 +58,7 @@ El resultado esperado: `https://p40la-mcp.<tailnet>.ts.net/mcp` disponible desde
 
 ### 3.1 Requerimientos Funcionales (P0 - Obligatorios)
 
-1. **REQ-001 — Imagen en Docker Hub**: publicar `paulomcnally/p40la-mcp:0.1.2` (y `latest`) con manifests `linux/amd64`, `linux/arm/v7` y `linux/arm64`. El iHost usa `armv7l`.
+1. **REQ-001 — Imagen en Docker Hub**: publicar `paulomcnally/p40la-mcp:0.1.3` (y `latest`) con manifests `linux/amd64`, `linux/arm/v7` y `linux/arm64`. El iHost usa `armv7l`.
 2. **REQ-002 — MCP en el iHost**: contenedor `p40la-mcp` con `network_mode: host`, bind `127.0.0.1:8090`/`8091`, volumen persistente `/data`, `restart: unless-stopped`. La imagen DEBE crear `/data` con dueño `nonroot:nonroot` para que el volumen nombrado sea escribible (ADR-005).
 3. **REQ-003 — Tailscale dedicado**: contenedor `tailscale-mcp` con `TS_USERSPACE=true`, `TS_HOSTNAME=p40la-mcp`, estado y config propios, sin compartir volúmenes con el Tailscale actual.
 4. **REQ-004 — Funnel solo del MCP**: `p40la-mcp.<tailnet>.ts.net:443` → `http://127.0.0.1:8090`, con `AllowFunnel: true`. Sin rutas al dashboard ni al listener admin.
@@ -138,7 +138,7 @@ El resultado esperado: `https://p40la-mcp.<tailnet>.ts.net/mcp` disponible desde
 
 **ADR-004 — Imagen propia `0.1.1`**
 - **Contexto**: el MCP tiene ciclo de vida distinto del add-on web.
-- **Decisión**: publicar `paulomcnally/p40la-mcp:0.1.2` y `latest` en Docker Hub; no incluir el binario en la imagen del add-on.
+- **Decisión**: publicar `paulomcnally/p40la-mcp:0.1.3` y `latest` en Docker Hub; no incluir el binario en la imagen del add-on.
 - **Consecuencias**: actualizaciones independientes; el iHost solo cambia el tag del contenedor MCP.
 
 **ADR-005 — `/data` propio en la imagen (nonroot escribible)**- **Contexto**: la imagen corre como `nonroot:nonroot` (distroless). El iHost crea los volúmenes nombrados como `root`, así que el MCP fallaba con `mkdir /data: permission denied` y entraba en crash loop. Un `chown` desde el host no es posible: no hay Docker CLI ni socket accesible por SSH.
@@ -179,7 +179,7 @@ dashboard
 ### 5.2 Contenedores
 
 #### 5.2.1 `p40la-mcp`
-- **Imagen**: `paulomcnally/p40la-mcp:0.1.2` (arm/v7).
+- **Imagen**: `paulomcnally/p40la-mcp:0.1.3` (arm/v7).
 - **Red**: `host`.
 - **Volumen**: `p40la-mcp-data:/data`.
 - **Env file**: `/etc/p40la-mcp.env` (`0600`).
@@ -273,7 +273,7 @@ del iHost no acepta los mismos campos.
 
 ### 6.1 Funcionales
 
-- [x] **CA-IHOST-MCP-001**: `docker buildx imagetools inspect paulomcnally/p40la-mcp:0.1.2` muestra `amd64`, `arm/v7` y `arm64`.
+- [x] **CA-IHOST-MCP-001**: `docker buildx imagetools inspect paulomcnally/p40la-mcp:0.1.3` muestra `amd64`, `arm/v7` y `arm64`.
 - [ ] **CA-IHOST-MCP-002**: el contenedor `p40la-mcp` corre en el iHost (`armv7l`) con `restart: unless-stopped`.
 - [x] **CA-IHOST-MCP-013**: con el volumen `p40la-mcp-data:/data`, el MCP arranca como `nonroot`, escribe `oauth.json` y auditoría, y `/healthz` responde `{"status":"ok"}`. Auditoría verificada con entradas `bills_list` y `bills_generate` sin argumentos.
 - [x] **CA-IHOST-MCP-014**: `/mcp` por Funnel con bearer token responde `initialize` correctamente (no `403 invalid Host header`) y un `Host` ajeno recibe `403 forbidden_host`.
@@ -365,3 +365,4 @@ del iHost no acepta los mismos campos.
 | 2026-11-24 | opencode | Despliegue en iHost: se documenta el payload real del API (5.6.1) y se publica `0.1.1` con `/data` propio para `nonroot` (ADR-005) |
 | 2026-11-24 | opencode | Se publica `0.1.2`: allowlist de `Host` para Funnel y se valida el flujo OAuth público completo (ADR-006) |
 | 2026-11-24 | opencode | Verificado en el iHost: Funnel 443, DNS A público, TLS válido, `initialize` 200, `tools/list` y tools de lectura/escritura dry-run auditadas; dashboard privado |
+| 2026-11-24 | opencode | Se publica `0.1.3`: el formulario `/authorize` envía `response_type=code` y `code_challenge_method=S256` (el navegador de claude.ai fallaba con «response_type debe ser code») |

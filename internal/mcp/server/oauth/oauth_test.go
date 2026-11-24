@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -295,4 +296,52 @@ func TestRefreshWithoutClientID(t *testing.T) {
 	if status != http.StatusOK {
 		t.Fatalf("refresh sin client_id status=%d body=%v", status, rotated)
 	}
+}
+
+// TestAuthorizeFormIncludesRequiredFields reproduce el envío del navegador:
+// toma solo los inputs del formulario, agrega la contraseña y espera el code.
+// Regresión: el formulario no enviaba response_type ni code_challenge_method.
+func TestAuthorizeFormIncludesRequiredFields(t *testing.T) {
+	tp := newTestProvider(t)
+	_, challenge := pkcePair(t)
+	query := url.Values{
+		"response_type":         {"code"},
+		"client_id":             {tp.clientID},
+		"redirect_uri":          {testRedirect},
+		"code_challenge":        {challenge},
+		"code_challenge_method": {"S256"},
+		"state":                 {"demo-state"},
+		"scope":                 {"mcp:read"},
+	}
+	resp, err := http.Get(tp.server.URL + "/authorize?" + query.Encode())
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("get status=%d body=%s", resp.StatusCode, raw)
+	}
+
+	form := url.Values{}
+	for _, m := range regexp.MustCompile(`<input type="hidden" name="([^"]+)" value="([^"]*)">`).FindAllStringSubmatch(string(raw), -1) {
+		form.Set(m[1], m[2])
+	}
+	form.Set("password", testPassword)
+
+	if got := form.Get("response_type"); got != "code" {
+		t.Fatalf("response_type=%q", got)
+	}
+	if got := form.Get("code_challenge_method"); got != "S256" {
+		t.Fatalf("code_challenge_method=%q", got)
+	}
+
+	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	posted, err := client.PostForm(tp.server.URL+"/authorize", form)
+	if err != nil {
+		t.Fatal(err)
+	}
+	codeFromRedirect(t, posted)
 }

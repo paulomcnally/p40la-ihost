@@ -112,6 +112,8 @@ var authorizeTemplate = template.Must(template.New("authorize").Parse(`<!doctype
   <p>Al continuar serás redirigido a <code>{{.RedirectHost}}</code>.</p>
   {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
   <form method="post" action="/authorize">
+    <input type="hidden" name="response_type" value="code">
+    <input type="hidden" name="code_challenge_method" value="S256">
     <input type="hidden" name="client_id" value="{{.ClientID}}">
     <input type="hidden" name="redirect_uri" value="{{.RedirectURI}}">
     <input type="hidden" name="code_challenge" value="{{.Challenge}}">
