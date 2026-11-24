@@ -39,6 +39,21 @@ type Router interface {
 	RegisterRoutes(mux *http.ServeMux, auth func(http.Handler) http.Handler)
 }
 
+// HomeState es el estado derivado de una vivienda (SPEC-143).
+type HomeState struct {
+	HomeID  int64  `json:"home_id"`
+	Name    string `json:"name"`
+	Address string `json:"address"`
+	Usage   string `json:"usage"`
+	State   string `json:"state"`
+}
+
+// HomeStateProvider expone los estados derivados de todas las viviendas.
+// Lo implementa realestate.rental y lo consume realestate.portfolio.
+type HomeStateProvider interface {
+	HomeStates(ctx context.Context) ([]HomeState, error)
+}
+
 // StatementImporter parsea un estado de cuenta sin persistirlo.
 type StatementImporter interface {
 	Module
