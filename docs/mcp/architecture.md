@@ -87,7 +87,7 @@ El MCP solo traduce la tool a una llamada HTTP y presenta el resumen.
 
 Las altas y pagos hechos por el MCP registran `bill_history.source = mcp`. La UI sigue registrando `dashboard` y los webhooks `webhook`.
 
-La migración `0058_bill_history_source_mcp` habilita el nuevo valor en el `CHECK` de `source`; es reversible y no crea tablas nuevas. La key global usa `system_settings`, sin migración adicional.
+La migración `0060_bill_history_source_mcp` habilita el nuevo valor en el `CHECK` de `source`; es reversible y no crea tablas nuevas. La key global usa `system_settings`, sin migración adicional.
 
 ## Límites
 
