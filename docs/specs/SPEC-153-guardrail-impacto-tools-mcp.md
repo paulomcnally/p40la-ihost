@@ -1,7 +1,7 @@
 ---
 title: "Guardrail de impacto en tools MCP al crear specs y features"
 id: "SPEC-153"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,10 +11,11 @@ github_issue: 156
 # Guardrail de impacto en tools MCP al crear specs y features
 
 **ID**: SPEC-153<br>
-**Estado**: in_progress<br>
+**Estado**: released<br>
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
-**Actualizado**: 2026-11-24
+**Actualizado**: 2026-11-24<br>
+**Release**: 2026-11-24 — merge a `main`; implementación `0ce56a37`; sincronización `22d081a7`; sin bump de imagen
 
 ---
 
@@ -396,3 +397,4 @@ Ninguna tool existente cambia su contrato. La tabla lista las tres tools de fact
 | 2026-11-24 | opencode | Transición a `pending_execution` y luego a `in_progress` |
 | 2026-11-24 | opencode | Implementación: manifiesto, analizador, contrato `tools/list`, contrato backend↔MCP, hook, plugin, reglas, template, skill y docs. `go build ./...`, `go test ./...`, `--check-map` y `--staged --gate` verdes |
 | 2026-11-24 | opencode | Documentación MCP (`docs/mcp/tools/impact.md`, catálogo, desarrollo y arquitectura) delegada al subagente `general` y revisada (`DELIV-MCP-DOCS-SUBAGENT`) |
+| 2026-11-24 | opencode | Release: merge de `feature/SPEC-153` a `main`; implementación `0ce56a37`; sincronización con `main` `22d081a7`; sin bump de imagen ni cambios de runtime; issue #156 cerrado |
