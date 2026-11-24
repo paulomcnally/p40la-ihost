@@ -6,9 +6,9 @@ description: "Runbook para publicar el MCP remoto en HTTPS 443 con Tailscale Fun
 
 # Tailscale Funnel
 
-Funnel publica un nodo de la tailnet en **HTTPS 443** con un certificado gestionado por Tailscale y proxya el tráfico a un servicio local. Es la pieza que permite que claude.ai alcance `https://<nodo>.<tailnet>.ts.net/mcp` sin abrir puertos en el router ni exponer la IP del iHost.
+Funnel publica un nodo de la tailnet en **HTTPS 443** con un certificado gestionado por Tailscale y proxya el tráfico a un servicio local. Es la pieza que permite que claude.ai alcance `https://demo-node.example.ts.net/mcp` sin abrir puertos en el router ni exponer la IP del iHost.
 
-> **Este repositorio es público.** Nunca pegues el nombre real de tu tailnet, el FQDN real `*.ts.net`, direcciones CGNAT (`100.64/10`) o privadas (`192.168/16`), tokens, hashes, API keys ni capturas con esos datos. En esta guía se usan `https://demo-node.example.ts.net` y `192.0.2.10` como placeholders sintéticos.
+> **Este repositorio es público.** Nunca pegues el nombre real de tu tailnet, el FQDN real que te asigna Tailscale, direcciones CGNAT (`100.64/10`) o privadas (`192.168/16`), tokens, hashes, API keys ni capturas con esos datos. En esta guía se usan `https://demo-node.example.ts.net` y `192.0.2.10` como placeholders sintéticos.
 
 ## Qué hace y qué no hace
 
@@ -23,7 +23,7 @@ Funnel **no** debe considerarse una capa de seguridad. La seguridad del endpoint
 ## Prerrequisitos
 
 1. **Tailscale instalado y el nodo dentro de la tailnet.** El iHost ya lo tiene; en una laptop, instalalo y autenticá el nodo.
-2. **HTTPS habilitado en la tailnet.** En la consola de administración, activá *HTTPS Certificates* y MagicDNS. Funnel necesita emitir un certificado para `<nodo>.<tailnet>.ts.net`.
+2. **HTTPS habilitado en la tailnet.** En la consola de administración, activá *HTTPS Certificates* y MagicDNS. Funnel necesita emitir un certificado para el FQDN del nodo, por ejemplo `demo-node.example.ts.net`.
 3. **Atributo `funnel` en la política de la tailnet.** En *Access controls*, agregá el nodo o su tag a `nodeAttrs`:
 
    ```json
@@ -39,16 +39,29 @@ Funnel **no** debe considerarse una capa de seguridad. La seguridad del endpoint
 
    Reemplazá `tag:p40la-mcp` por el tag o nodo real. Sin este atributo, `tailscale funnel` falla con un error de permisos.
 4. **El MCP en modo HTTP escuchando en loopback**, por ejemplo `127.0.0.1:8090`, con `P40LA_MCP_PUBLIC_URL` igual al FQDN que vas a publicar. Ver [http.md](http.md).
-5. **El puerto 443 libre en ese nodo.** Funnel solo puede escuchar en 443, 8443 o 10000; los conectores de Claude esperan 443.
+5. **El puerto 443 libre en ese nodo.** Funnel solo puede escuchar en 443, 8443 o 10000; los conectores de Claude esperan 443. En el iHost, el 443 del nodo del dashboard ya está ocupado por Serve: usá el nodo dedicado ([ihost.md](ihost.md)).
 
 ### Conflicto con el dashboard en 443
 
-El add-on de p40la-ihost suele publicar el dashboard con `tailscale serve` en 443 (`deploy/tailscale/serve.json`, `AllowFunnel: false`, proxy a `127.0.0.1:8088`).
+El add-on de p40la-ihost publica el dashboard con `tailscale serve` en 443 (`deploy/tailscale/serve.json`, `AllowFunnel: false`, proxy a `127.0.0.1:8088`).
 
-`tailscale funnel --bg 8090` intenta tomar el handler `/` de 443 hacia el MCP; según la versión de Tailscale, lo reemplaza o falla por conflicto con el handler existente. Si el mismo nodo ya sirve el dashboard en 443:
+Tailscale **no permite Serve y Funnel en el mismo puerto**. `tailscale funnel --bg 8090` intenta tomar el handler `/` de 443 hacia el MCP; según la versión, lo reemplaza o falla por conflicto con el handler existente. Si se activa Funnel en ese 443, **todo el puerto** se vuelve público, incluido el dashboard. Repartir handlers por path para `/mcp` y todos los endpoints OAuth (`/.well-known/*`, `/register`, `/authorize`, `/token`) también es posible, pero es frágil y obliga a mantener dos configuraciones sobre el mismo listener.
 
-- Preferí un **nodo dedicado** para el MCP (una laptop o un segundo hostname), o
-- configurá handlers por path para `/mcp` y todos los endpoints OAuth (`/.well-known/*`, `/register`, `/authorize`, `/token`), lo que es más frágil y requiere mantener ambas configuraciones.
+Para el iHost, la solución es un **nodo dedicado**:
+
+```
+ihost.example.ts.net      ── Serve 443 ──► 127.0.0.1:8088   (sin Funnel; no se toca)
+p40la-mcp.example.ts.net ── Funnel 443 ──► 127.0.0.1:8090  (MCP; público con OAuth)
+```
+
+- El nodo actual conserva su contenedor, `serve.json`, volumen y estado. **No se reinicia ni se le cambia la configuración.**
+- El nodo nuevo corre en el contenedor `tailscale-mcp` con `TS_USERSPACE=true` (el iHost no tiene `/dev/net/tun`), `TS_HOSTNAME=p40la-mcp`, estado propio en `/var/lib/tailscale` y un `serve.json` propio.
+- La imagen wrapper `paulomcnally/p40la-mcp-tailscale:0.1.0` incluye ese `serve.json` con `443` HTTPS → `http://127.0.0.1:8090` y `AllowFunnel: true`. No hay que editar archivos dentro del contenedor.
+- El FQDN público es el del nodo dedicado y debe coincidir con `P40LA_MCP_PUBLIC_URL`.
+
+El runbook completo (prerrequisitos, API key, volúmenes, alta por UI, verificación y rollback) está en [ihost.md](ihost.md). Si el MCP corre en una laptop, usá esa máquina como nodo dedicado con el mismo `serve.json`.
+
+**Nunca** apliques `tailscale funnel` en el nodo del dashboard. Si ya hay Funnel ahí, el dashboard está público: despublicá y revisá [security.md](security.md).
 
 No publiques el listener administrativo (`8091`) ni el servidor web (`8088`) por Funnel. El dashboard no necesita estar en Internet para que Claude use el MCP.
 
@@ -65,7 +78,7 @@ tailscale funnel status
 tailscale serve status
 ```
 
-`--bg` deja la configuración activa después de cerrar la sesión SSH. El comando imprime la URL pública; verificá que coincida exactamente con `P40LA_MCP_PUBLIC_URL`.
+`--bg` deja la configuración activa después de cerrar la sesión SSH. El comando imprime la URL pública; verificá que coincida exactamente con `P40LA_MCP_PUBLIC_URL`. En el iHost, ejecutalo dentro de `tailscale-mcp`, **nunca** en el nodo del dashboard ([ihost.md](ihost.md)).
 
 ### Opción B: configuración declarativa
 
@@ -94,6 +107,8 @@ Si el add-on de Tailscale carga `serve.json` desde el repo, usá la variante con
 ```
 
 El archivo del repo (`deploy/tailscale/serve-funnel.example.json`) usa `${TS_CERT_DOMAIN}` como placeholder del FQDN. No apliques el comando y el JSON a la vez: son dos formas de configurar lo mismo.
+
+En el iHost no edites este archivo: la imagen `paulomcnally/p40la-mcp-tailscale:0.1.0` ya incluye su propio `serve.json` con el proxy al MCP. El nodo del dashboard conserva el suyo, con `AllowFunnel: false`.
 
 ## Verificar
 
@@ -125,6 +140,7 @@ Checklist de verificación:
 - [ ] `/mcp` sin token responde `401` con `WWW-Authenticate`.
 - [ ] `/healthz` y `/admin/revoke` responden `404` desde Internet.
 - [ ] El conector de claude.ai completa OAuth y ejecuta una tool de lectura.
+- [ ] El nodo del dashboard sigue respondiendo dentro de la tailnet y **no** es público.
 
 ## Rollback
 
@@ -140,7 +156,7 @@ tailscale serve --bg 8088
 tailscale serve status
 ```
 
-`tailscale funnel reset` borra la configuración de Funnel. Si el nodo también servía el dashboard en 443, revisá `tailscale serve status` y volvé a aplicar `deploy/tailscale/serve.json` o el comando `tailscale serve` correspondiente.
+`tailscale funnel reset` borra la configuración de Funnel. Si el nodo también servía el dashboard en 443, revisá `tailscale serve status` y volvé a aplicar `deploy/tailscale/serve.json` o el comando `tailscale serve` correspondiente. En el despliegue del iHost, el reset se ejecuta en el contenedor `tailscale-mcp`: el nodo del dashboard no se toca. Detener `tailscale-mcp` también corta la publicación, porque el nodo queda offline. Ver [ihost.md](ihost.md#8-rollback).
 
 Después del rollback:
 
@@ -185,12 +201,13 @@ No hay “URL secreta”. La única barrera es la contraseña de administración
 | Falla la emisión del certificado | HTTPS Certificates o MagicDNS deshabilitados | Activarlos en la consola de administración |
 | Funnel activo pero Claude no llega | El proceso MCP no escucha en 8090 | `curl http://127.0.0.1:8090/.well-known/oauth-protected-resource` en el nodo |
 | `502` desde Internet | Funnel proxya a un puerto cerrado | Verificar `P40LA_MCP_LISTEN` y que el contenedor esté corriendo |
-| El dashboard dejó de verse en la tailnet | Funnel reemplazó el handler `/` de 443 | Restaurar `tailscale serve` o usar un nodo dedicado |
+| El dashboard dejó de verse en la tailnet | Funnel o el segundo Tailscale tomaron el handler `/` de 443 | Detener `tailscale-mcp`; restaurar `tailscale serve`; usar un nodo dedicado ([ihost.md](ihost.md)) |
 | Discovery responde con otro hostname | `P40LA_MCP_PUBLIC_URL` no coincide con el FQDN | Corregir la variable y reiniciar |
 | El login OAuth funciona dentro de la tailnet pero no fuera | Funnel no está publicando, aunque Serve sí responda | Verificar desde datos móviles y revisar `funnel status` |
 
 ## Referencias
 
 - [Servidor HTTP remoto](http.md) · [OAuth 2.1](oauth.md) · [Operación](operations.md) · [Seguridad](security.md)
+- [Despliegue 24/7 en el iHost](ihost.md) — nodo Tailscale dedicado y runbook completo.
 - `deploy/tailscale/serve.json` y `deploy/tailscale/serve-funnel.example.json` en el repo.
 - Documentación de Tailscale: *Funnel*, *Serve* y *HTTPS certificates*.

@@ -42,6 +42,48 @@ Claude Code / Desktop local                claude.ai / Claude móvil / Cowork
 
 Los dos transportes comparten configuración de API, registry y tools. La única diferencia es cómo llega el JSON-RPC al binario y qué autenticación protege la entrada.
 
+## Despliegue en el iHost: dos nodos Tailscale
+
+El iHost ya publica el dashboard con **Serve** en 443, solo dentro de la tailnet. Como Tailscale no permite Serve y Funnel en el mismo puerto, el MCP usa un **nodo dedicado** con su propio estado y su propio Funnel; el nodo del dashboard queda intacto.
+
+```
+claude.ai / Claude móvil
+        │ HTTPS 443 + OAuth
+        ▼
+┌──────────────────────────────────────────────┐
+│ tailscale-mcp  (red host, TS_USERSPACE=true) │
+│ p40la-mcp.example.ts.net                     │
+│ Funnel 443 ──► http://127.0.0.1:8090         │
+└───────────────────┬──────────────────────────┘
+                    │ loopback
+                    ▼
+┌──────────────────────────────────────────────┐
+│ p40la-mcp  (red host)                        │
+│ :8090 /mcp + OAuth · :8091 admin             │
+│ volúmenes: p40la-mcp-data, tailscale-mcp-state │
+└───────────────────┬──────────────────────────┘
+                    │ HTTP + bearer API key
+                    ▼
+┌──────────────────────────────────────────────┐
+│ app p40la-ihost :8088                        │
+└──────────────────────────────────────────────┘
+
+Dispositivo en la tailnet
+        │ Serve 443 (sin Funnel)
+        ▼
+ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
+```
+
+| Nodo | Contenedor / imagen | Publicación | Alcance |
+|---|---|---|---|
+| `ihost.example.ts.net` | Tailscale actual del add-on | Serve 443 → `127.0.0.1:8088` | Solo tailnet |
+| `p40la-mcp.example.ts.net` | `tailscale-mcp` · `paulomcnally/p40la-mcp-tailscale:0.1.0` | Funnel 443 → `127.0.0.1:8090` | Internet + OAuth |
+
+- `p40la-mcp` corre con la imagen `paulomcnally/p40la-mcp:0.1.0`, red host, `restart: unless-stopped` y estado en `/data`.
+- `tailscale-mcp` está basado en `tailscale/tailscale`, usa `TS_USERSPACE=true` (no hay `/dev/net/tun` en el iHost), estado en `/var/lib/tailscale` y un `serve.json` incluido en la imagen.
+- El nodo del dashboard **no se reinicia, no se reconfigura y no se publica**: su `serve.json` conserva `AllowFunnel: false`.
+- El runbook completo está en [ihost.md](ihost.md) y el detalle de Funnel en [funnel.md](funnel.md).
+
 ## Componentes
 
 | Componente | Ubicación | Responsabilidad |
@@ -58,6 +100,8 @@ Los dos transportes comparten configuración de API, registry y tools. La única
 | Rate limit | `internal/mcp/server/limiter` | Ventana fija en memoria por token o IP |
 | Auditoría | `internal/mcp/audit` | JSONL con rotación por tamaño |
 | Imagen del MCP | `Dockerfile.mcp`, `scripts/build-mcp-image.sh` | Imagen multi-arch independiente del add-on web |
+| Imagen del nodo Tailscale | `deploy/mcp/tailscale/Dockerfile` | Wrapper de `tailscale/tailscale` con `serve.json` para Funnel 443 → MCP |
+| Despliegue en el iHost | `deploy/mcp/` | Compose de referencia, env example y runbook del nodo dedicado |
 | Funnel | `deploy/tailscale/serve-funnel.example.json` | Ejemplo declarativo de publicación en 443 |
 | Backend masivo | `internal/services/bill_bulk.go` | Reglas de generación y pago por rango |
 | Handlers HTTP | `internal/api/bill_bulk_handlers.go` | Parseo, códigos de estado y respuesta |

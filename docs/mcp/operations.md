@@ -28,14 +28,14 @@ GOOS=darwin GOARCH=arm64 go build -o bin/p40la-mcp-darwin-arm64 ./cmd/mcp-server
 GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
 
 # Personalizar imagen y tag
-IMAGE="ghcr.io/example/p40la-mcp" TAG="0.1.0" \
+IMAGE="paulomcnally/p40la-mcp" TAG="0.1.0" \
 GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
 ```
 
 El script construye y publica las tres plataformas obligatorias (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) con `docker buildx`. Verificá los manifests:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/example/p40la-mcp:0.1.0
+docker buildx imagetools inspect paulomcnally/p40la-mcp:0.1.0
 ```
 
 El token de GitHub se pasa como secreto de BuildKit (`id=gh_token`) porque el módulo de plugins es privado; no queda en la imagen.
@@ -81,7 +81,7 @@ mkdir -p /tmp/p40la-mcp-state && chmod 700 /tmp/p40la-mcp-state
 
 # Variables mínimas
 export P40LA_BASE_URL="http://ihost.local:8088"
-export P40LA_API_KEY="p40la_demo-demo-demo-demo-demo-demo"
+export P40LA_API_KEY="demo-api-key"
 export P40LA_MCP_TRANSPORT=http
 export P40LA_MCP_PUBLIC_URL="https://demo-node.example.ts.net"
 export P40LA_MCP_OAUTH_PASSWORD_HASH="$HASH"
@@ -133,46 +133,100 @@ Para revisar actividad reciente:
 sudo tail -n 20 /opt/p40la-mcp/data/audit.jsonl
 ```
 
-## Deploy en iHost
+## Despliegue en iHost
 
-El contenedor necesita red host para que Tailscale (en el host) alcance `127.0.0.1:8090`, y un volumen escribible por el UID 65532.
+El runbook completo —por qué dos nodos Tailscale, API key, hash OAuth, volúmenes, alta por UI, verificación, rollback y troubleshooting— está en [ihost.md](ihost.md). Esta sección resume los recursos que se crean en el iHost.
+
+| Recurso | Valor |
+|---|---|
+| Imagen del MCP | `paulomcnally/p40la-mcp:0.1.0` |
+| Imagen del nodo dedicado | `paulomcnally/p40la-mcp-tailscale:0.1.0` |
+| Contenedor MCP | `p40la-mcp`, red `host`, `restart: unless-stopped` |
+| Contenedor Tailscale | `tailscale-mcp`, red `host`, `restart: unless-stopped` |
+| Volumen MCP | `p40la-mcp-data` → `/data` |
+| Volumen Tailscale | `tailscale-mcp-state` → `/var/lib/tailscale` |
+| Entorno MCP | `/etc/p40la-mcp.env` (`0600`) |
+| Listeners MCP | `127.0.0.1:8090` (público vía Funnel) y `127.0.0.1:8091` (admin) |
+
+En el iHost **no hay Docker CLI por SSH**: los contenedores se crean desde la UI de Docker (`http://ihost.local`) o su API (`http://ihost.local/api/v1/rest`). El compose de `deploy/mcp/docker-compose.yml` es la referencia de imágenes, variables, volúmenes y red.
+
+### Contenedor `p40la-mcp`
+
+El contenedor necesita red host para que el proxy de Tailscale alcance `127.0.0.1:8090`, y un volumen escribible por el UID 65532.
 
 ```bash
-# 1. Directorio de estado con dueño nonroot
+# Bind mount alternativo si el volumen nombrado queda propiedad de root
 sudo install -d -o 65532 -g 65532 -m 0700 /opt/p40la-mcp/data
 
-# 2. Archivo de entorno con permisos restringidos
+# Archivo de entorno con permisos restringidos
 sudo touch /etc/p40la-mcp.env
 sudo chmod 600 /etc/p40la-mcp.env
 # editar /etc/p40la-mcp.env con los valores reales (ver configuration.md)
 ```
 
 ```yaml
-# /opt/p40la-mcp/compose.yaml
+# /opt/p40la-mcp/compose.yaml (referencia; en el iHost se usa la UI)
 services:
   p40la-mcp:
-    image: ghcr.io/example/p40la-mcp:0.1.0
+    image: paulomcnally/p40la-mcp:0.1.0
     container_name: p40la-mcp
     restart: unless-stopped
     network_mode: host
     env_file:
       - /etc/p40la-mcp.env
     volumes:
-      - /opt/p40la-mcp/data:/data
+      - /opt/p40la-mcp/data:/data   # o el volumen nombrado p40la-mcp-data
 ```
 
 ```bash
+# Ilustrativo: el iHost no expone Docker CLI por SSH
 docker compose -f /opt/p40la-mcp/compose.yaml up -d
 docker logs --tail 20 p40la-mcp
 ```
 
+### Contenedor `tailscale-mcp`
+
+Es un nodo Tailscale **dedicado al MCP**, separado del nodo que publica el dashboard. La imagen wrapper incluye `/config/serve.json` con Funnel 443 → `http://127.0.0.1:8090`; el estado vive en su propio volumen.
+
+| Variable | Valor |
+|---|---|
+| `TS_AUTHKEY` | auth key del nodo nuevo, idealmente con `tag:p40la-mcp` |
+| `TS_HOSTNAME` | `p40la-mcp` |
+| `TS_USERSPACE` | `true` (el iHost no tiene `/dev/net/tun`) |
+| `TS_STATE_DIR` | `/var/lib/tailscale` |
+| `TS_SERVE_CONFIG` | `/config/serve.json` (incluido en la imagen) |
+| `TS_EXTRA_ARGS` | opcional: `--advertise-tags=tag:p40la-mcp` |
+
 Notas:
 
-- Con `network_mode: host`, no se usan `ports:`; los listeners quedan en el loopback del nodo.
+- Con `network_mode: host`, no se usan `ports:`; los listeners del MCP quedan en el loopback del nodo.
 - El proceso corre como `nonroot` (65532). Si el volumen pertenece a otro UID, `oauth.json` no se puede escribir y el arranque falla.
-- El health check no está dentro del contenedor (distroless no tiene shell ni `curl`): consultá `/healthz` desde el host.
-- La imagen de la app web y la del MCP se actualizan por separado.
+- La imagen del MCP es distroless (sin shell ni `curl`): consultá `/healthz` desde el host o desde la consola de `tailscale-mcp`.
+- La imagen de la app web, la del MCP y la del nodo Tailscale se actualizan por separado.
+- No modifiques el contenedor Tailscale existente, su `serve.json` ni sus volúmenes: el dashboard debe seguir igual.
 - Presupuesto: medir RSS antes de dejarlo permanente en el iHost. Si no hay margen, correr el MCP en una laptop y dejar Funnel allí.
+
+### Verificación
+
+```bash
+# 1. El dashboard sigue respondiendo dentro de la tailnet
+curl -sS -o /dev/null -w '%{http_code}\n' https://ihost.example.ts.net
+# 200
+
+# 2. Health del MCP (loopback administrativo)
+wget -qO- http://127.0.0.1:8091/healthz
+# {"status":"ok",...}
+
+# 3. DNS público con A IPv4 y TLS
+dig +short @1.1.1.1 p40la-mcp.example.ts.net A
+curl -sS https://p40la-mcp.example.ts.net/.well-known/oauth-protected-resource
+
+# 4. /mcp sin token
+curl -sS -o /dev/null -w '%{http_code}\n' https://p40la-mcp.example.ts.net/mcp
+# 401
+```
+
+El detalle de cada paso y los valores esperados está en [ihost.md](ihost.md#6-verificación).
 
 ## Publicación con Funnel
 
@@ -188,6 +242,8 @@ tailscale funnel reset
 ```
 
 Funnel no autentica: `/mcp` sigue exigiendo OAuth. Nunca apuntes Funnel a `8088` (dashboard) ni a `8091` (admin).
+
+En el iHost **no ejecutes estos comandos en el nodo del dashboard**: ese nodo usa Serve en 443 y quedaría público. El MCP se publica desde el nodo dedicado (`tailscale-mcp`), que ya trae su `serve.json` en la imagen. Ver [ihost.md](ihost.md).
 
 ## Verificación previa
 
@@ -220,6 +276,7 @@ Si el health falla, el MCP no puede operar. Revisá red, URL base y que el conte
 ### Funnel
 
 - Despublicar: `tailscale funnel reset` y verificar con `tailscale funnel status`.
+- En el iHost, el reset se hace en `tailscale-mcp`; el nodo del dashboard no se toca.
 - Si el nodo también servía el dashboard en 443, restaurar `tailscale serve` después del reset.
 - Al dar de baja un conector: revocar tokens, eliminarlo en claude.ai y, si no se usará más, detener el contenedor.
 

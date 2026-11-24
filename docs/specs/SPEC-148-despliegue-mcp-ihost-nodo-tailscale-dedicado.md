@@ -133,8 +133,8 @@ El resultado esperado: `https://p40la-mcp.<tailnet>.ts.net/mcp` disponible desde
 **ADR-003 — MCP en red host, Tailscale dedicado en red host (primario)**
 - **Contexto**: el MCP necesita `127.0.0.1:8088` para la API y el Tailscale necesita alcanzar `127.0.0.1:8090`.
 - **Decisión**: ambos con `network_mode: host`. El Tailscale en userspace no debería bindear el 443 del host; se valida que el 443 del dashboard siga intacto.
-- **Fallback**: si el segundo Tailscale choca con el 443, aislarlo en una red bridge propia y proxear a `http://host.docker.internal:8090` con `extra_hosts: host.docker.internal:host-gateway`.
-- **Consecuencias**: configuración simple; el fallback agrega un paso de red.
+- **Fallback**: si el segundo Tailscale choca con el 443, detenerlo y evaluar un proxy en el host; el bridge simple no alcanza porque el MCP solo escucha loopback (ver `docs/mcp/ihost.md`).
+- **Consecuencias**: configuración simple; el fallback requiere un proxy adicional en el host o cambiar el modo de red.
 
 **ADR-004 — Imagen propia `0.1.0`**
 - **Contexto**: el MCP tiene ciclo de vida distinto del add-on web.
@@ -199,7 +199,7 @@ dashboard
 ```
 
 - `${TS_CERT_DOMAIN}` se sustituye por `p40la-mcp.<tailnet>.ts.net`.
-- Si se usa el fallback bridge, el proxy es `http://host.docker.internal:8090`.
+- El fallback bridge requiere un proxy en el host; no apuntes el `serve.json` a `host.docker.internal:8090` sin ese proxy.
 
 ### 5.4 Variables del MCP en el iHost
 
@@ -299,7 +299,7 @@ P40LA_TIMEZONE=America/Managua
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
-| El segundo Tailscale choca con el 443 del dashboard | Media | Alto | Validar primero; fallback a red bridge + `host.docker.internal` |
+| El segundo Tailscale choca con el 443 del dashboard | Media | Alto | Validar primero; si choca, detenerlo y montar proxy en el host (ver `docs/mcp/ihost.md`) |
 | Pérdida del acceso actual al dashboard | Baja | Alto | No tocar el contenedor/volúmenes/serve.json actuales; verificar antes/después |
 | RAM insuficiente | Baja | Medio | 2.25 GB disponibles; medir RSS; límites de contenedor |
 | Auth key de Tailscale filtrada | Baja | Alto | Tag dedicado, key de un solo uso, rotación, `SEC-INCIDENT` |
