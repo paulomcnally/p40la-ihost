@@ -1,7 +1,7 @@
 ---
 title: "MCP remoto para Claude: transporte HTTP, OAuth y Tailscale Funnel"
 id: "SPEC-147"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 150
 # MCP remoto para Claude: transporte HTTP, OAuth y Tailscale Funnel
 
 **ID**: SPEC-147  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-23
@@ -410,3 +410,4 @@ AuditEntry    { ts, request_id, tool, result, duration_ms, subject }
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-23 | opencode | Creación inicial de la especificación |
+| 2026-11-23 | opencode | Implementación del transporte HTTP, OAuth 2.1, auditoría, límites, contenedor y documentación; E2E local y preparación de release |
