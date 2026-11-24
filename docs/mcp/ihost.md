@@ -121,6 +121,20 @@ docker run --rm -it paulomcnally/p40la-mcp:0.2.0 -hash-password
 
 Guardá **solo el hash** en `/etc/p40la-mcp.env`. La contraseña en claro no se guarda en el iHost y debe ser única, larga y distinta de la del dashboard.
 
+### 2.1 Dónde vive la contraseña (convención del proyecto)
+
+La contraseña en claro **no se guarda en el iHost ni en el repositorio**. El operador la conserva en su equipo, fuera del repo:
+
+| Archivo local | Contenido | Permisos |
+|---|---|---|
+| `~/.config/p40la/mcp-oauth-password` | contraseña OAuth en claro | `0600` |
+| `~/.config/p40la/mcp-oauth-hash` | hash bcrypt que se inyecta como `P40LA_MCP_OAUTH_PASSWORD_HASH` | `0600` |
+| `~/.config/p40la/mcp-api-key` | API key global del MCP | `0600` |
+
+- Si el operador o un agente necesitan la contraseña para autorizar un conector, se lee de ese archivo; nunca se pega en specs, issues, commits ni capturas.
+- Si el archivo se pierde, la contraseña **no se puede recuperar** desde el hash: generá uno nuevo con `-hash-password`, actualizá `P40LA_MCP_OAUTH_PASSWORD_HASH` en el contenedor y reiniciá. Los conectores deberán autorizar de nuevo.
+- Estos archivos son locales del operador: no se copian al iHost ni al repo (`SEC-NO-PII`).
+
 ## 3. Archivo de entorno
 
 El archivo vive en `/etc/p40la-mcp.env`, con permisos `0600`. Usá `deploy/mcp/mcp.env.example` como base:

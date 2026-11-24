@@ -175,6 +175,8 @@ El comando no requiere `P40LA_API_KEY` ni arranca el servidor. El hash empieza c
 
 > Rotar la contraseña **no invalida los tokens existentes**. Después de cambiarla, reiniciar el proceso y ejecutar `POST /admin/revoke` para forzar una reautorización.
 
+> **Convención del proyecto**: el operador guarda la contraseña en claro en `~/.config/p40la/mcp-oauth-password` (`0600`), el hash en `~/.config/p40la/mcp-oauth-hash` y la API key en `~/.config/p40la/mcp-api-key`. El iHost solo recibe el hash. Ver `ihost.md` → 2.1.
+
 ## Límites por IP
 
 Además del rate limit por token en `/mcp`, los endpoints OAuth tienen límites en memoria por IP:
