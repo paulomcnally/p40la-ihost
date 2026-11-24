@@ -204,7 +204,7 @@ func TestReservationBlocksHomeAndExpires(t *testing.T) {
 	if err != nil {
 		t.Fatalf("estado de casa: %v", err)
 	}
-	if status.ListingStatus != ListingReserved {
+	if status.ListingStatus != StateReserved {
 		t.Fatalf("listing = %s", status.ListingStatus)
 	}
 
@@ -228,7 +228,7 @@ func TestReservationBlocksHomeAndExpires(t *testing.T) {
 		t.Fatalf("expirar: n=%d err=%v", n, err)
 	}
 	status, _ = svc.GetHomeStatus(ctx, homeID)
-	if status.ListingStatus != ListingAvailable {
+	if status.ListingStatus != StateListed {
 		t.Fatalf("listing tras vencer = %s", status.ListingStatus)
 	}
 }

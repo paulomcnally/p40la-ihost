@@ -6,13 +6,14 @@ export function Money({ amount, currency }: { amount: number; currency: string }
   return <span className="tabular-nums">{currency} {formatCurrency(amount)}</span>
 }
 
-export function Badge({ tone, children }: { tone: 'success' | 'warning' | 'danger' | 'neutral' | 'info'; children: ReactNode }) {
+export function Badge({ tone, children }: { tone: 'success' | 'warning' | 'danger' | 'neutral' | 'info' | 'accent'; children: ReactNode }) {
   const tones: Record<string, string> = {
     success: 'bg-success/10 text-success',
     warning: 'bg-warning/10 text-warning',
     danger: 'bg-danger/10 text-danger',
     neutral: 'bg-bg text-text-secondary',
     info: 'bg-primary/10 text-primary',
+    accent: 'bg-accent/10 text-accent',
   }
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${tones[tone]}`}>{children}</span>
 }

@@ -23,6 +23,7 @@ var (
 	ErrProofNotFound       = errors.New("comprobante no encontrado")
 	ErrReminderNotFound    = errors.New("recordatorio no encontrado")
 	ErrHomeUnavailable     = errors.New("la vivienda ya tiene un apartado o contrato vigente")
+	ErrHomeNotAvailable    = errors.New("la vivienda no está disponible para alquilar")
 	ErrLeaseNotDraft       = errors.New("solo se puede editar un contrato en borrador")
 	ErrInvoiceImmutable    = errors.New("una factura emitida no se puede editar ni eliminar")
 	ErrDocumentLimit       = errors.New("se alcanzó el máximo de documentos del contrato")
@@ -180,37 +181,80 @@ func (s *Storage) HomeExists(ctx context.Context, id int64) (bool, error) {
 	return n > 0, nil
 }
 
-// SetListingEnabled activa o desactiva la publicación de la vivienda.
-func (s *Storage) SetListingEnabled(ctx context.Context, homeID int64, enabled bool) error {
-	res, err := s.db.ExecContext(ctx, `
-		UPDATE homes SET listing_enabled = ?, updated_at = CURRENT_TIMESTAMP
-		WHERE id = ? AND deleted_at IS NULL
-	`, boolInt(enabled), homeID)
+// HasActiveRental indica si la vivienda tiene un contrato activo o una reserva
+// activa vigente (SPEC-143).
+func (s *Storage) HasActiveRental(ctx context.Context, homeID int64, now time.Time) (bool, error) {
+	var active bool
+	err := s.db.QueryRowContext(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM rental_leases
+			WHERE home_id = ? AND status = 'active' AND deleted_at IS NULL
+		) OR EXISTS(
+			SELECT 1 FROM rental_reservations
+			WHERE home_id = ? AND status = 'active' AND expires_at > ?
+		)
+	`, homeID, homeID, now.UTC().Format(time.RFC3339)).Scan(&active)
 	if err != nil {
-		return fmt.Errorf("actualizar publicación: %w", err)
+		return false, fmt.Errorf("verificar alquiler activo: %w", err)
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return ErrHomeNotFound
-	}
-	return nil
+	return active, nil
 }
 
-// GetHomeListing devuelve nombre, dirección, flag y estado derivado.
+// HomeStateRow es una fila de la consulta de estados por vivienda.
+type HomeStateRow struct {
+	HomeID         int64
+	Name           string
+	Address        string
+	Usage          string
+	HasActiveLease bool
+	HasReservation bool
+}
+
+// ListHomeStates devuelve todas las viviendas con sus banderas de alquiler.
+func (s *Storage) ListHomeStates(ctx context.Context, now time.Time) ([]HomeStateRow, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT h.id, h.name, COALESCE(h.address, ''), h.usage,
+			EXISTS(SELECT 1 FROM rental_leases l
+				WHERE l.home_id = h.id AND l.status = 'active' AND l.deleted_at IS NULL),
+			EXISTS(SELECT 1 FROM rental_reservations r
+				WHERE r.home_id = h.id AND r.status = 'active' AND r.expires_at > ?)
+		FROM homes h
+		WHERE h.deleted_at IS NULL
+		ORDER BY h.sort_order ASC, h.name ASC
+	`, now.UTC().Format(time.RFC3339))
+	if err != nil {
+		return nil, fmt.Errorf("listar estados de viviendas: %w", err)
+	}
+	defer rows.Close()
+
+	var out []HomeStateRow
+	for rows.Next() {
+		var row HomeStateRow
+		if err := rows.Scan(&row.HomeID, &row.Name, &row.Address, &row.Usage,
+			&row.HasActiveLease, &row.HasReservation); err != nil {
+			return nil, fmt.Errorf("escanear estado de vivienda: %w", err)
+		}
+		out = append(out, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetHomeListing devuelve nombre, dirección, uso y estado derivado.
 func (s *Storage) GetHomeListing(ctx context.Context, homeID int64) (*HomeRentalStatus, error) {
 	st := &HomeRentalStatus{HomeID: homeID}
-	var enabled int
 	err := s.db.QueryRowContext(ctx, `
-		SELECT name, COALESCE(address, ''), listing_enabled FROM homes
+		SELECT name, COALESCE(address, ''), usage FROM homes
 		WHERE id = ? AND deleted_at IS NULL
-	`, homeID).Scan(&st.HomeName, &st.HomeAddress, &enabled)
+	`, homeID).Scan(&st.HomeName, &st.HomeAddress, &st.Usage)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrHomeNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("obtener vivienda: %w", err)
 	}
-	st.ListingEnabled = enabled == 1
 	return st, nil
 }
 
