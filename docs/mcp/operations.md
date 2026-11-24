@@ -28,14 +28,14 @@ GOOS=darwin GOARCH=arm64 go build -o bin/p40la-mcp-darwin-arm64 ./cmd/mcp-server
 GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
 
 # Personalizar imagen y tag
-IMAGE="paulomcnally/p40la-mcp" TAG="0.1.0" \
+IMAGE="paulomcnally/p40la-mcp" TAG="0.4.0" \
 GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
 ```
 
 El script construye y publica las tres plataformas obligatorias (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) con `docker buildx`. Verificá los manifests:
 
 ```bash
-docker buildx imagetools inspect paulomcnally/p40la-mcp:0.1.0
+docker buildx imagetools inspect paulomcnally/p40la-mcp:0.4.0
 ```
 
 El token de GitHub se pasa como secreto de BuildKit (`id=gh_token`) porque el módulo de plugins es privado; no queda en la imagen.
@@ -139,7 +139,7 @@ El runbook completo —por qué dos nodos Tailscale, API key, hash OAuth, volúm
 
 | Recurso | Valor |
 |---|---|
-| Imagen del MCP | `paulomcnally/p40la-mcp:0.1.0` |
+| Imagen del MCP | `paulomcnally/p40la-mcp:0.4.0` |
 | Imagen del nodo dedicado | `paulomcnally/p40la-mcp-tailscale:0.1.0` |
 | Contenedor MCP | `p40la-mcp`, red `host`, `restart: unless-stopped` |
 | Contenedor Tailscale | `tailscale-mcp`, red `host`, `restart: unless-stopped` |
@@ -168,7 +168,7 @@ sudo chmod 600 /etc/p40la-mcp.env
 # /opt/p40la-mcp/compose.yaml (referencia; en el iHost se usa la UI)
 services:
   p40la-mcp:
-    image: paulomcnally/p40la-mcp:0.1.0
+    image: paulomcnally/p40la-mcp:0.4.0
     container_name: p40la-mcp
     restart: unless-stopped
     network_mode: host
