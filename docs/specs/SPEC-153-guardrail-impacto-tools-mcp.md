@@ -15,7 +15,7 @@ github_issue: 156
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
 **Actualizado**: 2026-11-24<br>
-**Release**: 2026-11-24 — merge a `main`; implementación `0ce56a37`; sincronización `22d081a7`; sin bump de imagen
+**Release**: 2026-11-24 — merge a `main`; implementación `0ce56a37`; sincronización `22d081a7`; imagen principal `v0.5.19` multi-arch publicada
 
 ---
 
@@ -397,4 +397,4 @@ Ninguna tool existente cambia su contrato. La tabla lista las tres tools de fact
 | 2026-11-24 | opencode | Transición a `pending_execution` y luego a `in_progress` |
 | 2026-11-24 | opencode | Implementación: manifiesto, analizador, contrato `tools/list`, contrato backend↔MCP, hook, plugin, reglas, template, skill y docs. `go build ./...`, `go test ./...`, `--check-map` y `--staged --gate` verdes |
 | 2026-11-24 | opencode | Documentación MCP (`docs/mcp/tools/impact.md`, catálogo, desarrollo y arquitectura) delegada al subagente `general` y revisada (`DELIV-MCP-DOCS-SUBAGENT`) |
-| 2026-11-24 | opencode | Release: merge de `feature/SPEC-153` a `main`; implementación `0ce56a37`; sincronización con `main` `22d081a7`; sin bump de imagen ni cambios de runtime; issue #156 cerrado |
+| 2026-11-24 | opencode | Release: merge de `feature/SPEC-153` a `main`; implementación `0ce56a37`; sincronización con `main` `22d081a7`; imagen principal `v0.5.19` multi-arch publicada; issue #156 cerrado |
