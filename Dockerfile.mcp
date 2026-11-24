@@ -20,9 +20,13 @@ ARG VERSION=dev
 RUN CGO_ENABLED=0 go build -trimpath \
     -ldflags="-s -w -X main.version=${VERSION}" \
     -o /out/p40la-mcp ./cmd/mcp-server
+# /data debe existir con dueño nonroot en la imagen: cuando el iHost monta un
+# volumen nombrado nuevo, Docker copia el dueño del directorio al volumen.
+RUN mkdir -p /out/data
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/p40la-mcp /p40la-mcp
+COPY --from=build --chown=nonroot:nonroot /out/data /data
 USER nonroot:nonroot
 EXPOSE 8090 8091
 ENTRYPOINT ["/p40la-mcp"]
