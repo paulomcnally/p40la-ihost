@@ -30,7 +30,7 @@ p40la-mcp.<tailnet>.ts.net ── Funnel 443 ──► 127.0.0.1:8090  (MCP, pú
 1. App `paulomcnally/p40la-ihost:0.5.17` o superior desplegada en el iHost
    (incluye los endpoints de API key de SPEC-145).
 2. Imágenes publicadas:
-   - `paulomcnally/p40la-mcp:0.1.0`
+   - `paulomcnally/p40la-mcp:0.2.0`
    - `paulomcnally/p40la-mcp-tailscale:0.1.0`
 3. **Auth key de Tailscale** para el nodo nuevo. Recomendado: tag `tag:p40la-mcp`.
 4. En la tailnet: **MagicDNS** y **HTTPS Certificates** habilitados, y el atributo
@@ -98,7 +98,7 @@ En la UI de Docker del iHost, creá:
 
 | Campo | Valor |
 |---|---|
-| Imagen | `paulomcnally/p40la-mcp:0.1.0` |
+| Imagen | `paulomcnally/p40la-mcp:0.2.0` |
 | Red | `host` |
 | Restart | `unless-stopped` |
 | Volumen | `p40la-mcp-data` → `/data` |
@@ -196,4 +196,7 @@ curl -sSI https://p40la-mcp.<tailnet>.ts.net/mcp | grep -i '^www-authenticate'
 - `/healthz` y `/admin/revoke` viven en `127.0.0.1:8091`, fuera de Funnel.
 - El dashboard y el puerto 8088 no se publican por Funnel.
 - Los secretos viven solo en `/etc/p40la-mcp.env` y en el volumen de Tailscale.
+- El API del iHost no acepta `memory`, `cpu_shares` ni `container_path` (devuelve 500) y exige
+  `port_list`/`usb_devices` aunque estén vacíos. El payload exacto está en
+  `docs/mcp/ihost.md` → 5.1.1.
 - Si se filtra la auth key o la API key: revocar, rotar y documentar (`SEC-INCIDENT`).

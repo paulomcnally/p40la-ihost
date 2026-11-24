@@ -17,13 +17,17 @@ El binario tiene dos transportes con el mismo catálogo de tools:
 
 El modo remoto está pensado para conectores que Anthropic ejecuta desde su infraestructura: exige HTTPS público, OAuth 2.1 y una contraseña de administración. El modo local no necesita nada de eso. Ver [http.md](http.md), [oauth.md](oauth.md) y [funnel.md](funnel.md).
 
-La primera entrega cubre facturas de servicios:
+El catálogo actual cubre facturas de servicios y altas de entidades base:
 
 | Tool | Tipo | Qué hace |
 |---|---|---|
 | `bills_list` | lectura | Lista facturas de un servicio con filtros de período y estado |
 | `bills_generate` | escritura | Genera facturas de un rango de meses (por ejemplo, enero a la fecha) |
 | `bills_pay` | escritura | Paga una factura, un mes, un rango o todas las pendientes hasta una fecha |
+| `homes_create` | escritura | Crea un hogar con nombre, dirección y uso |
+| `institutions_create` | escritura | Crea una institución o proveedor y resuelve su categoría |
+| `banks_create` | escritura | Crea un banco con código corto, país y estado |
+| `services_create` | escritura | Crea un servicio en un hogar, con moneda e institución por nombre o ID |
 
 ## Requisitos
 
@@ -110,6 +114,8 @@ El runbook completo —prerrequisitos, API key, hash OAuth, volúmenes, alta por
 
 Las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`.
 
+Las tools de alta (`homes_create`, `institutions_create`, `banks_create`, `services_create`) **no tienen `dry_run`**: escriben en una sola llamada. Mostrá al usuario los datos que se van a crear y pedí confirmación antes de invocarlas; si el nombre ya existe, devuelven `already_exists` con el `id` de la entidad existente. Ver [tools/entities.md](tools/entities.md).
+
 ## Documentación
 
 - [API key global](api-key.md)
@@ -124,6 +130,7 @@ Las operaciones son idempotentes por período: repetir una generación no duplic
 - [Despliegue 24/7 en el iHost](ihost.md)
 - [Catálogo de tools](tools/README.md)
 - [Tools de facturas](tools/bills.md)
+- [Tools de entidades](tools/entities.md)
 
 ## Publicación web
 

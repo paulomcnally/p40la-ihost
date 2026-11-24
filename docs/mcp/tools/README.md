@@ -8,9 +8,9 @@ description: "Convenciones y listado de tools MCP disponibles"
 
 ## Convención de nombres
 
-- `snake_case`, con el dominio primero: `bills_list`, `bills_generate`, `bills_pay`.
-- Verbo al final: `list` (lectura), `generate` (alta masiva), `pay` (acción).
-- Las tools de escritura declaran `dry_run` y respetan `P40LA_MCP_ALLOW_WRITES`.
+- `snake_case`, con el dominio primero: `bills_list`, `homes_create`, `services_create`.
+- Verbo al final: `list` (lectura), `create` (alta), `generate` (alta masiva), `pay` (acción).
+- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas además declaran `dry_run`; las de alta (`*_create`) no tienen previsualización y verifican duplicados antes del POST.
 
 ## Tools actuales
 
@@ -19,6 +19,10 @@ description: "Convenciones y listado de tools MCP disponibles"
 | `bills_list` | Facturas | Lectura | [bills.md](bills.md) |
 | `bills_generate` | Facturas | Escritura | [bills.md](bills.md) |
 | `bills_pay` | Facturas | Escritura | [bills.md](bills.md) |
+| `homes_create` | Hogares | Escritura | [entities.md](entities.md) |
+| `institutions_create` | Instituciones | Escritura | [entities.md](entities.md) |
+| `banks_create` | Bancos | Escritura | [entities.md](entities.md) |
+| `services_create` | Servicios | Escritura | [entities.md](entities.md) |
 
 ## Mismos tools en stdio y HTTP
 
@@ -26,7 +30,7 @@ El catálogo no cambia según el transporte. `p40la-mcp` monta el mismo `mcp.Ser
 
 Lo que cambia es la **compuerta de escritura**:
 
-| Transporte | Lectura (`bills_list`) | Escritura (`dry_run=false`) |
+| Transporte | Lectura (`bills_list`) | Escritura (`dry_run=false` o cualquier `*_create`) |
 |---|---|---|
 | stdio | Siempre disponible | Requiere `P40LA_MCP_ALLOW_WRITES=true` |
 | HTTP | Siempre disponible | Requiere `P40LA_MCP_ALLOW_WRITES=true` **y** `P40LA_MCP_REMOTE_WRITES=true` |
@@ -42,6 +46,8 @@ Si falta la compuerta remota, la tool responde:
 ```
 
 El modo HTTP no agrega tools nuevas ni cambia los schemas de entrada. Los límites de body (1 MiB), rate limit y auditoría son del servidor, no de cada tool. Ver [http.md](../http.md), [oauth.md](../oauth.md) y [security.md](../security.md).
+
+En las tools `*_create` el `hint` solo pide habilitar las variables, porque no existe `dry_run` para previsualizar. La compuerta se evalúa antes de validar la entrada: sin permisos, la tool no llama al backend.
 
 ## Respuestas
 
@@ -59,5 +65,6 @@ Las tools devuelven contenido de texto JSON y `structuredContent` con el mismo o
 
 - `bills_list`: `readOnlyHint=true`.
 - `bills_generate` y `bills_pay`: `destructiveHint=false`, `idempotentHint=true`, `openWorldHint=false`.
+- `homes_create`, `institutions_create`, `banks_create` y `services_create`: `destructiveHint=true`, `openWorldHint=false`. No declaran `idempotentHint`.
 
-`destructiveHint=false` significa que son aditivas (crean o actualizan estado), no borran datos. La confirmación humana sigue siendo obligatoria por el impacto financiero.
+`destructiveHint=false` en facturas significa que son aditivas (crean o actualizan estado), no borran datos. En las tools de alta el valor es `true` de forma conservadora: la tool no garantiza ser segura ante reintentos, aunque en la práctica solo agrega registros y nunca borra. La confirmación humana sigue siendo obligatoria por el impacto en los datos.

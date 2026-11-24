@@ -7,6 +7,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/api"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/config"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/toolkit"
 )
 
 // Toolset agrupa las dependencias de las tools de facturas.
@@ -70,7 +71,7 @@ func (t *Toolset) writeMode(requested *bool) (bool, *mcp.CallToolResult, any) {
 		if t.cfg.IsHTTP() {
 			hint = "Definí P40LA_MCP_ALLOW_WRITES=true y P40LA_MCP_REMOTE_WRITES=true, o repetí con dry_run=true para previsualizar."
 		}
-		result, output, _ := toolError("writes_disabled",
+		result, output, _ := toolkit.ToolError("writes_disabled",
 			"Las escrituras están deshabilitadas en este servidor MCP.",
 			hint)
 		return false, result, output
