@@ -10,6 +10,15 @@ type Service struct {
 	SuggestedAmount float64 `json:"suggested_amount"`
 	Active          bool    `json:"active"`
 	CurrencyID      int64   `json:"currency_id"`
+	HomeID          int64   `json:"home_id"`
+	Institution     string  `json:"institution,omitempty"`
+	IconKey         string  `json:"icon_key,omitempty"`
+	BillingType     string  `json:"billing_type,omitempty"`
+	BillingDay      *int    `json:"billing_day,omitempty"`
+	AutoGenerate    bool    `json:"auto_generate,omitempty"`
+	IsRecurring     bool    `json:"is_recurring,omitempty"`
+	StartDate       *string `json:"start_date,omitempty"`
+	EndDate         *string `json:"end_date,omitempty"`
 }
 
 // Bill es el subconjunto de una factura que necesita el MCP.

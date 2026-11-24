@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/toolkit"
 )
 
 // ListInput es la entrada de bills_list.
@@ -44,7 +45,7 @@ type ListOutput struct {
 
 func (t *Toolset) list(ctx context.Context, _ *mcp.CallToolRequest, input ListInput) (*mcp.CallToolResult, any, error) {
 	if input.ServiceID <= 0 {
-		return toolError("invalid_request", "service_id debe ser mayor que cero", "")
+		return toolkit.ToolError("invalid_request", "service_id debe ser mayor que cero", "")
 	}
 
 	status := "all"
@@ -52,35 +53,35 @@ func (t *Toolset) list(ctx context.Context, _ *mcp.CallToolRequest, input ListIn
 		status = strings.ToLower(strings.TrimSpace(*input.Status))
 	}
 	if status != "all" && status != "pending" && status != "paid" {
-		return toolError("invalid_request", "status debe ser pending, paid o all", "")
+		return toolkit.ToolError("invalid_request", "status debe ser pending, paid o all", "")
 	}
 
 	var from, to *period
 	if input.From != nil && strings.TrimSpace(*input.From) != "" {
 		parsed, err := parsePeriod(*input.From)
 		if err != nil {
-			return toolError("invalid_range", err.Error(), "")
+			return toolkit.ToolError("invalid_range", err.Error(), "")
 		}
 		from = &parsed
 	}
 	if input.To != nil && strings.TrimSpace(*input.To) != "" {
 		parsed, err := parsePeriod(*input.To)
 		if err != nil {
-			return toolError("invalid_range", err.Error(), "")
+			return toolkit.ToolError("invalid_range", err.Error(), "")
 		}
 		to = &parsed
 	}
 	if from != nil && to != nil && to.before(*from) {
-		return toolError("invalid_range", "el período final no puede ser anterior al inicial", "")
+		return toolkit.ToolError("invalid_range", "el período final no puede ser anterior al inicial", "")
 	}
 
 	service, err := t.client.GetService(ctx, input.ServiceID)
 	if err != nil {
-		return apiError(err)
+		return toolkit.APIError(err)
 	}
 	bills, err := t.client.ListBills(ctx, input.ServiceID)
 	if err != nil {
-		return apiError(err)
+		return toolkit.APIError(err)
 	}
 
 	summary := ListOutput{
@@ -137,5 +138,5 @@ func (t *Toolset) list(ctx context.Context, _ *mcp.CallToolRequest, input ListIn
 		return summary.Bills[i].ID < summary.Bills[j].ID
 	})
 	summary.Count = len(summary.Bills)
-	return jsonResult(summary)
+	return toolkit.JSONResult(summary)
 }

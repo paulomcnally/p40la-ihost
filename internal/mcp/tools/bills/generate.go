@@ -6,6 +6,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/api"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/toolkit"
 )
 
 // GenerateInput es la entrada de bills_generate.
@@ -19,28 +20,28 @@ type GenerateInput struct {
 
 func (t *Toolset) generate(ctx context.Context, _ *mcp.CallToolRequest, input GenerateInput) (*mcp.CallToolResult, any, error) {
 	if input.ServiceID <= 0 {
-		return toolError("invalid_request", "service_id debe ser mayor que cero", "")
+		return toolkit.ToolError("invalid_request", "service_id debe ser mayor que cero", "")
 	}
 	from, err := parsePeriod(input.From)
 	if err != nil {
-		return toolError("invalid_range", err.Error(), "")
+		return toolkit.ToolError("invalid_range", err.Error(), "")
 	}
 	to := t.currentPeriod()
 	if input.To != nil && strings.TrimSpace(*input.To) != "" {
 		parsed, err := parsePeriod(*input.To)
 		if err != nil {
-			return toolError("invalid_range", err.Error(), "")
+			return toolkit.ToolError("invalid_range", err.Error(), "")
 		}
 		to = parsed
 	}
 	if to.before(from) {
-		return toolError("invalid_range", "el período final no puede ser anterior al inicial", "")
+		return toolkit.ToolError("invalid_range", "el período final no puede ser anterior al inicial", "")
 	}
 	if to.after(t.currentPeriod()) {
-		return toolError("invalid_range", "no se pueden generar facturas de períodos futuros", "")
+		return toolkit.ToolError("invalid_range", "no se pueden generar facturas de períodos futuros", "")
 	}
 	if monthsBetween(from, to) > 36 {
-		return toolError("invalid_range", "el rango máximo es de 36 meses", "")
+		return toolkit.ToolError("invalid_range", "el rango máximo es de 36 meses", "")
 	}
 
 	dryRun, disabled, output := t.writeMode(input.DryRun)
@@ -55,7 +56,7 @@ func (t *Toolset) generate(ctx context.Context, _ *mcp.CallToolRequest, input Ge
 		DryRun: dryRun,
 	})
 	if err != nil {
-		return apiError(err)
+		return toolkit.APIError(err)
 	}
-	return jsonResult(result)
+	return toolkit.JSONResult(result)
 }
