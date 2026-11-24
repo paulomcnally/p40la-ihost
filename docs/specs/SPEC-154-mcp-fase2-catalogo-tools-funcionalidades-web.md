@@ -14,7 +14,8 @@ github_issue: 157
 **Estado**: released<br>
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
-**Actualizado**: 2026-11-24
+**Actualizado**: 2026-11-24<br>
+**Release**: 2026-11-24 — merge a `main` `9729d561`; implementación `6894637c`; 19 tools de lectura y catálogo MCP de 20 → 39 tools; sin migraciones ni dependencias nuevas
 
 ---
 
