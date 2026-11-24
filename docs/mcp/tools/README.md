@@ -14,13 +14,34 @@ description: "Convenciones y listado de tools MCP disponibles"
 
 ## Tools actuales
 
-El catálogo tiene **20 tools**: 5 de lectura y 15 de escritura.
+El catálogo tiene **39 tools**: 24 de lectura y 15 de escritura.
 
 | Tool | Dominio | Tipo | Documentación |
 |---|---|---|---|
 | `bills_list` | Facturas | Lectura | [bills.md](bills.md) |
+| `bills_by_month` | Facturas | Lectura | [bills.md](bills.md) |
+| `bills_summary` | Facturas | Lectura | [bills.md](bills.md) |
+| `bills_projection` | Facturas | Lectura | [bills.md](bills.md) |
 | `entities_search` | Entidades | Lectura | [entities.md](entities.md) |
+| `services_get` | Servicios | Lectura | [entities.md](entities.md) |
 | `autos_list` | Autos | Lectura | [autos.md](autos.md) |
+| `autos_inspection_alerts` | Autos | Lectura | [autos.md](autos.md) |
+| `bank_accounts_search` | Banca | Lectura | [banking.md](banking.md) |
+| `credit_cards_search` | Banca | Lectura | [banking.md](banking.md) |
+| `credit_card_statements_list` | Banca | Lectura | [cards.md](cards.md) |
+| `credit_card_statements_get` | Banca | Lectura | [cards.md](cards.md) |
+| `pension_month_summary` | Pensión | Lectura | [pension.md](pension.md) |
+| `pension_catalogs_list` | Pensión | Lectura | [pension.md](pension.md) |
+| `rental_leases_list` | Alquileres | Lectura | [rental.md](rental.md) |
+| `rental_lease_get` | Alquileres | Lectura | [rental.md](rental.md) |
+| `rental_home_status` | Alquileres | Lectura | [rental.md](rental.md) |
+| `rental_portfolio_summary` | Alquileres | Lectura | [rental.md](rental.md) |
+| `debt_bills_list` | Deudas | Lectura | [debts.md](debts.md) |
+| `home_maintenance_list` | Reparaciones | Lectura | [home-maintenance.md](home-maintenance.md) |
+| `automation_accounts_list` | Automatizaciones | Lectura | [automation.md](automation.md) |
+| `automation_runs_list` | Automatizaciones | Lectura | [automation.md](automation.md) |
+| `alerts_list` | Alertas | Lectura | [alerts.md](alerts.md) |
+| `settings_status` | Configuración | Lectura | [settings.md](settings.md) |
 | `bills_generate` | Facturas | Escritura | [bills.md](bills.md) |
 | `bills_pay` | Facturas | Escritura | [bills.md](bills.md) |
 | `autos_create` | Autos | Escritura | [autos.md](autos.md) |
@@ -32,10 +53,8 @@ El catálogo tiene **20 tools**: 5 de lectura y 15 de escritura.
 | `institutions_create` | Instituciones | Escritura | [entities.md](entities.md) |
 | `banks_create` | Bancos | Escritura | [entities.md](entities.md) |
 | `services_create` | Servicios | Escritura | [entities.md](entities.md) |
-| `bank_accounts_search` | Banca | Lectura | [banking.md](banking.md) |
 | `bank_accounts_create` | Banca | Escritura | [banking.md](banking.md) |
 | `bank_accounts_update` | Banca | Escritura | [banking.md](banking.md) |
-| `credit_cards_search` | Banca | Lectura | [banking.md](banking.md) |
 | `credit_cards_create` | Banca | Escritura | [banking.md](banking.md) |
 | `credit_cards_update` | Banca | Escritura | [banking.md](banking.md) |
 

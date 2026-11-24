@@ -57,7 +57,8 @@ func TestImpactSharedRoute(t *testing.T) {
 func TestImpactListHandler(t *testing.T) {
 	manifest := loadTestManifest(t)
 	impact := computeImpact(manifest, []string{"internal/api/bill_handlers.go"})
-	want := []string{"bills_list"}
+	// SPEC-154: billviews (by_month, summary, projection) también dependen del handler.
+	want := []string{"bills_by_month", "bills_list", "bills_projection", "bills_summary"}
 	if got := impactNames(impact); !reflect.DeepEqual(got, want) {
 		t.Fatalf("tools afectadas = %v, quiero %v", got, want)
 	}

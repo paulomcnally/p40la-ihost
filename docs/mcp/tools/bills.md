@@ -225,6 +225,51 @@ Se debe indicar **exactamente un** selector. `from` y `to` cuentan como uno solo
 | `auth_failed` | API key inválida, revocada o rotada |
 | `upstream_error` | Error de red o del servidor |
 
+## `bills_by_month`
+
+Vista global multi-servicio de un mes. Solo lectura.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `period` | string `YYYY-MM` | No | Default: mes actual |
+| `home_id` | integer | No | Filtra por vivienda |
+
+```json
+{ "period": "2026-11", "home_id": 3 }
+```
+
+Devuelve las facturas del período con servicio, institución, vivienda, moneda y estado. No genera facturas.
+
+## `bills_summary`
+
+Resumen por período entre dos meses. Solo lectura.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `from` | string `YYYY-MM` | Sí | Período inicial |
+| `to` | string `YYYY-MM` | Sí | Período final |
+| `home_id` | integer | No | Filtra por vivienda |
+
+```json
+{ "from": "2026-01", "to": "2026-06" }
+```
+
+## `bills_projection`
+
+Proyección de los próximos meses. Solo lectura.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `from` | string `YYYY-MM` | Sí | Mes inicial |
+| `months` | integer | No | 1–24 (default 6) |
+| `home_id` | integer | No | Filtra por vivienda |
+
+```json
+{ "from": "2026-11", "months": 6 }
+```
+
+Separa facturas pendientes confirmadas de estimaciones por servicios recurrentes.
+
 ## Flujo recomendado para un agente
 
 1. `bills_list` para conocer el estado.

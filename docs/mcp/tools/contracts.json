@@ -3,6 +3,61 @@
   "generated_by": "go test ./internal/mcp/tools/all -run TestToolContracts -update-contracts",
   "tools": [
     {
+      "name": "alerts_list",
+      "description": "Lista las alertas del sistema con sus canales habilitados (email, voz, Telegram). Omite el texto de voz porque contiene un nombre personal. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "automation_accounts_list",
+      "description": "Lista las cuentas de automatización con su institución, plugin, programación y última ejecución. Omite el identificador de cuenta y la URL de webhook. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "automation_runs_list",
+      "description": "Lista las facturas consultadas y los logs de entrega de una cuenta de automatización. Omite payloads crudos y URLs de webhook. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_id": {
+            "description": "ID de la cuenta de automatización (obligatorio)",
+            "type": "integer"
+          },
+          "limit": {
+            "description": "Máximo de logs de webhook (1-200, default 50)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          }
+        },
+        "required": [
+          "account_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
       "name": "autos_create",
       "description": "Crea un auto con año, marca, modelo, color, ícono y datos opcionales de motor, chasis, VIN y placa. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true. Mostrá el resumen al usuario y pedí confirmación antes de ejecutar con dry_run=false.",
       "input_schema": {
@@ -80,6 +135,19 @@
         "idempotentHint": false,
         "openWorldHint": false,
         "readOnlyHint": false
+      }
+    },
+    {
+      "name": "autos_inspection_alerts",
+      "description": "Devuelve el estado de inspección de toda la flota: al día, por vencer (≤ 60 días) y vencidas. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -665,6 +733,35 @@
       }
     },
     {
+      "name": "bills_by_month",
+      "description": "Lista las facturas de todos los servicios de un mes (vista global multi-servicio). Si no se indica período usa el mes actual. Solo lectura; no genera facturas.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "home_id": {
+            "description": "Filtra por vivienda",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "period": {
+            "description": "Período YYYY-MM (default: mes actual)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
       "name": "bills_generate",
       "description": "Genera facturas de un servicio para un rango inclusivo de meses (máximo 36, sin períodos futuros). Omite períodos que ya tienen factura y reporta los slots con factura eliminada. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true. Mostrá el resumen al usuario y pedí confirmación antes de ejecutar con dry_run=false.",
       "input_schema": {
@@ -843,6 +940,120 @@
         "idempotentHint": true,
         "openWorldHint": false,
         "readOnlyHint": false
+      }
+    },
+    {
+      "name": "bills_projection",
+      "description": "Proyecta los próximos meses separando facturas pendientes confirmadas de estimaciones de servicios recurrentes. months va de 1 a 24. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "description": "Mes inicial YYYY-MM (obligatorio)",
+            "type": "string"
+          },
+          "home_id": {
+            "description": "Filtra por vivienda",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "months": {
+            "description": "Cantidad de meses (1-24, default 6)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          }
+        },
+        "required": [
+          "from"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "bills_summary",
+      "description": "Resume las facturas de servicios por período entre dos meses YYYY-MM: confirmadas, pendientes y pagadas. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "description": "Período inicial YYYY-MM (obligatorio)",
+            "type": "string"
+          },
+          "home_id": {
+            "description": "Filtra por vivienda",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "to": {
+            "description": "Período final YYYY-MM (obligatorio)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "credit_card_statements_get",
+      "description": "Devuelve un estado de cuenta con su resumen por tipo de movimiento y su conciliación (base cash y base balance). Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "statement_id": {
+            "description": "ID del estado de cuenta (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "statement_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "credit_card_statements_list",
+      "description": "Lista los estados de cuenta de una tarjeta de crédito, del más reciente al más antiguo, con cantidad de movimientos por estado. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "card_id": {
+            "description": "ID de la tarjeta de crédito (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "card_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -1309,6 +1520,35 @@
       }
     },
     {
+      "name": "debt_bills_list",
+      "description": "Lista cuotas de deuda por deuda (debt_id) o por mes (period YYYY-MM). Exactamente uno de los dos modos es obligatorio. No reconcilia deudas ni crea cuotas. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "debt_id": {
+            "description": "ID de la deuda (modo por deuda)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "period": {
+            "description": "Período YYYY-MM (modo por mes)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
       "name": "entities_search",
       "description": "Busca servicios, hogares, bancos o instituciones por nombre y devuelve sus IDs. No distingue mayúsculas ni acentos; ordena exacto, prefijo y contenido. entity: service, home, bank o institution. query vacía lista las primeras entidades. Para service, home/home_id filtra por hogar. Solo lectura.",
       "input_schema": {
@@ -1343,6 +1583,42 @@
         },
         "required": [
           "entity"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "home_maintenance_list",
+      "description": "Lista las reparaciones y mantenimientos de una vivienda con totales por moneda (mano de obra e insumos). Filtros opcionales de año y tipo (corrective, preventive). Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "kind": {
+            "description": "Tipo: corrective o preventive",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "year": {
+            "description": "Filtra por año (1900-9999)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          }
+        },
+        "required": [
+          "home_id"
         ],
         "type": "object"
       },
@@ -1415,6 +1691,143 @@
         "idempotentHint": false,
         "openWorldHint": false,
         "readOnlyHint": false
+      }
+    },
+    {
+      "name": "pension_catalogs_list",
+      "description": "Lista los catálogos necesarios para operar pensión: hijos, categorías, salarios, configuraciones de generación automática y monedas. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "pension_month_summary",
+      "description": "Resume un mes de pensión: registros de manutención, pagos de salario y estado de cierre. Devuelve totales agrupados por moneda y conteos por estado. Solo lectura; no modifica datos.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "child_id": {
+            "description": "Filtra los registros por hijo (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "period": {
+            "description": "Período YYYY-MM (default: mes actual)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "rental_home_status",
+      "description": "Devuelve el estado de una vivienda: publicación, contrato activo, apartado activo, cargos pendientes y recordatorios. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "rental_lease_get",
+      "description": "Devuelve el detalle de un contrato de alquiler y su balance (cargado, pagado y pendiente). Omite emails y teléfonos de las partes. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "lease_id": {
+            "description": "ID del contrato de alquiler (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "lease_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "rental_leases_list",
+      "description": "Lista contratos de alquiler con filtros opcionales de estado y vivienda. Devuelve saldos derivados y omit múltiples campos de contacto. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "home_id": {
+            "description": "Filtra por vivienda",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "status": {
+            "description": "Filtro de estado del contrato (draft, active, terminated)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "rental_portfolio_summary",
+      "description": "Resume el portafolio de alquileres de un mes: ingresos, pendientes, gastos y estado por vivienda. Si no se indica período usa el mes actual. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "period": {
+            "description": "Período YYYY-MM (default: mes actual)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -1526,6 +1939,41 @@
         "idempotentHint": false,
         "openWorldHint": false,
         "readOnlyHint": false
+      }
+    },
+    {
+      "name": "services_get",
+      "description": "Devuelve el detalle completo de un servicio: facturación, día de cobro, recurrencia, vigencia, ciclo, contrato y último estado de factura. No crea facturas. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "service_id": {
+            "description": "ID del servicio (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "service_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "settings_status",
+      "description": "Devuelve el estado de configuración e integraciones: horas de proceso, zona horaria, país, estado de SMTP, voz, Telegram, webhook y formato de moneda. Omite secretos, emails y chat IDs. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     }
   ]
