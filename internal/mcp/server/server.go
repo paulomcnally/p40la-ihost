@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -150,9 +151,14 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mcpHandler := mcp.NewStreamableHTTPHandler(
 		func(*http.Request) *mcp.Server { return s.mcp },
-		&mcp.StreamableHTTPOptions{Logger: s.logger},
+		&mcp.StreamableHTTPOptions{
+			Logger: s.logger,
+			// El servidor escucha en loopback detrás de Funnel: el Host público
+			// es válido y lo valida allowedHost (ADR-006).
+			DisableLocalhostProtection: true,
+		},
 	)
-	mux.Handle("/mcp", s.requireBearer(s.rateLimit(s.limitBody(mcpHandler))))
+	mux.Handle("/mcp", s.requireBearer(s.allowedHost(s.rateLimit(s.limitBody(mcpHandler)))))
 	mux.Handle("/", s.oauth.Handler())
 	return s.securityHeaders(s.logRequests(mux))
 }
@@ -215,6 +221,40 @@ func (s *Server) unauthorized(w http.ResponseWriter) {
 		"error":             "invalid_token",
 		"error_description": "se requiere un bearer token válido",
 	})
+}
+
+// allowedHost acepta el Host público configurado y loopback. Reemplaza la
+// protección anti-DNS-rebinding del SDK, que rechaza el Host de Funnel porque
+// el listener está en 127.0.0.1 (ADR-006).
+func (s *Server) allowedHost(next http.Handler) http.Handler {
+	publicHost := ""
+	if u, err := url.Parse(s.cfg.PublicURL); err == nil {
+		publicHost = strings.ToLower(u.Hostname())
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host := normalizeHost(r.Host)
+		allowed := publicHost != "" && host == publicHost
+		if !allowed && host == "localhost" {
+			allowed = true
+		}
+		if ip := net.ParseIP(host); !allowed && ip != nil && ip.IsLoopback() {
+			allowed = true
+		}
+		if !allowed {
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "forbidden_host", "error_description": "host no permitido",
+			})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func normalizeHost(raw string) string {
+	if host, _, err := net.SplitHostPort(raw); err == nil {
+		return strings.ToLower(host)
+	}
+	return strings.ToLower(strings.Trim(raw, "[]"))
 }
 
 func (s *Server) rateLimit(next http.Handler) http.Handler {

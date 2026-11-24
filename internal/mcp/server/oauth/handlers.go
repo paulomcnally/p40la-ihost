@@ -76,6 +76,7 @@ type authorizeData struct {
 	Scope        string
 	ClientName   string
 	RedirectHost string
+	FormAction   string
 	Error        string
 }
 
@@ -112,6 +113,8 @@ var authorizeTemplate = template.Must(template.New("authorize").Parse(`<!doctype
   <p>Al continuar serás redirigido a <code>{{.RedirectHost}}</code>.</p>
   {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
   <form method="post" action="/authorize">
+    <input type="hidden" name="response_type" value="code">
+    <input type="hidden" name="code_challenge_method" value="S256">
     <input type="hidden" name="client_id" value="{{.ClientID}}">
     <input type="hidden" name="redirect_uri" value="{{.RedirectURI}}">
     <input type="hidden" name="code_challenge" value="{{.Challenge}}">
@@ -221,6 +224,7 @@ func (p *Provider) parseAuthorize(values url.Values) (authorizeData, error) {
 		host = u.Host
 	}
 	data.RedirectHost = host
+	data.FormAction = originOf(data.RedirectURI)
 	return data, nil
 }
 
@@ -228,9 +232,23 @@ func (p *Provider) renderAuthorize(w http.ResponseWriter, status int, data autho
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Frame-Options", "DENY")
-	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'")
+	csp := "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'"
+	if data.FormAction != "" {
+		// El POST responde 303 al redirect_uri registrado; form-action también
+		// valida los redirects, así que debe incluir ese origen.
+		csp += " " + data.FormAction
+	}
+	w.Header().Set("Content-Security-Policy", csp)
 	w.WriteHeader(status)
 	_ = authorizeTemplate.Execute(w, data)
+}
+
+func originOf(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+		return ""
+	}
+	return u.Scheme + "://" + u.Host
 }
 
 func (p *Provider) token(w http.ResponseWriter, r *http.Request) {
