@@ -1,7 +1,7 @@
 ---
 title: "MCP Fase 2: catálogo de tools para funcionalidades web existentes"
 id: "SPEC-154"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,7 +11,7 @@ github_issue: 157
 # MCP Fase 2: catálogo de tools para funcionalidades web existentes
 
 **ID**: SPEC-154<br>
-**Estado**: in_progress<br>
+**Estado**: released<br>
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
 **Actualizado**: 2026-11-24
@@ -487,7 +487,7 @@ La validación se emitió sobre la spec de alcance. La implementación posterior
 |---|---|---|---|
 | 0 | **Esta spec**: diagnóstico, catálogo y decisiones | Completada | — |
 | 1 | Deuda previa: `G1`, `G2`, `G3`, `G10`, `G15` (lecturas puras, guardia de mes cerrado, contrato de módulos) | 3–4 días | SPEC-154 aprobada |
-| 2 | Ola 1: 19 tools de lectura de alto valor (implementadas en esta spec) | 5–7 días | Fase 1 solo para `debts_list` (diferida) |
+| 2 | Ola 1: 19 tools de lectura de alto valor (implementadas y liberadas) | Completada | — |
 | 3 | Ola 2: 18 tools de lectura de detalle | 5–6 días | Ola 1 + Fase 1 para `budget_month_view` |
 | 4 | Ola 3: 13 tools de escritura acotada con `dry_run` | 6–7 días | Ola 1 + Fase 1 |
 | 5 | Ola 4: evaluación caso por caso | Sin estimar | Specs propias |
