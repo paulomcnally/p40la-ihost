@@ -27,6 +27,17 @@ type API interface {
 	ListBills(ctx context.Context, serviceID int64) ([]Bill, error)
 	GenerateBills(ctx context.Context, serviceID int64, req GenerateRequest) (*GenerateResult, error)
 	PayBills(ctx context.Context, serviceID int64, req PayRequest) (*PayResult, error)
+
+	ListBankRefs(ctx context.Context) ([]BankRef, error)
+	ListCurrencyRefs(ctx context.Context) ([]CurrencyRef, error)
+	ListBankAccounts(ctx context.Context, bankID int64) ([]BankAccount, error)
+	GetBankAccount(ctx context.Context, id int64) (*BankAccount, error)
+	CreateBankAccount(ctx context.Context, bankID int64, input BankAccountInput) (*BankAccount, error)
+	UpdateBankAccount(ctx context.Context, id int64, input BankAccountInput) (*BankAccount, error)
+	ListCreditCards(ctx context.Context, bankID int64) ([]CreditCard, error)
+	GetCreditCard(ctx context.Context, id int64) (*CreditCard, error)
+	CreateCreditCard(ctx context.Context, bankID int64, input CreditCardInput) (*CreditCard, error)
+	UpdateCreditCard(ctx context.Context, id int64, input CreditCardInput) (*CreditCard, error)
 }
 
 // Client es el cliente HTTP autenticado con la API key global del sistema.

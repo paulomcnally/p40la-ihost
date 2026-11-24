@@ -8,9 +8,9 @@ description: "Convenciones y listado de tools MCP disponibles"
 
 ## Convención de nombres
 
-- `snake_case`, con el dominio primero: `bills_list`, `bills_generate`, `bills_pay`.
-- Verbo al final: `list` (lectura), `generate` (alta masiva), `pay` (acción).
-- Las tools de escritura declaran `dry_run` y respetan `P40LA_MCP_ALLOW_WRITES`.
+- `snake_case`, con el dominio primero: `bills_list`, `bank_accounts_search`, `credit_cards_update`.
+- Verbo al final: `list`/`search` (lectura), `create` (alta), `update` (edición), `generate` (alta masiva), `pay` (acción).
+- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas declaran `dry_run`; las de banca no tienen previsualización, resuelven banco y moneda, y verifican duplicados antes de escribir.
 
 ## Tools actuales
 
@@ -19,6 +19,12 @@ description: "Convenciones y listado de tools MCP disponibles"
 | `bills_list` | Facturas | Lectura | [bills.md](bills.md) |
 | `bills_generate` | Facturas | Escritura | [bills.md](bills.md) |
 | `bills_pay` | Facturas | Escritura | [bills.md](bills.md) |
+| `bank_accounts_search` | Banca | Lectura | [banking.md](banking.md) |
+| `bank_accounts_create` | Banca | Escritura | [banking.md](banking.md) |
+| `bank_accounts_update` | Banca | Escritura | [banking.md](banking.md) |
+| `credit_cards_search` | Banca | Lectura | [banking.md](banking.md) |
+| `credit_cards_create` | Banca | Escritura | [banking.md](banking.md) |
+| `credit_cards_update` | Banca | Escritura | [banking.md](banking.md) |
 
 ## Mismos tools en stdio y HTTP
 
@@ -26,7 +32,7 @@ El catálogo no cambia según el transporte. `p40la-mcp` monta el mismo `mcp.Ser
 
 Lo que cambia es la **compuerta de escritura**:
 
-| Transporte | Lectura (`bills_list`) | Escritura (`dry_run=false`) |
+| Transporte | Lectura (`bills_list`, `bank_accounts_search`, `credit_cards_search`) | Escritura (`dry_run=false`, `*_create` o `*_update` de banca) |
 |---|---|---|
 | stdio | Siempre disponible | Requiere `P40LA_MCP_ALLOW_WRITES=true` |
 | HTTP | Siempre disponible | Requiere `P40LA_MCP_ALLOW_WRITES=true` **y** `P40LA_MCP_REMOTE_WRITES=true` |
@@ -40,6 +46,8 @@ Si falta la compuerta remota, la tool responde:
   "hint": "Definí P40LA_MCP_ALLOW_WRITES=true y P40LA_MCP_REMOTE_WRITES=true, o repetí con dry_run=true para previsualizar."
 }
 ```
+
+En las tools de banca, que no tienen `dry_run`, el `hint` omite esa alternativa y solo indica las variables de la compuerta.
 
 El modo HTTP no agrega tools nuevas ni cambia los schemas de entrada. Los límites de body (1 MiB), rate limit y auditoría son del servidor, no de cada tool. Ver [http.md](../http.md), [oauth.md](../oauth.md) y [security.md](../security.md).
 
@@ -57,7 +65,8 @@ Las tools devuelven contenido de texto JSON y `structuredContent` con el mismo o
 
 ## Anotaciones MCP
 
-- `bills_list`: `readOnlyHint=true`.
-- `bills_generate` y `bills_pay`: `destructiveHint=false`, `idempotentHint=true`, `openWorldHint=false`.
+- Lectura: `bills_list`, `bank_accounts_search` y `credit_cards_search` usan `readOnlyHint=true`.
+- Escritura de facturas: `bills_generate` y `bills_pay` usan `destructiveHint=false`, `idempotentHint=true`, `openWorldHint=false`.
+- Escritura de banca: las altas y ediciones usan `destructiveHint=true` y `openWorldHint=false`. Las ediciones (`*_update`) usan `idempotentHint=true`; las altas (`*_create`) usan `idempotentHint=false`.
 
-`destructiveHint=false` significa que son aditivas (crean o actualizan estado), no borran datos. La confirmación humana sigue siendo obligatoria por el impacto financiero.
+`destructiveHint=false` significa que son aditivas (crean o actualizan estado), no borran datos. En banca se declara `destructiveHint=true`: las tools modifican datos existentes, aunque no borren, y el cliente debe tratarlas con la misma precaución que una escritura. La confirmación humana sigue siendo obligatoria por el impacto financiero.

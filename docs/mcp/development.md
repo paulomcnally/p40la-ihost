@@ -25,13 +25,20 @@ internal/mcp/
 ├── audit/                      # JSONL con rotación
 └── tools/
     ├── all/register.go         # único punto que importa los dominios
-    └── bills/                  # tools de facturas
-        ├── tools.go            # Toolset + Register + writeMode
+    ├── bills/                  # tools de facturas
+    │   ├── tools.go            # Toolset + Register + writeMode
+    │   ├── results.go          # helpers de resultado/error
+    │   ├── period.go           # períodos YYYY-MM
+    │   ├── list.go
+    │   ├── generate.go
+    │   └── pay.go
+    └── banking/                # tools de cuentas y tarjetas (SPEC-152)
+        ├── tools.go            # Toolset + Register + gate de escritura
+        ├── resolve.go          # banco, moneda, duplicados y ranking
         ├── results.go          # helpers de resultado/error
-        ├── period.go           # períodos YYYY-MM
-        ├── list.go
-        ├── generate.go
-        └── pay.go
+        ├── util.go             # límite de resultados y helpers
+        ├── accounts.go
+        └── cards.go
 ```
 
 Las tools no saben por qué transporte llegan: `cmd/mcp-server` monta el mismo `mcp.Server` en stdio o en Streamable HTTP. La compuerta de escritura sí consulta el transporte (`Config.WritesEnabled()`), porque el modo HTTP exige la segunda variable.
@@ -43,7 +50,7 @@ Las tools no saben por qué transporte llegan: `cmd/mcp-server` monta el mismo `
 3. **Creá el paquete de tools** `internal/mcp/tools/<dominio>` con un `Toolset` y un `Register`.
 4. **Registrá el dominio** en `internal/mcp/tools/all/register.go` con un `r.Add(...)`.
 5. **Escribí tests** con una API falsa y, si aplica, un test de protocolo con `mcp.NewInMemoryTransports`.
-6. **Documentá** la tool en `docs/mcp/tools/<dominio>.md` y actualizá el catálogo.
+6. **Documentá** la tool en `docs/mcp/tools/<dominio>.md` (por ejemplo, `docs/mcp/tools/banking.md` para cuentas bancarias y tarjetas) y actualizá el catálogo.
 
 ## Contrato de una tool
 
@@ -201,7 +208,7 @@ Todo cambio en el código del MCP se documenta **en el mismo commit**. La superf
 
 **`DELIV-MCP-DOCS`** — agregar o cambiar una tool, un contrato HTTP, una variable de entorno o un flujo operativo exige actualizar `docs/mcp/` en el **mismo commit** que el código. Según el cambio:
 
-- Tool nueva o modificada → `docs/mcp/tools/<dominio>.md` y el catálogo de `docs/mcp/README.md`.
+- Tool nueva o modificada → `docs/mcp/tools/<dominio>.md` y el catálogo de `docs/mcp/README.md` (banca: `docs/mcp/tools/banking.md`).
 - Variable de entorno o configuración → `docs/mcp/configuration.md`.
 - Transporte HTTP, OAuth o límites → `docs/mcp/http.md`, `docs/mcp/oauth.md` y `docs/mcp/configuration.md`.
 - Publicación en Internet → `docs/mcp/funnel.md`.
