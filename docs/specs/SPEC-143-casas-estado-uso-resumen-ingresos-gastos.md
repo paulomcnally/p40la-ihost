@@ -1,7 +1,7 @@
 ---
 title: "Casas: estado de uso y resumen de ingresos y gastos"
 id: "SPEC-143"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 146
 # Casas: estado de uso y resumen de ingresos y gastos
 
 **ID**: SPEC-143
-**Estado**: pending_release
+**Estado**: released
 **Autor**: opencode
 **Creado**: 2026-11-23
 **Actualizado**: 2026-11-23
@@ -615,6 +615,17 @@ homes (existente + nueva columna)
 - Tab Finanzas validado por API: 12 meses, movimientos del mes, breakdown por categoría y comisión solo en el mes de inicio del contrato.
 - Prueba manual del usuario: aprobada; pidió el release de la spec.
 
+### Release
+
+- **Estado**: released (2026-11-23)
+- **Commit de implementación**: `085d3f10`
+- **Merge a `main`**: `a8a836a4`
+- **Migraciones**: `0058_homes_usage`, `0059_portfolio_indexes`
+- **Versión**: 0.5.16
+- **Issue**: #146 (cerrado)
+- **Validación**: `go build ./...`, `go test ./...`, `check:ui`, `check:i18n`, `check:numbers` y build de Vite en verde; smoke test de API con DB sintética y con copia de producción del iHost en `/tmp` (estados, bloqueos 409, resumen por moneda, filtro y tab Finanzas con NIO/USD). Release aprobado por el usuario.
+
+
 ---
 
 ## 10. Historial de Cambios
@@ -626,3 +637,4 @@ homes (existente + nueva columna)
 | 2026-11-23 | opencode | Colores por estado y filtro por estado con modal |
 | 2026-11-23 | opencode | Tab Finanzas por casa: barras, dona, movimientos y comisión única al inicio |
 | 2026-11-23 | opencode | Implementación completa y validada; estado pasa a `pending_release` |
+| 2026-11-23 | opencode | Release: merge `a8a836a4` a `main`, estado `released`, versión 0.5.16, issue #146 cerrado y tracker actualizado |
