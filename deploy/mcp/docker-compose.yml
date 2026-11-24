@@ -3,7 +3,7 @@
 # imágenes, variables, volúmenes y red. Ver README.md.
 services:
   p40la-mcp:
-    image: paulomcnally/p40la-mcp:0.3.0
+    image: paulomcnally/p40la-mcp:0.4.0
     container_name: p40la-mcp
     network_mode: host
     restart: unless-stopped
