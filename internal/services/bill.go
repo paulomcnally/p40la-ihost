@@ -19,6 +19,7 @@ type BillService struct {
 	storage  *storage.BillStorage
 	services *storage.ServiceStorage
 	history  *storage.BillHistoryStorage
+	currency *storage.CurrencyStorage
 	budget   BillBudgetLinker
 }
 
@@ -38,6 +39,13 @@ func (s *BillService) SetBillHistoryStorage(h *storage.BillHistoryStorage) {
 // configura, el flujo de pago queda sin cambios.
 func (s *BillService) SetBillBudgetLinker(b BillBudgetLinker) {
 	s.budget = b
+}
+
+// SetCurrencyStorage habilita la resolución del código de moneda del servicio
+// en los resúmenes de operaciones masivas (SPEC-145). Si no se configura, el
+// resumen omite el código.
+func (s *BillService) SetCurrencyStorage(c *storage.CurrencyStorage) {
+	s.currency = c
 }
 
 // ListByService devuelve las facturas de un servicio.
@@ -60,6 +68,15 @@ func (s *BillService) History(ctx context.Context, id int64) ([]models.BillHisto
 
 // Create crea una nueva factura.
 func (s *BillService) Create(ctx context.Context, bill *models.Bill) (*models.Bill, error) {
+	return s.CreateWithSource(ctx, bill, models.BillSourceDashboard)
+}
+
+// CreateWithSource crea una factura registrando el origen indicado en el
+// historial (dashboard o mcp). SPEC-145.
+func (s *BillService) CreateWithSource(ctx context.Context, bill *models.Bill, source string) (*models.Bill, error) {
+	if err := validateBillSource(source); err != nil {
+		return nil, err
+	}
 	if err := s.validate(ctx, bill, true); err != nil {
 		return nil, err
 	}
@@ -67,7 +84,7 @@ func (s *BillService) Create(ctx context.Context, bill *models.Bill) (*models.Bi
 	if err != nil {
 		return nil, err
 	}
-	if err := recordBillHistory(ctx, s.history, created.ID, models.BillActionCreated, models.BillSourceDashboard, nil); err != nil {
+	if err := recordBillHistory(ctx, s.history, created.ID, models.BillActionCreated, source, nil); err != nil {
 		return nil, fmt.Errorf("registrar historial de factura: %w", err)
 	}
 	return created, nil
@@ -107,6 +124,15 @@ func (s *BillService) Delete(ctx context.Context, id int64) error {
 // (obligatoria) y, opcionalmente, el link de Google Drive del comprobante y una
 // referencia interna del pago.
 func (s *BillService) PayBill(ctx context.Context, id int64, paidAt time.Time, driveURL, paymentReference string) (*models.Bill, error) {
+	return s.PayBillWithSource(ctx, id, paidAt, driveURL, paymentReference, models.BillSourceDashboard)
+}
+
+// PayBillWithSource marca una factura como pagada registrando el origen
+// indicado en el historial (dashboard o mcp). SPEC-145.
+func (s *BillService) PayBillWithSource(ctx context.Context, id int64, paidAt time.Time, driveURL, paymentReference, source string) (*models.Bill, error) {
+	if err := validateBillSource(source); err != nil {
+		return nil, err
+	}
 	if paidAt.IsZero() {
 		return nil, fmt.Errorf("la fecha de pago es obligatoria")
 	}
@@ -135,7 +161,7 @@ func (s *BillService) PayBill(ctx context.Context, id int64, paidAt time.Time, d
 	if err != nil {
 		return nil, err
 	}
-	if err := recordBillHistory(ctx, s.history, paid.ID, models.BillActionPaid, models.BillSourceDashboard, diffBillChanges(&before, paid)); err != nil {
+	if err := recordBillHistory(ctx, s.history, paid.ID, models.BillActionPaid, source, diffBillChanges(&before, paid)); err != nil {
 		return nil, fmt.Errorf("registrar historial de factura: %w", err)
 	}
 	// Transacción de presupuesto automática (SPEC-094). El pago ya está
@@ -147,6 +173,17 @@ func (s *BillService) PayBill(ctx context.Context, id int64, paidAt time.Time, d
 		}
 	}
 	return paid, nil
+}
+
+// validateBillSource acepta únicamente los orígenes conocidos para evitar
+// valores arbitrarios en la auditoría.
+func validateBillSource(source string) error {
+	switch source {
+	case models.BillSourceDashboard, models.BillSourceMCP:
+		return nil
+	default:
+		return fmt.Errorf("origen de factura inválido")
+	}
 }
 
 func (s *BillService) validate(ctx context.Context, bill *models.Bill, isNew bool) error {

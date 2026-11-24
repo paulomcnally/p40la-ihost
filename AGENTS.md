@@ -106,6 +106,7 @@ Flujo completo, comandos y gates: skill `spec-manager` (`.opencode/skills/spec-m
 ├── docs/
 │   ├── rules/                       # ← fuente de verdad de las reglas
 │   ├── specs/                       # Specs + tracker
+│   ├── mcp/                         # Servidor MCP y tools (SPEC-145)
 │   ├── ssh-ihost-access.md
 │   └── project-rules.md             # stub de compatibilidad
 ├── migrations/

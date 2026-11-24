@@ -6,6 +6,7 @@ import "time"
 const (
 	BillSourceDashboard = "dashboard"
 	BillSourceWebhook   = "webhook"
+	BillSourceMCP       = "mcp"
 )
 
 // Acciones de auditoría de facturas (SPEC-070).
