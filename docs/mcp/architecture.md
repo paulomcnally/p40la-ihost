@@ -96,6 +96,7 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 | Registry | `internal/mcp/registry` | Punto de montaje de conjuntos de tools |
 | Tools de facturas | `internal/mcp/tools/bills` | `bills_list`, `bills_generate`, `bills_pay` |
 | Tools de autos | `internal/mcp/tools/autos` | `autos_list`, `autos_create`, `autos_update`, `autos_maintenance_register`, `autos_inspection_register`, `autos_insurance_register` |
+| Tools de banca | `internal/mcp/tools/banking` | `bank_accounts_search`, `bank_accounts_create`, `bank_accounts_update`, `credit_cards_search`, `credit_cards_create`, `credit_cards_update` |
 | Registro global | `internal/mcp/tools/all` | Único lugar que importa los paquetes de tools |
 | Servidor HTTP | `internal/mcp/server/server.go` | Listeners público y admin, auth, rate limit, body limit, headers, health y revocación |
 | Middleware de auditoría | `internal/mcp/server/middleware.go` | Registra solo `tools/call`, sin argumentos ni resultados |

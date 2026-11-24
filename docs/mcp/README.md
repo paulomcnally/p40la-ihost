@@ -17,7 +17,7 @@ El binario tiene dos transportes con el mismo catálogo de tools:
 
 El modo remoto está pensado para conectores que Anthropic ejecuta desde su infraestructura: exige HTTPS público, OAuth 2.1 y una contraseña de administración. El modo local no necesita nada de eso. Ver [http.md](http.md), [oauth.md](oauth.md) y [funnel.md](funnel.md).
 
-El catálogo cubre facturas de servicios, autos, búsqueda de entidades y altas de entidades base:
+El catálogo cubre facturas de servicios, autos, búsqueda y altas de entidades base, y banca (cuentas bancarias y tarjetas de crédito):
 
 | Tool | Tipo | Qué hace |
 |---|---|---|
@@ -35,6 +35,12 @@ El catálogo cubre facturas de servicios, autos, búsqueda de entidades y altas 
 | `institutions_create` | escritura | Crea una institución o proveedor y resuelve su categoría |
 | `banks_create` | escritura | Crea un banco con código corto, país y estado |
 | `services_create` | escritura | Crea un servicio en un hogar, con moneda e institución por nombre o ID |
+| `bank_accounts_search` | lectura | Busca cuentas bancarias por alias, número, beneficiario o banco |
+| `bank_accounts_create` | escritura | Crea una cuenta bancaria y resuelve el banco y la moneda |
+| `bank_accounts_update` | escritura | Edita una cuenta existente sin cambiar el banco |
+| `credit_cards_search` | lectura | Busca tarjetas por alias, últimos cuatro dígitos, titular o banco |
+| `credit_cards_create` | escritura | Crea una tarjeta de crédito con los defaults del sistema |
+| `credit_cards_update` | escritura | Edita una tarjeta existente sin cambiar el banco |
 
 ## Requisitos
 
@@ -114,12 +120,12 @@ El runbook completo —prerrequisitos, API key, hash OAuth, volúmenes, alta por
 
 ## Flujo seguro de escritura
 
-1. El agente llama una tool de escritura (por ejemplo `bills_generate`, `bills_pay` o `autos_maintenance_register`) **sin** `dry_run=false` (el valor por defecto es `true`).
-2. Muestra el resumen al usuario: períodos, montos o datos del registro, y los ítems omitidos.
-3. El usuario confirma.
-4. El agente repite con `dry_run=false`. La compuerta `P40LA_MCP_ALLOW_WRITES=true` debe estar activa; si el transporte es HTTP, también `P40LA_MCP_REMOTE_WRITES=true`.
+1. En facturas y autos, el agente llama la tool de escritura con `dry_run=true` (el valor por defecto) y muestra el resumen: períodos, montos, datos del registro e ítems omitidos. En entidades y banca, que no tienen `dry_run`, muestra antes la entidad, el banco y la moneda resueltos, el cuerpo que se enviará y si ya existe un duplicado.
+2. El usuario confirma.
+3. El agente ejecuta: en facturas y autos repite con `dry_run=false`; las tools de entidades y banca se llaman directamente. La compuerta `P40LA_MCP_ALLOW_WRITES=true` debe estar activa; si el transporte es HTTP, también `P40LA_MCP_REMOTE_WRITES=true`.
+4. El agente reporta el resultado y verifica con una lectura.
 
-En facturas, las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`. En autos, solo `autos_update` es idempotente: repetir un alta de auto, mantenimiento o inspección crea otro registro, y repetir un seguro devuelve `already_exists`.
+En facturas, las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`. En autos, solo `autos_update` es idempotente: repetir un alta de auto, mantenimiento o inspección crea otro registro, y repetir un seguro devuelve `already_exists`. En entidades y banca, las ediciones son idempotentes y las altas comprueban duplicados: repetir un alta devuelve `already_exists` con el `id` existente, sin crear otro registro.
 
 Antes de un alta, `entities_search` permite verificar si la entidad ya existe y obtener su `id`; es de solo lectura y no requiere la compuerta.
 
@@ -141,6 +147,7 @@ Las tools de alta (`homes_create`, `institutions_create`, `banks_create`, `servi
 - [Tools de facturas](tools/bills.md)
 - [Tools de autos](tools/autos.md)
 - [Tools de entidades](tools/entities.md)
+- [Tools de banca](tools/banking.md)
 
 ## Publicación web
 

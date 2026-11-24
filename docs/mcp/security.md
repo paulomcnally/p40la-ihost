@@ -11,7 +11,7 @@ description: "API key global, OAuth, compuerta de escritura, datos y protocolo d
 1. **Dos credenciales separadas**: OAuth 2.1 protege la entrada remota; la API key global protege la salida hacia la API del sistema.
 2. **Sin contraseña del dashboard en el MCP**: el agente usa una API key, no las credenciales del usuario. La contraseña del MCP remoto es otra credencial, solo para autorizar clientes OAuth.
 3. **Menor exposición**: las credenciales se guardan hasheadas, se muestran una vez y se pueden revocar.
-4. **Confirmación humana**: las tools de escritura previsualizan con `dry_run` y el agente debe pedir confirmación antes de ejecutar.
+4. **Confirmación humana**: toda tool de escritura exige confirmación del usuario antes de ejecutar. Las de facturas previsualizan con `dry_run`; las de banca no tienen `dry_run` y el agente debe mostrar el resumen (banco y moneda resueltos, cuerpo y duplicados) antes de escribir.
 5. **Datos mínimos**: los logs no incluyen montos, tokens, cookies ni payloads.
 6. **Lectura por defecto en remoto**: publicar el MCP en Internet no habilita escrituras.
 
@@ -65,12 +65,14 @@ La administración de la key es **solo por sesión**: una key no puede crear ni 
 
 ## Compuerta de escritura
 
-`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que cualquier tool de escritura (`bills_generate`, `bills_pay`, las `autos_*` que escriben y las `*_create` de entidades) ejecute cambios. Las tools de facturas y autos requieren además `dry_run=false`; las de alta de entidades escriben directo. En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
+`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que **cualquier** tool de escritura ejecute cambios: `bills_generate` y `bills_pay` y las `autos_*` que escriben (con `dry_run=false`), `bank_accounts_create`/`bank_accounts_update`, `credit_cards_create`/`credit_cards_update` y las `*_create` de entidades (directas). En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
 
-| Modo | `dry_run=false` + compuertas apagadas | `dry_run=false` + compuertas encendidas |
+| Modo | Escritura con compuertas apagadas | Escritura con compuertas encendidas |
 |---|---|---|
 | stdio | `writes_disabled`; no llama a la API | Ejecuta con origen `mcp` |
 | HTTP | `writes_disabled` si falta cualquiera de las dos | Ejecuta con origen `mcp` y auditoría local |
+
+En facturas, “escritura” significa `dry_run=false`. En banca no hay `dry_run`: si la compuerta está activa, la tool escribe directamente y verifica duplicados antes de llamar a la API; si está apagada, devuelve `writes_disabled` sin llamar a la API. Las lecturas (`bills_list`, `bank_accounts_search`, `credit_cards_search`) funcionan siempre, con o sin compuerta.
 
 La compuerta se valida en el MCP **y** el backend valida el origen. No protege contra un usuario que ya tiene la API key: es una defensa contra escrituras accidentales del agente y contra un conector remoto mal configurado.
 
@@ -80,7 +82,7 @@ Recomendación: dejar `P40LA_MCP_REMOTE_WRITES=false` de forma permanente si cla
 
 Cuando se usa un conector remoto, las llamadas a tools y sus resultados se procesan en la infraestructura de Anthropic:
 
-- Viajan el nombre de la tool, sus argumentos (IDs, períodos, montos, fechas y `dry_run`; en autos, marca, modelo, placa, VIN y póliza) y el resultado (facturas, estados, montos o registros de autos).
+- Viajan el nombre de la tool, sus argumentos (IDs, períodos, referencias de banco y moneda, alias, montos, fechas y `dry_run` cuando aplica; en autos, marca, modelo, placa, VIN y póliza) y el resultado (facturas, cuentas, tarjetas, estados, montos o registros de autos).
 - El canal es HTTPS 443; el contenido lo procesa Anthropic para generar la respuesta del modelo.
 - El binario no envía datos a ningún otro destino: solo llama a `P40LA_BASE_URL`.
 - La auditoría local no guarda argumentos ni resultados; el proveedor del modelo sí los ve para razonar.

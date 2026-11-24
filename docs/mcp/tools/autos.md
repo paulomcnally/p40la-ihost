@@ -1,6 +1,6 @@
 ---
 title: "Tools de autos"
-sidebar_position: 3
+sidebar_position: 5
 description: "Referencia de autos_list, autos_create, autos_update y el registro de mantenimientos, inspecciones y seguros"
 ---
 
