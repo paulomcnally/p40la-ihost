@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/paulomcnally/p40la-ihost/internal/modules"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 )
 
@@ -556,16 +557,7 @@ func (s *Service) GetHomeStatus(ctx context.Context, homeID int64) (*HomeRentalS
 		s.withApplicant(ctx, res)
 		st.ActiveReservation = res
 	}
-	switch {
-	case !st.ListingEnabled:
-		st.ListingStatus = ListingUnlisted
-	case lease != nil && lease.Status == LeaseActive:
-		st.ListingStatus = ListingRented
-	case res != nil:
-		st.ListingStatus = ListingReserved
-	default:
-		st.ListingStatus = ListingAvailable
-	}
+	st.ListingStatus = deriveHomeState(st.Usage, lease != nil && lease.Status == LeaseActive, res != nil)
 	if lease != nil {
 		charges, err := s.storage.ListChargesByStatus(ctx, lease.ID, ChargePending)
 		if err != nil {
@@ -590,12 +582,47 @@ func (s *Service) GetHomeStatus(ctx context.Context, homeID int64) (*HomeRentalS
 	return st, nil
 }
 
-// SetListingEnabled controla la publicación de la vivienda.
-func (s *Service) SetListingEnabled(ctx context.Context, homeID int64, enabled bool) (*HomeRentalStatus, error) {
-	if err := s.storage.SetListingEnabled(ctx, homeID, enabled); err != nil {
+// ListHomeStates devuelve el estado derivado de todas las viviendas. Lo consume
+// el módulo realestate.portfolio (SPEC-143).
+func (s *Service) ListHomeStates(ctx context.Context) ([]modules.HomeState, error) {
+	rows, err := s.storage.ListHomeStates(ctx, s.now())
+	if err != nil {
 		return nil, err
 	}
-	return s.GetHomeStatus(ctx, homeID)
+	out := make([]modules.HomeState, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, modules.HomeState{
+			HomeID:  row.HomeID,
+			Name:    row.Name,
+			Address: row.Address,
+			Usage:   row.Usage,
+			State:   deriveHomeState(row.Usage, row.HasActiveLease, row.HasReservation),
+		})
+	}
+	return out, nil
+}
+
+// HasActiveRental informa si la vivienda tiene contrato o reserva activa.
+// Lo usa el servicio de hogares para bloquear cambios de uso (SPEC-143).
+func (s *Service) HasActiveRental(ctx context.Context, homeID int64) (bool, error) {
+	return s.storage.HasActiveRental(ctx, homeID, s.now())
+}
+
+// deriveHomeState aplica la matriz de estado de la SPEC-143.
+func deriveHomeState(usage string, hasActiveLease, hasReservation bool) string {
+	switch usage {
+	case UsageInhabited:
+		return StateInhabited
+	case UsageUnused:
+		return StateUnused
+	}
+	if hasActiveLease {
+		return StateRented
+	}
+	if hasReservation {
+		return StateReserved
+	}
+	return StateListed
 }
 
 // ---------------------------------------------------------------- settings
@@ -712,12 +739,12 @@ func (s *Service) prepareLease(ctx context.Context, l *Lease) error {
 	if l.HomeID <= 0 {
 		return invalid("home_required", "La vivienda es obligatoria")
 	}
-	exists, err := s.storage.HomeExists(ctx, l.HomeID)
+	listing, err := s.storage.GetHomeListing(ctx, l.HomeID)
 	if err != nil {
 		return err
 	}
-	if !exists {
-		return ErrHomeNotFound
+	if listing.Usage != UsageRental {
+		return ErrHomeNotAvailable
 	}
 	if !validDate(l.StartDate) {
 		return invalid("invalid_date", "La fecha de inicio es inválida (YYYY-MM-DD)")
@@ -835,12 +862,12 @@ func (s *Service) prepareReservation(ctx context.Context, r *Reservation, checkA
 	if r.HomeID <= 0 {
 		return invalid("home_required", "La vivienda es obligatoria")
 	}
-	exists, err := s.storage.HomeExists(ctx, r.HomeID)
+	listing, err := s.storage.GetHomeListing(ctx, r.HomeID)
 	if err != nil {
 		return err
 	}
-	if !exists {
-		return ErrHomeNotFound
+	if listing.Usage != UsageRental {
+		return ErrHomeNotAvailable
 	}
 	if checkApplicant {
 		if r.ApplicantPersonID <= 0 {

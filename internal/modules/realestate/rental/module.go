@@ -1,6 +1,7 @@
 package rental
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 	"sync"
@@ -39,6 +40,7 @@ func (m *Module) Info() modules.Info {
 			"0054_rental_reminders",
 			"0055_real_estate_category",
 			"0056_rental_commission_type",
+			"0058_homes_usage",
 		},
 	}
 }
@@ -61,3 +63,13 @@ func (m *Module) Stop() {
 
 // Service expone el servicio para tests de integración.
 func (m *Module) Service() *Service { return m.service }
+
+// HomeStates implementa modules.HomeStateProvider (SPEC-143).
+func (m *Module) HomeStates(ctx context.Context) ([]modules.HomeState, error) {
+	return m.service.ListHomeStates(ctx)
+}
+
+// HasActiveRental expone si la vivienda tiene alquiler activo (SPEC-143).
+func (m *Module) HasActiveRental(ctx context.Context, homeID int64) (bool, error) {
+	return m.service.HasActiveRental(ctx, homeID)
+}
