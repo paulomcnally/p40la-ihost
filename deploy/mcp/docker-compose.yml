@@ -1,0 +1,35 @@
+# Referencia de despliegue del MCP en el iHost (SPEC-148).
+# La UI de Docker del iHost no consume compose: usalo como especificación de
+# imágenes, variables, volúmenes y red. Ver README.md.
+services:
+  p40la-mcp:
+    image: paulomcnally/p40la-mcp:0.1.0
+    container_name: p40la-mcp
+    network_mode: host
+    restart: unless-stopped
+    env_file:
+      - /etc/p40la-mcp.env
+    volumes:
+      - p40la-mcp-data:/data
+
+  tailscale-mcp:
+    image: paulomcnally/p40la-mcp-tailscale:0.1.0
+    container_name: tailscale-mcp
+    # Primario: red host. Si el 443 choca con el Tailscale del dashboard,
+    # usar una red bridge propia y proxear a host.docker.internal:8090.
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:?definí TS_AUTHKEY}
+      TS_HOSTNAME: p40la-mcp
+      TS_USERSPACE: "true"
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/serve.json
+      # Si usás un auth key sin tag, podés anunciar el tag acá:
+      # TS_EXTRA_ARGS: "--advertise-tags=tag:p40la-mcp"
+    volumes:
+      - tailscale-mcp-state:/var/lib/tailscale
+
+volumes:
+  p40la-mcp-data:
+  tailscale-mcp-state:

@@ -5,13 +5,14 @@
 #
 # Uso:
 #   GH_TOKEN=... ./scripts/build-mcp-image.sh
-#   IMAGE=ghcr.io/usuario/p40la-mcp TAG=0.5.17 ./scripts/build-mcp-image.sh
+#   IMAGE=paulomcnally/p40la-mcp TAG=0.1.0 ./scripts/build-mcp-image.sh
 #
+# En CI se publica con .github/workflows/mcp-publish.yml (tag mcp-v*).
 # Plataformas obligatorias (DELIV-DOCKER): amd64, arm/v7, arm64.
 
 set -euo pipefail
 
-IMAGE="${IMAGE:-ghcr.io/paulomcnally/p40la-mcp}"
+IMAGE="${IMAGE:-paulomcnally/p40la-mcp}"
 TAG="${TAG:-$(git describe --tags --always --dirty 2>/dev/null || echo dev)}"
 VERSION="${VERSION:-${TAG}}"
 PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm/v7,linux/arm64}"
