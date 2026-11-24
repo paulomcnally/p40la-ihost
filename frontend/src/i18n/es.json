@@ -710,7 +710,79 @@
     "empty": "No has creado ninguna casa todavía.",
     "select": "Seleccionar casa",
     "reorder": "Arrastrar para reordenar",
-    "order_error": "No se pudo guardar el orden"
+    "order_error": "No se pudo guardar el orden",
+    "usage_label": "Uso",
+    "usage_hint": "Define cómo se usa la propiedad. En alquiler permite crear contratos y reservas.",
+    "usage": {
+      "rental": "En alquiler",
+      "inhabited": "Habitada",
+      "unused": "Sin uso"
+    },
+    "state": {
+      "listed": "En alquiler",
+      "reserved": "Reservada para alquiler",
+      "rented": "Alquilada",
+      "inhabited": "Habitada",
+      "unused": "Sin uso"
+    },
+    "no_rental_homes": "No hay casas marcadas En alquiler. Cambiá el uso de una casa para crear contratos o reservas.",
+    "rental_blocked": "Esta casa no está disponible para alquilar.",
+    "rental_blocked_hint": "Está marcada como Habitada o Sin uso. Cambiá el uso a En alquiler desde Editar.",
+    "finances": {
+      "tab": "Finanzas",
+      "title": "Finanzas de la casa",
+      "income_legend": "Ingresos",
+      "expenses_legend": "Gastos",
+      "series_title": "Últimos 12 meses",
+      "breakdown_title": "Composición de gastos",
+      "movements_title": "Movimientos del mes",
+      "currency": "Moneda",
+      "no_expenses": "Sin gastos este mes",
+      "no_movements": "Sin movimientos este mes",
+      "load_error": "No se pudo cargar la información financiera",
+      "retry": "Reintentar",
+      "fixed": "Monto fijo",
+      "type": {
+        "payment": "Cobro",
+        "reservation": "Seña",
+        "bill": "Factura",
+        "maintenance": "Reparación",
+        "commission": "Comisión"
+      },
+      "category": {
+        "services": "Servicios",
+        "maintenance": "Reparaciones",
+        "commission": "Comisión"
+      },
+      "status": {
+        "paid": "Pagado",
+        "pending": "Pendiente",
+        "active": "Activa",
+        "forfeited": "Perdida",
+        "done": "Realizada"
+      }
+    },
+    "filter": {
+      "title": "Filtrar por estado",
+      "subtitle": "Elegí los estados que querés ver en la lista.",
+      "all": "Todos",
+      "empty": "Elegí al menos un estado.",
+      "no_matches": "No hay casas con los estados seleccionados.",
+      "clear": "Quitar filtro"
+    },
+    "portfolio": {
+      "title": "Resumen del mes",
+      "criteria": "Ingresos: cobros y señas del mes. Gastos: facturas de servicios y reparaciones del mes. Por cobrar: saldo acumulado al cierre. Se muestra por moneda, sin conversión.",
+      "income": "Ingresos",
+      "expenses": "Gastos",
+      "net": "Neto",
+      "pending_income": "Por cobrar",
+      "pending_expenses": "Por pagar",
+      "month_net": "Neto del mes",
+      "prev_month": "Mes anterior",
+      "next_month": "Mes siguiente",
+      "load_error": "No se pudo cargar el resumen"
+    }
   },
   "services": {
     "title": "Servicios",
@@ -1902,7 +1974,6 @@
     "tab_rental": "Alquiler",
     "home_not_found": "Vivienda no encontrada",
     "back_to_homes": "Volver a casas",
-    "listing_updated": "Publicación actualizada",
     "rent": "Renta",
     "maintenance": "Mantenimiento",
     "maintenance_hint": "Cuota mensual de vigilancia, áreas comunes o servicios.",
@@ -1980,16 +2051,6 @@
     "enabled": "Activo",
     "disabled": "Inactivo",
     "send_now": "Enviar ahora",
-    "listing": {
-      "available": "Disponible",
-      "reserved": "Apartada",
-      "rented": "Alquilada",
-      "unlisted": "No publicada",
-      "title": "Promoción de la vivienda",
-      "hint": "El estado se calcula desde el apartado y el contrato vigente.",
-      "publish": "Publicar vivienda",
-      "publish_hint": "Apagalo para dejar de promocionar la casa."
-    },
     "summary": {
       "title": "Información de la casa"
     },

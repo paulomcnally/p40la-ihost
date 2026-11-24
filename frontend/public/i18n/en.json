@@ -710,7 +710,79 @@
     "empty": "You haven't created any home yet.",
     "select": "Select home",
     "reorder": "Drag to reorder",
-    "order_error": "Could not save the order"
+    "order_error": "Could not save the order",
+    "usage_label": "Usage",
+    "usage_hint": "Defines how the property is used. For rent allows creating leases and reservations.",
+    "usage": {
+      "rental": "For rent",
+      "inhabited": "Occupied",
+      "unused": "Unused"
+    },
+    "state": {
+      "listed": "For rent",
+      "reserved": "Reserved for rent",
+      "rented": "Rented",
+      "inhabited": "Occupied",
+      "unused": "Unused"
+    },
+    "no_rental_homes": "There are no homes marked For rent. Change a home's usage to create leases or reservations.",
+    "rental_blocked": "This home is not available for rent.",
+    "rental_blocked_hint": "It is marked as Occupied or Unused. Change the usage to For rent from Edit.",
+    "finances": {
+      "tab": "Finances",
+      "title": "Home finances",
+      "income_legend": "Income",
+      "expenses_legend": "Expenses",
+      "series_title": "Last 12 months",
+      "breakdown_title": "Expense breakdown",
+      "movements_title": "Month movements",
+      "currency": "Currency",
+      "no_expenses": "No expenses this month",
+      "no_movements": "No movements this month",
+      "load_error": "Could not load the financial information",
+      "retry": "Retry",
+      "fixed": "Fixed amount",
+      "type": {
+        "payment": "Payment",
+        "reservation": "Deposit",
+        "bill": "Bill",
+        "maintenance": "Repair",
+        "commission": "Commission"
+      },
+      "category": {
+        "services": "Services",
+        "maintenance": "Repairs",
+        "commission": "Commission"
+      },
+      "status": {
+        "paid": "Paid",
+        "pending": "Pending",
+        "active": "Active",
+        "forfeited": "Forfeited",
+        "done": "Done"
+      }
+    },
+    "filter": {
+      "title": "Filter by status",
+      "subtitle": "Choose the states you want to see in the list.",
+      "all": "All",
+      "empty": "Choose at least one state.",
+      "no_matches": "There are no homes with the selected states.",
+      "clear": "Clear filter"
+    },
+    "portfolio": {
+      "title": "Monthly summary",
+      "criteria": "Income: rent payments and deposits collected this month. Expenses: service bills and repairs this month. To collect: balance as of month end. Shown per currency, without conversion.",
+      "income": "Income",
+      "expenses": "Expenses",
+      "net": "Net",
+      "pending_income": "To collect",
+      "pending_expenses": "To pay",
+      "month_net": "Month net",
+      "prev_month": "Previous month",
+      "next_month": "Next month",
+      "load_error": "Could not load the summary"
+    }
   },
   "services": {
     "title": "Services",
@@ -1902,7 +1974,6 @@
     "tab_rental": "Rental",
     "home_not_found": "Property not found",
     "back_to_homes": "Back to properties",
-    "listing_updated": "Listing updated",
     "rent": "Rent",
     "maintenance": "Maintenance",
     "maintenance_hint": "Monthly fee for security, common areas or services.",
@@ -1980,16 +2051,6 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "send_now": "Send now",
-    "listing": {
-      "available": "Available",
-      "reserved": "Reserved",
-      "rented": "Rented",
-      "unlisted": "Unlisted",
-      "title": "Property listing",
-      "hint": "Status is derived from the active reservation and lease.",
-      "publish": "Publish property",
-      "publish_hint": "Turn off to stop promoting the property."
-    },
     "summary": {
       "title": "Property information"
     },

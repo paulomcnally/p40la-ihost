@@ -1,6 +1,6 @@
 import type {
-  Charge, HomeRentalStatus, Invoice, Lease, LeaseDocument, LeaseParty, Payment, PaymentProof,
-  Receipt, Reminder, RentalBalance, RentalPerson, RentalSettings, Reservation,
+  Charge, HomeFinances, HomeRentalStatus, Invoice, Lease, LeaseDocument, LeaseParty, Payment, PaymentProof,
+  PortfolioSummary, Receipt, Reminder, RentalBalance, RentalPerson, RentalSettings, Reservation,
 } from '../types/rental'
 
 async function json<T>(path: string, options: RequestInit = {}): Promise<T | null> {
@@ -50,8 +50,12 @@ export const rentalApi = {
   },
   homes: {
     status: (id: number) => get<HomeRentalStatus>(`/api/rental/homes/${id}`),
-    setListing: (id: number, listingEnabled: boolean) =>
-      put<HomeRentalStatus>(`/api/rental/homes/${id}/listing`, { listing_enabled: listingEnabled }),
+  },
+  portfolio: {
+    summary: (year: number, month: number) =>
+      get<PortfolioSummary>(`/api/rental/portfolio/summary?year=${year}&month=${month}`),
+    homeFinances: (homeId: number, year: number, month: number) =>
+      get<HomeFinances>(`/api/rental/portfolio/homes/${homeId}/finances?year=${year}&month=${month}`),
   },
   leases: {
     list: (params: { status?: string; homeId?: number } = {}) => {

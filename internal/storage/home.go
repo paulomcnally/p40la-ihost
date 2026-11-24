@@ -21,7 +21,7 @@ func NewHomeStorage(db *sql.DB) *HomeStorage {
 // List devuelve todos los hogares no eliminados en el orden definido por el usuario.
 func (s *HomeStorage) List(ctx context.Context) ([]models.Home, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, name, address, sort_order, listing_enabled, deleted_at, created_at, updated_at
+		SELECT id, name, address, sort_order, usage, deleted_at, created_at, updated_at
 		FROM homes
 		WHERE deleted_at IS NULL
 		ORDER BY sort_order ASC, name ASC
@@ -37,7 +37,7 @@ func (s *HomeStorage) List(ctx context.Context) ([]models.Home, error) {
 // GetByID busca un hogar por su ID.
 func (s *HomeStorage) GetByID(ctx context.Context, id int64) (*models.Home, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, name, address, sort_order, listing_enabled, deleted_at, created_at, updated_at
+		SELECT id, name, address, sort_order, usage, deleted_at, created_at, updated_at
 		FROM homes
 		WHERE id = ? AND deleted_at IS NULL
 	`, id)
@@ -56,7 +56,11 @@ func (s *HomeStorage) Count(ctx context.Context) (int64, error) {
 }
 
 // Create inserta un nuevo hogar al final del orden actual.
-func (s *HomeStorage) Create(ctx context.Context, name, address string) (*models.Home, error) {
+func (s *HomeStorage) Create(ctx context.Context, name, address string, usage ...string) (*models.Home, error) {
+	homeUsage := models.HomeUsageRental
+	if len(usage) > 0 && usage[0] != "" {
+		homeUsage = usage[0]
+	}
 	var nextOrder int64
 	if err := s.db.QueryRowContext(ctx, `
 		SELECT COALESCE(MAX(sort_order), -1) + 1
@@ -67,8 +71,8 @@ func (s *HomeStorage) Create(ctx context.Context, name, address string) (*models
 	}
 
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO homes (name, address, sort_order) VALUES (?, ?, ?)
-	`, name, address, nextOrder)
+		INSERT INTO homes (name, address, sort_order, usage) VALUES (?, ?, ?, ?)
+	`, name, address, nextOrder, homeUsage)
 	if err != nil {
 		return nil, fmt.Errorf("insertar hogar: %w", err)
 	}
@@ -80,12 +84,12 @@ func (s *HomeStorage) Create(ctx context.Context, name, address string) (*models
 }
 
 // Update actualiza un hogar existente.
-func (s *HomeStorage) Update(ctx context.Context, id int64, name, address string) (*models.Home, error) {
+func (s *HomeStorage) Update(ctx context.Context, id int64, name, address, usage string) (*models.Home, error) {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE homes
-		SET name = ?, address = ?, updated_at = CURRENT_TIMESTAMP
+		SET name = ?, address = ?, usage = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND deleted_at IS NULL
-	`, name, address, id)
+	`, name, address, usage, id)
 	if err != nil {
 		return nil, fmt.Errorf("actualizar hogar: %w", err)
 	}
@@ -147,7 +151,7 @@ func scanHome(row *sql.Row) (*models.Home, error) {
 	var h models.Home
 	var deletedAt sql.NullTime
 	var address sql.NullString
-	if err := row.Scan(&h.ID, &h.Name, &address, &h.SortOrder, &h.ListingEnabled, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
+	if err := row.Scan(&h.ID, &h.Name, &address, &h.SortOrder, &h.Usage, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -166,7 +170,7 @@ func scanHomes(rows *sql.Rows) ([]models.Home, error) {
 		var h models.Home
 		var deletedAt sql.NullTime
 		var address sql.NullString
-		if err := rows.Scan(&h.ID, &h.Name, &address, &h.SortOrder, &h.ListingEnabled, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
+		if err := rows.Scan(&h.ID, &h.Name, &address, &h.SortOrder, &h.Usage, &deletedAt, &h.CreatedAt, &h.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("escanear hogar: %w", err)
 		}
 		if deletedAt.Valid {

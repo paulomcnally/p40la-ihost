@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -11,6 +12,7 @@ import (
 type homeRequest struct {
 	Name    string `json:"name"`
 	Address string `json:"address"`
+	Usage   string `json:"usage"`
 }
 
 type homeReorderRequest struct {
@@ -63,9 +65,9 @@ func (h *HomeHandlers) CreateHome(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	home, err := h.service.Create(r.Context(), req.Name, req.Address)
+	home, err := h.service.Create(r.Context(), req.Name, req.Address, req.Usage)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		respondHomeError(w, err)
 		return
 	}
 	respondJSON(w, http.StatusCreated, home)
@@ -83,9 +85,9 @@ func (h *HomeHandlers) UpdateHome(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	home, err := h.service.Update(r.Context(), id, req.Name, req.Address)
+	home, err := h.service.Update(r.Context(), id, req.Name, req.Address, req.Usage)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		respondHomeError(w, err)
 		return
 	}
 	if home == nil {
@@ -93,6 +95,19 @@ func (h *HomeHandlers) UpdateHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondJSON(w, http.StatusOK, home)
+}
+
+// respondHomeError traduce los errores del dominio de hogares (SPEC-143).
+func respondHomeError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, services.ErrHomeHasActiveRental):
+		respondError(w, http.StatusConflict, "home_has_active_rental",
+			"Cerrá el contrato o la reserva antes de cambiar el uso")
+	case errors.Is(err, services.ErrInvalidHomeUsage):
+		respondError(w, http.StatusBadRequest, "invalid_usage", "Uso inválido")
+	default:
+		respondError(w, http.StatusBadRequest, "invalid_request", err.Error())
+	}
 }
 
 // DeleteHome elimina lógicamente un hogar.
