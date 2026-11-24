@@ -127,7 +127,7 @@ Antes de declarar terminada una spec y después de cada release, ejecutar `/spec
   - no hay `Validación subagente:` válida;
   - `go test ./internal/mcp/...` falla;
   - el contrato backend↔MCP (`go test ./internal/api -run TestMCPBackendContract`) falla.
-- En un merge (`MERGE_HEAD` presente) el gate de spec se omite porque los commits integrados ya fueron validados; el manifiesto se valida igual.
+- En `main` y en un merge (`MERGE_HEAD` presente) el gate de spec se omite porque son commits de release/integración; el manifiesto se valida igual.
 - El sesgo es conservador: un falso positivo se resuelve declarando el impacto en la spec; un falso negativo se corrige ampliando el manifiesto.
 
 **Precedente**: SPEC-153.

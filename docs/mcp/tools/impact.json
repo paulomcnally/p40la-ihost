@@ -651,7 +651,6 @@
       "scripts/create-api-key.sh",
       "Dockerfile.mcp",
       "deploy/mcp/",
-      "docker-compose.yml",
       "go.mod",
       "go.sum"
     ]
