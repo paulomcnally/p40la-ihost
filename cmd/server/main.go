@@ -122,6 +122,7 @@ func main() {
 	serviceService.SetContractStore(contractStore)
 	billService := services.NewBillService(billStorage, serviceStorage)
 	billService.SetBillHistoryStorage(billHistoryStorage)
+	billService.SetCurrencyStorage(currencyStorage)
 	institutionService := services.NewInstitutionService(institutionStorage)
 	documentService := services.NewDocumentService(serviceStorage, billStorage, institutionStorage)
 	documentService.SetBillHistoryStorage(billHistoryStorage)
@@ -255,6 +256,7 @@ func main() {
 	automationHandlers := api.NewAutomationHandlers(automationService, authService)
 
 	handler := api.NewHandler(authService, settingsHandlers, systemSettingsHandlers, alertsHandlers, currencyHandlers, homeHandlers, serviceHandlers, billHandlers, institutionHandlers, documentHandlers, documentRecognitionHandlers, autoHandlers, autoServiceHandlers, autoMaintenanceHandlers, autoInspectionHandlers, autoAttachmentHandlers, serviceCycleHandlers, institutionCategoryHandlers, notificationHandlers, childHandlers, salaryHandlers, pensionCategoryHandlers, supportRecordHandlers, salaryPaymentHandlers, monthClosingHandlers, configHandlers, pensionDashboardHandlers, pensionImportHandlers, debtHandlers, debtInformationHandlers, webhookHandlers, budgetHandlers, automationHandlers, bankHandlers, moduleRegistry)
+	handler.SetAPIKeyService(services.NewAPIKeyService(systemSettingsStorage))
 
 	// Backfill de webhook_uuid para servicios existentes (REQ-010, SPEC-069).
 	if err := serviceService.EnsureWebhookUUIDs(context.Background()); err != nil {

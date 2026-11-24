@@ -78,6 +78,7 @@ Comandos que el gate de pre-release ejecuta cuando están disponibles. Si un com
 | `server` | `TEST-SERVER` | `./scripts/check-server.sh` | Antes de avisar al usuario |
 | `worktree` | `DELIV-WORKTREE` | `./scripts/check-worktree.sh` | Al arrancar |
 | `diff` | `SEC-COMMIT` | `git diff --cached` (revisión manual) | Antes de commit |
+| `mcp-docs` | `DELIV-MCP-DOCS` | `./scripts/check-mcp-docs.sh --staged` | Antes de commit si se toca el MCP |
 | `hooks` | `DELIV-HOOKS` | `./scripts/install-hooks.sh` | Al clonar o crear worktree |
 | `rules` | `DELIV-HOOKS` | `.opencode/skills/spec-manager/scripts/check-rules.sh .` | Al arrancar |
 
@@ -89,7 +90,7 @@ El proyecto tiene dos capas de prevención (SPEC-136):
 
 | Capa | Archivo | Qué bloquea |
 |---|---|---|
-| Git hooks | `.githooks/pre-commit`, `.githooks/commit-msg` | DBs/PDFs/backups, secretos y PII, `public/i18n/`, `<select>`/checkbox nativo, mensajes sin `SPEC-XXX:` |
+| Git hooks | `.githooks/pre-commit`, `.githooks/commit-msg` | DBs/PDFs/backups, secretos y PII, `public/i18n/`, `<select>`/checkbox nativo, MCP sin `docs/mcp/`, mensajes sin `SPEC-XXX:` |
 | Plugin OpenCode | `.opencode/plugins/rules-guard/` | `rm data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>`/checkbox nativo |
 
 Los hooks se instalan con `./scripts/install-hooks.sh` (idempotente). El plugin se carga solo si `.opencode/node_modules` está instalado (`npm --prefix .opencode install`).

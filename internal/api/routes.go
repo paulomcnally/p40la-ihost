@@ -12,7 +12,8 @@ import (
 func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string) http.Handler {
 	mux := http.NewServeMux()
 
-	authMiddleware := AuthMiddleware(auth)
+	authMiddleware := SessionOrAPIKeyMiddleware(auth, handler.apiKeys)
+	sessionOnlyAuth := AuthMiddleware(auth)
 
 	// APIs públicas
 	mux.HandleFunc("GET /health", handler.Health)
@@ -31,6 +32,11 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 	mux.Handle("GET /api/webhook/key", authMiddleware(http.HandlerFunc(handler.webhooks.GetWebhookKey)))
 	mux.Handle("POST /api/webhook/key/regenerate", authMiddleware(http.HandlerFunc(handler.webhooks.RegenerateWebhookKey)))
 	mux.Handle("POST /api/services/{id}/webhook/regenerate", authMiddleware(http.HandlerFunc(handler.webhooks.RegenerateServiceWebhookUUID)))
+
+	// API key global del sistema (SPEC-145). Solo sesión: una key no administra keys.
+	mux.Handle("GET /api/api-key", sessionOnlyAuth(http.HandlerFunc(handler.apiKey.GetAPIKey)))
+	mux.Handle("POST /api/api-key/regenerate", sessionOnlyAuth(http.HandlerFunc(handler.apiKey.RegenerateAPIKey)))
+	mux.Handle("DELETE /api/api-key", sessionOnlyAuth(http.HandlerFunc(handler.apiKey.RevokeAPIKey)))
 
 	// APIs de configuraciones
 	mux.Handle("GET /api/settings", authMiddleware(http.HandlerFunc(handler.settings.GetSettings)))
@@ -87,6 +93,9 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 
 	// APIs de facturas
 	mux.Handle("GET /api/services/{service_id}/bills", authMiddleware(http.HandlerFunc(handler.bill.ListBills)))
+	// Operaciones masivas de facturas (SPEC-145)
+	mux.Handle("POST /api/services/{service_id}/bills/generate", authMiddleware(http.HandlerFunc(handler.bill.GenerateBills)))
+	mux.Handle("POST /api/services/{service_id}/bills/pay", authMiddleware(http.HandlerFunc(handler.bill.PayBills)))
 	// Home global de Servicios (SPEC-120)
 	mux.Handle("GET /api/service-bills", authMiddleware(http.HandlerFunc(handler.bill.ListServiceBillsByMonth)))
 	mux.Handle("GET /api/service-bills/summary", authMiddleware(http.HandlerFunc(handler.bill.ServiceBillsSummary)))

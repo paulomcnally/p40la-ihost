@@ -1,0 +1,8 @@
+{
+  "label": "MCP",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "description": "Servidor MCP y tools de p40la-ihost"
+  }
+}

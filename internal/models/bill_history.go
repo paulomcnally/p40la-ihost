@@ -6,6 +6,7 @@ import "time"
 const (
 	BillSourceDashboard = "dashboard"
 	BillSourceWebhook   = "webhook"
+	BillSourceMCP       = "mcp"
 )
 
 // Acciones de auditoría de facturas (SPEC-070).
@@ -23,8 +24,8 @@ type FieldChange struct {
 }
 
 // BillHistory es un evento de auditoría de una factura (SPEC-070): registra
-// la acción (creada/editada/pagada), la fuente (dashboard/webhook) y el diff
-// de campos modificados.
+// la acción (creada/editada/pagada), la fuente (dashboard/webhook/mcp) y el
+// diff de campos modificados.
 type BillHistory struct {
 	ID        int64         `json:"id"`
 	BillID    int64         `json:"bill_id"`

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "p40la": {
+      "command": "/home/demo/bin/p40la-mcp",
+      "env": {
+        "P40LA_BASE_URL": "http://ihost.local:8088",
+        "P40LA_API_KEY": "p40la_demo-demo-demo-demo-demo-demo-demo",
+        "P40LA_MCP_ALLOW_WRITES": "false",
+        "P40LA_TIMEZONE": "America/Managua"
+      }
+    }
+  }
+}
