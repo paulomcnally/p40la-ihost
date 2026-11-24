@@ -75,7 +75,7 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 
 1. **App `0.5.17` o superior** desplegada en el iHost. Esa versión incluye los endpoints de API key de SPEC-145; sin ella no se puede provisionar la key.
 2. **Imágenes publicadas en Docker Hub y multi-arch** (`linux/amd64`, `linux/arm/v7`, `linux/arm64`):
-   - `paulomcnally/p40la-mcp:0.1.1` — servidor MCP.
+   - `paulomcnally/p40la-mcp:0.1.2` — servidor MCP.
    - `paulomcnally/p40la-mcp-tailscale:0.1.0` — nodo Tailscale dedicado con `serve.json` incluido.
    El iHost es `armv7l`; verificá que el manifiesto `arm/v7` exista antes de crear los contenedores.
 3. **Auth key de Tailscale** para el nodo nuevo. Recomendado: one-off, con tag `tag:p40la-mcp`. Si la key no trae tag, anunciá el tag con `TS_EXTRA_ARGS` (ver [contenedores](#52-tailscale-mcp)).
@@ -116,7 +116,7 @@ printf 'P40LA_MCP_OAUTH_PASSWORD_HASH=%s\n' "$HASH"
 También sirve un contenedor descartable:
 
 ```bash
-docker run --rm -it paulomcnally/p40la-mcp:0.1.1 -hash-password
+docker run --rm -it paulomcnally/p40la-mcp:0.1.2 -hash-password
 ```
 
 Guardá **solo el hash** en `/etc/p40la-mcp.env`. La contraseña en claro no se guarda en el iHost y debe ser única, larga y distinta de la del dashboard.
@@ -204,7 +204,7 @@ Orden recomendado:
 | Campo | Valor |
 |---|---|
 | Nombre | `p40la-mcp` |
-| Imagen | `paulomcnally/p40la-mcp:0.1.1` |
+| Imagen | `paulomcnally/p40la-mcp:0.1.2` |
 | Red | `host` |
 | Restart | `unless-stopped` |
 | Volumen | `p40la-mcp-data` → `/data` (la imagen ya trae `/data` con dueño `nonroot`) |
@@ -422,6 +422,7 @@ El modo userspace **no debería** bindear el 443 del host, pero si al arrancar `
 | Funnel activo pero Claude no llega | Sin A IPv4, DNS sin propagar o MCP caído | Esperar hasta 10 min; verificar con `1.1.1.1`; probar `/healthz` |
 | `502` desde Internet | Funnel proxya a un puerto cerrado | Revisar `P40LA_MCP_LISTEN` y el estado de `p40la-mcp` |
 | `401` en `/mcp` | Access token vencido o revocado | Reautorizar el conector; revisar `/admin/revoke` |
+| `403 Forbidden: invalid Host header` | Imagen anterior a `0.1.2`: la protección anti-DNS-rebinding del SDK rechaza el `Host` de Funnel | Actualizar a `0.1.2` o posterior; la allowlist acepta el host público y loopback (ADR-006) |
 | `writes_disabled` | Falta una de las dos compuertas | `P40LA_MCP_ALLOW_WRITES=true` **y** `P40LA_MCP_REMOTE_WRITES=true` |
 | El login OAuth falla | Hash mal copiado, contraseña equivocada o reloj desfasado | Regenerar el hash y reiniciar; revisar la hora del iHost |
 | RAM alta | MCP + Tailscale + app en un nodo pequeño | Medir RSS; limitar contenedores; si no hay margen, volver a la laptop |
