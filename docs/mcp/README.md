@@ -124,6 +124,7 @@ Las operaciones son idempotentes por período: repetir una generación no duplic
 - [Despliegue 24/7 en el iHost](ihost.md)
 - [Catálogo de tools](tools/README.md)
 - [Tools de facturas](tools/bills.md)
+- [Impacto y contrato de tools](tools/impact.md) — manifiesto `tools/impact.json`, golden `tools/contracts.json` y test backend↔MCP
 
 ## Publicación web
 

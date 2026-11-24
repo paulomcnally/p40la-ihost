@@ -16,7 +16,9 @@ const RULES_BANNER = `${MARK} Reglas del proyecto activas.
 - Prohibido: borrar data/app.db; pkill; git push --force; git reset --hard.
 - Prohibido: editar public/i18n/ (usar frontend/public/i18n/).
 - Prohibido: <select> nativo y checkbox nativo fuera de Toggle.tsx.
-- Cada spec debe incluir la tabla "Cumplimiento de reglas" con IDs de docs/rules/.`
+- Cada spec debe incluir la tabla "Cumplimiento de reglas" con IDs de docs/rules/.
+- Toda spec nueva debe incluir "## Impacto en tools MCP" y "Validación subagente:".
+- Toda tool nueva debe estar en docs/mcp/tools/impact.json (DELIV-MCP-IMPACT).`
 
 function block(message, rule) {
   throw new Error(
@@ -78,9 +80,10 @@ function guardCommand(command, directory) {
   }
 }
 
-function guardWrite(filePath, content) {
+function guardWrite(filePath, content, directory) {
   const p = String(filePath ?? "").replaceAll("\\", "/")
   if (!p) return
+  const text = String(content ?? "")
 
   // UI-I18N: public/i18n es salida del build
   const isPublicI18n =
@@ -92,8 +95,56 @@ function guardWrite(filePath, content) {
     )
   }
 
+  // DELIV-MCP-IMPACT: toda spec nueva declara impacto y validación subagente.
+  if (/(^|\/)docs\/specs\/SPEC-\d{3}-[^/]+\.md$/.test(p)) {
+    let exists = false
+    try {
+      if (directory || path.isAbsolute(p)) {
+        const fullPath = path.isAbsolute(p) ? p : path.join(String(directory), p)
+        exists = fs.existsSync(fullPath)
+      }
+    } catch {
+      exists = true // fail-safe: si no se puede resolver, no bloquear
+    }
+    if (!exists) {
+      if (!/^##\s+(?:\d+\.\s*)?Impacto en tools MCP\b/im.test(text)) {
+        block(
+          "Toda spec nueva debe incluir la sección '## Impacto en tools MCP' (tools afectadas o 'ninguna').",
+          "DELIV-MCP-IMPACT"
+        )
+      }
+      if (!/Validación subagente\s*:/i.test(text)) {
+        block(
+          "Toda spec nueva debe registrar 'Validación subagente:' con agente, sesión y veredicto.",
+          "DELIV-MCP-IMPACT-SUBAGENT"
+        )
+      }
+    }
+  }
+
+  // ARCH-MCP-TOOLS-MAP: una tool nueva debe existir en el manifiesto.
+  if (!/_test\.go$/.test(p) && /^internal\/mcp\/tools\/.+\.go$/.test(p) && /mcp\.AddTool\s*\(/.test(text)) {
+    try {
+      const manifestPath = path.join(String(directory ?? ""), "docs/mcp/tools/impact.json")
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"))
+      const known = new Set((manifest.tools ?? []).map((tool) => tool.name))
+      const names = new Set(
+        [...text.matchAll(/Name:\s*"([a-z][a-z0-9_]*)"/g)].map((match) => match[1])
+      )
+      const missing = [...names].filter((name) => !known.has(name))
+      if (missing.length > 0) {
+        block(
+          `Tools sin entrada en docs/mcp/tools/impact.json: ${missing.join(", ")}. Actualizá el manifiesto antes de registrarlas.`,
+          "ARCH-MCP-TOOLS-MAP"
+        )
+      }
+    } catch (error) {
+      if (isOwnError(error)) throw error
+      // fail-safe: si el manifiesto no se puede leer, no bloquear
+    }
+  }
+
   if (!/\.(tsx|jsx)$/.test(p)) return
-  const text = String(content ?? "")
 
   // UI-SELECT: dropdown nativo prohibido
   if (/<select[\s>]/.test(text)) {
@@ -145,7 +196,7 @@ export default Plugin.define({
           const content = [input?.content, input?.newString, input?.oldString]
             .filter((v) => typeof v === "string")
             .join("\n")
-          guardWrite(filePath, content)
+          guardWrite(filePath, content, ctx.location?.directory)
         }
       } catch (error) {
         if (isOwnError(error)) throw error

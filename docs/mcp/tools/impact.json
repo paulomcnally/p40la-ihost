@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "description": "Mapa de impacto de las tools MCP: archivos que, si cambian, pueden afectar cada tool. Fuente de verdad para scripts/check-mcp-impact.sh y para el hook pre-commit. Mantener junto con docs/mcp/tools/contracts.json.",
+  "tools": [
+    {
+      "name": "bills_list",
+      "docs": [
+        "docs/mcp/tools/bills.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/bills/list.go"
+      ],
+      "dependencies": [
+        "internal/api/bill_handlers.go",
+        "internal/api/service_handlers.go",
+        "internal/services/bill.go",
+        "internal/storage/bill.go",
+        "internal/storage/service_bill.go"
+      ],
+      "endpoints": [
+        "GET /api/services/{id}",
+        "GET /api/services/{id}/bills"
+      ],
+      "tests": [
+        "internal/mcp/tools/bills/tools_test.go",
+        "internal/mcp/tools/bills/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "bills_generate",
+      "docs": [
+        "docs/mcp/tools/bills.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/bills/generate.go"
+      ],
+      "dependencies": [
+        "internal/api/bill_bulk_handlers.go",
+        "internal/services/bill_bulk.go",
+        "internal/services/bill.go",
+        "internal/services/bill_history.go",
+        "internal/services/currency.go",
+        "internal/storage/bill.go",
+        "internal/storage/bill_history.go",
+        "internal/storage/currency.go",
+        "internal/storage/service_bill.go"
+      ],
+      "endpoints": [
+        "POST /api/services/{service_id}/bills/generate"
+      ],
+      "tests": [
+        "internal/mcp/tools/bills/tools_test.go",
+        "internal/mcp/tools/bills/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "bills_pay",
+      "docs": [
+        "docs/mcp/tools/bills.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/bills/pay.go"
+      ],
+      "dependencies": [
+        "internal/api/bill_bulk_handlers.go",
+        "internal/services/bill_bulk.go",
+        "internal/services/bill.go",
+        "internal/services/bill_history.go",
+        "internal/services/budget_bill_link.go",
+        "internal/services/currency.go",
+        "internal/storage/account.go",
+        "internal/storage/bill.go",
+        "internal/storage/bill_history.go",
+        "internal/storage/category.go",
+        "internal/storage/currency.go",
+        "internal/storage/service_bill.go",
+        "internal/storage/transaction.go"
+      ],
+      "endpoints": [
+        "POST /api/services/{service_id}/bills/pay"
+      ],
+      "tests": [
+        "internal/mcp/tools/bills/tools_test.go",
+        "internal/mcp/tools/bills/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    }
+  ],
+  "shared": {
+    "affects_all": [
+      "cmd/mcp-server/",
+      "cmd/server/",
+      "internal/mcp/server/",
+      "internal/mcp/config/",
+      "internal/mcp/registry/",
+      "internal/mcp/audit/",
+      "internal/mcp/api/",
+      "internal/mcp/tools/all/",
+      "internal/mcp/tools/bills/tools.go",
+      "internal/mcp/tools/bills/results.go",
+      "internal/mcp/tools/bills/period.go",
+      "internal/api/routes.go",
+      "internal/api/handlers.go",
+      "internal/api/middleware.go",
+      "internal/api/api_key_handlers.go",
+      "internal/services/api_key.go",
+      "internal/services/service.go",
+      "internal/storage/service.go",
+      "internal/storage/system_settings.go",
+      "internal/models/",
+      "internal/db/",
+      "internal/config/",
+      "migrations/",
+      "scripts/create-api-key.sh",
+      "Dockerfile.mcp",
+      "deploy/mcp/",
+      "docker-compose.yml",
+      "go.mod",
+      "go.sum"
+    ]
+  }
+}

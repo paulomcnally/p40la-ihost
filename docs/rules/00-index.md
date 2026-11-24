@@ -79,6 +79,8 @@ Comandos que el gate de pre-release ejecuta cuando están disponibles. Si un com
 | `worktree` | `DELIV-WORKTREE` | `./scripts/check-worktree.sh` | Al arrancar |
 | `diff` | `SEC-COMMIT` | `git diff --cached` (revisión manual) | Antes de commit |
 | `mcp-docs` | `DELIV-MCP-DOCS` | `./scripts/check-mcp-docs.sh --staged` | Antes de commit si se toca el MCP |
+| `mcp-impact` | `DELIV-MCP-IMPACT` | `./scripts/check-mcp-impact.sh --staged --gate` | Antes de commit si hay superficie MCP |
+| `mcp-contract` | `TEST-MCP-CONTRACT` | `go test ./internal/mcp/...` + `go test ./internal/api -run TestMCPBackendContract` | Antes de commit/pending_release si se toca el MCP |
 | `hooks` | `DELIV-HOOKS` | `./scripts/install-hooks.sh` | Al clonar o crear worktree |
 | `rules` | `DELIV-HOOKS` | `.opencode/skills/spec-manager/scripts/check-rules.sh .` | Al arrancar |
 
@@ -90,8 +92,8 @@ El proyecto tiene dos capas de prevención (SPEC-136):
 
 | Capa | Archivo | Qué bloquea |
 |---|---|---|
-| Git hooks | `.githooks/pre-commit`, `.githooks/commit-msg` | DBs/PDFs/backups, secretos y PII, `public/i18n/`, `<select>`/checkbox nativo, MCP sin `docs/mcp/`, mensajes sin `SPEC-XXX:` |
-| Plugin OpenCode | `.opencode/plugins/rules-guard/` | `rm data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>`/checkbox nativo |
+| Git hooks | `.githooks/pre-commit`, `.githooks/commit-msg` | DBs/PDFs/backups, secretos y PII, `public/i18n/`, `<select>`/checkbox nativo, MCP sin `docs/mcp/`, impacto MCP sin spec/validación, contrato MCP roto, mensajes sin `SPEC-XXX:` |
+| Plugin OpenCode | `.opencode/plugins/rules-guard/` | `rm data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>`/checkbox nativo, specs nuevas sin impacto MCP, tools nuevas sin manifiesto |
 
 Los hooks se instalan con `./scripts/install-hooks.sh` (idempotente). El plugin se carga solo si `.opencode/node_modules` está instalado (`npm --prefix .opencode install`).
 

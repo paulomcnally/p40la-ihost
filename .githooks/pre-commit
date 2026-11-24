@@ -10,6 +10,7 @@
 #   5. Guardrail de i18n (claves usadas existen en es/en y no apuntan a objetos).
 #   6. Guardrail de campos numéricos (NumberInput, sin <input type="number"> nuevo).
 #   7. Guardrail de documentación MCP (MCP modificado exige docs/mcp/).
+#   8. Guardrail de impacto en tools MCP (spec con impacto + tests de contrato).
 #
 # Fail-safe: si el hook falla internamente, NO bloquea el commit.
 # Omitir (solo con autorización explícita del usuario): git commit --no-verify
@@ -149,6 +150,20 @@ if [ -x "${ROOT}/scripts/check-mcp-docs.sh" ]; then
   fi
 else
   echo "[pre-commit] aviso: falta scripts/check-mcp-docs.sh; se omite DELIV-MCP-DOCS." >&2
+fi
+
+# ---------------------------------------------------------------------------
+# 8. Guardrail de impacto en tools MCP (DELIV-MCP-IMPACT)
+# ---------------------------------------------------------------------------
+
+if [ -x "${ROOT}/scripts/check-mcp-impact.sh" ]; then
+  if ! "${ROOT}/scripts/check-mcp-impact.sh" --staged --gate; then
+    fail "El guardrail de impacto en tools MCP falló." \
+         "  Completá '## Impacto en tools MCP' en la spec y registrá la validación del subagente." \
+         "DELIV-MCP-IMPACT"
+  fi
+else
+  echo "[pre-commit] aviso: falta scripts/check-mcp-impact.sh; se omite DELIV-MCP-IMPACT." >&2
 fi
 
 exit 0

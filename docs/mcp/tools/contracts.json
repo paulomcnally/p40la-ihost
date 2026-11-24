@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "generated_by": "go test ./internal/mcp/tools/all -run TestToolContracts -update-contracts",
+  "tools": [
+    {
+      "name": "bills_generate",
+      "description": "Genera facturas de un servicio para un rango inclusivo de meses (máximo 36, sin períodos futuros). Omite períodos que ya tienen factura y reporta los slots con factura eliminada. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true. Mostrá el resumen al usuario y pedí confirmación antes de ejecutar con dry_run=false.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "Monto de cada factura; si se omite se usa la última factura o el monto sugerido del servicio",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "from": {
+            "description": "Período inicial YYYY-MM (obligatorio)",
+            "type": "string"
+          },
+          "service_id": {
+            "description": "ID del servicio (obligatorio)",
+            "type": "integer"
+          },
+          "to": {
+            "description": "Período final YYYY-MM (default mes actual)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "service_id",
+          "from"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "bills_list",
+      "description": "Lista las facturas activas de un servicio con filtros opcionales de período (YYYY-MM) y estado. Solo lectura; no modifica datos.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "description": "Período inicial YYYY-MM (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "service_id": {
+            "description": "ID del servicio (obligatorio)",
+            "type": "integer"
+          },
+          "status": {
+            "description": "Filtro de estado: pending, paid o all (default all)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "to": {
+            "description": "Período final YYYY-MM (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "service_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "bills_pay",
+      "description": "Paga facturas de un servicio con exactamente un selector: bill_ids, month (YYYY-MM), from+to (YYYY-MM) o all_pending_up_to (YYYY-MM). Omite las facturas ya pagadas y los períodos futuros. paid_at por defecto es hoy. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true. Mostrá el resumen al usuario y pedí confirmación antes de ejecutar con dry_run=false.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "all_pending_up_to": {
+            "description": "Selector: pagar todas las pendientes hasta YYYY-MM (inclusive)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bill_ids": {
+            "description": "Selector: IDs de facturas a pagar",
+            "items": {
+              "type": "integer"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "drive_url": {
+            "description": "URL de Google Drive del comprobante",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "from": {
+            "description": "Selector de rango: período inicial YYYY-MM",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "month": {
+            "description": "Selector: mes YYYY-MM a pagar",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paid_at": {
+            "description": "Fecha de pago YYYY-MM-DD (default hoy)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "payment_reference": {
+            "description": "Referencia interna del pago",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "service_id": {
+            "description": "ID del servicio (obligatorio)",
+            "type": "integer"
+          },
+          "to": {
+            "description": "Selector de rango: período final YYYY-MM",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "service_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    }
+  ]
+}

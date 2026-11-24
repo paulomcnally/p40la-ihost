@@ -114,9 +114,23 @@ Fuentes, tecnologías evaluadas, patrones considerados.
 
 ---
 
-## 6. Criterios de Aceptación
+## 6. Impacto en tools MCP
 
-### 6.1 Funcionales
+> Obligatorio si el proyecto tiene tools MCP. Completar con el analizador de impacto del proyecto y la validación de un subagente. Si no hay tools afectadas, escribir «ninguna» y justificarlo.
+
+| Tool | ¿Afectada? | Motivo / ruta de dependencia | Contrato |
+|---|---|---|---|
+| `example_tool` | No | … | Sin cambios |
+
+**Validación subagente**: `<explore|general>` — sesión `<ses_...>` — veredicto: …
+**Manifest**: `docs/mcp/tools/impact.json`
+**Contrato**: `docs/mcp/tools/contracts.json`
+
+---
+
+## 7. Criterios de Aceptación
+
+### 7.1 Funcionales
 - [ ] CA-001: Dado …, cuando …, entonces …
 - [ ] CA-UI-001: …
 - [ ] CA-UX-001: …
@@ -125,10 +139,10 @@ Fuentes, tecnologías evaluadas, patrones considerados.
 
 > Usar IDs canónicos por dominio (`CA-<PREFIJO>-<NOMBRE>`) para que el cumplimiento sea auditable.
 
-### 6.2 No funcionales
+### 7.2 No funcionales
 - [ ] CA-NF-001: …
 
-### 6.3 Testing
+### 7.3 Testing
 - **Unit**:
 - **Integration**:
 - **E2E**:
@@ -136,7 +150,7 @@ Fuentes, tecnologías evaluadas, patrones considerados.
 
 ---
 
-## 7. Plan de Implementación
+## 8. Plan de Implementación
 
 | Fase | Descripción | Estimación | Dependencias |
 |---|---|---|---|
@@ -146,7 +160,7 @@ Fuentes, tecnologías evaluadas, patrones considerados.
 
 ---
 
-## 8. Riesgos y Mitigaciones
+## 9. Riesgos y Mitigaciones
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
@@ -154,7 +168,7 @@ Fuentes, tecnologías evaluadas, patrones considerados.
 
 ---
 
-## 9. Notas y Referencias
+## 10. Notas y Referencias
 
 - Reglas aplicadas: `docs/rules/…`
 - Specs relacionadas:
@@ -162,7 +176,7 @@ Fuentes, tecnologías evaluadas, patrones considerados.
 
 ---
 
-## 10. Historial de Cambios
+## 11. Historial de Cambios
 
 | Fecha | Autor | Descripción |
 |---|---|---|

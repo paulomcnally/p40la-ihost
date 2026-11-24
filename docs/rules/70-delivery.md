@@ -78,9 +78,9 @@ Antes de declarar terminada una spec y después de cada release, ejecutar `/spec
 ## DELIV-HOOKS — Enforcement automático
 
 - Los hooks viven en `.githooks/` y se instalan con `./scripts/install-hooks.sh` (`git config core.hooksPath .githooks`). Es idempotente.
-- `pre-commit` bloquea: DBs (`*.db`, `-wal`, `-shm`), PDFs, dumps, `backups/`, `data/`; secretos y PII; `public/i18n/` editado sin su fuente (el build legítimo que staged `frontend/public/i18n/` se permite); ejecuta el guardrail de UI si hay `.tsx` staged y exige `docs/mcp/` si se toca el MCP (`DELIV-MCP-DOCS`).
+- `pre-commit` bloquea: DBs (`*.db`, `-wal`, `-shm`), PDFs, dumps, `backups/`, `data/`; secretos y PII; `public/i18n/` editado sin su fuente (el build legítimo que staged `frontend/public/i18n/` se permite); ejecuta el guardrail de UI si hay `.tsx` staged y exige `docs/mcp/` si se toca el MCP (`DELIV-MCP-DOCS`). También exige impacto declarado y tests MCP verdes si la superficie de tools cambió (`DELIV-MCP-IMPACT`).
 - `commit-msg` exige `SPEC-XXX: descripción` (o `Merge `, `Revert `, `bump `, `hotfix:`).
-- El plugin `.opencode/plugins/rules-guard/` bloquea en tiempo de ejecución: borrar `data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>` y checkbox nativo.
+- El plugin `.opencode/plugins/rules-guard/` bloquea en tiempo de ejecución: borrar `data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>` y checkbox nativo; además, specs nuevas sin `## Impacto en tools MCP` / `Validación subagente:` y tools nuevas sin entrada en `docs/mcp/tools/impact.json`.
 - **Prohibido** `git commit --no-verify` salvo autorización explícita del usuario.
 - **Fail-safe**: si un hook o el plugin falla internamente, la operación continúa; solo los patrones positivos bloquean.
 
@@ -108,6 +108,40 @@ Antes de declarar terminada una spec y después de cada release, ejecutar `/spec
 - El brief del subagente DEBE incluir: archivos cambiados, contratos/tools nuevas, variables de entorno, ejemplos sintéticos (`SEC-SYNTHETIC`) y reglas `SEC-*` aplicables.
 - El agente principal **revisa e integra** la documentación; no la redacta él mismo salvo que el subagente no esté disponible, y en ese caso lo justifica en la spec o en el mensaje de commit.
 - Esta regla es de proceso: no tiene guardrail automático. El cumplimiento se declara en la tabla «Cumplimiento de reglas» de la spec.
+
+---
+
+## DELIV-MCP-IMPACT — Impacto obligatorio en tools MCP
+
+- Toda spec que crea o modifica una feature DEBE incluir la sección `## Impacto en tools MCP`, incluso si el veredicto es «ninguna tool afectada». El gate también valida toda spec nueva staged, aunque el cambio no toque una tool.
+- La fuente de verdad es `docs/mcp/tools/impact.json`. Antes de escribir código, ejecutar:
+  ```bash
+  ./scripts/check-mcp-impact.sh --files <archivos previstos>
+  ```
+- Si hay tools afectadas, la sección DEBE declarar cada una, la ruta de dependencia (tool → cliente → endpoint → handler → servicio → storage → tabla), el impacto en el contrato (`docs/mcp/tools/contracts.json`) y los tests que se correrán.
+- Si se agrega una tool: manifiesto, documentación, contrato y tests en el mismo ciclo.
+- El gate de `pre-commit` es `./scripts/check-mcp-impact.sh --staged --gate`; bloquea si:
+  - la tool registrada no está en el manifiesto;
+  - la spec en curso no tiene la sección de impacto;
+  - falta mencionar una tool afectada;
+  - no hay `Validación subagente:` válida;
+  - `go test ./internal/mcp/...` falla;
+  - el contrato backend↔MCP (`go test ./internal/api -run TestMCPBackendContract`) falla.
+- El sesgo es conservador: un falso positivo se resuelve declarando el impacto en la spec; un falso negativo se corrige ampliando el manifiesto.
+
+**Precedente**: SPEC-153.
+
+---
+
+## DELIV-MCP-IMPACT-SUBAGENT — La validación de impacto se delega a un subagente
+
+- Antes de completar la sección `## Impacto en tools MCP`, el agente principal DEBE delegar el análisis a un subagente (`explore` o `general`).
+- El brief DEBE incluir: feature, archivos previstos, tools candidatas, endpoints, tablas, reglas `SEC-*` y el manifiesto `docs/mcp/tools/impact.json`.
+- La spec DEBE registrar `Validación subagente:` con agente, sesión y veredicto. Valores como `pendiente`, `no` o `n/a` no son válidos.
+- El agente principal revisa e integra el veredicto; no se autovalida.
+- Esta regla es de proceso: el gate verifica la evidencia declarada, no la ejecución real del subagente.
+
+**Precedente**: SPEC-153.
 
 ---
 

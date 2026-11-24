@@ -38,12 +38,20 @@ Las tools no saben por qué transporte llegan: `cmd/mcp-server` monta el mismo `
 
 ## Agregar una tool
 
-1. **Definí el contrato HTTP** en el backend si la operación requiere lógica de negocio. La tool no debe contener SQL ni reglas de dominio.
-2. **Agregá el método** en `internal/mcp/api` (tipo DTO + método del cliente + interfaz `API`).
-3. **Creá el paquete de tools** `internal/mcp/tools/<dominio>` con un `Toolset` y un `Register`.
-4. **Registrá el dominio** en `internal/mcp/tools/all/register.go` con un `r.Add(...)`.
-5. **Escribí tests** con una API falsa y, si aplica, un test de protocolo con `mcp.NewInMemoryTransports`.
-6. **Documentá** la tool en `docs/mcp/tools/<dominio>.md` y actualizá el catálogo.
+1. **Declará la tool en el manifiesto de impacto** `docs/mcp/tools/impact.json`: `docs`, `entrypoints`, `dependencies`, `endpoints` y `tests`. Registrala con `mcp.AddTool(server, &mcp.Tool{Name: "..."}, ...)` y el nombre literal bajo `internal/mcp/tools/`; el analizador no resuelve variables. El plugin `rules-guard` bloquea un `mcp.AddTool` cuyo nombre no esté en el manifiesto. Ver [tools/impact.md](tools/impact.md).
+2. **Definí el contrato HTTP** en el backend si la operación requiere lógica de negocio. La tool no debe contener SQL ni reglas de dominio.
+3. **Agregá el método** en `internal/mcp/api` (tipo DTO + método del cliente + interfaz `API`).
+4. **Creá el paquete de tools** `internal/mcp/tools/<dominio>` con un `Toolset` y un `Register`.
+5. **Registrá el dominio** en `internal/mcp/tools/all/register.go` con un `r.Add(...)`.
+6. **Congelá el contrato** del dominio y revisá el diff del golden (ver [Contrato y guardrails](#contrato-y-guardrails)).
+7. **Escribí tests** con una API falsa y, si aplica, un test de protocolo con `mcp.NewInMemoryTransports`.
+8. **Documentá** la tool en `docs/mcp/tools/<dominio>.md` y actualizá el catálogo.
+9. **Verificá** el manifiesto y los tests:
+   ```bash
+   ./scripts/check-mcp-impact.sh --check-map
+   go test ./internal/mcp/...
+   go test ./internal/api -run TestMCPBackendContract
+   ```
 
 ## Contrato de una tool
 
@@ -93,6 +101,7 @@ func Register(r *registry.Registry, client api.API, cfg config.Config) {
 - **Cliente HTTP**: `httptest` verificando `Authorization: Bearer`, 401 y mapeo de errores.
 - **Tool**: API falsa que captura requests y devuelve respuestas; reloj fijo para períodos.
 - **Protocolo**: `initialize`, `tools/list` y `tools/call` con transporte en memoria.
+- **Contrato backend↔MCP**: router real, DB temporal, API key y cliente MCP; verifica rutas, tags JSON, auth y `source=mcp`.
 - **Backend**: DB temporal con migraciones; nunca la DB local del usuario.
 - **OAuth**: flujo completo con PKCE, contraseña incorrecta, redirect no allowlisted, token vencido.
 - **Servidor HTTP**: 401 sin token, 429, 413, `/healthz` y revocación en el listener admin.
@@ -103,6 +112,29 @@ go test ./internal/mcp/...
 go test ./internal/services/ ./internal/api/
 go build ./...
 ```
+
+### Contrato y guardrails
+
+**Manifiesto de impacto.** `docs/mcp/tools/impact.json` declara, por tool, sus `entrypoints`, dependencias del backend, endpoints, tests y documentación; `shared.affects_all` lista las rutas que afectan a todas. `./scripts/check-mcp-impact.sh --check-map` valida que toda tool registrada con `mcp.AddTool` tenga entrada y que cada ruta exista. Si agregás, renombrás o eliminás una tool, o cambia una dependencia, actualizá el manifiesto en el mismo ciclo. El formato completo está en [tools/impact.md](tools/impact.md).
+
+**Contrato congelado.** `docs/mcp/tools/contracts.json` es el golden de `tools/list` (nombre, descripción, esquema de entrada/salida y anotaciones). `TestToolContracts` vive en `internal/mcp/tools/all/contract_test.go` y cubre el catálogo completo que registra `internal/mcp/tools/all/register.go`; al agregar un dominio, el test falla hasta regenerar el golden. Si el cambio de contrato es intencional:
+
+```bash
+go test ./internal/mcp/tools/all -run TestToolContracts -update-contracts
+```
+
+Revisá el diff de `contracts.json`, declaralo en `## Impacto en tools MCP` y volvé a correr el test sin el flag. **Prohibido** regenerar el golden sin justificación.
+
+**Contrato backend↔MCP.** `TestMCPBackendContract` (`internal/api/mcp_backend_contract_test.go`) recorre API key → router → handler → servicio → storage → JSON con una DB temporal. Detecta drift de rutas, tags JSON, autenticación o `source=mcp` sin usar datos de producción. No tiene golden: si el cambio de comportamiento es intencional, se ajusta el test y se declara en la spec.
+
+**Hook.** `.githooks/pre-commit` ejecuta dos guardrails cuando hay archivos staged de la superficie MCP:
+
+```bash
+./scripts/check-mcp-docs.sh --staged
+./scripts/check-mcp-impact.sh --staged --gate
+```
+
+El segundo valida toda spec nueva staged (`## Impacto en tools MCP` y `Validación subagente:`) aunque no haya tools afectadas. Si hay impacto, además resuelve la spec en curso, exige que cada tool afectada aparezca nombrada y que `go test ./internal/mcp/...` y `go test ./internal/api -run TestMCPBackendContract` pasen. Si falla, el commit se bloquea (`DELIV-MCP-IMPACT`). **Prohibido** `git commit --no-verify` sin autorización explícita del usuario.
 
 ## Probar el flujo OAuth local
 
@@ -201,7 +233,7 @@ Todo cambio en el código del MCP se documenta **en el mismo commit**. La superf
 
 **`DELIV-MCP-DOCS`** — agregar o cambiar una tool, un contrato HTTP, una variable de entorno o un flujo operativo exige actualizar `docs/mcp/` en el **mismo commit** que el código. Según el cambio:
 
-- Tool nueva o modificada → `docs/mcp/tools/<dominio>.md` y el catálogo de `docs/mcp/README.md`.
+- Tool nueva o modificada → `docs/mcp/tools/<dominio>.md`, el manifiesto y el contrato en `docs/mcp/tools/`, y el catálogo de `docs/mcp/README.md`.
 - Variable de entorno o configuración → `docs/mcp/configuration.md`.
 - Transporte HTTP, OAuth o límites → `docs/mcp/http.md`, `docs/mcp/oauth.md` y `docs/mcp/configuration.md`.
 - Publicación en Internet → `docs/mcp/funnel.md`.
@@ -236,6 +268,9 @@ El agente principal **revisa e integra** el resultado. Solo escribe la documenta
 - [ ] Descripción con límites, defaults y requisitos de escritura.
 - [ ] Errores con código estable.
 - [ ] Tests de éxito, validación y error de API.
+- [ ] Entrada en `docs/mcp/tools/impact.json` y `./scripts/check-mcp-impact.sh --check-map` verde.
+- [ ] Contrato regenerado con `-update-contracts` y diff revisado, si el cambio de `tools/list` es intencional.
+- [ ] `go test ./internal/mcp/...` y `go test ./internal/api -run TestMCPBackendContract` verdes.
 - [ ] Documentación en `docs/mcp/tools/`.
 - [ ] Si se tocó cualquier archivo de la superficie MCP, `docs/mcp/` se actualizó en el mismo commit y esa actualización se delegó a un subagente (`DELIV-MCP-DOCS`, `DELIV-MCP-DOCS-SUBAGENT`).
 - [ ] Sin secretos, PII ni montos reales en tests o docs.

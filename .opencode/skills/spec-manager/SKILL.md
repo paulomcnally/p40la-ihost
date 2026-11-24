@@ -208,10 +208,14 @@ Crea la estructura de reglas en un proyecto nuevo o incompleto.
 2. **Worktree** (si el proyecto lo exige): ejecutar el script de verificación declarado en el manifiesto. Si aborta, no trabajar en ese checkout.
 3. **Investigar** el requerimiento (web/docs si aplica).
 4. **Calcular el ID**: máximo `SPEC-(\d{3})` entre `docs/specs/SPEC-*.md` **y** los issues abiertos/cerrados con título `SPEC-XXX`. Nunca desde el README tracker (se actualiza solo en release).
-5. **Crear el archivo** `docs/specs/SPEC-XXX-<slug>.md` con el template del proyecto (o `references/spec-template.md`).
-6. **Completar** las secciones obligatorias (ver abajo), incluida **Cumplimiento de reglas**.
-7. **Crear el issue** con label `spec/draft` y guardar `github_issue` en el frontmatter.
-8. **Confirmar** al usuario: ID, ruta y URL del issue.
+5. **Impacto en tools MCP** (si el proyecto tiene manifiesto, p. ej. `docs/mcp/tools/impact.json`):
+   - delegar a un subagente (`explore` o `general`) el análisis de qué tools existentes pueden romperse;
+   - correr `./scripts/check-mcp-impact.sh --files <archivos previstos>` si existe;
+   - completar `## Impacto en tools MCP` con tools afectadas, ruta de dependencia, contrato y `Validación subagente:` (agente, sesión, veredicto).
+6. **Crear el archivo** `docs/specs/SPEC-XXX-<slug>.md` con el template del proyecto (o `references/spec-template.md`).
+7. **Completar** las secciones obligatorias (ver abajo), incluida **Cumplimiento de reglas** e **Impacto en tools MCP**.
+8. **Crear el issue** con label `spec/draft` y guardar `github_issue` en el frontmatter.
+9. **Confirmar** al usuario: ID, ruta y URL del issue.
 
 ### Secciones obligatorias de una spec
 
@@ -219,6 +223,7 @@ Crea la estructura de reglas en un proyecto nuevo o incompleto.
 - Resumen ejecutivo (problema, por qué ahora, resultado esperado).
 - Requerimientos priorizados P0/P1/P2.
 - **Cumplimiento de reglas** (tabla con IDs).
+- **Impacto en tools MCP** (si el proyecto tiene tools MCP): tools afectadas o «ninguna», ruta de dependencia, contrato y `Validación subagente:`.
 - Investigación y decisiones (ADRs cuando hay trade-offs).
 - Diseño técnico (componentes, APIs, datos, archivos).
 - Criterios de aceptación con IDs canónicos (`CA-<DOMINIO>-<NOMBRE>`).
@@ -260,10 +265,11 @@ cancelled        → terminal
 Antes de pasar a `pending_release` o `released`, verificar y reportar:
 
 1. **Guardrails del manifiesto**: ejecutar cada comando declarado y capturar el resultado. Si uno falla → **bloquear**.
-2. **Cobertura de reglas**: cada regla aplicable al cambio está en la tabla de cumplimiento con criterio o `N/A` justificado.
-3. **Checklist del proyecto**: leer `docs/rules/60-testing.md` y confirmar cada ítem.
-4. **Higiene de datos**: `git diff --cached` sin PII, secretos, DBs, PDFs ni exports.
-5. **Validación del usuario**: no avanzar sin confirmación explícita de las pruebas manuales.
+2. **Impacto MCP**: si existe `docs/mcp/tools/impact.json`, correr `./scripts/check-mcp-impact.sh --staged --gate` y `go test ./internal/mcp/...`; verificar que la sección `## Impacto en tools MCP` cubra todas las tools afectadas y tenga `Validación subagente:`.
+3. **Cobertura de reglas**: cada regla aplicable al cambio está en la tabla de cumplimiento con criterio o `N/A` justificado.
+4. **Checklist del proyecto**: leer `docs/rules/60-testing.md` y confirmar cada ítem.
+5. **Higiene de datos**: `git diff --cached` sin PII, secretos, DBs, PDFs ni exports.
+6. **Validación del usuario**: no avanzar sin confirmación explícita de las pruebas manuales.
 
 Salida del gate:
 
@@ -325,6 +331,7 @@ Si `gh` no está disponible: continuar con warning y dejar constancia de la oper
 ## Anti-patrones (prohibidos)
 
 - Crear una spec sin haber leído `docs/rules/00-index.md`.
+- Crear una spec que toca tools MCP sin la sección `## Impacto en tools MCP` o sin validación de un subagente.
 - Copiar reglas dentro de la spec o de la skill (solo IDs + referencia).
 - Inventar reglas cuando el proyecto no las tiene.
 - Cerrar/liberar sin confirmación del usuario.

@@ -1,6 +1,6 @@
 # AGENTS.md — p40la-ihost
 
-> **Última actualización**: 2026-11-17
+> **Última actualización**: 2026-11-24
 > **Sistema de specs**: v2.0 (reglas por dominio — SPEC-136)
 
 Este archivo es la **entrada** para agentes. Las reglas completas viven en `docs/rules/`, una sola vez cada una, con IDs estables.
@@ -56,8 +56,8 @@ Detalle: [`docs/rules/50-security.md`](docs/rules/50-security.md), [`40-data.md`
 
 | Capa | Instalación | Qué bloquea |
 |---|---|---|
-| Git hooks (`.githooks/`) | `./scripts/install-hooks.sh` | DBs/PDFs/backups, secretos y PII, `public/i18n/`, `<select>`/checkbox nativo, MCP sin `docs/mcp/`, commits sin `SPEC-XXX:` |
-| Plugin (`.opencode/plugins/rules-guard/`) | `npm --prefix .opencode install` | `rm data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>`/checkbox nativo |
+| Git hooks (`.githooks/`) | `./scripts/install-hooks.sh` | DBs/PDFs/backups, secretos y PII, `public/i18n/`, `<select>`/checkbox nativo, MCP sin `docs/mcp/`, impacto MCP sin spec/validación, contrato MCP roto, commits sin `SPEC-XXX:` |
+| Plugin (`.opencode/plugins/rules-guard/`) | `npm --prefix .opencode install` | `rm data/`, `pkill`, `git push --force`, `git reset --hard`, git de escritura en `main`, `public/i18n/`, `<select>`/checkbox nativo, specs nuevas sin impacto MCP, tools nuevas sin manifiesto |
 
 - **Prohibido** `git commit --no-verify` salvo autorización explícita del usuario.
 - Fail-safe: si un hook o el plugin falla internamente, la operación continúa; solo los patrones positivos bloquean.
@@ -73,6 +73,7 @@ draft → pending_execution → in_progress → pending_release → released
 
 - IDs `SPEC-XXX` inmutables y secuenciales. El próximo ID se calcula desde `docs/specs/SPEC-*.md` + issues, **no** desde el README.
 - Toda spec vive en un worktree propio y tiene un issue de GitHub con label `spec/<estado>`.
+- Toda spec incluye `## Impacto en tools MCP` con la validación de un subagente (`DELIV-MCP-IMPACT`, `DELIV-MCP-IMPACT-SUBAGENT`).
 - El README tracker (`docs/specs/README.md`) se actualiza **solo en el release**.
 - Antes de `pending_release`: checklist de calidad de [`docs/rules/60-testing.md`](docs/rules/60-testing.md).
 - Antes de declarar terminada una spec: `/spec-check-release`.
@@ -88,6 +89,7 @@ Flujo completo, comandos y gates: skill `spec-manager` (`.opencode/skills/spec-m
 - [ ] `cd frontend && npm run check:ui && npm run check:i18n && npm run check:numbers` pasa (si hay UI).
 - [ ] Probado en local y confirmado por el usuario (🤖).
 - [ ] Si toca MCP: `docs/mcp/` actualizado en el mismo commit y redactado por un subagente (`DELIV-MCP-DOCS`, `DELIV-MCP-DOCS-SUBAGENT`).
+- [ ] Si toca MCP o dependencias del manifiesto: `## Impacto en tools MCP` completo, `./scripts/check-mcp-impact.sh --staged --gate` pasa y `go test ./internal/mcp/...` + `go test ./internal/api -run TestMCPBackendContract` están verdes (`DELIV-MCP-IMPACT`, `TEST-MCP-CONTRACT`).
 - [ ] Si depende de datos: validado contra copia de producción.
 - [ ] `git diff --cached` sin PII, secretos, DBs, PDFs ni exports.
 - [ ] Hooks instalados (`./scripts/install-hooks.sh`) y sin `--no-verify`.

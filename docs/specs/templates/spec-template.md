@@ -164,11 +164,27 @@ Entidad: [Nombre]
 
 ---
 
-## 6. Criterios de Aceptación
+## 6. Impacto en tools MCP
+
+> Obligatorio (`DELIV-MCP-IMPACT`). Completar con `./scripts/check-mcp-impact.sh --files <archivos>` y la validación de un subagente (`DELIV-MCP-IMPACT-SUBAGENT`). Si no hay tools afectadas, escribir «ninguna» y justificarlo.
+
+| Tool | ¿Afectada? | Motivo / ruta de dependencia | Contrato |
+|---|---|---|---|
+| `bills_list` | No | … | Sin cambios |
+| `bills_generate` | No | … | Sin cambios |
+| `bills_pay` | No | … | Sin cambios |
+
+**Validación subagente**: `<explore|general>` — sesión `<ses_...>` — veredicto: …
+**Manifest**: `docs/mcp/tools/impact.json`
+**Contrato**: `docs/mcp/tools/contracts.json`
+
+---
+
+## 7. Criterios de Aceptación
 
 > Usar IDs canónicos por dominio (`CA-<PREFIJO>-<NOMBRE>`) para que el cumplimiento sea auditable con grep.
 
-### 6.1 Funcionales
+### 7.1 Funcionales
 
 - [ ] CA-001: Dado [contexto], cuando [acción], entonces [resultado esperado]
 - [ ] CA-002: Dado [contexto], cuando [acción], entonces [resultado esperado]
@@ -181,11 +197,11 @@ Entidad: [Nombre]
 - [ ] CA-UX-PREREQ: El prerrequisito se valida en backend y en frontend.
 - [ ] CA-SEC-SYNTHETIC: Ejemplos y pruebas usan datos sintéticos.
 
-### 6.2 No funcionales
+### 7.2 No funcionales
 
 - [ ] CA-NF-001: [Criterio de rendimiento/seguridad/etc.]
 
-### 6.3 Testing
+### 7.3 Testing
 
 - **Unit tests**: Qué lógica debe cubrirse
 - **Integration tests**: Qué flujos integrados probar
@@ -194,23 +210,23 @@ Entidad: [Nombre]
 
 ---
 
-## 7. Plan de Implementación
+## 8. Plan de Implementación
 
-### 7.1 Fases
+### 8.1 Fases
 
 | Fase | Descripción | Estimación | Dependencias |
 |------|-------------|------------|--------------|
 | 1 | [Tarea] | X días | Ninguna |
 | 2 | [Tarea] | Y días | Fase 1 |
 
-### 7.2 Milestones
+### 8.2 Milestones
 
 1. **MVP**: [Qué incluye el mínimo viable]
 2. **V1.0**: [Versión completa]
 
 ---
 
-## 8. Riesgos y Mitigaciones
+## 9. Riesgos y Mitigaciones
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |--------|--------------|---------|------------|
@@ -218,7 +234,7 @@ Entidad: [Nombre]
 
 ---
 
-## 9. Notas y Referencias
+## 10. Notas y Referencias
 
 - Reglas aplicadas: `docs/rules/...`
 - Links útiles
@@ -227,7 +243,7 @@ Entidad: [Nombre]
 
 ---
 
-## 10. Historial de Cambios
+## 11. Historial de Cambios
 
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
