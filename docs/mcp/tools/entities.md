@@ -2,14 +2,191 @@
 title: "Tools de entidades"
 sidebar_label: "Tools de entidades"
 sidebar_position: 3
-description: "Referencia de homes_create, institutions_create, banks_create y services_create"
+description: "Referencia de entities_search, homes_create, institutions_create, banks_create y services_create"
 ---
 
 # Tools de entidades
 
-Las cuatro tools dan de alta entidades base del sistema: hogares, instituciones, bancos y servicios. Todas **escriben**, comprueban duplicados antes del POST y no tienen `dry_run`: se ejecutan en una sola llamada y dependen de la compuerta de escritura.
+Las cuatro tools de alta crean entidades base del sistema: hogares, instituciones, bancos y servicios. Todas **escriben**, comprueban duplicados antes del POST y no tienen `dry_run`: se ejecutan en una sola llamada y dependen de la compuerta de escritura.
+
+`entities_search` es la contraparte de **solo lectura**: busca esas mismas entidades por nombre y devuelve sus IDs para usarlos en las tools de alta o en las de facturas.
+
+## `entities_search`
+
+Busca servicios, hogares, bancos e instituciones por nombre y devuelve los candidatos con su `id` y el contexto necesario para desambiguarlos. **No distingue mayúsculas ni acentos** y ordena los resultados por calidad de coincidencia.
+
+Es una tool de **solo lectura**: no requiere `P40LA_MCP_ALLOW_WRITES` ni `P40LA_MCP_REMOTE_WRITES`, no crea ni modifica nada y está disponible en stdio y HTTP.
+
+### Entrada
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `entity` | string | Sí | `service`, `home`, `bank` o `institution` |
+| `query` | string | No | Texto a buscar por nombre, hasta 100 caracteres. Vacío lista las primeras entidades |
+| `home` | string | No | Solo para `service`: nombre del hogar para filtrar |
+| `home_id` | integer | No | Solo para `service`: ID del hogar; gana sobre `home` |
+| `limit` | integer | No | Máximo de resultados, `1..50`; default `10` |
+
+`home` y `home_id` solo aplican a `service` y se ignoran en las demás entidades. Si vienen ambos, gana `home_id`. `home` se resuelve por nombre exacto normalizado; si no existe devuelve `not_found` y si hay más de un hogar con ese nombre devuelve `ambiguous_reference` con los candidatos en el `hint`.
+
+### Coincidencias y orden
+
+- La comparación normaliza mayúsculas, acentos (`á` → `a`, `ñ` → `n`) y espacios al inicio y al final.
+- Puntaje: **exacto** (`0`) → **prefijo** (`1`) → **contenido** (`2`). Sin `query`, todas las entidades se consideran con puntaje `3`.
+- Se ordena por puntaje ascendente; en empate, por nombre normalizado y luego por `id`.
+- Los bancos también coinciden por `short_code`; se conserva el mejor puntaje entre nombre y código.
+
+### Salida
+
+```json
+{
+  "entity": "home",
+  "query": "demo",
+  "count": 1,
+  "total": 1,
+  "truncated": false,
+  "items": [
+    {
+      "id": 7,
+      "name": "Hogar Demo",
+      "address": "Calle Demo 123",
+      "usage": "rental"
+    }
+  ]
+}
+```
+
+| Campo | Descripción |
+|---|---|
+| `entity` | Entidad buscada, normalizada a minúsculas |
+| `query` | Texto buscado, ya recortado (`""` si se listó sin filtro) |
+| `count` | Cantidad de items devueltos |
+| `total` | Total de coincidencias encontradas |
+| `truncated` | `true` cuando `total` supera `limit` |
+| `items` | Candidatos, con los campos de la entidad |
+| `hint` | Solo aparece cuando `total` es `0`; explica cómo seguir |
+
+Campos por entidad (los opcionales se omiten cuando están vacíos):
+
+| `entity` | Campos de cada item |
+|---|---|
+| `home` | `id`, `name`, `address`, `usage` |
+| `service` | `id`, `name`, `home_id`, `institution`, `currency_id`, `frequency`, `suggested_amount`, `active` |
+| `bank` | `id`, `name`, `short_code`, `country`, `active` |
+| `institution` | `id`, `name`, `category_id` |
+
+Sin coincidencias **no es un error**: la tool devuelve `count: 0`, `items: []` y un `hint`, con `isError=false`.
+
+La tool nunca elige una entidad por su cuenta: devuelve todos los candidatos con contexto (`home_id`, `short_code`) para que el agente los muestre y el usuario desambigüe.
+
+### Ejemplo: servicios de un hogar
+
+```json
+{
+  "entity": "service",
+  "query": "internet",
+  "home": "Hogar Demo",
+  "limit": 5
+}
+```
+
+```json
+{
+  "entity": "service",
+  "query": "internet",
+  "count": 1,
+  "total": 1,
+  "truncated": false,
+  "items": [
+    {
+      "id": 12,
+      "name": "Internet Demo",
+      "home_id": 7,
+      "institution": "Proveedor Demo",
+      "currency_id": 1,
+      "frequency": "monthly",
+      "suggested_amount": 1000.00,
+      "active": true
+    }
+  ]
+}
+```
+
+En el ejemplo, `currency_id: 1` corresponde a la moneda `NIO`. Sin `query` y con `home_id: 7`, la misma búsqueda listaría los primeros servicios del hogar, por ejemplo `Internet Demo` y `Servicio Demo`.
+
+### Ejemplo: banco por código corto
+
+```json
+{
+  "entity": "bank",
+  "query": "DEMO"
+}
+```
+
+```json
+{
+  "entity": "bank",
+  "query": "DEMO",
+  "count": 1,
+  "total": 1,
+  "truncated": false,
+  "items": [
+    {
+      "id": 2,
+      "name": "Banco Demo",
+      "short_code": "DEMO",
+      "country": "NI",
+      "active": true
+    }
+  ]
+}
+```
+
+### Ejemplo: sin coincidencias
+
+```json
+{
+  "entity": "home",
+  "query": "zzz"
+}
+```
+
+```json
+{
+  "entity": "home",
+  "query": "zzz",
+  "count": 0,
+  "total": 0,
+  "truncated": false,
+  "items": [],
+  "hint": "No se encontraron coincidencias. Probá con otro término o sin query para listar."
+}
+```
+
+### Errores
+
+| Código | Cuándo |
+|---|---|
+| `invalid_value` | `entity` fuera de `service`, `home`, `bank` o `institution`, o `limit` fuera de `1..50` |
+| `invalid_request` | `query` supera los 100 caracteres |
+| `not_found` | El filtro `home` no coincide con ningún hogar; el `hint` lista hasta 10 opciones `id=nombre` |
+| `ambiguous_reference` | El filtro `home` coincide con más de un hogar; el `hint` trae los candidatos y hay que usar `home_id` |
+| `api_error` | La API rechazó la consulta con un error de negocio propio |
+| `upstream_error` | Error de red o respuesta del servidor no interpretable |
+
+`entities_search` nunca devuelve `writes_disabled`: no escribe y no consulta la compuerta.
+
+### Flujo recomendado: buscar → elegir ID → operar
+
+1. Llamar `entities_search` con `entity` y `query`; para servicios, agregar `home` o `home_id` si se conoce el hogar.
+2. Si `count` es `0`, probar otro término o repetir sin `query` para listar. No es un error: usar el `hint`.
+3. Si hay varios candidatos, mostrarlos al usuario con su contexto (`home_id`, `short_code`) y pedir que elija.
+4. Usar el `id` elegido en `bills_list`, `bills_generate` o `bills_pay`, o en las tools de alta (`services_create`, `institutions_create`, etc.).
+5. Si `truncated` es `true`, subir `limit` o afinar `query` antes de concluir que no existe la entidad.
 
 ## Requisitos comunes
+
+Estos requisitos aplican a las cuatro tools de alta (`homes_create`, `institutions_create`, `banks_create`, `services_create`). `entities_search` es de solo lectura y no depende de ellos.
 
 ### Compuerta de escritura
 
@@ -258,11 +435,12 @@ Todos los errores devuelven `isError=true` y un objeto `{error, message, hint?}`
 ## Flujo recomendado para un agente
 
 1. Reunir los datos mínimos con el usuario: nombre y, para servicios, hogar y moneda.
-2. Respetar las dependencias: hogar → institución o banco → servicio.
-3. Mostrar al usuario lo que se va a crear y pedir confirmación explícita; no hay `dry_run`.
-4. Ejecutar una llamada por entidad.
-5. Si llega `not_found` o `ambiguous_reference`, usar el `hint` para elegir el `*_id` correcto o preguntar al usuario.
-6. Si llega `already_exists`, no reintentar con otro nombre: usar el `id` del `hint`.
-7. Reportar el `id` creado y, en servicios, si se generó la factura del período actual.
+2. **Buscar antes de crear**: usar `entities_search` para reutilizar hogares, instituciones, bancos o servicios existentes y evitar duplicados.
+3. Respetar las dependencias: hogar → institución o banco → servicio.
+4. Mostrar al usuario lo que se va a crear y pedir confirmación explícita; no hay `dry_run`.
+5. Ejecutar una llamada por entidad.
+6. Si llega `not_found` o `ambiguous_reference`, usar el `hint` o `entities_search` para elegir el `*_id` correcto o preguntar al usuario.
+7. Si llega `already_exists`, no reintentar con otro nombre: usar el `id` del `hint`.
+8. Reportar el `id` creado y, en servicios, si se generó la factura del período actual.
 
 No reintentes una escritura que falló por red sin revisar el resultado: el alta pudo completarse y el reintento devolverá `already_exists` con el `id`.

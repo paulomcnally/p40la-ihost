@@ -1,7 +1,7 @@
 ---
 title: "MCP: búsqueda de entidades por nombre"
 id: "SPEC-150"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,7 +11,7 @@ github_issue: 153
 # MCP: búsqueda de entidades por nombre
 
 **ID**: SPEC-150  
-**Estado**: draft  
+**Estado**: in_progress  
 **Autor**: opencode  
 **Creado**: 2026-11-24  
 **Actualizado**: 2026-11-24
@@ -339,3 +339,4 @@ SearchItem:
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-24 | opencode | Creación inicial de la especificación |
+| 2026-11-24 | opencode | Inicio de implementación: `entities_search` con ranking, límites y tests |

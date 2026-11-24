@@ -32,9 +32,10 @@ internal/mcp/
     │   ├── list.go
     │   ├── generate.go
     │   └── pay.go
-    └── entities/               # altas de hogares, instituciones, bancos y servicios
+    └── entities/               # búsqueda y altas de hogares, instituciones, bancos y servicios
         ├── tools.go            # Toolset + Register + checkWrites
         ├── resolve.go          # resolución por nombre/ID y errores accionables
+        ├── search.go           # entities_search (solo lectura)
         ├── homes.go
         ├── institutions.go
         ├── banks.go

@@ -249,7 +249,7 @@ func TestProtocolToolsList(t *testing.T) {
 	for _, tool := range tools.Tools {
 		names[tool.Name] = true
 	}
-	for _, want := range []string{"homes_create", "institutions_create", "banks_create", "services_create"} {
+	for _, want := range []string{"entities_search", "homes_create", "institutions_create", "banks_create", "services_create"} {
 		if !names[want] {
 			t.Fatalf("falta %q en %v", want, names)
 		}

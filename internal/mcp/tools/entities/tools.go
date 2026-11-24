@@ -54,6 +54,15 @@ func (t *Toolset) Register(server *mcp.Server) {
 	}, t.banksCreate)
 
 	mcp.AddTool(server, &mcp.Tool{
+		Name: "entities_search",
+		Description: "Busca servicios, hogares, bancos o instituciones por nombre y devuelve sus IDs. " +
+			"No distingue mayúsculas ni acentos; ordena exacto, prefijo y contenido. " +
+			"entity: service, home, bank o institution. query vacía lista las primeras entidades. " +
+			"Para service, home/home_id filtra por hogar. Solo lectura.",
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &openWorld},
+	}, t.entitiesSearch)
+
+	mcp.AddTool(server, &mcp.Tool{
 		Name: "services_create",
 		Description: "Crea un servicio. Requiere name y un hogar (home o home_id) y una moneda (currency o currency_id). " +
 			"institution/institution_id, frequency, suggested_amount, icon_key, billing_type, billing_day, active, " +
