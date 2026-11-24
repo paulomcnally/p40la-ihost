@@ -187,7 +187,7 @@ Verificaciones útiles:
 - Reutilizar el `code` debe fallar con `invalid_grant`.
 - Un `code_verifier` distinto debe fallar con `invalid_grant`.
 - `POST /admin/revoke` debe invalidar el access y el refresh.
-- `P40LA_MCP_REMOTE_WRITES=false` debe devolver `writes_disabled` con `dry_run=false`.
+- `P40LA_MCP_REMOTE_WRITES=false` debe devolver `writes_disabled` (por ejemplo, `bills_pay` con `dry_run=false` o un `bank_accounts_create`).
 - `audit.jsonl` debe tener una línea por `tools/call`, sin argumentos.
 
 ## Documentación obligatoria

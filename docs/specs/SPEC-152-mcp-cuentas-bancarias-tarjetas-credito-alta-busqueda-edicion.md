@@ -1,7 +1,7 @@
 ---
 title: "MCP de cuentas bancarias y tarjetas de crédito: alta, búsqueda y edición"
 id: "SPEC-152"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,7 +11,7 @@ github_issue: 155
 # MCP de cuentas bancarias y tarjetas de crédito: alta, búsqueda y edición
 
 **ID**: SPEC-152  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-11-24  
 **Actualizado**: 2026-11-24
@@ -364,32 +364,32 @@ Las claves de salida usan `snake_case` y los campos opcionales se omiten con `om
 
 ### 6.1 Funcionales
 
-- [ ] `CA-REQ-001`: `bank_accounts_search` devuelve cuentas por alias, número, beneficiario y banco, con `count/total/truncated`.
-- [ ] `CA-REQ-002`: `bank_accounts_create` crea la cuenta con banco y moneda resueltos por nombre/código y devuelve el `id`.
-- [ ] `CA-REQ-003`: `bank_accounts_update` cambia solo los campos enviados y conserva el resto (verificado con un GET posterior).
-- [ ] `CA-REQ-004`: `credit_cards_search` devuelve tarjetas por alias, `last4`, titular y banco.
-- [ ] `CA-REQ-005`: `credit_cards_create` aplica los defaults documentados y crea la tarjeta.
-- [ ] `CA-REQ-006`: `credit_cards_update` cambia solo los campos enviados.
-- [ ] `CA-REQ-007`: banco inexistente → `not_found` con candidatos; banco ambiguo → `ambiguous_reference`.
-- [ ] `CA-REQ-008`: moneda inexistente → `not_found` con códigos disponibles.
-- [ ] `CA-REQ-009`: con escrituras deshabilitadas, las tools de escritura responden `writes_disabled` y no llaman al backend.
-- [ ] `CA-REQ-010`: duplicados de cuenta (`bank_id` + `account_number`) y tarjeta (`bank_id` + `alias`) responden `already_exists`.
-- [ ] `CA-REQ-011`: las seis tools aparecen en `tools/list`.
-- [ ] `CA-REQ-012`: `docs/mcp/tools/banking.md` documenta las seis tools y el catálogo las lista.
-- [ ] `CA-UX-*` / `CA-UI-*`: N/A, no hay UI.
+- [x] `CA-REQ-001`: `bank_accounts_search` devuelve cuentas por alias, número, beneficiario y banco, con `count/total/truncated`.
+- [x] `CA-REQ-002`: `bank_accounts_create` crea la cuenta con banco y moneda resueltos por nombre/código y devuelve el `id`.
+- [x] `CA-REQ-003`: `bank_accounts_update` cambia solo los campos enviados y conserva el resto (verificado con un GET posterior).
+- [x] `CA-REQ-004`: `credit_cards_search` devuelve tarjetas por alias, `last4`, titular y banco.
+- [x] `CA-REQ-005`: `credit_cards_create` aplica los defaults documentados y crea la tarjeta.
+- [x] `CA-REQ-006`: `credit_cards_update` cambia solo los campos enviados.
+- [x] `CA-REQ-007`: banco inexistente → `not_found` con candidatos; banco ambiguo → `ambiguous_reference`.
+- [x] `CA-REQ-008`: moneda inexistente → `not_found` con códigos disponibles.
+- [x] `CA-REQ-009`: con escrituras deshabilitadas, las tools de escritura responden `writes_disabled` y no llaman al backend.
+- [x] `CA-REQ-010`: duplicados de cuenta (`bank_id` + `account_number`) y tarjeta (`bank_id` + `alias`) responden `already_exists`.
+- [x] `CA-REQ-011`: las seis tools aparecen en `tools/list`.
+- [x] `CA-REQ-012`: `docs/mcp/tools/banking.md` documenta las seis tools y el catálogo las lista.
+- [x] `CA-UX-*` / `CA-UI-*`: N/A, no hay UI.
 
 ### 6.2 No funcionales
 
-- [ ] `CA-ARCH-STACK`: `go.mod` sin dependencias nuevas.
-- [ ] `CA-ARCH-FOLDERS`: archivos en las rutas declaradas en 5.2.
-- [ ] `CA-ARCH-LAYERS`: el paquete `banking` no importa `internal/services`, `internal/storage` ni SQL.
-- [ ] `CA-ARCH-GO`: `gofmt -l` sin archivos y `go vet ./internal/mcp/...` limpio.
-- [ ] `CA-ARCH-IHOST`: sin migraciones ni cambios en `cmd/server`; el server sigue respondiendo `/health`.
-- [ ] `CA-SEC-NO-PII`: `git diff --cached` sin datos reales, tokens ni números de cuenta/tarjeta.
-- [ ] `CA-SEC-SYNTHETIC`: ejemplos y fixtures usan solo datos `demo-*`.
-- [ ] `CA-TEST-LOCAL`: `go build ./...` y `go test ./...` pasan.
-- [ ] `CA-DELIV-WORKTREE`: cambios solo en `../p40la-ihost-spec-152`.
-- [ ] `CA-DELIV-MCP-DOCS`: el commit incluye `docs/mcp/`.
+- [x] `CA-ARCH-STACK`: `go.mod` sin dependencias nuevas.
+- [x] `CA-ARCH-FOLDERS`: archivos en las rutas declaradas en 5.2.
+- [x] `CA-ARCH-LAYERS`: el paquete `banking` no importa `internal/services`, `internal/storage` ni SQL.
+- [x] `CA-ARCH-GO`: `gofmt -l` sin archivos y `go vet ./internal/mcp/...` limpio.
+- [x] `CA-ARCH-IHOST`: sin migraciones ni cambios en `cmd/server`; el server sigue respondiendo `/health`.
+- [x] `CA-SEC-NO-PII`: `git diff --cached` sin datos reales, tokens ni números de cuenta/tarjeta.
+- [x] `CA-SEC-SYNTHETIC`: ejemplos y fixtures usan solo datos `demo-*`.
+- [x] `CA-TEST-LOCAL`: `go build ./...` y `go test ./...` pasan.
+- [x] `CA-DELIV-WORKTREE`: cambios solo en `../p40la-ihost-spec-152`.
+- [x] `CA-DELIV-MCP-DOCS`: el commit incluye `docs/mcp/`.
 
 ### 6.3 Testing
 
@@ -450,3 +450,4 @@ Las claves de salida usan `snake_case` y los campos opcionales se omiten con `om
 |-------|-------|-------------|
 | 2026-11-24 | opencode | Creación inicial de la especificación |
 | 2026-11-24 | opencode | Implementación de DTOs, cliente HTTP, seis tools, resolución y tests; documentación MCP delegada a subagente |
+| 2026-11-24 | opencode | Preparación de release: build, vet, tests y live test con DB sintética; validación manual omitida por autorización explícita del usuario |
