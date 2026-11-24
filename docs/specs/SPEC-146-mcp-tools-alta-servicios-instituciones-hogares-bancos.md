@@ -1,7 +1,7 @@
 ---
 title: "MCP de entidades: tools de alta para servicios, instituciones, hogares y bancos"
 id: "SPEC-146"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-24"
@@ -11,7 +11,7 @@ github_issue: 149
 # MCP de entidades: tools de alta para servicios, instituciones, hogares y bancos
 
 **ID**: SPEC-146  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-24
@@ -426,3 +426,16 @@ ServiceInput: home_id, name, institution, currency_id, frequency, suggested_amou
 | 2026-11-23 | opencode | Creación inicial de la especificación |
 | 2026-11-24 | opencode | Inicio de implementación: toolkit compartido, DTOs/cliente y las cuatro tools con tests |
 | 2026-11-24 | opencode | Imagen `0.2.0` publicada y desplegada en el iHost; `tools/list` devuelve 7 tools (3 de facturas + 4 de entidades) |
+
+
+---
+
+## 11. Release
+
+- **Estado**: released
+- **Fecha**: 2026-11-24
+- **Versión**: `0.3.0` (imagen `paulomcnally/p40la-mcp:0.3.0`)
+- **Rama**: `feature/SPEC-150` → `main` (fast-forward, release train 148 → 146 → 150)
+- **Validado**: las 4 tools de alta con tests unitarios y de protocolo, `writes_disabled` sin gate, duplicados, hints y `not_found`/`ambiguous_reference`; desplegadas en el iHost y visibles en `tools/list`.
+- **Pendiente post-release (no bloqueante)**: validación manual de altas contra copia de producción en `/tmp`; el usuario autorizó el release sin ejecutarla.
+- **Autorización**: el usuario confirmó el release de la pila 148/146/150 el 2026-11-24 (🤖).

@@ -1,7 +1,7 @@
 ---
 title: "MCP: búsqueda de entidades por nombre"
 id: "SPEC-150"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,7 +11,7 @@ github_issue: 153
 # MCP: búsqueda de entidades por nombre
 
 **ID**: SPEC-150  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-24  
 **Actualizado**: 2026-11-24
@@ -340,3 +340,16 @@ SearchItem:
 |-------|-------|-------------|
 | 2026-11-24 | opencode | Creación inicial de la especificación |
 | 2026-11-24 | opencode | Inicio de implementación: `entities_search` con ranking, límites y tests |
+
+
+---
+
+## 11. Release
+
+- **Estado**: released
+- **Fecha**: 2026-11-24
+- **Versión**: `0.3.0` (imagen `paulomcnally/p40la-mcp:0.3.0`)
+- **Rama**: `feature/SPEC-150` → `main` (fast-forward, release train 148 → 146 → 150)
+- **Validado**: 8 tools en `tools/list`, `entities_search` read-only con ranking, límites, filtro por hogar, búsqueda sin resultados como éxito y `not_found` con hint; tests unitarios y de protocolo verdes.
+- **Pendiente post-release (no bloqueante)**: validación manual del ranking contra copia de producción; se probó en vivo sin escribir datos.
+- **Autorización**: el usuario confirmó el release de la pila 148/146/150 el 2026-11-24 (🤖).

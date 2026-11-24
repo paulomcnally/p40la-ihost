@@ -1,7 +1,7 @@
 ---
 title: "Despliegue del MCP remoto en el iHost con nodo Tailscale dedicado"
 id: "SPEC-148"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-24"
@@ -11,7 +11,7 @@ github_issue: 151
 # Despliegue del MCP remoto en el iHost con nodo Tailscale dedicado
 
 **ID**: SPEC-148  
-**Estado**: in_progress  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-24
@@ -274,14 +274,14 @@ del iHost no acepta los mismos campos.
 ### 6.1 Funcionales
 
 - [x] **CA-IHOST-MCP-001**: `docker buildx imagetools inspect paulomcnally/p40la-mcp:0.1.4` muestra `amd64`, `arm/v7` y `arm64`.
-- [ ] **CA-IHOST-MCP-002**: el contenedor `p40la-mcp` corre en el iHost (`armv7l`) con `restart: unless-stopped`.
+- [x] **CA-IHOST-MCP-002**: el contenedor `p40la-mcp` corre en el iHost (`armv7l`) con `restart: unless-stopped`.
 - [x] **CA-IHOST-MCP-013**: con el volumen `p40la-mcp-data:/data`, el MCP arranca como `nonroot`, escribe `oauth.json` y auditoría, y `/healthz` responde `{"status":"ok"}`. Auditoría verificada con entradas `bills_list` y `bills_generate` sin argumentos.
 - [x] **CA-IHOST-MCP-014**: `/mcp` por Funnel con bearer token responde `initialize` correctamente (no `403 invalid Host header`) y un `Host` ajeno recibe `403 forbidden_host`.
 - [x] **CA-IHOST-MCP-003**: `/healthz` del listener admin responde `{"status":"ok"}` desde el iHost.
 - [x] **CA-IHOST-MCP-004**: el dashboard `https://ihost.<tailnet>.ts.net` sigue funcionando y **no** es público (Funnel sigue deshabilitado en ese nodo).
 - [x] **CA-IHOST-MCP-005**: `p40la-mcp.<tailnet>.ts.net` resuelve con **A IPv4** público y certificado válido.
 - [x] **CA-IHOST-MCP-006**: discovery OAuth responde y `/mcp` sin token devuelve `401` con `WWW-Authenticate`. Verificado también el flujo completo (registro dinámico, authorize, token, `initialize`).
-- [ ] **CA-IHOST-MCP-007**: el conector de claude.ai completa OAuth y lista las tools.
+- [x] **CA-IHOST-MCP-007**: el conector de claude.ai completa OAuth y lista las tools.
 - [ ] **CA-IHOST-MCP-008**: una tool de lectura funciona y una de escritura con ambos flags se ejecuta y queda auditada.
 - [x] **CA-IHOST-MCP-009**: `/healthz`, `/admin/revoke`, el dashboard y el puerto 8088 no son alcanzables desde Internet.
 - [ ] **CA-IHOST-MCP-010**: tras reiniciar el iHost, ambos contenedores vuelven a arrancar solos.
@@ -290,11 +290,11 @@ del iHost no acepta los mismos campos.
 
 ### 6.2 No funcionales
 
-- [ ] **CA-NF-001**: `go build ./...` y `go test ./...` verdes.
-- [ ] **CA-NF-002**: imagen multi-arch verificada; sin dependencias nuevas.
-- [ ] **CA-NF-003**: secretos solo en archivos `0600` del iHost; repo sin tokens ni auth keys.
-- [ ] **CA-NF-004**: docs `docs/mcp/` actualizadas con el runbook de iHost.
-- [ ] **CA-NF-005**: el nodo Tailscale actual no se modifica (diff de contenedor/volúmenes vacío).
+- [x] **CA-NF-001**: `go build ./...` y `go test ./...` verdes.
+- [x] **CA-NF-002**: imagen multi-arch verificada; sin dependencias nuevas.
+- [x] **CA-NF-003**: secretos solo en archivos `0600` del iHost; repo sin tokens ni auth keys.
+- [x] **CA-NF-004**: docs `docs/mcp/` actualizadas con el runbook de iHost.
+- [x] **CA-NF-005**: el nodo Tailscale actual no se modifica (diff de contenedor/volúmenes vacío).
 
 ### 6.3 Testing
 
@@ -365,5 +365,19 @@ del iHost no acepta los mismos campos.
 | 2026-11-24 | opencode | Despliegue en iHost: se documenta el payload real del API (5.6.1) y se publica `0.1.1` con `/data` propio para `nonroot` (ADR-005) |
 | 2026-11-24 | opencode | Se publica `0.1.2`: allowlist de `Host` para Funnel y se valida el flujo OAuth público completo (ADR-006) |
 | 2026-11-24 | opencode | Verificado en el iHost: Funnel 443, DNS A público, TLS válido, `initialize` 200, `tools/list` y tools de lectura/escritura dry-run auditadas; dashboard privado |
+| 2026-11-24 | opencode | Release 0.3.0: conector claude.ai autorizado y 8 tools visibles; release train 148 → 146 → 150 |
 | 2026-11-24 | opencode | Se publica `0.1.3`: el formulario `/authorize` envía `response_type=code` y `code_challenge_method=S256` (el navegador de claude.ai fallaba con «response_type debe ser code») |
 | 2026-11-24 | opencode | Se publica `0.1.4`: el CSP `form-action` incluye el origen del `redirect_uri` registrado; antes el navegador bloqueaba el 303 a claude.ai y el formulario parecía no hacer nada |
+
+
+---
+
+## 11. Release
+
+- **Estado**: released
+- **Fecha**: 2026-11-24
+- **Versión**: `0.3.0` (imagen `paulomcnally/p40la-mcp:0.3.0`)
+- **Rama**: `feature/SPEC-150` → `main` (fast-forward, release train 148 → 146 → 150)
+- **Validado**: Funnel 443 → MCP, DNS A público, TLS válido, OAuth completo (registro/autorize/token), `/mcp` 401 sin token, `initialize` 200 con 8 tools, conector de claude.ai cargado, dashboard privado (rechaza ingress público) y auditoría JSONL de tools.
+- **Pendiente post-release (no bloqueante)**: reinicio del iHost (CA-IHOST-MCP-010), rollback completo (CA-011), medición formal de RSS (CA-012) y una escritura real de factura (CA-008).
+- **Autorización**: el usuario confirmó el release de la pila 148/146/150 el 2026-11-24 (🤖).
