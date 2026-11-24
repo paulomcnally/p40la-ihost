@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -432,4 +433,275 @@ func TestListFiltersByYearAndKind(t *testing.T) {
 
 func asValidation(err error, target **ValidationError) bool {
 	return errors.As(err, target)
+}
+
+func TestCreateWithItemPersistsBothRows(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, institutionID := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	record, err := service.CreateWithItem(ctx, homeID, Input{
+		PerformedAt:   "2026-03-20",
+		Kind:          KindCorrective,
+		Area:          AreaPlumbing,
+		InstitutionID: &institutionID,
+		Description:   "Reparación demo",
+	}, &ItemInput{
+		ItemType:      ItemLabor,
+		Description:   "Mano de obra demo",
+		Amount:        50,
+		CurrencyID:    usd,
+		InstitutionID: &institutionID,
+	})
+	if err != nil {
+		t.Fatalf("crear con línea: %v", err)
+	}
+	if len(record.Items) != 1 || record.Items[0].ItemType != ItemLabor {
+		t.Fatalf("líneas = %+v", record.Items)
+	}
+	if record.Items[0].Quantity != 1 || record.Items[0].Unit != UnitUnit {
+		t.Fatalf("mano de obra debía normalizar cantidad/unidad: %+v", record.Items[0])
+	}
+
+	var count int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM home_maintenances`).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 {
+		t.Fatalf("mantenimientos = %d, quería 1", count)
+	}
+
+	// Un fallo dentro de la transacción (FK de moneda) no debe dejar el
+	// mantenimiento huérfano.
+	if _, err := service.storage.CreateWithItem(ctx, homeID, Input{
+		PerformedAt: "2026-03-21",
+		Kind:        KindCorrective,
+		Area:        AreaOther,
+	}, ItemInput{
+		ItemType: ItemSupplies, Description: "Insumo demo", Quantity: 1, Unit: UnitUnit,
+		Amount: 10, CurrencyID: 999999,
+	}); err == nil {
+		t.Fatal("se esperaba error de FK en la línea")
+	}
+	if err := database.QueryRow(`SELECT COUNT(*) FROM home_maintenances`).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 {
+		t.Fatalf("la transacción dejó un mantenimiento vacío: %d", count)
+	}
+}
+
+func TestListFiltersByDateItemTypeAndQuery(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	first, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaPlumbing, Description: "Cambio de llave demo",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, first.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 40, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	second, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-11", Kind: KindCorrective, Area: AreaElectrical, Description: "Instalación demo",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, second.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Cable demo", Quantity: 3, Unit: UnitMeter, Amount: 30, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	third, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaGarden, Description: "Tierra demo",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, third.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Tierra demo", Quantity: 1, Unit: UnitSack, Amount: 12, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	byDate, err := service.List(ctx, homeID, Filter{Date: "2026-03-10", IncludeItems: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byDate.Items) != 2 {
+		t.Fatalf("fecha devolvió %d registros", len(byDate.Items))
+	}
+	for _, item := range byDate.Items {
+		if len(item.Items) != 1 {
+			t.Fatalf("include_items no cargó la línea de %d", item.ID)
+		}
+	}
+	if byDate.Truncated {
+		t.Fatal("no debía truncar")
+	}
+
+	byType, err := service.List(ctx, homeID, Filter{ItemType: ItemLabor})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byType.Items) != 1 || byType.Items[0].ID != first.ID {
+		t.Fatalf("item_type labor devolvió %d registros", len(byType.Items))
+	}
+
+	byQuery, err := service.List(ctx, homeID, Filter{Query: "cable"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byQuery.Items) != 1 || byQuery.Items[0].ID != second.ID {
+		t.Fatalf("query devolvió %d registros", len(byQuery.Items))
+	}
+
+	var validation *ValidationError
+	if _, err := service.List(ctx, homeID, Filter{Date: "2026-03-10", Year: 2026}); !asValidation(err, &validation) || validation.Code != "invalid_filter" {
+		t.Fatalf("date+year debía ser invalid_filter: %v", err)
+	}
+	if _, err := service.List(ctx, homeID, Filter{ItemType: "otro"}); !asValidation(err, &validation) || validation.Code != "invalid_item_type" {
+		t.Fatalf("item_type inválido debía fallar: %v", err)
+	}
+	if _, err := service.List(ctx, homeID, Filter{Query: strings.Repeat("x", 101)}); !asValidation(err, &validation) || validation.Code != "invalid_query" {
+		t.Fatalf("query larga debía fallar: %v", err)
+	}
+}
+
+func TestTotalsKeepBothColumnsWithItemTypeFilter(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	record, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaPlumbing, Description: "Reparación demo",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 40, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Insumo demo", Quantity: 2, Unit: UnitUnit, Amount: 25.55, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	list, err := service.List(ctx, homeID, Filter{ItemType: ItemLabor})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list.Items) != 1 {
+		t.Fatalf("mantenimientos = %d", len(list.Items))
+	}
+	total, ok := totalFor(list.TotalsByCurrency, "USD")
+	if !ok {
+		t.Fatal("falta total USD")
+	}
+	if total.LaborCost != 40 || total.SuppliesCost != 25.55 || total.Total != 65.55 {
+		t.Fatalf("los totales debían conservar ambas columnas: %+v", total)
+	}
+}
+
+func TestListItemsByMaintenanceIDsTruncates(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	first, err := service.Create(ctx, homeID, Input{PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaPlumbing})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := service.Create(ctx, homeID, Input{PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaGarden})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []int64{first.ID, second.ID} {
+		if _, err := service.CreateItem(ctx, homeID, id, ItemInput{
+			ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 10, CurrencyID: usd,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	grouped, truncated, err := service.storage.ListItemsByMaintenanceIDs(ctx, []int64{first.ID, second.ID}, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !truncated || len(grouped) != 1 {
+		t.Fatalf("esperaba truncado con una línea: %v %v", grouped, truncated)
+	}
+
+	grouped, truncated, err = service.storage.ListItemsByMaintenanceIDs(ctx, []int64{first.ID, second.ID}, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if truncated || len(grouped) != 2 {
+		t.Fatalf("esperaba dos grupos completos: %v %v", grouped, truncated)
+	}
+}
+
+func TestQueryEscapesLikeWildcards(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	percent, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Descuento 100% demo",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, percent.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 10, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	other, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Descuento 100x demo",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, other.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 10, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	byPercent, err := service.List(ctx, homeID, Filter{Query: "100%"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byPercent.Items) != 1 || byPercent.Items[0].ID != percent.ID {
+		t.Fatalf("query con %% devolvió %+v", byPercent.Items)
+	}
+
+	underscore, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Cable_a demo",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, underscore.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Insumo demo", Quantity: 1, Unit: UnitUnit, Amount: 10, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	byUnderscore, err := service.List(ctx, homeID, Filter{Query: "Cable_a"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byUnderscore.Items) != 1 || byUnderscore.Items[0].ID != underscore.ID {
+		t.Fatalf("query con _ devolvió %+v", byUnderscore.Items)
+	}
 }

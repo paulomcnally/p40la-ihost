@@ -1593,17 +1593,125 @@
       }
     },
     {
-      "name": "home_maintenance_list",
-      "description": "Lista las reparaciones y mantenimientos de una vivienda con totales por moneda (mano de obra e insumos). Filtros opcionales de año y tipo (corrective, preventive). Solo lectura.",
+      "name": "home_maintenance_labor_register",
+      "description": "Registra una línea de mano de obra en una reparación del hogar. Busca las líneas del mismo día y devuelve status=duplicate si ya existe una equivalente; usá allow_duplicate=true solo para un registro distinto. Si no hay maintenance_id, reutiliza la reparación del día o la crea con la línea en una transacción. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
       "input_schema": {
         "additionalProperties": false,
         "properties": {
+          "allow_duplicate": {
+            "description": "Si es true permite un duplicado el mismo día; por defecto false",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "amount": {
+            "description": "Monto de la línea (mayor o igual a 0)",
+            "type": "number"
+          },
+          "area": {
+            "description": "Área: plumbing, electrical, roof, paint, carpentry, appliances, garden, cleaning u other",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency_id": {
+            "description": "ID de la moneda (obligatorio)",
+            "type": "integer"
+          },
+          "description": {
+            "description": "Descripción de la mano de obra (obligatoria; máximo 200)",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
           "home_id": {
             "description": "ID de la vivienda (obligatorio)",
             "type": "integer"
           },
+          "institution_id": {
+            "description": "ID del proveedor o contratista (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "maintenance_id": {
+            "description": "ID de una reparación existente (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "performed_at": {
+            "description": "Fecha YYYY-MM-DD, no futura; obligatoria si no hay maintenance_id",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "home_id",
+          "description",
+          "amount",
+          "currency_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "home_maintenance_list",
+      "description": "Lista las reparaciones y mantenimientos de una vivienda con totales por moneda (mano de obra e insumos). Filtros opcionales de año, tipo de reparación, fecha exacta, tipo de línea y texto; include_items carga las líneas. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "description": "Fecha exacta YYYY-MM-DD; no se combina con year",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "include_items": {
+            "description": "Si es true incluye las líneas de cada reparación",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "item_type": {
+            "description": "Filtra reparaciones con líneas labor o supplies",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "kind": {
             "description": "Tipo: corrective o preventive",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "query": {
+            "description": "Texto en la descripción de la reparación o de sus líneas (máximo 100)",
             "type": [
               "null",
               "string"
@@ -1626,6 +1734,100 @@
         "idempotentHint": false,
         "openWorldHint": false,
         "readOnlyHint": true
+      }
+    },
+    {
+      "name": "home_maintenance_supplies_register",
+      "description": "Registra una línea de insumos en una reparación del hogar, con cantidad y unidad. Busca las líneas del mismo día y devuelve status=duplicate si ya existe una equivalente; usá allow_duplicate=true solo para un registro distinto. Si no hay maintenance_id, reutiliza la reparación del día o la crea con la línea en una transacción. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_duplicate": {
+            "description": "Si es true permite un duplicado el mismo día; por defecto false",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "amount": {
+            "description": "Monto de la línea (mayor o igual a 0)",
+            "type": "number"
+          },
+          "area": {
+            "description": "Área: plumbing, electrical, roof, paint, carpentry, appliances, garden, cleaning u other",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency_id": {
+            "description": "ID de la moneda (obligatorio)",
+            "type": "integer"
+          },
+          "description": {
+            "description": "Descripción de los insumos (obligatoria; máximo 200)",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "institution_id": {
+            "description": "ID del proveedor (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "maintenance_id": {
+            "description": "ID de una reparación existente (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "performed_at": {
+            "description": "Fecha YYYY-MM-DD, no futura; obligatoria si no hay maintenance_id",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "quantity": {
+            "description": "Cantidad de insumos; por defecto 1",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "unit": {
+            "description": "Unidad: unit, m, m2, kg, lb, l, gal, sack o box; por defecto unit",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "home_id",
+          "description",
+          "amount",
+          "currency_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
       }
     },
     {

@@ -27,6 +27,7 @@ type FullAPI interface {
 	API
 	AutosAPI
 	ReadAPI
+	HomeMaintenanceAPI
 }
 
 // Auto es el subconjunto de un vehículo que necesita el MCP.

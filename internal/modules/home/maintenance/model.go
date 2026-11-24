@@ -131,6 +131,13 @@ type Input struct {
 	Description   string `json:"description"`
 }
 
+// CreateInput es el cuerpo del POST: mantenimiento y, opcionalmente, su
+// primera línea creada en la misma transacción. El PUT sigue usando Input.
+type CreateInput struct {
+	Input
+	Item *ItemInput `json:"item,omitempty"`
+}
+
 // ItemInput es el cuerpo para crear o actualizar una línea.
 type ItemInput struct {
 	ItemType      string  `json:"item_type"`
@@ -155,10 +162,17 @@ type CurrencyTotal struct {
 type List struct {
 	Items            []Maintenance   `json:"items"`
 	TotalsByCurrency []CurrencyTotal `json:"totals_by_currency"`
+	Truncated        bool            `json:"truncated"`
 }
 
-// Filter restringe el histórico por año y tipo.
+// Filter restringe el histórico por año o fecha exacta, tipo, tipo de línea y
+// texto. Limit es interno (topes de la API) y no se expone como query param.
 type Filter struct {
-	Year int
-	Kind string
+	Year         int
+	Kind         string
+	Date         string
+	ItemType     string
+	Query        string
+	IncludeItems bool
+	Limit        int
 }

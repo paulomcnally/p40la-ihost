@@ -164,6 +164,22 @@ func (contractAPI) CreateInsurance(context.Context, int64, api.InsuranceRequest)
 	return &api.Insurance{}, nil
 }
 
+func (contractAPI) ListHomeMaintenances(context.Context, int64, api.HomeMaintenanceFilter) (*api.HomeMaintenanceList, error) {
+	return &api.HomeMaintenanceList{}, nil
+}
+
+func (contractAPI) GetHomeMaintenance(context.Context, int64, int64) (*api.HomeMaintenance, error) {
+	return &api.HomeMaintenance{}, nil
+}
+
+func (contractAPI) CreateHomeMaintenance(context.Context, int64, api.HomeMaintenanceRequest) (*api.HomeMaintenance, error) {
+	return &api.HomeMaintenance{}, nil
+}
+
+func (contractAPI) CreateHomeMaintenanceItem(context.Context, int64, int64, api.HomeMaintenanceItemRequest) (*api.HomeMaintenanceItem, error) {
+	return &api.HomeMaintenanceItem{}, nil
+}
+
 // TestToolContracts congela el contrato visible de tools/list para todo el
 // catálogo: nombres, descripciones, esquemas y anotaciones. Un cambio
 // intencional se acepta con:

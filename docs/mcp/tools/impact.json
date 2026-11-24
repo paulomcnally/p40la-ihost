@@ -890,6 +890,8 @@
         "internal/modules/home/maintenance/handlers.go",
         "internal/modules/home/maintenance/service.go",
         "internal/modules/home/maintenance/storage.go",
+        "internal/modules/home/maintenance/model.go",
+        "internal/modules/home/maintenance/module.go",
         "internal/mcp/api/reads.go",
         "internal/mcp/tools/toolkit/read.go",
         "internal/mcp/tools/toolkit/toolkit.go"
@@ -900,6 +902,68 @@
       "tests": [
         "internal/mcp/tools/homemaint/homemaint_test.go",
         "internal/mcp/tools/all/contract_test.go",
+        "internal/modules/home/maintenance/handlers_test.go",
+        "internal/mcp/api/home_maintenance_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "home_maintenance_labor_register",
+      "docs": [
+        "docs/mcp/tools/home-maintenance.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/homemaint/labor.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/homemaint/",
+        "internal/mcp/api/",
+        "internal/modules/home/maintenance/",
+        "internal/modules/home/maintenance/model.go",
+        "internal/modules/home/maintenance/module.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/maintenances",
+        "GET /api/homes/{id}/maintenances/{maintenance_id}",
+        "POST /api/homes/{id}/maintenances",
+        "POST /api/homes/{id}/maintenances/{maintenance_id}/items"
+      ],
+      "tests": [
+        "internal/mcp/tools/homemaint/homemaint_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/modules/home/maintenance/service_test.go",
+        "internal/modules/home/maintenance/handlers_test.go",
+        "internal/mcp/api/home_maintenance_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "home_maintenance_supplies_register",
+      "docs": [
+        "docs/mcp/tools/home-maintenance.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/homemaint/supplies.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/homemaint/",
+        "internal/mcp/api/",
+        "internal/modules/home/maintenance/",
+        "internal/modules/home/maintenance/model.go",
+        "internal/modules/home/maintenance/module.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/maintenances",
+        "GET /api/homes/{id}/maintenances/{maintenance_id}",
+        "POST /api/homes/{id}/maintenances",
+        "POST /api/homes/{id}/maintenances/{maintenance_id}/items"
+      ],
+      "tests": [
+        "internal/mcp/tools/homemaint/homemaint_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/modules/home/maintenance/service_test.go",
+        "internal/modules/home/maintenance/handlers_test.go",
+        "internal/mcp/api/home_maintenance_test.go",
         "internal/api/mcp_backend_contract_test.go"
       ]
     },
