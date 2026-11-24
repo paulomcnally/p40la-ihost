@@ -8,6 +8,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useToast } from '../components/Toast'
 import { Icon } from '../components/Icons'
 import CardMenu from '../components/CardMenu'
+import CreateMenu from '../components/CreateMenu'
 import DeleteModal from '../components/DeleteModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import HomeMaintenanceItemModal from '../components/home/HomeMaintenanceItemModal'
@@ -129,14 +130,12 @@ export default function HomeMaintenanceShowPage() {
               ))}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setItemModal({ itemType })}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-ios-sm hover:bg-primary-hover transition-colors text-sm min-h-[44px]"
-          >
-            <Icon name="plus" className="w-4 h-4" />
-            {isLabor ? t('homeMaintenance.add_labor') : t('homeMaintenance.add_supply')}
-          </button>
+          <CreateMenu
+            title={t('app.add')}
+            options={[
+              { label: t('app.add'), icon: 'plus', onClick: () => setItemModal({ itemType }) },
+            ]}
+          />
         </div>
 
         {rows.length === 0 ? (
@@ -217,9 +216,6 @@ export default function HomeMaintenanceShowPage() {
             </span>
           </div>
           {homeName && <p className="text-sm text-text-secondary mt-1">{homeName}</p>}
-          {record.institution_name && (
-            <p className="text-sm text-text-secondary mt-1 break-words">{record.institution_name}</p>
-          )}
           {record.description && (
             <p className="text-sm text-text-secondary mt-2 break-words">{record.description}</p>
           )}
