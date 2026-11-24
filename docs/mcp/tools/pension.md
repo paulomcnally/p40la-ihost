@@ -19,7 +19,7 @@ No dependen de la compuerta de escritura: funcionan igual en stdio y en HTTP, si
 
 ## `pension_month_summary`
 
-Resume un mes de pensión: trae los registros de manutención, los pagos de salario y el estado de cierre, y calcula conteos por estado y **totales agrupados por moneda**. No modifica datos.
+Resume un mes de pensión: trae los registros de manutención, los pagos de salario y el estado de cierre, y calcula conteos por estado y **totales agrupados por moneda**. Solo lectura; no modifica datos.
 
 ### Entrada
 
@@ -131,7 +131,7 @@ Resume un mes de pensión: trae los registros de manutención, los pagos de sala
 
 ## `pension_catalogs_list`
 
-Devuelve los catálogos necesarios para operar pensión: hijos, categorías de pensión, salarios, configuraciones de generación automática y monedas. No recibe parámetros.
+Devuelve los catálogos necesarios para operar pensión: hijos, categorías de pensión, salarios, configuraciones de generación automática y monedas. Solo lectura. No recibe parámetros.
 
 ### Entrada
 

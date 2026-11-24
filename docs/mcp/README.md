@@ -17,7 +17,7 @@ El binario tiene dos transportes con el mismo catálogo de tools:
 
 El modo remoto está pensado para conectores que Anthropic ejecuta desde su infraestructura: exige HTTPS público, OAuth 2.1 y una contraseña de administración. El modo local no necesita nada de eso. Ver [http.md](http.md), [oauth.md](oauth.md) y [funnel.md](funnel.md).
 
-El catálogo cubre facturas de servicios, autos, búsqueda y altas de entidades base, y banca (cuentas bancarias y tarjetas de crédito):
+El catálogo tiene **39 tools**: 24 de lectura y 15 de escritura. Cubre facturas de servicios, autos, entidades base, banca y, desde SPEC-154, pensión, alquileres, deudas, estados de cuenta, reparaciones del hogar, automatizaciones, alertas y configuración. Las **20 tools originales** son:
 
 | Tool | Tipo | Qué hace |
 |---|---|---|
@@ -41,6 +41,26 @@ El catálogo cubre facturas de servicios, autos, búsqueda y altas de entidades 
 | `credit_cards_search` | lectura | Busca tarjetas por alias, últimos cuatro dígitos, titular o banco |
 | `credit_cards_create` | escritura | Crea una tarjeta de crédito con los defaults del sistema |
 | `credit_cards_update` | escritura | Edita una tarjeta existente sin cambiar el banco |
+
+### Ola 1 de SPEC-154 (19 tools de lectura)
+
+SPEC-154 agregó 19 tools de **solo lectura** sobre funcionalidades que ya existían en la web. Reutilizan endpoints HTTP, no agregan escrituras ni migraciones y **no dependen de la compuerta** `P40LA_MCP_ALLOW_WRITES`:
+
+| Dominio | Tools | Documentación |
+|---|---|---|
+| Pensión | `pension_month_summary`, `pension_catalogs_list` | [tools/pension.md](tools/pension.md) |
+| Alquileres | `rental_leases_list`, `rental_lease_get`, `rental_home_status`, `rental_portfolio_summary` | [tools/rental.md](tools/rental.md) |
+| Deudas | `debt_bills_list` | [tools/debts.md](tools/debts.md) |
+| Estados de cuenta | `credit_card_statements_list`, `credit_card_statements_get` | [tools/cards.md](tools/cards.md) |
+| Reparaciones | `home_maintenance_list` | [tools/home-maintenance.md](tools/home-maintenance.md) |
+| Facturas (vistas) | `bills_by_month`, `bills_summary`, `bills_projection` | [tools/bills.md](tools/bills.md) |
+| Autos | `autos_inspection_alerts` | [tools/autos.md](tools/autos.md) |
+| Entidades | `services_get` | [tools/entities.md](tools/entities.md) |
+| Automatizaciones | `automation_accounts_list`, `automation_runs_list` | [tools/automation.md](tools/automation.md) |
+| Alertas | `alerts_list` | [tools/alerts.md](tools/alerts.md) |
+| Configuración | `settings_status` | [tools/settings.md](tools/settings.md) |
+
+Las tools que pueden devolver datos personales o secretos aplican omisión o allowlist de campos: `alerts_list` omite el texto de voz, `settings_status` omite secretos, emails y chat IDs, `automation_*` omite identificadores de cuenta, URLs de webhook y payloads, y `rental_*` omite emails y teléfonos de primer nivel. El detalle de cada tool, con parámetros, ejemplos y errores, está en el [catálogo de tools](tools/README.md).
 
 ## Requisitos
 
@@ -148,6 +168,14 @@ Las tools de alta (`homes_create`, `institutions_create`, `banks_create`, `servi
 - [Tools de autos](tools/autos.md)
 - [Tools de entidades](tools/entities.md)
 - [Tools de banca](tools/banking.md)
+- [Tools de pensión](tools/pension.md)
+- [Tools de alquileres](tools/rental.md)
+- [Tools de deudas](tools/debts.md)
+- [Tools de estados de cuenta](tools/cards.md)
+- [Tools de mantenimiento del hogar](tools/home-maintenance.md)
+- [Tools de automatizaciones](tools/automation.md)
+- [Tools de alertas](tools/alerts.md)
+- [Tools de configuración](tools/settings.md)
 - [Impacto y contrato de tools](tools/impact.md) — manifiesto `tools/impact.json`, golden `tools/contracts.json` y test backend↔MCP
 
 ## Publicación web

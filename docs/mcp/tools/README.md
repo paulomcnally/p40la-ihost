@@ -10,7 +10,7 @@ description: "Convenciones y listado de tools MCP disponibles"
 
 - `snake_case`, con el dominio primero: `bills_list`, `entities_search`, `autos_maintenance_register`, `bank_accounts_search`.
 - Verbo al final: `list`/`search` (lectura), `create` (alta), `update` (edición), `generate` (alta masiva), `pay` (acción), `register` (registro de un hecho).
-- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas y autos declaran `dry_run`; las altas de entidades y las de banca no tienen previsualización y verifican duplicados antes del POST. Las de banca resuelven banco y moneda por nombre/código. Las búsquedas (`entities_search`, `bank_accounts_search`, `credit_cards_search`, `autos_list`) son de solo lectura y no dependen de la compuerta.
+- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas y autos declaran `dry_run`; las altas de entidades y las de banca no tienen previsualización y verifican duplicados antes del POST. Las de banca resuelven banco y moneda por nombre/código. Las **24 tools de lectura** no dependen de la compuerta: búsquedas (`entities_search`, `bank_accounts_search`, `credit_cards_search`, `autos_list`) y las vistas y detalles agregados en SPEC-154 (pensión, alquileres, deudas, estados de cuenta, reparaciones, facturas por mes, alertas y configuración).
 
 ## Tools actuales
 
@@ -58,6 +58,8 @@ El catálogo tiene **39 tools**: 24 de lectura y 15 de escritura.
 | `credit_cards_create` | Banca | Escritura | [banking.md](banking.md) |
 | `credit_cards_update` | Banca | Escritura | [banking.md](banking.md) |
 
+Las **19 tools de la Ola 1 de SPEC-154** son de solo lectura, reutilizan endpoints existentes y no agregan la compuerta de escritura. Las que pueden devolver datos personales o secretos aplican una lista de omisión o una allowlist: `alerts_list` omite `speech`, `settings_status` expone solo una allowlist (sin secretos, emails ni chat IDs), `automation_accounts_list` y `automation_runs_list` omiten `identifier`, `webhook_url` y payloads, y las `rental_*` omiten emails y teléfonos de primer nivel.
+
 ## Contrato congelado y manifiesto de impacto
 
 El catálogo se controla con:
@@ -86,7 +88,7 @@ El catálogo no cambia según el transporte. `p40la-mcp` monta el mismo `mcp.Ser
 
 Lo que cambia es la **compuerta de escritura**:
 
-| Transporte | Lectura (`bills_list`, `entities_search`, `autos_list`, `bank_accounts_search`, `credit_cards_search`) | Escritura (`dry_run=false`, `*_create` o `*_update` de banca) |
+| Transporte | Lectura (las 24 tools de solo lectura) | Escritura (`dry_run=false`, `*_create` o `*_update` de banca) |
 |---|---|---|
 | stdio | Siempre disponible | Requiere `P40LA_MCP_ALLOW_WRITES=true` |
 | HTTP | Siempre disponible | Requiere `P40LA_MCP_ALLOW_WRITES=true` **y** `P40LA_MCP_REMOTE_WRITES=true` |
@@ -121,7 +123,7 @@ Las tools devuelven contenido de texto JSON y `structuredContent` con el mismo o
 
 ## Anotaciones MCP
 
-- Lectura: `bills_list`, `entities_search`, `autos_list`, `bank_accounts_search` y `credit_cards_search` usan `readOnlyHint=true`, `openWorldHint=false`.
+- Lectura: las **24 tools de solo lectura** (`bills_list`, `entities_search`, `services_get`, `autos_list`, `autos_inspection_alerts`, `bank_accounts_search`, `credit_cards_search`, las vistas de facturas y las de pensión, alquileres, deudas, estados de cuenta, reparaciones, automatizaciones, alertas y configuración) usan `readOnlyHint=true` y `openWorldHint=false`. Ninguna declara `destructiveHint` ni modifica datos.
 - Escritura idempotente de facturas y autos: `bills_generate`, `bills_pay` y `autos_update` usan `destructiveHint=false`, `idempotentHint=true`, `openWorldHint=false`.
 - Altas de autos: `autos_create`, `autos_maintenance_register`, `autos_inspection_register` y `autos_insurance_register` usan `destructiveHint=false`, `idempotentHint=false`, `openWorldHint=false`.
 - Altas de entidades: `homes_create`, `institutions_create`, `banks_create` y `services_create` usan `destructiveHint=true`, `openWorldHint=false`. No declaran `idempotentHint`.
