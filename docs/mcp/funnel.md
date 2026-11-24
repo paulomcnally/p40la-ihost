@@ -45,7 +45,7 @@ Funnel **no** debe considerarse una capa de seguridad. La seguridad del endpoint
 
 El add-on de p40la-ihost suele publicar el dashboard con `tailscale serve` en 443 (`deploy/tailscale/serve.json`, `AllowFunnel: false`, proxy a `127.0.0.1:8088`).
 
-`tailscale funnel --bg 8090` configura el handler `/` de 443 hacia el MCP y **reemplaza** ese handler. Si el mismo nodo ya sirve el dashboard en 443:
+`tailscale funnel --bg 8090` intenta tomar el handler `/` de 443 hacia el MCP; según la versión de Tailscale, lo reemplaza o falla por conflicto con el handler existente. Si el mismo nodo ya sirve el dashboard en 443:
 
 - Preferí un **nodo dedicado** para el MCP (una laptop o un segundo hostname), o
 - configurá handlers por path para `/mcp` y todos los endpoints OAuth (`/.well-known/*`, `/register`, `/authorize`, `/token`), lo que es más frágil y requiere mantener ambas configuraciones.

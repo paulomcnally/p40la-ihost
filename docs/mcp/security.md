@@ -81,7 +81,7 @@ Recomendación: dejar `P40LA_MCP_REMOTE_WRITES=false` de forma permanente si cla
 Cuando se usa un conector remoto, las llamadas a tools y sus resultados se procesan en la infraestructura de Anthropic:
 
 - Viajan el nombre de la tool, sus argumentos (`service_id`, períodos, `amount`, `dry_run`) y el resultado (facturas, estados, montos).
-- El canal es HTTPS 443 terminado por Tailscale; Tailscale no inspecciona el contenido, pero **sí lo reenvía a Anthropic**.
+- El canal es HTTPS 443; el contenido lo procesa Anthropic para generar la respuesta del modelo.
 - El binario no envía datos a ningún otro destino: solo llama a `P40LA_BASE_URL`.
 - La auditoría local no guarda argumentos ni resultados; el proveedor del modelo sí los ve para razonar.
 
@@ -128,7 +128,7 @@ En docs, issues y ejemplos usá `demo-node.example.ts.net`, `192.0.2.10`, `demo@
 | Headers | 64 KiB en el listener público | `431`/cierre |
 | Lectura | 30 s | timeout |
 
-Los contadores viven en memoria y se reinician con el proceso. No son una defensa contra un atacante con muchos recursos, pero reducen fuerza bruta y abuso accidental. El límite por token usa el hash del bearer; sin token, usa la IP (priorizando `X-Forwarded-For`).
+Los contadores viven en memoria y se reinician con el proceso. No son una defensa contra un atacante con muchos recursos, pero reducen fuerza bruta y abuso accidental. El límite por token usa el hash del bearer; los endpoints OAuth usan la IP (priorizando `X-Forwarded-For`).
 
 ## Rotación y revocación
 

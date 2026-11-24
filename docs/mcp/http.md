@@ -74,7 +74,7 @@ Las variables de API (`P40LA_BASE_URL`, `P40LA_API_KEY`, `P40LA_TIMEOUT`, `P40LA
 
 | Método y ruta | Autenticación | Función |
 |---|---|---|
-| `POST /mcp` | `Authorization: Bearer <access token>` | Streamable HTTP (JSON-RPC MCP) |
+| `POST /mcp` (y `GET`/`DELETE` del Streamable HTTP) | `Authorization: Bearer <access token>` | Streamable HTTP (JSON-RPC MCP, stream SSE y cierre de sesión) |
 | `GET /.well-known/oauth-protected-resource` | Ninguna | Descubrimiento del recurso (RFC 9728) |
 | `GET /.well-known/oauth-protected-resource/mcp` | Ninguna | Igual que la anterior, con path del recurso |
 | `GET /.well-known/oauth-authorization-server` | Ninguna | Metadatos del servidor de autorización (RFC 8414) |
@@ -98,7 +98,7 @@ El resto de las rutas responde `404`. No hay CORS: los clientes remotos no llama
 
 - **Sin token o token inválido** en `/mcp`: `401` con
   `WWW-Authenticate: Bearer resource_metadata="<PUBLIC_URL>/.well-known/oauth-protected-resource"`.
-- **Rate limit**: `429` con `Retry-After` en segundos. La clave es el hash del bearer token; si no hay token, la IP del cliente.
+- **Rate limit**: `429` con `Retry-After` en segundos. La clave es el hash del bearer token.
 - **Body máximo**: 1 MiB. Un `Content-Length` mayor responde `413` sin leer el cuerpo.
 - **Headers de seguridad**: `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`; HSTS solo cuando la URL pública es `https`.
 - **Timeouts del listener público**: 5 s para headers, 30 s de lectura, 120 s idle, 64 KiB de headers.
@@ -142,7 +142,7 @@ curl -s -X POST http://127.0.0.1:8091/admin/revoke
 # {"status":"revoked"}
 ```
 
-Invalida todos los access tokens, refresh tokens y códigos pendientes; los clientes registrados se conservan para que el cliente pueda reintentar la autorización. Detalle en [oauth.md](oauth.md#revocación).
+Invalida todos los access tokens, refresh tokens y códigos pendientes; los clientes registrados se conservan para que el cliente pueda reintentar la autorización. Detalle en [oauth.md](oauth.md).
 
 ## Docker
 
@@ -159,7 +159,7 @@ docker run -d --name p40la-mcp \
   --network host \
   -v /opt/p40la-mcp/data:/data \
   --env-file /etc/p40la-mcp.env \
-  <registro>/p40la-mcp:<version>
+  ghcr.io/example/p40la-mcp:0.1.0
 ```
 
 - `--network host` permite que Tailscale (en el host) alcance `127.0.0.1:8090` y deja el listener administrativo solo en loopback.
