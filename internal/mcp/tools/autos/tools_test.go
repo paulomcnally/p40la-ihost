@@ -390,6 +390,27 @@ func TestInsuranceAlreadyExists(t *testing.T) {
 	}
 }
 
+func TestList100AutosUnderOneSecond(t *testing.T) {
+	autos := make([]api.Auto, 0, 100)
+	for i := 0; i < 100; i++ {
+		autos = append(autos, api.Auto{ID: int64(i + 1), Brand: "Marca Demo", Model: "Modelo Demo", Color: "white"})
+	}
+	toolset := newToolset(&fakeAPI{autos: autos}, false)
+
+	start := time.Now()
+	_, output, err := toolset.list(context.Background(), nil, ListInput{})
+	elapsed := time.Since(start)
+	if err != nil {
+		t.Fatalf("list devolvió error: %v", err)
+	}
+	if got := output.(ListOutput); got.Count != 100 {
+		t.Fatalf("esperaba 100 autos, obtuve %d", got.Count)
+	}
+	if elapsed > time.Second {
+		t.Fatalf("el listado de 100 autos tardó %s, máximo 1s", elapsed)
+	}
+}
+
 func TestInsuranceCreates(t *testing.T) {
 	fake := &fakeAPI{available: []api.AvailableService{{ID: 12, Name: "Seguro Demo"}}}
 	toolset := newToolset(fake, true)

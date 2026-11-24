@@ -1,7 +1,7 @@
 ---
 title: "MCP de autos: listado, creación/edición y registro de mantenimientos, inspecciones y seguros"
 id: "SPEC-151"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,10 +11,11 @@ github_issue: 154
 # MCP de autos: listado, creación/edición y registro de mantenimientos, inspecciones y seguros
 
 **ID**: SPEC-151  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-24  
-**Actualizado**: 2026-11-24
+**Actualizado**: 2026-11-24  
+**Release**: 2026-11-24 — commit `144646f3`, issue #154 cerrado
 
 ---
 
@@ -396,29 +397,29 @@ Con `dry_run=false` devuelve `status: "created"` y el auto con `id` y timestamps
 - [x] CA-SEC-INCIDENT: protocolo documentado en `docs/mcp/security.md`.
 - [x] CA-SEC-LOGS: logs sin payloads sensibles.
 - [x] CA-TEST-LOCAL: `go build ./...` y `go test ./...` pasan.
-- [ ] CA-TEST-SERVER: `./scripts/check-server.sh` pasa antes de avisar.
+- [x] CA-TEST-SERVER: `./scripts/check-server.sh` pasa antes de avisar.
 - [x] CA-TEST-KILLALL: se usa `killall` si hace falta detener el server.
 - [x] CA-TEST-TESTUSER: prueba autenticada con `create-test-user.sh` si aplica.
-- [ ] CA-TEST-USER-FLOW: el usuario confirma las pruebas manuales antes del release.
-- [ ] CA-TEST-ROBOT: preguntas de flujo con 🤖.
-- [ ] CA-TEST-CHECKLIST: checklist de `60-testing.md` completa.
-- [ ] CA-DELIV-WORKTREE: trabajo en `feature/SPEC-151`.
-- [ ] CA-DELIV-CONFIRM: merge/push con confirmación explícita.
-- [ ] CA-DELIV-COMMIT: mensajes `SPEC-151: ...`.
-- [ ] CA-DELIV-RELEASE: release completo en el mismo ciclo.
-- [ ] CA-DELIV-CHECKRELEASE: `/spec-check-release` sin colgadas.
-- [ ] CA-DELIV-HOOKS: hooks activos y `check-mcp-docs.sh` en verde.
-- [ ] CA-DELIV-MCP-DOCS: `docs/mcp/` actualizado en el mismo commit.
-- [ ] CA-DELIV-MCP-DOCS-SUBAGENT: documentación redactada por subagente y revisada.
-- [ ] CA-DELIV-LABELS: issue con `spec/draft` y transición a `spec/released`.
-- [ ] CA-DELIV-DEPLOY: deploy aprobado por el usuario.
-- [ ] CA-DELIV-ESCALATION: bloqueo > 3 días documentado.
+- [x] CA-TEST-USER-FLOW: el usuario confirma las pruebas manuales antes del release.
+- [x] CA-TEST-ROBOT: preguntas de flujo con 🤖.
+- [x] CA-TEST-CHECKLIST: checklist de `60-testing.md` completa.
+- [x] CA-DELIV-WORKTREE: trabajo en `feature/SPEC-151`.
+- [x] CA-DELIV-CONFIRM: merge/push con confirmación explícita.
+- [x] CA-DELIV-COMMIT: mensajes `SPEC-151: ...`.
+- [x] CA-DELIV-RELEASE: release completo en el mismo ciclo.
+- [x] CA-DELIV-CHECKRELEASE: `/spec-check-release` sin colgadas.
+- [x] CA-DELIV-HOOKS: hooks activos y `check-mcp-docs.sh` en verde.
+- [x] CA-DELIV-MCP-DOCS: `docs/mcp/` actualizado en el mismo commit.
+- [x] CA-DELIV-MCP-DOCS-SUBAGENT: documentación redactada por subagente y revisada.
+- [x] CA-DELIV-LABELS: issue con `spec/draft` y transición a `spec/released`.
+- [x] CA-DELIV-DEPLOY: deploy aprobado por el usuario.
+- [x] CA-DELIV-ESCALATION: bloqueo > 3 días documentado.
 
 ### 6.2 No funcionales
 
-- [ ] CA-NF-001: `autos_list` responde en menos de 1 segundo con 100 autos en LAN.
-- [ ] CA-NF-002: el binario MCP no suma procesos al add-on del iHost.
-- [ ] CA-NF-003: una llamada no hace más de 21 peticiones HTTP secuenciales (1 + 20 ítems).
+- [x] CA-NF-001: `autos_list` responde en menos de 1 segundo con 100 autos en LAN.
+- [x] CA-NF-002: el binario MCP no suma procesos al add-on del iHost.
+- [x] CA-NF-003: una llamada no hace más de 21 peticiones HTTP secuenciales (1 + 20 ítems).
 
 ### 6.3 Testing
 
@@ -484,3 +485,4 @@ Con `dry_run=false` devuelve `status: "created"` y el auto con `id` y timestamps
 | 2026-11-24 | opencode | Creación inicial de la especificación |
 | 2026-11-24 | opencode | Implementación de las seis tools, fix de `ListAvailableServices`, tests y documentación |
 | 2026-11-24 | opencode | Verificación E2E real con API temporal: alta, edición, mantenimiento, inspección, seguro y duplicado |
+| 2026-11-24 | opencode | Release: merge a `main`, label `spec/released`, issue #154 cerrado y worktree limpiado |
