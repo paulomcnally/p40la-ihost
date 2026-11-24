@@ -16,7 +16,10 @@ func TestRentalTools(t *testing.T) {
 		}},
 		"/api/rental/leases/5":         {Body: map[string]any{"id": 5, "status": "active", "email": "demo@example.com"}},
 		"/api/rental/leases/5/balance": {Body: map[string]any{"charged": 100.0, "paid": 40.0}},
-		"/api/rental/homes/3":          {Body: map[string]any{"home_id": 3, "state": "rented"}},
+		"/api/rental/homes/3": {Body: map[string]any{
+			"home_id": 3, "state": "rented",
+			"reminders": []any{map[string]any{"id": 1, "extra_emails": "demo@example.com"}},
+		}},
 		"/api/rental/portfolio/summary?month=11&year=2026": {Body: map[string]any{
 			"income": 1000.0, "expenses": 200.0,
 		}},
@@ -54,6 +57,9 @@ func TestRentalTools(t *testing.T) {
 	status := toolkitest.Call(t, session, "rental_home_status", map[string]any{"home_id": 3})
 	if !strings.Contains(status, `"state": "rented"`) {
 		t.Fatalf("estado inesperado: %s", status)
+	}
+	if strings.Contains(status, "extra_emails") {
+		t.Fatalf("no debe exponer extra_emails: %s", status)
 	}
 
 	portfolio := toolkitest.Call(t, session, "rental_portfolio_summary", map[string]any{"period": "2026-11"})

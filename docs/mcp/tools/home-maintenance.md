@@ -109,10 +109,6 @@ Los filtros se combinan con AND. Sin `year` ni `kind` se devuelve el histórico 
 - Los mantenimientos se devuelven ordenados por `performed_at` descendente y, en empate, por `id` descendente.
 - Una vivienda inexistente devuelve `home_not_found`.
 
-### Nota de implementación
-
-La API `GET /api/homes/{id}/maintenances` responde `{"items": [...], "totals_by_currency": [...]}`. La tool decodifica la respuesta como una lista, así que **contra la API actual la llamada devuelve `upstream_error`** hasta que se alinee el contrato (leer `items` o cambiar el endpoint). El esquema de cada mantenimiento descrito arriba es el real; solo cambia el sobre de la respuesta.
-
 ### Errores
 
 | Código | Cuándo |

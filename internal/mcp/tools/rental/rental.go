@@ -162,4 +162,5 @@ func (t *Toolset) period(raw *string) (int, int, error) {
 var sensitiveKeys = []string{
 	"email", "notify_email", "phone", "person_email", "tenant_email",
 	"guarantor_email", "applicant_email", "agent_email", "agency_email",
+	"extra_email", "extra_emails",
 }
