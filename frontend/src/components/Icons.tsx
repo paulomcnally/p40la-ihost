@@ -684,6 +684,9 @@ const icons: Record<string, React.ReactElement> = {
   check: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round' },
     createElement('polyline', { points: '20 6 9 17 4 12' }),
   ),
+  filter: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+    createElement('path', { d: 'M22 3H2l8 9.46V19l4 2v-8.54L22 3z' }),
+  ),
 }
 
 const iconKeys = Object.keys(icons).filter(n =>

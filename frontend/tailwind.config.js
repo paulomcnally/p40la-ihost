@@ -13,6 +13,7 @@ export default {
         danger: 'rgb(var(--color-danger) / <alpha-value>)',
         success: 'rgb(var(--color-success) / <alpha-value>)',
         warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        accent: 'rgb(var(--color-accent) / <alpha-value>)',
         bg: 'rgb(var(--color-bg) / <alpha-value>)',
         card: 'rgb(var(--color-card) / <alpha-value>)',
         border: 'rgb(var(--color-border) / <alpha-value>)',
