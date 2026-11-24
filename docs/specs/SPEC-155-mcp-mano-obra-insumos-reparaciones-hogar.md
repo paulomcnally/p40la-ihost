@@ -1,7 +1,7 @@
 ---
 title: "MCP: registro de mano de obra e insumos en reparaciones del hogar"
 id: "SPEC-155"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,10 +11,11 @@ github_issue: 158
 # MCP: registro de mano de obra e insumos en reparaciones del hogar
 
 **ID**: SPEC-155<br>
-**Estado**: pending_release<br>
+**Estado**: released<br>
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
-**Actualizado**: 2026-11-24
+**Actualizado**: 2026-11-24<br>
+**Release**: 2026-11-24 — merge a `main` `0d45c957`; implementación `af63bbc2`; catálogo MCP 39 → 41 tools; imagen `paulomcnally/p40la-mcp:0.5.0` multi-arch; sin migraciones ni dependencias nuevas; issue #158 cerrado
 
 ---
 
@@ -449,32 +450,32 @@ Tests:
 
 ### 7.1 Funcionales
 
-- [ ] `CA-REQ-001`: `home_maintenance_labor_register` crea una línea `labor` con `dry_run=false` y la devuelve con su `id`.
-- [ ] `CA-REQ-002`: `home_maintenance_supplies_register` crea una línea `supplies` con `quantity`/`unit` y la devuelve.
-- [ ] `CA-REQ-003`: sin `maintenance_id`, la tool reutiliza el mantenimiento del mismo `home_id` + `performed_at` + `area`; si no existe, lo crea con la línea en una transacción.
-- [ ] `CA-REQ-003B`: si hay dos mantenimientos candidatos del mismo día y área, devuelve `ambiguous_maintenance` sin escribir.
-- [ ] `CA-REQ-004`: repetir la misma línea el mismo día devuelve `status=duplicate` y **no** crea una segunda fila.
-- [ ] `CA-REQ-004B`: con `allow_duplicate=true` la segunda línea se crea y la respuesta incluye `warnings`.
-- [ ] `CA-REQ-005`: `dry_run` default `true` devuelve `status=planned` y `existing_today`.
-- [ ] `CA-REQ-006`: `home_maintenance_list?date=2026-03-10&include_items=true` devuelve el mantenimiento del día con sus líneas y `truncated=false`.
-- [ ] `CA-REQ-007`: sin `P40LA_MCP_ALLOW_WRITES`, `dry_run=false` devuelve `writes_disabled`.
-- [ ] `CA-REQ-008`: `home_id`, `currency_id` e `institution_id` inexistentes devuelven el error estable correspondiente.
-- [ ] `CA-REQ-009`: las escrituras llegan con `X-P40LA-Source: mcp`.
-- [ ] `CA-REQ-010`: `impact.json`, `contracts.json`, `home-maintenance.md` y los conteos de `docs/mcp/` actualizados.
-- [ ] `CA-REQ-013`: `contractAPI` de `internal/mcp/tools/all/contract_test.go` implementa `HomeMaintenanceAPI` y el paquete de tests compila.
-- [ ] `CA-REQ-014`: `TestMCPBackendContract` monta el módulo `home.maintenance` y cubre POST con `item`, GET con filtros, detalle y POST de línea.
-- [ ] `CA-REQ-015`: `totals_by_currency` conserva ambas columnas aunque `item_type` filtre los mantenimientos.
-- [ ] `CA-REQ-011`: una respuesta con más de 100 mantenimientos devuelve `truncated=true`.
-- [ ] `CA-REQ-012`: `query` con `%` o `_` no altera el patrón SQL.
-- [ ] `CA-UX-PREREQ`: el backend valida los prerrequisitos y la tool los reporta antes de escribir.
+- [x] `CA-REQ-001`: `home_maintenance_labor_register` crea una línea `labor` con `dry_run=false` y la devuelve con su `id`.
+- [x] `CA-REQ-002`: `home_maintenance_supplies_register` crea una línea `supplies` con `quantity`/`unit` y la devuelve.
+- [x] `CA-REQ-003`: sin `maintenance_id`, la tool reutiliza el mantenimiento del mismo `home_id` + `performed_at` + `area`; si no existe, lo crea con la línea en una transacción.
+- [x] `CA-REQ-003B`: si hay dos mantenimientos candidatos del mismo día y área, devuelve `ambiguous_maintenance` sin escribir.
+- [x] `CA-REQ-004`: repetir la misma línea el mismo día devuelve `status=duplicate` y **no** crea una segunda fila.
+- [x] `CA-REQ-004B`: con `allow_duplicate=true` la segunda línea se crea y la respuesta incluye `warnings`.
+- [x] `CA-REQ-005`: `dry_run` default `true` devuelve `status=planned` y `existing_today`.
+- [x] `CA-REQ-006`: `home_maintenance_list?date=2026-03-10&include_items=true` devuelve el mantenimiento del día con sus líneas y `truncated=false`.
+- [x] `CA-REQ-007`: sin `P40LA_MCP_ALLOW_WRITES`, `dry_run=false` devuelve `writes_disabled`.
+- [x] `CA-REQ-008`: `home_id`, `currency_id` e `institution_id` inexistentes devuelven el error estable correspondiente.
+- [x] `CA-REQ-009`: las escrituras llegan con `X-P40LA-Source: mcp`.
+- [x] `CA-REQ-010`: `impact.json`, `contracts.json`, `home-maintenance.md` y los conteos de `docs/mcp/` actualizados.
+- [x] `CA-REQ-013`: `contractAPI` de `internal/mcp/tools/all/contract_test.go` implementa `HomeMaintenanceAPI` y el paquete de tests compila.
+- [x] `CA-REQ-014`: `TestMCPBackendContract` monta el módulo `home.maintenance` y cubre POST con `item`, GET con filtros, detalle y POST de línea.
+- [x] `CA-REQ-015`: `totals_by_currency` conserva ambas columnas aunque `item_type` filtre los mantenimientos.
+- [x] `CA-REQ-011`: una respuesta con más de 100 mantenimientos devuelve `truncated=true`.
+- [x] `CA-REQ-012`: `query` con `%` o `_` no altera el patrón SQL.
+- [x] `CA-UX-PREREQ`: el backend valida los prerrequisitos y la tool los reporta antes de escribir.
 
 ### 7.2 No funcionales
 
-- [ ] `CA-ARCH-IHOST`: sin dependencias nuevas; `go build ./...` y `go test ./...` pasan.
-- [ ] `CA-SEC-SYNTHETIC`: todos los ejemplos y fixtures usan datos `demo-*`.
-- [ ] `CA-TEST-MCP-CONTRACT`: `TestToolContracts` y `TestMCPBackendContract` verdes; golden revisado.
-- [ ] `CA-DELIV-MCP-IMPACT`: `./scripts/check-mcp-impact.sh --staged --gate` verde antes del merge.
-- [ ] `CA-DELIV-WORKTREE`: `./scripts/check-worktree.sh` verde en `../p40la-ihost-spec-155`.
+- [x] `CA-ARCH-IHOST`: sin dependencias nuevas; `go build ./...` y `go test ./...` pasan.
+- [x] `CA-SEC-SYNTHETIC`: todos los ejemplos y fixtures usan datos `demo-*`.
+- [x] `CA-TEST-MCP-CONTRACT`: `TestToolContracts` y `TestMCPBackendContract` verdes; golden revisado.
+- [x] `CA-DELIV-MCP-IMPACT`: `./scripts/check-mcp-impact.sh --staged --gate` verde antes del merge.
+- [x] `CA-DELIV-WORKTREE`: `./scripts/check-worktree.sh` verde en `../p40la-ihost-spec-155`.
 
 ### 7.3 Testing
 
@@ -532,3 +533,4 @@ Tests:
 |-------|-------|-------------|
 | 2026-11-24 | opencode | Creación inicial de la especificación; issue #158 |
 | 2026-11-24 | opencode | Implementación: `CreateInput`/`CreateWithItem`, filtros `date`/`item_type`/`q`/`include_items`, cliente `HomeMaintenanceAPI`, tools `home_maintenance_labor_register` y `home_maintenance_supplies_register`, dedup y tests; docs MCP y contrato actualizados; `go build ./...` y `go test ./...` verdes |
+| 2026-11-24 | opencode | Release: merge `0d45c957`; gate MCP y contrato backend verdes; imagen `p40la-mcp:0.5.0` multi-arch publicada con tag `mcp-v0.5.0`; issue #158 cerrado |

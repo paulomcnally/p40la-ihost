@@ -159,7 +159,7 @@ docker run -d --name p40la-mcp \
   --network host \
   -v /opt/p40la-mcp/data:/data \
   --env-file /etc/p40la-mcp.env \
-  paulomcnally/p40la-mcp:0.4.0
+  paulomcnally/p40la-mcp:0.5.0
 ```
 
 - `--network host` permite que Tailscale (en el host) alcance `127.0.0.1:8090` y deja el listener administrativo solo en loopback.

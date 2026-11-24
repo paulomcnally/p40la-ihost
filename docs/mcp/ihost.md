@@ -75,7 +75,7 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 
 1. **App `0.5.17` o superior** desplegada en el iHost. Esa versión incluye los endpoints de API key de SPEC-145; sin ella no se puede provisionar la key.
 2. **Imágenes publicadas en Docker Hub y multi-arch** (`linux/amd64`, `linux/arm/v7`, `linux/arm64`):
-   - `paulomcnally/p40la-mcp:0.4.0` — servidor MCP.
+   - `paulomcnally/p40la-mcp:0.5.0` — servidor MCP.
    - `paulomcnally/p40la-mcp-tailscale:0.1.0` — nodo Tailscale dedicado con `serve.json` incluido.
    El iHost es `armv7l`; verificá que el manifiesto `arm/v7` exista antes de crear los contenedores.
 3. **Auth key de Tailscale** para el nodo nuevo. Recomendado: one-off, con tag `tag:p40la-mcp`. Si la key no trae tag, anunciá el tag con `TS_EXTRA_ARGS` (ver [contenedores](#52-tailscale-mcp)).
@@ -116,7 +116,7 @@ printf 'P40LA_MCP_OAUTH_PASSWORD_HASH=%s\n' "$HASH"
 También sirve un contenedor descartable:
 
 ```bash
-docker run --rm -it paulomcnally/p40la-mcp:0.4.0 -hash-password
+docker run --rm -it paulomcnally/p40la-mcp:0.5.0 -hash-password
 ```
 
 Guardá **solo el hash** en `/etc/p40la-mcp.env`. La contraseña en claro no se guarda en el iHost y debe ser única, larga y distinta de la del dashboard.
@@ -218,7 +218,7 @@ Orden recomendado:
 | Campo | Valor |
 |---|---|
 | Nombre | `p40la-mcp` |
-| Imagen | `paulomcnally/p40la-mcp:0.4.0` |
+| Imagen | `paulomcnally/p40la-mcp:0.5.0` |
 | Red | `host` |
 | Restart | `unless-stopped` |
 | Volumen | `p40la-mcp-data` → `/data` (la imagen ya trae `/data` con dueño `nonroot`) |

@@ -81,7 +81,7 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 | `ihost.example.ts.net` | Tailscale actual del add-on | Serve 443 → `127.0.0.1:8088` | Solo tailnet |
 | `p40la-mcp.example.ts.net` | `tailscale-mcp` · `paulomcnally/p40la-mcp-tailscale:0.1.0` | Funnel 443 → `127.0.0.1:8090` | Internet + OAuth |
 
-- `p40la-mcp` corre con la imagen `paulomcnally/p40la-mcp:0.4.0`, red host, `restart: unless-stopped` y estado en `/data`.
+- `p40la-mcp` corre con la imagen `paulomcnally/p40la-mcp:0.5.0`, red host, `restart: unless-stopped` y estado en `/data`.
 - `tailscale-mcp` está basado en `tailscale/tailscale`, usa `TS_USERSPACE=true` (no hay `/dev/net/tun` en el iHost), estado en `/var/lib/tailscale` y un `serve.json` incluido en la imagen.
 - El nodo del dashboard **no se reinicia, no se reconfigura y no se publica**: su `serve.json` conserva `AllowFunnel: false`.
 - El runbook completo está en [ihost.md](ihost.md) y el detalle de Funnel en [funnel.md](funnel.md).
