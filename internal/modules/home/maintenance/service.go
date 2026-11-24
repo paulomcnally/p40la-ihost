@@ -255,28 +255,23 @@ func (s *Service) prepareItem(ctx context.Context, input *ItemInput) error {
 	}
 
 	if input.ItemType == ItemLabor {
-		if input.InstitutionID != nil && *input.InstitutionID > 0 {
-			return invalid("labor_institution", "La mano de obra no lleva institución de compra")
+		input.Quantity = defaultQuantity
+		input.Unit = defaultUnit
+	} else {
+		if input.Quantity == 0 {
+			input.Quantity = defaultQuantity
 		}
-		input.InstitutionID = nil
-		input.Quantity = defaultQuantity
-		input.Unit = defaultUnit
-		return nil
-	}
+		if input.Quantity < 0 || math.IsNaN(input.Quantity) || math.IsInf(input.Quantity, 0) {
+			return invalid("invalid_quantity", "La cantidad debe ser mayor que cero")
+		}
 
-	if input.Quantity == 0 {
-		input.Quantity = defaultQuantity
-	}
-	if input.Quantity < 0 || math.IsNaN(input.Quantity) || math.IsInf(input.Quantity, 0) {
-		return invalid("invalid_quantity", "La cantidad debe ser mayor que cero")
-	}
-
-	input.Unit = strings.TrimSpace(input.Unit)
-	if input.Unit == "" {
-		input.Unit = defaultUnit
-	}
-	if !contains(Units, input.Unit) {
-		return invalid("invalid_unit", "La unidad de medida no es válida")
+		input.Unit = strings.TrimSpace(input.Unit)
+		if input.Unit == "" {
+			input.Unit = defaultUnit
+		}
+		if !contains(Units, input.Unit) {
+			return invalid("invalid_unit", "La unidad de medida no es válida")
+		}
 	}
 
 	if input.InstitutionID != nil && *input.InstitutionID > 0 {

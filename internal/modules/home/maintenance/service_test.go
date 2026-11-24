@@ -205,7 +205,7 @@ func TestItemRequiresCurrency(t *testing.T) {
 	}
 }
 
-func TestLaborRejectsInstitution(t *testing.T) {
+func TestLaborAcceptsInstitution(t *testing.T) {
 	ctx := context.Background()
 	service, database, homeID, institutionID := newTestService(t)
 	record, err := service.Create(ctx, homeID, Input{
@@ -215,16 +215,40 @@ func TestLaborRejectsInstitution(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	item, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra", Amount: 10,
+		CurrencyID: currencyID(t, database, "USD"), InstitutionID: &institutionID,
+	})
+	if err != nil {
+		t.Fatalf("mano de obra con institución: %v", err)
+	}
+	if item.InstitutionID == nil || *item.InstitutionID != institutionID {
+		t.Fatalf("institution_id = %v, quería %d", item.InstitutionID, institutionID)
+	}
+	if item.Quantity != 1 || item.Unit != "unit" {
+		t.Fatalf("cantidad/unidad = %v/%v, quería 1/unit", item.Quantity, item.Unit)
+	}
+}
+
+func TestLaborRejectsMissingInstitution(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, institutionID := newTestService(t)
+	record, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-15", Kind: KindCorrective, Area: AreaOther,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec("DELETE FROM institutions WHERE id = ?", institutionID); err != nil {
+		t.Fatalf("borrar institución: %v", err)
+	}
+
 	_, err = service.CreateItem(ctx, homeID, record.ID, ItemInput{
 		ItemType: ItemLabor, Description: "Mano de obra", Amount: 10,
 		CurrencyID: currencyID(t, database, "USD"), InstitutionID: &institutionID,
 	})
-	if err == nil {
-		t.Fatal("se esperaba error al asociar institución a mano de obra")
-	}
-	var validation *ValidationError
-	if !asValidation(err, &validation) || validation.Code != "labor_institution" {
-		t.Fatalf("error = %v", err)
+	if !errors.Is(err, ErrInstitutionNotFound) {
+		t.Fatalf("error = %v, quería ErrInstitutionNotFound", err)
 	}
 }
 
