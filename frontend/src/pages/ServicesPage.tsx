@@ -55,6 +55,7 @@ export default function ServicesPage() {
   const rawHome = Number(searchParams.get('home'))
   const homeParam = Number.isInteger(rawHome) && rawHome > 0 ? rawHome : null
   const homeId = homeParam && homes.some((h) => h.id === homeParam) ? homeParam : null
+  const createServicePath = homeId ? `/services/new?home=${homeId}` : '/services/new'
 
   const tabTitle = tab === 'analisis'
     ? t('services.tab_analysis')
@@ -181,7 +182,7 @@ export default function ServicesPage() {
   }
 
   const createOptions = [
-    { label: t('services.create'), icon: 'plus', onClick: () => navigate('/services/new') },
+    { label: t('services.create'), icon: 'plus', onClick: () => navigate(createServicePath) },
   ]
 
   const counts = {
@@ -354,7 +355,7 @@ export default function ServicesPage() {
           <h3 className="text-lg sm:text-xl font-semibold mb-2">{t('services.empty')}</h3>
           <p className="text-text-secondary mb-6">{t('services.subtitle')}</p>
           <button
-            onClick={() => navigate('/services/new')}
+            onClick={() => navigate(createServicePath)}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-card border-2 border-dashed border-border rounded-ios text-primary font-semibold hover:border-primary hover:bg-primary/5 transition-colors"
           >
             <Icon name="plus" className="w-5 h-5" />
@@ -385,7 +386,7 @@ export default function ServicesPage() {
               <h3 className="text-lg sm:text-xl font-semibold mb-2">{emptyViewMessage}</h3>
               <p className="text-text-secondary mb-6">{t('services.subtitle')}</p>
               <button
-                onClick={() => navigate('/services/new')}
+                onClick={() => navigate(createServicePath)}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-card border-2 border-dashed border-border rounded-ios text-primary font-semibold hover:border-primary hover:bg-primary/5 transition-colors"
               >
                 <Icon name="plus" className="w-5 h-5" />
