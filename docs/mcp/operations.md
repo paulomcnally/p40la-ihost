@@ -28,14 +28,14 @@ GOOS=darwin GOARCH=arm64 go build -o bin/p40la-mcp-darwin-arm64 ./cmd/mcp-server
 GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
 
 # Personalizar imagen y tag
-IMAGE="ghcr.io/<registro>/p40la-mcp" TAG="0.1.0" \
+IMAGE="ghcr.io/example/p40la-mcp" TAG="0.1.0" \
 GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
 ```
 
 El script construye y publica las tres plataformas obligatorias (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) con `docker buildx`. Verificá los manifests:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/<registro>/p40la-mcp:0.1.0
+docker buildx imagetools inspect ghcr.io/example/p40la-mcp:0.1.0
 ```
 
 El token de GitHub se pasa como secreto de BuildKit (`id=gh_token`) porque el módulo de plugins es privado; no queda en la imagen.
@@ -76,13 +76,16 @@ read -rs -p "Contraseña: " P40LA_MCP_PASSWORD; echo
 HASH=$(printf '%s\n' "$P40LA_MCP_PASSWORD" | ./bin/p40la-mcp -hash-password)
 unset P40LA_MCP_PASSWORD
 
+# Estado local (en el contenedor se usa /data)
+mkdir -p /tmp/p40la-mcp-state && chmod 700 /tmp/p40la-mcp-state
+
 # Variables mínimas
 export P40LA_BASE_URL="http://ihost.local:8088"
 export P40LA_API_KEY="p40la_demo-demo-demo-demo-demo-demo"
 export P40LA_MCP_TRANSPORT=http
 export P40LA_MCP_PUBLIC_URL="https://demo-node.example.ts.net"
 export P40LA_MCP_OAUTH_PASSWORD_HASH="$HASH"
-export P40LA_MCP_STATE_DIR="/data"
+export P40LA_MCP_STATE_DIR="/tmp/p40la-mcp-state"
 export P40LA_MCP_ALLOW_WRITES=false
 export P40LA_MCP_REMOTE_WRITES=false
 
@@ -148,7 +151,7 @@ sudo chmod 600 /etc/p40la-mcp.env
 # /opt/p40la-mcp/compose.yaml
 services:
   p40la-mcp:
-    image: ghcr.io/<registro>/p40la-mcp:<version>
+    image: ghcr.io/example/p40la-mcp:0.1.0
     container_name: p40la-mcp
     restart: unless-stopped
     network_mode: host
@@ -167,7 +170,7 @@ Notas:
 
 - Con `network_mode: host`, no se usan `ports:`; los listeners quedan en el loopback del nodo.
 - El proceso corre como `nonroot` (65532). Si el volumen pertenece a otro UID, `oauth.json` no se puede escribir y el arranque falla.
-- El health check se ejecuta desde el host: la imagen distroless no tiene shell ni `curl`.
+- El health check no está dentro del contenedor (distroless no tiene shell ni `curl`): consultá `/healthz` desde el host.
 - La imagen de la app web y la del MCP se actualizan por separado.
 - Presupuesto: medir RSS antes de dejarlo permanente en el iHost. Si no hay margen, correr el MCP en una laptop y dejar Funnel allí.
 
