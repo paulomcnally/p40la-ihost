@@ -15,7 +15,7 @@ github_issue: 157
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
 **Actualizado**: 2026-11-24<br>
-**Release**: 2026-11-24 — merge a `main` `9729d561`; implementación `6894637c`; 19 tools de lectura y catálogo MCP de 20 → 39 tools; sin migraciones ni dependencias nuevas
+**Release**: 2026-11-24 — merge a `main` `9729d561`; implementación `6894637c`; 19 tools de lectura y catálogo MCP de 20 → 39 tools; sin migraciones ni dependencias nuevas. Hotfix `bbbdd3de`: sobre real de `home_maintenance_list`, redacción de `webhook_uuid` y `extra_emails`
 
 ---
 
@@ -543,3 +543,4 @@ La validación se emitió sobre la spec de alcance. La implementación posterior
 |-------|-------|-------------|
 | 2026-11-24 | opencode | Creación inicial: inventario de 18 dominios, catálogo de 51 tools en 3 olas, 16 hallazgos de backend y lista de no-go |
 | 2026-11-24 | opencode | Implementación de la Ola 1: 19 tools de lectura, contrato `ReadAPI.ReadJSON`, manifiesto y contrato actualizados. `debts_list` diferida por `G1` |
+| 2026-11-24 | opencode | Hotfix `bbbdd3de` de la Ola 1: `home_maintenance_list` decodifica `{items, totals_by_currency}` (antes devolvía `upstream_error`), `services_get` omite `webhook_uuid` y `rental_*` omite `extra_emails`; docs corregidas con campos reales |
