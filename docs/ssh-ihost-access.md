@@ -17,7 +17,7 @@
 
 ## 2. Requisitos
 
-1. El iHost debe estar accesible por red local como `ihost.local` (IP típica `192.168.1.191`).
+1. El iHost debe estar accesible por red local como `ihost.local` (IP típica `192.0.2.10`).
 2. El add-on **`capiloky/sonoff-ssh`** debe estar instalado y corriendo (imagen basada en `arm32v7/ubuntu`, compatible con el ARM64 del iHost por compatibilidad 32-bit).
 3. El volumen `p40la` debe estar montado en el contenedor SSH en alguna ruta (la ruta exacta da igual; los archivos de la DB aparecen en la raíz del volumen montado).
 4. La app `p40la-ihost` debe estar **DETENIDA** antes de cualquier escritura en la DB (ver sección 6).

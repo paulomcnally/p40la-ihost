@@ -69,7 +69,7 @@ Sin impacto en memoria ni dependencias nuevas (iHost).
 
 ### 3.1 Contexto investigado
 
-- **Reproducción en vivo** contra el webhook real (`http://192.168.1.191:8088/webhooks/bf05bab4-6421-42c5-b9c3-449dc6c1b421`, key provista por el usuario):
+- **Reproducción en vivo** contra el webhook real (`http://192.0.2.10:8088/webhooks/00000000-0000-4000-8000-000000000000`, key provista por el usuario):
   - `year 2026 month 8` → `400 UNIQUE constraint ... (2067)`.
   - `year 2026 month 9` (nuevo) → `400` también.
   - `year 2025 month 1` → `200` creada (`id 31`, `service_id 3`).
@@ -251,7 +251,7 @@ Opcional (REQ-004), migración numerada:
 
 ## 8. Notas y Referencias
 
-- Reproducción en vivo: `http://192.168.1.191:8088/webhooks/bf05bab4-6421-42c5-b9c3-449dc6c1b421` — payloads 2026/08 y 2026/09 → `400`; 2025/01, 2025/02, 2026/01, 2026/03, 2026/04-07, 2026/10-12 → `200`.
+- Reproducción en vivo: `http://192.0.2.10:8088/webhooks/00000000-0000-4000-8000-000000000000` — payloads 2026/08 y 2026/09 → `400`; 2025/01, 2025/02, 2026/01, 2026/03, 2026/04-07, 2026/10-12 → `200`.
 - Código: `internal/services/webhook.go`, `internal/storage/bill.go`, `internal/api/bill_handlers.go`, `migrations/0005_create_bills.up.sql`.
 - Contrato webhook: `docs/webhooks-api.md` (§Idempotencia).
 - Specs relacionadas: SPEC-069 (webhooks por servicio), SPEC-070 (historial de facturas), SPEC-043 (pago de facturas).
