@@ -39,6 +39,28 @@ El catálogo tiene **20 tools**: 5 de lectura y 15 de escritura.
 | `credit_cards_create` | Banca | Escritura | [banking.md](banking.md) |
 | `credit_cards_update` | Banca | Escritura | [banking.md](banking.md) |
 
+## Contrato congelado y manifiesto de impacto
+
+El catálogo se controla con:
+
+- [`impact.json`](impact.json) — manifiesto de dependencias: entrypoints, archivos de backend, endpoints, tests y documentación. Lo valida `./scripts/check-mcp-impact.sh --check-map` y lo exige el hook `pre-commit`. El formato, los comandos y el flujo de trabajo están en [impact.md](impact.md).
+- [`contracts.json`](contracts.json) — golden de `tools/list`: nombres, descripciones, esquemas de entrada/salida y anotaciones. `TestToolContracts` (`internal/mcp/tools/all/contract_test.go`) falla si el contrato cambia sin actualizar el archivo.
+- `TestMCPBackendContract` (`internal/api/mcp_backend_contract_test.go`) — sin golden: recorre API key → router → handler → servicio → storage → JSON con una DB temporal y detecta drift de rutas, tags JSON, auth o `source=mcp`.
+
+Un cambio de contrato es intencional solo si la spec lo declara. Para regenerar el golden:
+
+```bash
+go test ./internal/mcp/tools/all -run TestToolContracts -update-contracts
+```
+
+Después revisá el diff de `contracts.json`, corré el test sin `-update-contracts` y verificá el impacto:
+
+```bash
+go test ./internal/mcp/...
+go test ./internal/api -run TestMCPBackendContract
+./scripts/check-mcp-impact.sh --staged --gate
+```
+
 ## Mismos tools en stdio y HTTP
 
 El catálogo no cambia según el transporte. `p40la-mcp` monta el mismo `mcp.Server` en stdio (Claude Desktop/Code local, OpenCode) y en Streamable HTTP (`/mcp`, claude.ai). No hay tools “remotas” ni permisos distintos por cliente: la API key global tiene todos los permisos y el `subject` OAuth (`owner`) es solo un identificador de auditoría.

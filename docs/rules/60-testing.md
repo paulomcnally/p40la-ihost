@@ -13,6 +13,24 @@
 
 ---
 
+## TEST-MCP-CONTRACT — Contrato de tools MCP congelado
+
+- `go test ./internal/mcp/...` incluye `TestToolContracts` (`internal/mcp/tools/all/contract_test.go`), que compara `tools/list` contra `docs/mcp/tools/contracts.json`: nombre, descripción, esquema de entrada/salida y anotaciones.
+- `go test ./internal/api -run TestMCPBackendContract` recorre la cadena real API key → router → handler → servicio → storage → JSON y detecta drift de auth, rutas, tags JSON o `source=mcp` (`internal/api/mcp_backend_contract_test.go`).
+- Un cambio de contrato DEBE ser intencional: actualizar el golden con
+  ```bash
+  go test ./internal/mcp/tools/all -run TestToolContracts -update-contracts
+  ```
+  revisar el diff de `docs/mcp/tools/contracts.json` y declararlo en la spec (`## Impacto en tools MCP`).
+- **Prohibido** regenerar el golden sin spec/impacto que justifique el cambio.
+- Si el cambio toca backend compartido, además correr `./scripts/check-mcp-impact.sh --staged --gate`.
+
+**Guardrail**: `mcp-contract` (`TEST-MCP-CONTRACT`) → `go test ./internal/mcp/...` + `go test ./internal/api -run TestMCPBackendContract`.
+
+**Precedente**: SPEC-153.
+
+---
+
 ## TEST-SERVER — Verificar el server antes de avisar
 
 - Antes de informar al usuario que puede acceder, ejecutar `./scripts/check-server.sh`.
@@ -76,6 +94,7 @@ Antes de pasar una spec a `pending_release`:
 - [ ] Los campos numéricos usan `NumberInput` y no `<input type="number">` (`npm run check:numbers` pasa).
 - [ ] Los modales no se cierran al hacer click fuera; el overlay bloquea el fondo; el cierre visible existe en todos los estados; se respeta la escala de capas.
 - [ ] Las páginas de detalle no tienen íconos de acción sueltos: Editar/Eliminar viven en el menú de 3 puntos (`CardMenu`).
+- [ ] Si toca MCP o el manifiesto: `./scripts/check-mcp-impact.sh --staged --gate` pasa, `TestToolContracts` y `TestMCPBackendContract` están verdes y el golden `docs/mcp/tools/contracts.json` fue revisado (`DELIV-MCP-IMPACT`, `TEST-MCP-CONTRACT`).
 - [ ] Si el comportamiento depende de datos, se validó contra una copia de la DB de producción.
 - [ ] `git diff --cached` revisado: sin PII, secretos, DBs, PDFs ni exports.
 - [ ] Hooks instalados (`core.hooksPath=.githooks`) y no se usó `--no-verify`.

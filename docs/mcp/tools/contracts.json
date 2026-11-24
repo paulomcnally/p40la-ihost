@@ -1,0 +1,1532 @@
+{
+  "version": 1,
+  "generated_by": "go test ./internal/mcp/tools/all -run TestToolContracts -update-contracts",
+  "tools": [
+    {
+      "name": "autos_create",
+      "description": "Crea un auto con año, marca, modelo, color, ícono y datos opcionales de motor, chasis, VIN y placa. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true. Mostrá el resumen al usuario y pedí confirmación antes de ejecutar con dry_run=false.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "brand": {
+            "description": "Marca del auto (obligatorio)",
+            "type": "string"
+          },
+          "chasis": {
+            "description": "Número de chasis (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "color": {
+            "description": "Color canónico del auto, por ejemplo white o black (obligatorio)",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "icon": {
+            "description": "Ícono del auto; default vehicle",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "model": {
+            "description": "Modelo del auto (obligatorio)",
+            "type": "string"
+          },
+          "motor": {
+            "description": "Número de motor (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "placa": {
+            "description": "Placa (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vin": {
+            "description": "VIN (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "year": {
+            "description": "Año del auto, entre 1900 y 2100 (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "brand",
+          "model",
+          "color"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "autos_inspection_register",
+      "description": "Registra una inspección mecánica de un auto con fecha, año del ciclo, centro de inspección, resultado y notas. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "auto_id": {
+            "description": "ID del auto (obligatorio)",
+            "type": "integer"
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "inspection_year": {
+            "description": "Año del ciclo que cumple la inspección (obligatorio)",
+            "type": "integer"
+          },
+          "institution_id": {
+            "description": "ID del centro de inspección mecánica (obligatorio)",
+            "type": "integer"
+          },
+          "notes": {
+            "description": "Notas de la inspección (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "performed_at": {
+            "description": "Fecha de la inspección YYYY-MM-DD, no futura (obligatorio)",
+            "type": "string"
+          },
+          "result": {
+            "description": "Resultado: approved o rejected (obligatorio)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "auto_id",
+          "performed_at",
+          "inspection_year",
+          "institution_id",
+          "result"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "autos_insurance_register",
+      "description": "Asocia un seguro a un auto con servicio, tipo de cobertura, póliza, número de aseguradora y certificado opcional. Verifica que el servicio esté disponible para el auto. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "auto_id": {
+            "description": "ID del auto (obligatorio)",
+            "type": "integer"
+          },
+          "certificate": {
+            "description": "Número de certificado (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "coverage_type": {
+            "description": "Tipo de cobertura: daños_a_terceros o full_cover (obligatorio)",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "insurer_number": {
+            "description": "Número de aseguradora (obligatorio)",
+            "type": "string"
+          },
+          "policy_number": {
+            "description": "Número de póliza (obligatorio)",
+            "type": "string"
+          },
+          "service_id": {
+            "description": "ID del servicio de seguro a asociar (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "auto_id",
+          "service_id",
+          "coverage_type",
+          "policy_number",
+          "insurer_number"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "autos_list",
+      "description": "Lista los autos registrados. Permite filtrar por texto en marca, modelo, placa o VIN, o pedir un auto por ID. Solo lectura; no modifica datos.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "auto_id": {
+            "description": "Si se indica, devuelve solo ese auto",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "query": {
+            "description": "Texto opcional para filtrar por marca, modelo, placa o VIN",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "autos_maintenance_register",
+      "description": "Registra un mantenimiento de un auto con fecha, kilometraje, taller, moneda y descripción; acepta líneas opcionales de mano de obra e insumos. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "auto_id": {
+            "description": "ID del auto (obligatorio)",
+            "type": "integer"
+          },
+          "currency_id": {
+            "description": "ID de la moneda (obligatorio)",
+            "type": "integer"
+          },
+          "description": {
+            "description": "Descripción del mantenimiento (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "institution_id": {
+            "description": "ID del taller mecánico (obligatorio)",
+            "type": "integer"
+          },
+          "items": {
+            "description": "Líneas opcionales de mano de obra e insumos (máximo 20)",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "amount": {
+                  "description": "Monto de la línea en la moneda del mantenimiento",
+                  "type": "number"
+                },
+                "description": {
+                  "description": "Descripción de la línea",
+                  "type": "string"
+                },
+                "item_type": {
+                  "description": "Tipo de línea: labor (mano de obra) o supplies (insumos)",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "item_type",
+                "description",
+                "amount"
+              ],
+              "type": "object"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "mileage": {
+            "description": "Kilometraje al momento del mantenimiento (obligatorio)",
+            "type": "integer"
+          },
+          "performed_at": {
+            "description": "Fecha del mantenimiento YYYY-MM-DD, no futura (obligatorio)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "auto_id",
+          "performed_at",
+          "mileage",
+          "institution_id",
+          "currency_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "autos_update",
+      "description": "Actualiza los datos de un auto existente. PUT reemplaza el registro, por eso se envían todos los campos; motor, chasis, VIN, placa e ícono pueden ir vacíos. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "auto_id": {
+            "description": "ID del auto a actualizar (obligatorio)",
+            "type": "integer"
+          },
+          "brand": {
+            "description": "Marca del auto (obligatorio)",
+            "type": "string"
+          },
+          "chasis": {
+            "description": "Número de chasis; vacío para limpiarlo",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "color": {
+            "description": "Color canónico del auto (obligatorio)",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "icon": {
+            "description": "Ícono del auto; default vehicle",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "model": {
+            "description": "Modelo del auto (obligatorio)",
+            "type": "string"
+          },
+          "motor": {
+            "description": "Número de motor; vacío para limpiarlo",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "placa": {
+            "description": "Placa; vacío para limpiarla",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vin": {
+            "description": "VIN; vacío para limpiarlo",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "year": {
+            "description": "Año del auto, entre 1900 y 2100 (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "auto_id",
+          "year",
+          "brand",
+          "model",
+          "color"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "bank_accounts_create",
+      "description": "Crea una cuenta bancaria. Requiere bank (nombre, short_code o bank_id), alias, account_number, currency (código o id) y beneficiary. account_type (savings default o checking), notes y active son opcionales. Si la cuenta ya existe en el banco devuelve already_exists. Requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_number": {
+            "description": "Número de cuenta (obligatorio)",
+            "type": "string"
+          },
+          "account_type": {
+            "description": "savings (default) o checking",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "active": {
+            "description": "Activa (default true)",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "alias": {
+            "description": "Alias de la cuenta (obligatorio)",
+            "type": "string"
+          },
+          "bank": {
+            "description": "Nombre o short_code del banco (obligatorio si no se envía bank_id)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bank_id": {
+            "description": "ID del banco (alternativa a bank)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "beneficiary": {
+            "description": "Beneficiario de la cuenta (obligatorio)",
+            "type": "string"
+          },
+          "currency": {
+            "description": "Código de moneda, ej. NIO o USD (obligatorio si no se envía currency_id)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency_id": {
+            "description": "ID de la moneda (alternativa a currency)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "notes": {
+            "description": "Notas (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "alias",
+          "account_number",
+          "beneficiary"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "bank_accounts_search",
+      "description": "Busca cuentas bancarias por alias, número de cuenta, beneficiario o banco. Solo lectura. query, bank/bank_id, active y limit son opcionales (limit default 10, máximo 50). Ordena coincidencias exactas, luego prefijo y luego contenido.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "description": "Filtrar por estado activo/inactivo (opcional; sin valor devuelve ambos)",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "bank": {
+            "description": "Nombre o short_code del banco para filtrar (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bank_id": {
+            "description": "ID del banco para filtrar (opcional; tiene prioridad sobre bank)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "limit": {
+            "description": "Máximo de resultados, 1 a 50 (default 10)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "query": {
+            "description": "Texto a buscar en alias, número de cuenta, beneficiario o banco (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "bank_accounts_update",
+      "description": "Edita una cuenta bancaria por id. Solo cambia los campos enviados; el resto se conserva. El banco no se cambia. Requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_number": {
+            "description": "Nuevo número de cuenta (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "account_type": {
+            "description": "savings o checking (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "active": {
+            "description": "Nuevo estado (opcional)",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "alias": {
+            "description": "Nuevo alias (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bank": {
+            "description": "No permitido: el banco de una cuenta no se cambia",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bank_id": {
+            "description": "No permitido: el banco de una cuenta no se cambia",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "beneficiary": {
+            "description": "Nuevo beneficiario (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency": {
+            "description": "Nuevo código de moneda (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency_id": {
+            "description": "Nuevo ID de moneda (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "id": {
+            "description": "ID de la cuenta (obligatorio)",
+            "type": "integer"
+          },
+          "notes": {
+            "description": "Nuevas notas; vacío las limpia (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "banks_create",
+      "description": "Crea un banco. Requiere name; short_code, country ISO-2, notes y active son opcionales. Si ya existe un banco con el mismo nombre devuelve already_exists.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "description": "Activo; default true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "country": {
+            "description": "País ISO-2, por ejemplo NI (opcional)",
+            "type": "string"
+          },
+          "name": {
+            "description": "Nombre del banco (obligatorio)",
+            "type": "string"
+          },
+          "notes": {
+            "description": "Notas (opcional)",
+            "type": "string"
+          },
+          "short_code": {
+            "description": "Código corto (opcional)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "bills_generate",
+      "description": "Genera facturas de un servicio para un rango inclusivo de meses (máximo 36, sin períodos futuros). Omite períodos que ya tienen factura y reporta los slots con factura eliminada. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true. Mostrá el resumen al usuario y pedí confirmación antes de ejecutar con dry_run=false.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "Monto de cada factura; si se omite se usa la última factura o el monto sugerido del servicio",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "from": {
+            "description": "Período inicial YYYY-MM (obligatorio)",
+            "type": "string"
+          },
+          "service_id": {
+            "description": "ID del servicio (obligatorio)",
+            "type": "integer"
+          },
+          "to": {
+            "description": "Período final YYYY-MM (default mes actual)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "service_id",
+          "from"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "bills_list",
+      "description": "Lista las facturas activas de un servicio con filtros opcionales de período (YYYY-MM) y estado. Solo lectura; no modifica datos.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "description": "Período inicial YYYY-MM (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "service_id": {
+            "description": "ID del servicio (obligatorio)",
+            "type": "integer"
+          },
+          "status": {
+            "description": "Filtro de estado: pending, paid o all (default all)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "to": {
+            "description": "Período final YYYY-MM (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "service_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "bills_pay",
+      "description": "Paga facturas de un servicio con exactamente un selector: bill_ids, month (YYYY-MM), from+to (YYYY-MM) o all_pending_up_to (YYYY-MM). Omite las facturas ya pagadas y los períodos futuros. paid_at por defecto es hoy. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true. Mostrá el resumen al usuario y pedí confirmación antes de ejecutar con dry_run=false.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "all_pending_up_to": {
+            "description": "Selector: pagar todas las pendientes hasta YYYY-MM (inclusive)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bill_ids": {
+            "description": "Selector: IDs de facturas a pagar",
+            "items": {
+              "type": "integer"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "drive_url": {
+            "description": "URL de Google Drive del comprobante",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "from": {
+            "description": "Selector de rango: período inicial YYYY-MM",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "month": {
+            "description": "Selector: mes YYYY-MM a pagar",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paid_at": {
+            "description": "Fecha de pago YYYY-MM-DD (default hoy)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "payment_reference": {
+            "description": "Referencia interna del pago",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "service_id": {
+            "description": "ID del servicio (obligatorio)",
+            "type": "integer"
+          },
+          "to": {
+            "description": "Selector de rango: período final YYYY-MM",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "service_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "credit_cards_create",
+      "description": "Crea una tarjeta de crédito. Requiere bank (nombre, short_code o bank_id), alias, network (visa, mastercard, amex, diners u other), last4 (4 dígitos) y currency (código o id). Defaults: statement_day=1, payment_due_day=1, min_payment_pct=4, limit_currency=NIO, color=blue, icon=credit, active=true. Si el alias ya existe en el banco devuelve already_exists. Requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "description": "Activa (default true)",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "alias": {
+            "description": "Alias de la tarjeta (obligatorio)",
+            "type": "string"
+          },
+          "bank": {
+            "description": "Nombre o short_code del banco (obligatorio si no se envía bank_id)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bank_id": {
+            "description": "ID del banco (alternativa a bank)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "bonus_due_day": {
+            "description": "Día límite de bonificación, 0 a 31 (default 0)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "category": {
+            "description": "classic, gold, platinum, black, business u other (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "color": {
+            "description": "Color de la tarjeta (default blue)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "credit_limit": {
+            "description": "Límite de crédito (default 0)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "credit_limit_usd": {
+            "description": "Límite de crédito en USD (default 0)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "currency": {
+            "description": "Código de moneda, ej. NIO o USD (obligatorio si no se envía currency_id)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency_id": {
+            "description": "ID de la moneda (alternativa a currency)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "exchange_rate": {
+            "description": "Tipo de cambio (default 0)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "holder": {
+            "description": "Titular (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "icon": {
+            "description": "Ícono de la tarjeta (default credit)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "interest_current_rate": {
+            "description": "Tasa de interés corriente (default 0)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "interest_current_rate_usd": {
+            "description": "Tasa corriente en USD (default 0)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "interest_late_rate": {
+            "description": "Tasa de interés moratorio (default 0)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "interest_late_rate_usd": {
+            "description": "Tasa moratoria en USD (default 0)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "last4": {
+            "description": "Últimos 4 dígitos, exactamente 4 números (obligatorio)",
+            "type": "string"
+          },
+          "limit_currency": {
+            "description": "NIO (default) o USD",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "min_payment_pct": {
+            "description": "Porcentaje de pago mínimo, 0 a 100 (default 4)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "network": {
+            "description": "visa, mastercard, amex, diners u other (obligatorio)",
+            "type": "string"
+          },
+          "notes": {
+            "description": "Notas (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "payment_due_day": {
+            "description": "Día límite de pago, 1 a 31 (default 1)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "secondary_currency": {
+            "description": "Código de moneda secundaria (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secondary_currency_id": {
+            "description": "ID de moneda secundaria (alternativa)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "statement_day": {
+            "description": "Día de corte, 1 a 31 (default 1)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          }
+        },
+        "required": [
+          "alias",
+          "network",
+          "last4"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "credit_cards_search",
+      "description": "Busca tarjetas de crédito por alias, últimos cuatro dígitos, titular o banco. Solo lectura. query, bank/bank_id, active y limit son opcionales (limit default 10, máximo 50).",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "description": "Filtrar por estado activo/inactivo (opcional; sin valor devuelve ambos)",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "bank": {
+            "description": "Nombre o short_code del banco para filtrar (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bank_id": {
+            "description": "ID del banco para filtrar (opcional; tiene prioridad sobre bank)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "limit": {
+            "description": "Máximo de resultados, 1 a 50 (default 10)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "query": {
+            "description": "Texto a buscar en alias, últimos 4 dígitos, titular, marca o banco (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "credit_cards_update",
+      "description": "Edita una tarjeta de crédito por id. Solo cambia los campos enviados; el resto se conserva. El banco no se cambia y secondary_currency=\"\" limpia la moneda secundaria. Requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "description": "Nuevo estado (opcional)",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "alias": {
+            "description": "Nuevo alias (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bank": {
+            "description": "No permitido: el banco de una tarjeta no se cambia",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bank_id": {
+            "description": "No permitido: el banco de una tarjeta no se cambia",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "bonus_due_day": {
+            "description": "Nuevo día de bonificación (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "category": {
+            "description": "Nueva categoría (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "color": {
+            "description": "Nuevo color (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "credit_limit": {
+            "description": "Nuevo límite de crédito (opcional)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "credit_limit_usd": {
+            "description": "Nuevo límite en USD (opcional)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "currency": {
+            "description": "Nuevo código de moneda (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency_id": {
+            "description": "Nuevo ID de moneda (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "exchange_rate": {
+            "description": "Nuevo tipo de cambio (opcional)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "holder": {
+            "description": "Nuevo titular (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "icon": {
+            "description": "Nuevo ícono (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "description": "ID de la tarjeta (obligatorio)",
+            "type": "integer"
+          },
+          "interest_current_rate": {
+            "description": "Nueva tasa corriente (opcional)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "interest_current_rate_usd": {
+            "description": "Nueva tasa corriente USD (opcional)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "interest_late_rate": {
+            "description": "Nueva tasa moratoria (opcional)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "interest_late_rate_usd": {
+            "description": "Nueva tasa moratoria USD (opcional)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "last4": {
+            "description": "Nuevos últimos 4 dígitos (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "limit_currency": {
+            "description": "NIO o USD (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "min_payment_pct": {
+            "description": "Nuevo porcentaje mínimo (opcional)",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "network": {
+            "description": "Nueva marca (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notes": {
+            "description": "Nuevas notas; vacío las limpia (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "payment_due_day": {
+            "description": "Nuevo día de pago (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "secondary_currency": {
+            "description": "Nueva moneda secundaria; vacío la limpia (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secondary_currency_id": {
+            "description": "Nuevo ID de moneda secundaria; 0 la limpia (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "statement_day": {
+            "description": "Nuevo día de corte (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "entities_search",
+      "description": "Busca servicios, hogares, bancos o instituciones por nombre y devuelve sus IDs. No distingue mayúsculas ni acentos; ordena exacto, prefijo y contenido. entity: service, home, bank o institution. query vacía lista las primeras entidades. Para service, home/home_id filtra por hogar. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "entity": {
+            "description": "Entidad a buscar: service, home, bank o institution",
+            "type": "string"
+          },
+          "home": {
+            "description": "Solo para service: nombre del hogar para filtrar",
+            "type": "string"
+          },
+          "home_id": {
+            "description": "Solo para service: ID del hogar para filtrar (gana sobre home)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "limit": {
+            "description": "Máximo de resultados (default 10, máximo 50)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "query": {
+            "description": "Texto a buscar por nombre (sin distinguir mayúsculas ni acentos). Vacío lista las primeras entidades",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "homes_create",
+      "description": "Crea un hogar. Requiere name; address y usage son opcionales. usage: rental (default), inhabited o unused. Si ya existe un hogar con el mismo nombre devuelve already_exists con el id existente.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "description": "Dirección (opcional)",
+            "type": "string"
+          },
+          "name": {
+            "description": "Nombre del hogar (obligatorio)",
+            "type": "string"
+          },
+          "usage": {
+            "description": "Uso: rental (default), inhabited o unused",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "institutions_create",
+      "description": "Crea una institución/proveedor. Requiere name; category_id o category son opcionales. category acepta la clave o el nombre de la categoría. Si ya existe una institución con el mismo nombre devuelve already_exists.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "description": "Clave o nombre de la categoría (opcional)",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "ID de la categoría (opcional; gana sobre category)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "name": {
+            "description": "Nombre de la institución (obligatorio)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "services_create",
+      "description": "Crea un servicio. Requiere name y un hogar (home o home_id) y una moneda (currency o currency_id). institution/institution_id, frequency, suggested_amount, icon_key, billing_type, billing_day, active, auto_generate, is_recurring, start_date y end_date son opcionales. Con active=true (default) el backend genera la factura del período actual. Si ya existe un servicio con el mismo nombre en el hogar devuelve already_exists.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "description": "Activo; default true. Con true se genera la factura del período actual",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "auto_generate": {
+            "description": "Generación automática (default false)",
+            "type": "boolean"
+          },
+          "billing_day": {
+            "description": "Día de facturación 1..31 (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "billing_type": {
+            "description": "fixed o variable (default)",
+            "type": "string"
+          },
+          "currency": {
+            "description": "Código o nombre de la moneda (uno de currency o currency_id)",
+            "type": "string"
+          },
+          "currency_id": {
+            "description": "ID de la moneda (uno de currency o currency_id)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "end_date": {
+            "description": "Fecha de fin YYYY-MM-DD (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "frequency": {
+            "description": "monthly (default) o yearly",
+            "type": "string"
+          },
+          "home": {
+            "description": "Nombre del hogar (uno de home o home_id)",
+            "type": "string"
+          },
+          "home_id": {
+            "description": "ID del hogar (uno de home o home_id)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "icon_key": {
+            "description": "Clave de ícono; default other",
+            "type": "string"
+          },
+          "institution": {
+            "description": "Nombre de la institución (opcional)",
+            "type": "string"
+          },
+          "institution_id": {
+            "description": "ID de la institución (opcional; gana sobre institution)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "is_recurring": {
+            "description": "Recurrente (default false)",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "Nombre del servicio (obligatorio)",
+            "type": "string"
+          },
+          "start_date": {
+            "description": "Fecha de inicio YYYY-MM-DD (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suggested_amount": {
+            "description": "Monto sugerido; default 0",
+            "type": [
+              "null",
+              "number"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    }
+  ]
+}

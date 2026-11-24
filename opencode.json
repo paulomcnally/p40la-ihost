@@ -8,7 +8,7 @@
     },
     "spec-create": {
       "description": "Create a new technical specification with auto-incremented ID",
-      "template": "Usá la skill spec-manager. PASO 0 obligatorio: leé AGENTS.md y docs/rules/00-index.md, cargá los dominios aplicables y abortá con advertencia si falta la estructura (ofrecé /spec-init). Luego: 1) verificá el worktree con ./scripts/check-worktree.sh; 2) calculá el próximo ID desde docs/specs/SPEC-*.md + issues (no desde el README); 3) creá docs/specs/SPEC-XXX-<slug>.md desde docs/specs/templates/spec-template.md; 4) completá la tabla 'Cumplimiento de reglas' con IDs de docs/rules/; 5) creá el issue con label spec/draft; 6) actualizá github_issue en el frontmatter; 7) informá ID, ruta y URL. Recordá las restricciones del iHost: poca memoria, SQLite, mínimas dependencias."
+      "template": "Usá la skill spec-manager. PASO 0 obligatorio: leé AGENTS.md y docs/rules/00-index.md, cargá los dominios aplicables y abortá con advertencia si falta la estructura (ofrecé /spec-init). Luego: 1) verificá el worktree con ./scripts/check-worktree.sh; 2) calculá el próximo ID desde docs/specs/SPEC-*.md + issues (no desde el README); 3) analizá el impacto en tools MCP con un subagente (explore/general) y corré ./scripts/check-mcp-impact.sh --check-map y --files con los archivos previstos; 4) creá docs/specs/SPEC-XXX-<slug>.md desde docs/specs/templates/spec-template.md; 5) completá la tabla 'Cumplimiento de reglas' con IDs de docs/rules/ y la sección 'Impacto en tools MCP' con tools afectadas, ruta de dependencia, contrato y 'Validación subagente:'; 6) creá el issue con label spec/draft; 7) actualizá github_issue en el frontmatter; 8) informá ID, ruta y URL. Recordá las restricciones del iHost: poca memoria, SQLite, mínimas dependencias."
     },
     "spec-list": {
       "description": "List all specs with optional status filter",
@@ -32,7 +32,7 @@
     },
     "spec-audit": {
       "description": "Audita una spec contra las reglas del proyecto",
-      "template": "Usá la skill spec-manager. Argumento: ID de spec. Leé docs/rules/00-index.md, determiná los dominios aplicables y verificá que la spec tenga la tabla 'Cumplimiento de reglas' completa: cada regla aplicable con criterio CA-* o N/A justificado. Reportá reglas faltantes y bloqueá el avance si las hay."
+      "template": "Usá la skill spec-manager. Argumento: ID de spec. Leé docs/rules/00-index.md, determiná los dominios aplicables y verificá que la spec tenga la tabla 'Cumplimiento de reglas' completa: cada regla aplicable con criterio CA-* o N/A justificado. Si existe docs/mcp/tools/impact.json, verificá también que la sección 'Impacto en tools MCP' exista, cubra las tools afectadas y registre 'Validación subagente:'. Reportá reglas faltantes y bloqueá el avance si las hay."
     }
   }
 }

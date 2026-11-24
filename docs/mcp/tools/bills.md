@@ -8,6 +8,8 @@ description: "Referencia de bills_list, bills_generate y bills_pay"
 
 Las tres tools operan sobre facturas de un **servicio**. El `service_id` es el mismo que aparece en la URL de la UI, por ejemplo `/services/bills/12?tab=facturas` → `service_id: 12`.
 
+> El contrato visible de estas tools está congelado en [`contracts.json`](contracts.json). Un cambio intencional de nombre, descripción, schema o anotaciones exige regenerarlo con `go test ./internal/mcp/tools/all -run TestToolContracts -update-contracts` y declararlo en `## Impacto en tools MCP` de la spec. Ver [impact.md](impact.md).
+
 ## `bills_list`
 
 Lista facturas activas de un servicio. Solo lectura.

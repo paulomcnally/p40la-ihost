@@ -1,0 +1,659 @@
+{
+  "version": 1,
+  "description": "Mapa de impacto de las tools MCP: archivos que, si cambian, pueden afectar cada tool. Fuente de verdad para scripts/check-mcp-impact.sh y para el hook pre-commit. Mantener junto con docs/mcp/tools/contracts.json.",
+  "tools": [
+    {
+      "name": "bills_list",
+      "docs": [
+        "docs/mcp/tools/bills.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/bills/list.go"
+      ],
+      "dependencies": [
+        "internal/api/bill_handlers.go",
+        "internal/api/service_handlers.go",
+        "internal/services/bill.go",
+        "internal/storage/bill.go",
+        "internal/storage/service_bill.go"
+      ],
+      "endpoints": [
+        "GET /api/services/{id}",
+        "GET /api/services/{id}/bills"
+      ],
+      "tests": [
+        "internal/mcp/tools/bills/tools_test.go",
+        "internal/mcp/tools/bills/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "bills_generate",
+      "docs": [
+        "docs/mcp/tools/bills.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/bills/generate.go"
+      ],
+      "dependencies": [
+        "internal/api/bill_bulk_handlers.go",
+        "internal/services/bill_bulk.go",
+        "internal/services/bill.go",
+        "internal/services/bill_history.go",
+        "internal/services/currency.go",
+        "internal/storage/bill.go",
+        "internal/storage/bill_history.go",
+        "internal/storage/currency.go",
+        "internal/storage/service_bill.go"
+      ],
+      "endpoints": [
+        "POST /api/services/{service_id}/bills/generate"
+      ],
+      "tests": [
+        "internal/mcp/tools/bills/tools_test.go",
+        "internal/mcp/tools/bills/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "bills_pay",
+      "docs": [
+        "docs/mcp/tools/bills.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/bills/pay.go"
+      ],
+      "dependencies": [
+        "internal/api/bill_bulk_handlers.go",
+        "internal/services/bill_bulk.go",
+        "internal/services/bill.go",
+        "internal/services/bill_history.go",
+        "internal/services/budget_bill_link.go",
+        "internal/services/currency.go",
+        "internal/storage/account.go",
+        "internal/storage/bill.go",
+        "internal/storage/bill_history.go",
+        "internal/storage/category.go",
+        "internal/storage/currency.go",
+        "internal/storage/service_bill.go",
+        "internal/storage/transaction.go"
+      ],
+      "endpoints": [
+        "POST /api/services/{service_id}/bills/pay"
+      ],
+      "tests": [
+        "internal/mcp/tools/bills/tools_test.go",
+        "internal/mcp/tools/bills/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "homes_create",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/homes.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/home_handlers.go",
+        "internal/services/home.go",
+        "internal/storage/home.go"
+      ],
+      "endpoints": [
+        "GET /api/homes",
+        "POST /api/homes"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "institutions_create",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/institutions.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/entities/resolve.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/institution_handlers.go",
+        "internal/api/institution_category_handlers.go",
+        "internal/services/institution.go",
+        "internal/services/institution_category.go",
+        "internal/storage/institution.go",
+        "internal/storage/institution_category.go"
+      ],
+      "endpoints": [
+        "GET /api/institutions",
+        "POST /api/institutions",
+        "GET /api/institution-categories"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "banks_create",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/banks.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/bank_handlers.go",
+        "internal/services/bank.go",
+        "internal/storage/bank.go"
+      ],
+      "endpoints": [
+        "GET /api/banks",
+        "POST /api/banks"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "services_create",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/services.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/entities/resolve.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/service_handlers.go",
+        "internal/api/home_handlers.go",
+        "internal/api/institution_handlers.go",
+        "internal/api/institution_category_handlers.go",
+        "internal/api/currency_handlers.go",
+        "internal/services/service.go",
+        "internal/services/home.go",
+        "internal/services/institution.go",
+        "internal/services/institution_category.go",
+        "internal/services/currency.go",
+        "internal/storage/service.go",
+        "internal/storage/home.go",
+        "internal/storage/institution.go",
+        "internal/storage/institution_category.go",
+        "internal/storage/currency.go",
+        "internal/storage/service_bill.go"
+      ],
+      "endpoints": [
+        "POST /api/services",
+        "GET /api/services",
+        "GET /api/homes",
+        "GET /api/currencies",
+        "GET /api/institution-categories",
+        "GET /api/institutions"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "entities_search",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/search.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/home_handlers.go",
+        "internal/api/institution_handlers.go",
+        "internal/api/bank_handlers.go",
+        "internal/api/service_handlers.go",
+        "internal/services/home.go",
+        "internal/services/institution.go",
+        "internal/services/bank.go",
+        "internal/services/service.go",
+        "internal/storage/home.go",
+        "internal/storage/institution.go",
+        "internal/storage/bank.go",
+        "internal/storage/service.go"
+      ],
+      "endpoints": [
+        "GET /api/homes",
+        "GET /api/institutions",
+        "GET /api/banks",
+        "GET /api/services"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/entities/search_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "autos_list",
+      "docs": [
+        "docs/mcp/tools/autos.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/autos/list.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/autos/",
+        "internal/mcp/api/autos.go",
+        "internal/api/auto_handlers.go",
+        "internal/api/auto_maintenance_handlers.go",
+        "internal/api/auto_inspection_handlers.go",
+        "internal/api/auto_service_handlers.go",
+        "internal/services/auto.go",
+        "internal/services/auto_maintenance.go",
+        "internal/services/auto_inspection.go",
+        "internal/services/auto_service.go",
+        "internal/services/auto_records.go",
+        "internal/storage/auto.go",
+        "internal/storage/auto_maintenance.go",
+        "internal/storage/auto_inspection.go",
+        "internal/storage/auto_service.go"
+      ],
+      "endpoints": [
+        "GET /api/autos",
+        "GET /api/autos/{id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/autos/tools_test.go",
+        "internal/mcp/tools/autos/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "autos_create",
+      "docs": [
+        "docs/mcp/tools/autos.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/autos/create.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/autos/",
+        "internal/mcp/api/autos.go",
+        "internal/api/auto_handlers.go",
+        "internal/api/auto_maintenance_handlers.go",
+        "internal/api/auto_inspection_handlers.go",
+        "internal/api/auto_service_handlers.go",
+        "internal/services/auto.go",
+        "internal/services/auto_maintenance.go",
+        "internal/services/auto_inspection.go",
+        "internal/services/auto_service.go",
+        "internal/services/auto_records.go",
+        "internal/storage/auto.go",
+        "internal/storage/auto_maintenance.go",
+        "internal/storage/auto_inspection.go",
+        "internal/storage/auto_service.go"
+      ],
+      "endpoints": [
+        "POST /api/autos"
+      ],
+      "tests": [
+        "internal/mcp/tools/autos/tools_test.go",
+        "internal/mcp/tools/autos/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "autos_update",
+      "docs": [
+        "docs/mcp/tools/autos.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/autos/update.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/autos/",
+        "internal/mcp/api/autos.go",
+        "internal/api/auto_handlers.go",
+        "internal/api/auto_maintenance_handlers.go",
+        "internal/api/auto_inspection_handlers.go",
+        "internal/api/auto_service_handlers.go",
+        "internal/services/auto.go",
+        "internal/services/auto_maintenance.go",
+        "internal/services/auto_inspection.go",
+        "internal/services/auto_service.go",
+        "internal/services/auto_records.go",
+        "internal/storage/auto.go",
+        "internal/storage/auto_maintenance.go",
+        "internal/storage/auto_inspection.go",
+        "internal/storage/auto_service.go"
+      ],
+      "endpoints": [
+        "GET /api/autos/{id}",
+        "PUT /api/autos/{id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/autos/tools_test.go",
+        "internal/mcp/tools/autos/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "autos_maintenance_register",
+      "docs": [
+        "docs/mcp/tools/autos.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/autos/maintenance.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/autos/",
+        "internal/mcp/api/autos.go",
+        "internal/api/auto_handlers.go",
+        "internal/api/auto_maintenance_handlers.go",
+        "internal/api/auto_inspection_handlers.go",
+        "internal/api/auto_service_handlers.go",
+        "internal/services/auto.go",
+        "internal/services/auto_maintenance.go",
+        "internal/services/auto_inspection.go",
+        "internal/services/auto_service.go",
+        "internal/services/auto_records.go",
+        "internal/storage/auto.go",
+        "internal/storage/auto_maintenance.go",
+        "internal/storage/auto_inspection.go",
+        "internal/storage/auto_service.go"
+      ],
+      "endpoints": [
+        "GET /api/autos/{id}",
+        "POST /api/autos/{id}/maintenances",
+        "GET /api/autos/{id}/maintenances/{maintenance_id}",
+        "POST /api/autos/{id}/maintenances/{maintenance_id}/items"
+      ],
+      "tests": [
+        "internal/mcp/tools/autos/tools_test.go",
+        "internal/mcp/tools/autos/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "autos_inspection_register",
+      "docs": [
+        "docs/mcp/tools/autos.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/autos/inspection.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/autos/",
+        "internal/mcp/api/autos.go",
+        "internal/api/auto_handlers.go",
+        "internal/api/auto_maintenance_handlers.go",
+        "internal/api/auto_inspection_handlers.go",
+        "internal/api/auto_service_handlers.go",
+        "internal/services/auto.go",
+        "internal/services/auto_maintenance.go",
+        "internal/services/auto_inspection.go",
+        "internal/services/auto_service.go",
+        "internal/services/auto_records.go",
+        "internal/storage/auto.go",
+        "internal/storage/auto_maintenance.go",
+        "internal/storage/auto_inspection.go",
+        "internal/storage/auto_service.go"
+      ],
+      "endpoints": [
+        "GET /api/autos/{id}",
+        "POST /api/autos/{id}/inspections",
+        "GET /api/autos/{id}/inspections"
+      ],
+      "tests": [
+        "internal/mcp/tools/autos/tools_test.go",
+        "internal/mcp/tools/autos/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "autos_insurance_register",
+      "docs": [
+        "docs/mcp/tools/autos.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/autos/insurance.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/autos/",
+        "internal/mcp/api/autos.go",
+        "internal/api/auto_handlers.go",
+        "internal/api/auto_maintenance_handlers.go",
+        "internal/api/auto_inspection_handlers.go",
+        "internal/api/auto_service_handlers.go",
+        "internal/services/auto.go",
+        "internal/services/auto_maintenance.go",
+        "internal/services/auto_inspection.go",
+        "internal/services/auto_service.go",
+        "internal/services/auto_records.go",
+        "internal/storage/auto.go",
+        "internal/storage/auto_maintenance.go",
+        "internal/storage/auto_inspection.go",
+        "internal/storage/auto_service.go"
+      ],
+      "endpoints": [
+        "GET /api/autos/{id}/available-services",
+        "GET /api/autos/{id}/services",
+        "POST /api/autos/{id}/services"
+      ],
+      "tests": [
+        "internal/mcp/tools/autos/tools_test.go",
+        "internal/mcp/tools/autos/protocol_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "bank_accounts_search",
+      "docs": [
+        "docs/mcp/tools/banking.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/banking/accounts.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/banking/",
+        "internal/mcp/api/banking.go",
+        "internal/mcp/api/banking_client.go",
+        "internal/api/bank_handlers.go",
+        "internal/modules/bank/creditcard/",
+        "internal/services/bank.go",
+        "internal/storage/bank.go"
+      ],
+      "endpoints": [
+        "GET /api/banks",
+        "GET /api/banks/{id}/accounts"
+      ],
+      "tests": [
+        "internal/mcp/tools/banking/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "bank_accounts_create",
+      "docs": [
+        "docs/mcp/tools/banking.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/banking/accounts.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/banking/",
+        "internal/mcp/api/banking.go",
+        "internal/mcp/api/banking_client.go",
+        "internal/api/bank_handlers.go",
+        "internal/modules/bank/creditcard/",
+        "internal/services/bank.go",
+        "internal/storage/bank.go"
+      ],
+      "endpoints": [
+        "GET /api/banks",
+        "GET /api/currencies",
+        "POST /api/banks/{id}/accounts"
+      ],
+      "tests": [
+        "internal/mcp/tools/banking/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "bank_accounts_update",
+      "docs": [
+        "docs/mcp/tools/banking.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/banking/accounts.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/banking/",
+        "internal/mcp/api/banking.go",
+        "internal/mcp/api/banking_client.go",
+        "internal/api/bank_handlers.go",
+        "internal/modules/bank/creditcard/",
+        "internal/services/bank.go",
+        "internal/storage/bank.go"
+      ],
+      "endpoints": [
+        "GET /api/bank-accounts/{id}",
+        "GET /api/banks/{id}/accounts",
+        "GET /api/banks",
+        "GET /api/currencies",
+        "PUT /api/bank-accounts/{id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/banking/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "credit_cards_search",
+      "docs": [
+        "docs/mcp/tools/banking.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/banking/cards.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/banking/",
+        "internal/mcp/api/banking.go",
+        "internal/mcp/api/banking_client.go",
+        "internal/api/bank_handlers.go",
+        "internal/modules/bank/creditcard/",
+        "internal/services/bank.go",
+        "internal/storage/bank.go"
+      ],
+      "endpoints": [
+        "GET /api/banks",
+        "GET /api/banks/{id}/credit-cards"
+      ],
+      "tests": [
+        "internal/mcp/tools/banking/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "credit_cards_create",
+      "docs": [
+        "docs/mcp/tools/banking.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/banking/cards.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/banking/",
+        "internal/mcp/api/banking.go",
+        "internal/mcp/api/banking_client.go",
+        "internal/api/bank_handlers.go",
+        "internal/modules/bank/creditcard/",
+        "internal/services/bank.go",
+        "internal/storage/bank.go"
+      ],
+      "endpoints": [
+        "GET /api/banks",
+        "GET /api/currencies",
+        "POST /api/banks/{id}/credit-cards"
+      ],
+      "tests": [
+        "internal/mcp/tools/banking/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "credit_cards_update",
+      "docs": [
+        "docs/mcp/tools/banking.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/banking/cards.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/banking/",
+        "internal/mcp/api/banking.go",
+        "internal/mcp/api/banking_client.go",
+        "internal/api/bank_handlers.go",
+        "internal/modules/bank/creditcard/",
+        "internal/services/bank.go",
+        "internal/storage/bank.go"
+      ],
+      "endpoints": [
+        "GET /api/credit-cards/{id}",
+        "GET /api/banks/{id}/credit-cards",
+        "GET /api/banks",
+        "GET /api/currencies",
+        "PUT /api/credit-cards/{id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/banking/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    }
+  ],
+  "shared": {
+    "affects_all": [
+      "cmd/mcp-server/",
+      "cmd/server/",
+      "internal/mcp/server/",
+      "internal/mcp/config/",
+      "internal/mcp/registry/",
+      "internal/mcp/audit/",
+      "internal/mcp/api/",
+      "internal/mcp/tools/all/",
+      "internal/mcp/tools/toolkit/",
+      "internal/mcp/tools/bills/tools.go",
+      "internal/mcp/tools/bills/period.go",
+      "internal/api/routes.go",
+      "internal/api/handlers.go",
+      "internal/api/middleware.go",
+      "internal/api/api_key_handlers.go",
+      "internal/services/api_key.go",
+      "internal/services/service.go",
+      "internal/storage/service.go",
+      "internal/storage/system_settings.go",
+      "internal/models/",
+      "internal/db/",
+      "internal/config/",
+      "migrations/",
+      "scripts/create-api-key.sh",
+      "Dockerfile.mcp",
+      "deploy/mcp/",
+      "docker-compose.yml",
+      "go.mod",
+      "go.sum"
+    ]
+  }
+}

@@ -148,6 +148,7 @@ Las tools de alta (`homes_create`, `institutions_create`, `banks_create`, `servi
 - [Tools de autos](tools/autos.md)
 - [Tools de entidades](tools/entities.md)
 - [Tools de banca](tools/banking.md)
+- [Impacto y contrato de tools](tools/impact.md) — manifiesto `tools/impact.json`, golden `tools/contracts.json` y test backend↔MCP
 
 ## Publicación web
 

@@ -115,6 +115,21 @@ internal/modules/bank/bac/ni/creditcard/statement/import/           # bank.bac.n
 
 ---
 
+## ARCH-MCP-TOOLS-MAP — Manifiesto de tools MCP
+
+- Toda tool registrada con `mcp.AddTool` DEBE tener una entrada en `docs/mcp/tools/impact.json`.
+- El manifiesto declara, por tool: `docs`, `entrypoints`, `dependencies`, `endpoints` y `tests`. En `shared.affects_all` declara los archivos o directorios cuyo cambio afecta a todas las tools (rutas, middleware, auth, modelos, migraciones, SDK).
+- Las dependencias pueden ser archivos exactos, directorios con `/` final o globs (`internal/services/bill*.go`).
+- El registro DEBE usar `mcp.AddTool(server, &mcp.Tool{Name: "..."}, ...)` con el nombre literal bajo `internal/mcp/tools/`; el analizador lee el nombre con `go/parser` y no resuelve variables.
+- Al agregar, renombrar o eliminar una tool: actualizar el manifiesto, `docs/mcp/tools/contracts.json`, `docs/mcp/` y la spec en el mismo ciclo.
+- El manifiesto es la fuente de verdad para el análisis de impacto; no se duplica en la spec.
+
+**Guardrail**: `mcp-impact` (regla `DELIV-MCP-IMPACT`) → `./scripts/check-mcp-impact.sh --check-map`. Falla si una tool registrada no está en el manifiesto, si el manifiesto declara una tool inexistente o si una ruta declarada no existe.
+
+**Precedente**: SPEC-153.
+
+---
+
 ## ARCH-GO — Convenciones de código Go
 
 - `gofmt` siempre.

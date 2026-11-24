@@ -112,6 +112,28 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 | API key global | `internal/services/api_key.go` | Generación, hash, validación, rotación y revocación |
 | Middleware | `internal/api/middleware.go` | Sesión o API key global |
 | Provisión | `scripts/create-api-key.sh` | Crea/rota la key con una sesión |
+| Manifiesto de impacto | `docs/mcp/tools/impact.json` | Declara entrypoints, dependencias, endpoints y tests de cada tool |
+| Analizador de impacto | `scripts/check-mcp-impact.sh`, `scripts/mcp-impact/` | Cruza archivos cambiados contra el manifiesto y aplica el gate de spec |
+| Contrato congelado | `docs/mcp/tools/contracts.json`, `internal/mcp/tools/all/contract_test.go` | Congela `tools/list` y falla ante cambios no declarados |
+| Contrato backend↔MCP | `internal/api/mcp_backend_contract_test.go` | Recorre API key → router → handler → servicio → storage → JSON con una DB temporal |
+
+## Guardrail de impacto y contrato
+
+El guardrail vive en desarrollo, no en el runtime. El hook `pre-commit` cruza los archivos staged contra el manifiesto, valida toda spec nueva staged y exige que la spec en curso declare el impacto antes de permitir el commit:
+
+```
+git add
+   │
+   ├──► scripts/check-mcp-docs.sh --staged     (docs/mcp/ obligatorio)
+   └──► scripts/check-mcp-impact.sh --staged --gate
+            ├── docs/specs/SPEC-* (nueva) ───► sección + Validación subagente
+            ├── docs/mcp/tools/impact.json ──► tools afectadas
+            ├── docs/specs/SPEC-* (en curso) ► tools nombradas + Validación
+            ├── go test ./internal/mcp/... ──► TestToolContracts vs contracts.json
+            └── go test ./internal/api ... ──► TestMCPBackendContract (cadena real)
+```
+
+`TestToolContracts` compara `tools/list` con el golden: un cambio de nombre, descripción, schema o anotación falla hasta regenerar `contracts.json` con `-update-contracts` y declararlo en la spec. `TestMCPBackendContract` recorre la cadena API key → router → handler → servicio → storage → JSON con una DB temporal y detecta drift de rutas, tags JSON, auth o `source=mcp`. El detalle operativo está en [tools/impact.md](tools/impact.md) y [development.md](development.md).
 
 ## Dos transportes
 
