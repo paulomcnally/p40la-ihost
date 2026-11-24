@@ -17,7 +17,7 @@ El binario tiene dos transportes con el mismo catálogo de tools:
 
 El modo remoto está pensado para conectores que Anthropic ejecuta desde su infraestructura: exige HTTPS público, OAuth 2.1 y una contraseña de administración. El modo local no necesita nada de eso. Ver [http.md](http.md), [oauth.md](oauth.md) y [funnel.md](funnel.md).
 
-El catálogo actual cubre facturas de servicios, búsqueda de entidades y altas de entidades base:
+El catálogo cubre facturas de servicios, búsqueda y altas de entidades base, y banca (cuentas bancarias y tarjetas de crédito):
 
 | Tool | Tipo | Qué hace |
 |---|---|---|
@@ -29,6 +29,12 @@ El catálogo actual cubre facturas de servicios, búsqueda de entidades y altas 
 | `institutions_create` | escritura | Crea una institución o proveedor y resuelve su categoría |
 | `banks_create` | escritura | Crea un banco con código corto, país y estado |
 | `services_create` | escritura | Crea un servicio en un hogar, con moneda e institución por nombre o ID |
+| `bank_accounts_search` | lectura | Busca cuentas bancarias por alias, número, beneficiario o banco |
+| `bank_accounts_create` | escritura | Crea una cuenta bancaria y resuelve el banco y la moneda |
+| `bank_accounts_update` | escritura | Edita una cuenta existente sin cambiar el banco |
+| `credit_cards_search` | lectura | Busca tarjetas por alias, últimos cuatro dígitos, titular o banco |
+| `credit_cards_create` | escritura | Crea una tarjeta de crédito con los defaults del sistema |
+| `credit_cards_update` | escritura | Edita una tarjeta existente sin cambiar el banco |
 
 ## Requisitos
 
@@ -108,12 +114,12 @@ El runbook completo —prerrequisitos, API key, hash OAuth, volúmenes, alta por
 
 ## Flujo seguro de escritura
 
-1. El agente llama `bills_generate` o `bills_pay` **sin** `dry_run=false` (el valor por defecto es `true`).
-2. Muestra el resumen al usuario: períodos, montos, facturas omitidas.
-3. El usuario confirma.
-4. El agente repite con `dry_run=false`. La compuerta `P40LA_MCP_ALLOW_WRITES=true` debe estar activa; si el transporte es HTTP, también `P40LA_MCP_REMOTE_WRITES=true`.
+1. En facturas, el agente llama `bills_generate` o `bills_pay` con `dry_run=true` (el valor por defecto) y muestra el resumen: períodos, montos y facturas omitidas. En banca, que no tiene `dry_run`, muestra antes el banco y la moneda resueltos, la entidad o el cuerpo que se enviará y si ya existe un duplicado.
+2. El usuario confirma.
+3. El agente ejecuta: repite en facturas con `dry_run=false` y llama a la tool de banca directamente. La compuerta `P40LA_MCP_ALLOW_WRITES=true` debe estar activa; si el transporte es HTTP, también `P40LA_MCP_REMOTE_WRITES=true`.
+4. El agente reporta el resultado y verifica con una lectura.
 
-Las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`.
+En facturas, las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`. En banca, las ediciones son idempotentes y las altas comprueban duplicados: repetir un alta devuelve `already_exists` con el `id` existente, sin crear otro registro.
 
 Antes de un alta, `entities_search` permite verificar si la entidad ya existe y obtener su `id`; es de solo lectura y no requiere la compuerta.
 
@@ -134,6 +140,7 @@ Las tools de alta (`homes_create`, `institutions_create`, `banks_create`, `servi
 - [Catálogo de tools](tools/README.md)
 - [Tools de facturas](tools/bills.md)
 - [Tools de entidades](tools/entities.md)
+- [Tools de banca](tools/banking.md)
 
 ## Publicación web
 

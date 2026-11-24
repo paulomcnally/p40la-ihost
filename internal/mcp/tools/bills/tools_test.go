@@ -63,6 +63,46 @@ func (f *fakeAPI) PayBills(_ context.Context, _ int64, req api.PayRequest) (*api
 	return &api.PayResult{ServiceID: 1, PaidAt: req.PaidAt, DryRun: req.DryRun}, nil
 }
 
+func (f *fakeAPI) ListBankRefs(context.Context) ([]api.BankRef, error) {
+	return nil, nil
+}
+
+func (f *fakeAPI) ListCurrencyRefs(context.Context) ([]api.CurrencyRef, error) {
+	return nil, nil
+}
+
+func (f *fakeAPI) ListBankAccounts(context.Context, int64) ([]api.BankAccount, error) {
+	return nil, nil
+}
+
+func (f *fakeAPI) GetBankAccount(context.Context, int64) (*api.BankAccount, error) {
+	return nil, nil
+}
+
+func (f *fakeAPI) CreateBankAccount(context.Context, int64, api.BankAccountInput) (*api.BankAccount, error) {
+	return nil, nil
+}
+
+func (f *fakeAPI) UpdateBankAccount(context.Context, int64, api.BankAccountInput) (*api.BankAccount, error) {
+	return nil, nil
+}
+
+func (f *fakeAPI) ListCreditCards(context.Context, int64) ([]api.CreditCard, error) {
+	return nil, nil
+}
+
+func (f *fakeAPI) GetCreditCard(context.Context, int64) (*api.CreditCard, error) {
+	return nil, nil
+}
+
+func (f *fakeAPI) CreateCreditCard(context.Context, int64, api.CreditCardInput) (*api.CreditCard, error) {
+	return nil, nil
+}
+
+func (f *fakeAPI) UpdateCreditCard(context.Context, int64, api.CreditCardInput) (*api.CreditCard, error) {
+	return nil, nil
+}
+
 func fixedNow() time.Time {
 	return time.Date(2026, time.November, 23, 15, 0, 0, 0, time.UTC)
 }

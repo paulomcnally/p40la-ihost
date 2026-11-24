@@ -7,6 +7,7 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/api"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/config"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/registry"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/banking"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/bills"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/entities"
 )
@@ -18,5 +19,8 @@ func Register(r *registry.Registry, client api.API, cfg config.Config) {
 	})
 	r.Add(func(server *mcp.Server) {
 		entities.Register(server, client, cfg)
+	})
+	r.Add(func(server *mcp.Server) {
+		banking.Register(server, client, cfg)
 	})
 }

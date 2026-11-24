@@ -97,6 +97,31 @@ func (f *fakeAPI) CreateService(_ context.Context, req api.ServiceCreateRequest)
 	return &item, nil
 }
 
+func (f *fakeAPI) ListBankRefs(context.Context) ([]api.BankRef, error)         { return nil, nil }
+func (f *fakeAPI) ListCurrencyRefs(context.Context) ([]api.CurrencyRef, error) { return nil, nil }
+func (f *fakeAPI) ListBankAccounts(context.Context, int64) ([]api.BankAccount, error) {
+	return nil, nil
+}
+func (f *fakeAPI) GetBankAccount(context.Context, int64) (*api.BankAccount, error) {
+	return nil, nil
+}
+func (f *fakeAPI) CreateBankAccount(context.Context, int64, api.BankAccountInput) (*api.BankAccount, error) {
+	return nil, nil
+}
+func (f *fakeAPI) UpdateBankAccount(context.Context, int64, api.BankAccountInput) (*api.BankAccount, error) {
+	return nil, nil
+}
+func (f *fakeAPI) ListCreditCards(context.Context, int64) ([]api.CreditCard, error) { return nil, nil }
+func (f *fakeAPI) GetCreditCard(context.Context, int64) (*api.CreditCard, error) {
+	return nil, nil
+}
+func (f *fakeAPI) CreateCreditCard(context.Context, int64, api.CreditCardInput) (*api.CreditCard, error) {
+	return nil, nil
+}
+func (f *fakeAPI) UpdateCreditCard(context.Context, int64, api.CreditCardInput) (*api.CreditCard, error) {
+	return nil, nil
+}
+
 func testConfig(writes bool) config.Config {
 	return config.Config{Transport: config.TransportStdio, AllowWrites: writes, Location: time.UTC}
 }
