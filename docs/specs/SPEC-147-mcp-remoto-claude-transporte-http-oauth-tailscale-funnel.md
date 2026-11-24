@@ -1,7 +1,7 @@
 ---
 title: "MCP remoto para Claude: transporte HTTP, OAuth y Tailscale Funnel"
 id: "SPEC-147"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 150
 # MCP remoto para Claude: transporte HTTP, OAuth y Tailscale Funnel
 
 **ID**: SPEC-147  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-23
@@ -373,7 +373,8 @@ AuditEntry    { ts, request_id, tool, result, duration_ms, subject }
 - **Autorización del usuario**: 2026-11-23, orden explícita de pasar a `released` y ejecutar `./scripts/release.sh` para publicar la imagen del add-on.
 - **Alcance liberado**: transporte HTTP, OAuth 2.1, doble gate de escritura, auditoría, límites, documentación y artefactos de build del MCP.
 - **Excepción documentada**: Funnel y la validación del conector de claude.ai quedan como pasos operativos posteriores porque requieren exponer el servicio en Internet y aprobación de infraestructura. No bloquean el release del binario ni la publicación de la imagen del add-on web.
-- **Versión y commit**: los determina `scripts/release.sh` al crear el tag; se documentan en el historial al cierre.
+- **Versión y commit**: `v0.5.17` (imagen multi-arch publicada por GitHub Actions), merge `5ea27291`, bump `cf5f5fa7`, tag `v0.5.17`.
+- **Post-release**: habilitar Funnel, agregar el conector en claude.ai y, si se desea, desplegar el MCP en el iHost; validar con la checklist de aceptación pendiente.
 
 ---
 
@@ -411,3 +412,4 @@ AuditEntry    { ts, request_id, tool, result, duration_ms, subject }
 |-------|-------|-------------|
 | 2026-11-23 | opencode | Creación inicial de la especificación |
 | 2026-11-23 | opencode | Implementación del transporte HTTP, OAuth 2.1, auditoría, límites, contenedor y documentación; E2E local y preparación de release |
+| 2026-11-23 | opencode | Release v0.5.17: merge `5ea27291`, bump `cf5f5fa7`, tag `v0.5.17`; Funnel y conector claude.ai quedan como operación posterior |
