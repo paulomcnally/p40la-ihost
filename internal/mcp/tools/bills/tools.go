@@ -65,10 +65,14 @@ func (t *Toolset) writeMode(requested *bool) (bool, *mcp.CallToolResult, any) {
 	if requested != nil {
 		dryRun = *requested
 	}
-	if !dryRun && !t.cfg.AllowWrites {
+	if !dryRun && !t.cfg.WritesEnabled() {
+		hint := "Definí P40LA_MCP_ALLOW_WRITES=true o repetí con dry_run=true para previsualizar."
+		if t.cfg.IsHTTP() {
+			hint = "Definí P40LA_MCP_ALLOW_WRITES=true y P40LA_MCP_REMOTE_WRITES=true, o repetí con dry_run=true para previsualizar."
+		}
 		result, output, _ := toolError("writes_disabled",
 			"Las escrituras están deshabilitadas en este servidor MCP.",
-			"Definí P40LA_MCP_ALLOW_WRITES=true o repetí con dry_run=true para previsualizar.")
+			hint)
 		return false, result, output
 	}
 	return dryRun, nil, nil

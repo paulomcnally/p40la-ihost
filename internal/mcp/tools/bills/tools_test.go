@@ -303,3 +303,32 @@ func TestResultJSONContent(t *testing.T) {
 		t.Fatalf("status = %q, quiero ok", decoded["status"])
 	}
 }
+
+func TestHTTPRemoteWritesRequireBothGates(t *testing.T) {
+	fake := &fakeAPI{service: &api.Service{ID: 1, Name: "Servicio Demo"}}
+	toolset := New(fake, config.Config{
+		Transport:    config.TransportHTTP,
+		AllowWrites:  true,
+		RemoteWrites: false,
+		Timezone:     "UTC",
+		Location:     time.UTC,
+	})
+	toolset.now = fixedNow
+
+	notDry := false
+	result, output, err := toolset.generate(context.Background(), nil, GenerateInput{
+		ServiceID: 1, From: "2026-01", DryRun: &notDry,
+	})
+	if err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+	if result == nil || !result.IsError {
+		t.Fatalf("quiero writes_disabled, obtuve %#v", result)
+	}
+	if code := resultErrorCode(t, output); code != "writes_disabled" {
+		t.Fatalf("código = %q", code)
+	}
+	if fake.calls != 0 {
+		t.Fatalf("llamadas = %d, quiero 0", fake.calls)
+	}
+}

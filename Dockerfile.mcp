@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+
+# Imagen del servidor MCP remoto (SPEC-147). Es independiente de la imagen del
+# add-on p40la-ihost: corre en la máquina del cliente o como add-on aparte.
+FROM golang:1.26-alpine AS build
+RUN apk add --no-cache git
+WORKDIR /src
+ENV GOPRIVATE=github.com/paulomcnally/*
+
+COPY go.mod go.sum ./
+# El módulo de plugins es privado; el token se pasa como secreto de BuildKit.
+RUN --mount=type=secret,id=gh_token \
+    GIT_CONFIG_COUNT=1 \
+    GIT_CONFIG_KEY_0="url.https://x-access-token:$(cat /run/secrets/gh_token)@github.com/.insteadOf" \
+    GIT_CONFIG_VALUE_0="https://github.com/" \
+    go mod download
+
+COPY . .
+ARG VERSION=dev
+RUN CGO_ENABLED=0 go build -trimpath \
+    -ldflags="-s -w -X main.version=${VERSION}" \
+    -o /out/p40la-mcp ./cmd/mcp-server
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=build /out/p40la-mcp /p40la-mcp
+USER nonroot:nonroot
+EXPOSE 8090 8091
+ENTRYPOINT ["/p40la-mcp"]

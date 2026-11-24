@@ -9,56 +9,125 @@ description: "Componentes, flujo y decisiones del servidor MCP de p40la-ihost"
 ## Vista general
 
 ```
-Cliente MCP (OpenCode / Claude Desktop)
-        │  stdio: JSON-RPC 2.0
-        ▼
-┌─────────────────────────────┐
-│ p40la-mcp                   │
-│ cmd/mcp-server              │
-│ internal/mcp/config         │
-│ internal/mcp/api            │
-│ internal/mcp/registry       │
-│ internal/mcp/tools/bills    │
-└──────────────┬──────────────┘
-               │ HTTP + Authorization: Bearer
-               ▼
-┌─────────────────────────────┐
-│ p40la-ihost server          │
-│ SessionOrAPIKeyMiddleware   │
-│ GET  /api/services/{id}     │
-│ GET  /api/services/{id}/bills
-│ POST /api/services/{id}/bills/generate
-│ POST /api/services/{id}/bills/pay
-└──────────────┬──────────────┘
-               │ BillService → BillStorage
-               ▼
-        SQLite (bills, bill_history)
+Claude Code / Desktop local                claude.ai / Claude móvil / Cowork
+        │ stdio                                     │ HTTPS 443 (OAuth 2.1)
+        ▼                                           ▼
+┌──────────────────────┐                  ┌──────────────────────────┐
+│ p40la-mcp (stdio)    │                  │ Tailscale Funnel         │
+│ cmd/mcp-server       │                  │ demo-node.example.ts.net │
+└──────────┬───────────┘                  └────────────┬─────────────┘
+           │                                           │ 127.0.0.1:8090
+           │                                           ▼
+           │                                  ┌──────────────────────────┐
+           │                                  │ p40la-mcp (HTTP)         │
+           │                                  │ /mcp + OAuth 2.1         │
+           │                                  │ audit.jsonl en /data     │
+           │                                  └────────────┬─────────────┘
+           │                                               │
+           └───────────────────┬───────────────────────────┘
+                               │ HTTP + Authorization: Bearer <API key>
+                               ▼
+                 ┌─────────────────────────────┐
+                 │ p40la-ihost server          │
+                 │ SessionOrAPIKeyMiddleware   │
+                 │ GET  /api/services/{id}     │
+                 │ GET  /api/services/{id}/bills
+                 │ POST /api/services/{id}/bills/generate
+                 │ POST /api/services/{id}/bills/pay
+                 └──────────────┬──────────────┘
+                                │ BillService → BillStorage
+                                ▼
+                        SQLite (bills, bill_history)
 ```
+
+Los dos transportes comparten configuración de API, registry y tools. La única diferencia es cómo llega el JSON-RPC al binario y qué autenticación protege la entrada.
 
 ## Componentes
 
 | Componente | Ubicación | Responsabilidad |
 |---|---|---|
-| Entrypoint | `cmd/mcp-server/main.go` | Configuración, registro de tools y transporte stdio |
-| Config | `internal/mcp/config` | Variables de entorno, API key, zona horaria |
+| Entrypoint | `cmd/mcp-server/main.go` | Configuración, registro de tools, elección de transporte y `-hash-password` |
+| Config | `internal/mcp/config` | Variables de entorno, API key, zona horaria, validación del modo HTTP |
 | Cliente API | `internal/mcp/api` | `Authorization: Bearer`, llamadas HTTP y errores tipados |
 | Registry | `internal/mcp/registry` | Punto de montaje de conjuntos de tools |
 | Tools de facturas | `internal/mcp/tools/bills` | `bills_list`, `bills_generate`, `bills_pay` |
 | Registro global | `internal/mcp/tools/all` | Único lugar que importa los paquetes de tools |
+| Servidor HTTP | `internal/mcp/server/server.go` | Listeners público y admin, auth, rate limit, body limit, headers, health y revocación |
+| Middleware de auditoría | `internal/mcp/server/middleware.go` | Registra solo `tools/call`, sin argumentos ni resultados |
+| OAuth 2.1 | `internal/mcp/server/oauth` | Discovery, DCR, authorize con PKCE, token, refresh y revocación |
+| Rate limit | `internal/mcp/server/limiter` | Ventana fija en memoria por token o IP |
+| Auditoría | `internal/mcp/audit` | JSONL con rotación por tamaño |
+| Imagen del MCP | `Dockerfile.mcp`, `scripts/build-mcp-image.sh` | Imagen multi-arch independiente del add-on web |
+| Funnel | `deploy/tailscale/serve-funnel.example.json` | Ejemplo declarativo de publicación en 443 |
 | Backend masivo | `internal/services/bill_bulk.go` | Reglas de generación y pago por rango |
 | Handlers HTTP | `internal/api/bill_bulk_handlers.go` | Parseo, códigos de estado y respuesta |
 | API key global | `internal/services/api_key.go` | Generación, hash, validación, rotación y revocación |
 | Middleware | `internal/api/middleware.go` | Sesión o API key global |
 | Provisión | `scripts/create-api-key.sh` | Crea/rota la key con una sesión |
 
+## Dos transportes
+
+| Aspecto | stdio | HTTP |
+|---|---|---|
+| Activación | Default | `P40LA_MCP_TRANSPORT=http` |
+| Entrada | stdin/stdout | `POST /mcp` (Streamable HTTP) |
+| Auth del cliente | Confianza del proceso local | OAuth 2.1 + bearer token |
+| Exposición | Ninguna | HTTPS 443 vía Funnel |
+| Escrituras | `P40LA_MCP_ALLOW_WRITES=true` | `ALLOW_WRITES=true` **y** `REMOTE_WRITES=true` |
+| Auditoría | Historial del backend | `audit.jsonl` + historial del backend |
+| Estado en disco | Ninguno | `oauth.json` y `audit.jsonl` en `/data` |
+
+## Listeners
+
+El modo HTTP levanta dos servidores `net/http` en el mismo proceso:
+
+- **Público** (`P40LA_MCP_LISTEN`, default `127.0.0.1:8090`): expone `/mcp` y los endpoints OAuth. Se publica con Funnel y exige bearer token en `/mcp`.
+- **Administrativo** (`P40LA_MCP_ADMIN_LISTEN`, default `127.0.0.1:8091`): expone `GET /healthz` y `POST /admin/revoke`. Solo acepta peticiones cuyo `RemoteAddr` sea loopback y nunca se publica.
+
+`config.Load` rechaza direcciones que no sean loopback, puertos repetidos y una URL pública con path, query o fragment. El binario no arranca si la configuración no es segura.
+
+## Flujo OAuth
+
+```
+Cliente → discovery (.well-known) → DCR (/register)
+        → /authorize (PKCE S256 + contraseña)
+        → redirect con code → /token (code + verifier)
+        → access token 1 h + refresh 30 días
+        → POST /mcp con Authorization: Bearer
+```
+
+- Un solo usuario; contraseña bcrypt en `P40LA_MCP_OAUTH_PASSWORD_HASH` y `subject` opaco (`owner`).
+- Clientes públicos (`token_endpoint_auth_method=none`); DCR solo acepta el callback de Claude y loopback `/callback`.
+- Tokens opacos hasheados en `oauth.json` (`0600`), refresh rotativo y códigos de un solo uso.
+- El detalle está en [oauth.md](oauth.md).
+
+## Estado persistente
+
+| Archivo | Contenido | Permisos |
+|---|---|---|
+| `oauth.json` | Clientes, hashes de códigos y hashes de tokens | `0600` |
+| `audit.jsonl` | Llamadas a tools (`ts`, `request_id`, `subject`, `tool`, `result`, `duration_ms`) | `0600` |
+
+Ambos viven en `P40LA_MCP_STATE_DIR` (default `/data`). La escritura es atómica y el directorio se crea con `0700`. No se guardan argumentos, resultados, montos ni PII.
+
 ## Autenticación
 
-- Una única key global `p40la_...` con todos los permisos.
+Hay **dos credenciales distintas** y no son intercambiables:
+
+1. **OAuth 2.1** protege la entrada del MCP remoto. La usa el cliente (claude.ai) y la valida `internal/mcp/server/oauth`.
+2. **API key global** protege la salida del MCP hacia la API de p40la-ihost. La usa el binario en ambos transportes.
+
+La API key:
+
+- Es única, global y tiene todos los permisos.
 - Se guarda hasheada (SHA-256) en `system_settings`, junto con prefijo y fechas.
-- El MCP envía `Authorization: Bearer <key>` o `X-API-Key: <key>`.
+- Se envía como `Authorization: Bearer <key>` o `X-API-Key: <key>`.
 - `SessionOrAPIKeyMiddleware` acepta la key o una sesión normal. La sesión sigue siendo necesaria para administrar la key.
 - Las peticiones con key se auditan como `source=mcp`; no pueden simular `dashboard`.
-- No se usan usuario/contraseña ni cookies en el MCP.
+- No se usan usuario/contraseña ni cookies del dashboard en el MCP.
+
+Un bearer token OAuth **no** sirve contra la API del backend, y la API key **no** sirve contra `/mcp`.
+
 
 ## Por qué el MCP no accede a SQLite
 
@@ -89,9 +158,21 @@ Las altas y pagos hechos por el MCP registran `bill_history.source = mcp`. La UI
 
 La migración `0060_bill_history_source_mcp` habilita el nuevo valor en el `CHECK` de `source`; es reversible y no crea tablas nuevas. La key global usa `system_settings`, sin migración adicional.
 
+En modo HTTP se agrega una segunda capa local: `audit.jsonl` registra cada `tools/call` con `ts`, `request_id`, `subject`, `tool`, `result` y `duration_ms`. No incluye argumentos, resultados, montos ni tokens. El archivo rota por tamaño (`P40LA_MCP_AUDIT_MAX_MB`, default 5 MB) y conserva `audit.jsonl` más tres rotaciones.
+
+## Escrituras
+
+| Modo | Compuerta |
+|---|---|
+| stdio | `P40LA_MCP_ALLOW_WRITES=true` |
+| HTTP | `P40LA_MCP_ALLOW_WRITES=true` **y** `P40LA_MCP_REMOTE_WRITES=true` |
+
+`Config.WritesEnabled()` combina ambas condiciones. Si el gate remoto está apagado, la tool devuelve `writes_disabled` y no llama a la API. El backend valida además el origen y registra `source=mcp`.
+
 ## Límites
 
 - Máximo 36 períodos por generación.
 - No se generan meses futuros.
 - Las llamadas al backend son secuenciales.
 - El binario MCP no se ejecuta dentro del proceso del servidor ni del contenedor por defecto.
+- En modo HTTP: body de 1 MiB, 60 req/min por token, access token de 1 h, refresh de 30 días, código de 5 minutos y auditoría con rotación.
