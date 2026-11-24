@@ -322,6 +322,10 @@ func TestAuthorizeFormIncludesRequiredFields(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("get status=%d body=%s", resp.StatusCode, raw)
 	}
+	csp := resp.Header.Get("Content-Security-Policy")
+	if !strings.Contains(csp, "form-action 'self' https://claude.ai") {
+		t.Fatalf("csp=%q", csp)
+	}
 
 	form := url.Values{}
 	for _, m := range regexp.MustCompile(`<input type="hidden" name="([^"]+)" value="([^"]*)">`).FindAllStringSubmatch(string(raw), -1) {
