@@ -18,6 +18,9 @@ type Toolset struct {
 
 // New crea un Toolset con el reloj real.
 func New(client api.API, cfg config.Config) *Toolset {
+	if cfg.Location == nil {
+		cfg.Location = time.Local
+	}
 	return &Toolset{client: client, cfg: cfg, now: time.Now}
 }
 
