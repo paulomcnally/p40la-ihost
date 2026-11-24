@@ -615,6 +615,22 @@ Las tools son adaptadores delgados: validan forma y hacen el preflight de `dry_r
 - **Inspección**: fecha no futura, resultado `approved`/`rejected`, año entre `auto.year + 2` y `performed_at.year + 1`, institución de categoría inspección mecánica.
 - **Seguro**: cobertura `daños_a_terceros`/`full_cover`, póliza y número de aseguradora obligatorios, y servicio disponible para el auto.
 
+## `autos_inspection_alerts`
+
+Estado de inspección de toda la flota. Solo lectura.
+
+Sin parámetros. Devuelve, por auto, el estado (`ok`, `due_soon` con ≤ 60 días o `overdue`) y el año del ciclo.
+
+```json
+{}
+```
+
+```json
+[{ "auto_id": 1, "brand": "Marca Demo", "model": "Modelo Demo", "status": "due_soon", "inspection_year": 2026 }]
+```
+
+Es la forma más rápida de responder «¿qué autos tienen inspección pendiente?» sin recorrer auto por auto.
+
 ## Flujo recomendado para un agente
 
 1. `autos_list` para ubicar el `auto_id` y confirmar que el auto no exista antes de crearlo.

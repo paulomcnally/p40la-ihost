@@ -37,6 +37,9 @@ type contractFile struct {
 // contractAPI satisface api.API para registrar las tools sin llamar al backend.
 type contractAPI struct{}
 
+// ReadJSON satisface api.ReadAPI; el test de contrato solo lista tools.
+func (contractAPI) ReadJSON(context.Context, string, any) error { return nil }
+
 func (contractAPI) GetService(_ context.Context, id int64) (*api.Service, error) {
 	return &api.Service{ID: id, Name: "Servicio Demo"}, nil
 }

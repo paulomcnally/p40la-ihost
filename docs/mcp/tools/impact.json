@@ -621,6 +621,514 @@
         "internal/mcp/tools/banking/tools_test.go",
         "internal/mcp/tools/all/contract_test.go"
       ]
+    },
+    {
+      "name": "pension_month_summary",
+      "docs": [
+        "docs/mcp/tools/pension.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/pension/pension.go"
+      ],
+      "dependencies": [
+        "internal/api/support_record_handlers.go",
+        "internal/api/pension_dashboard_handlers.go",
+        "internal/api/month_closing_handlers.go",
+        "internal/api/child_handlers.go",
+        "internal/api/pension_category_handlers.go",
+        "internal/api/salary_handlers.go",
+        "internal/api/currency_handlers.go",
+        "internal/services/support_record.go",
+        "internal/services/salary_payment.go",
+        "internal/services/month_closing.go",
+        "internal/services/pension_generation.go",
+        "internal/storage/support_record.go",
+        "internal/storage/salary_payment.go",
+        "internal/storage/month_closing.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/pension/records",
+        "GET /api/pension/salary-payments",
+        "GET /api/pension/closing/{year}/{month}"
+      ],
+      "tests": [
+        "internal/mcp/tools/pension/pension_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "pension_catalogs_list",
+      "docs": [
+        "docs/mcp/tools/pension.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/pension/pension.go"
+      ],
+      "dependencies": [
+        "internal/api/support_record_handlers.go",
+        "internal/api/pension_dashboard_handlers.go",
+        "internal/api/month_closing_handlers.go",
+        "internal/api/child_handlers.go",
+        "internal/api/pension_category_handlers.go",
+        "internal/api/salary_handlers.go",
+        "internal/api/currency_handlers.go",
+        "internal/services/support_record.go",
+        "internal/services/salary_payment.go",
+        "internal/services/month_closing.go",
+        "internal/services/pension_generation.go",
+        "internal/storage/support_record.go",
+        "internal/storage/salary_payment.go",
+        "internal/storage/month_closing.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/children",
+        "GET /api/pension-categories",
+        "GET /api/salaries",
+        "GET /api/pension/configs",
+        "GET /api/currencies"
+      ],
+      "tests": [
+        "internal/mcp/tools/pension/pension_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "rental_leases_list",
+      "docs": [
+        "docs/mcp/tools/rental.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/rental/rental.go"
+      ],
+      "dependencies": [
+        "internal/modules/realestate/rental/handlers.go",
+        "internal/modules/realestate/rental/service.go",
+        "internal/modules/realestate/rental/storage.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/rental/leases"
+      ],
+      "tests": [
+        "internal/mcp/tools/rental/rental_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "rental_lease_get",
+      "docs": [
+        "docs/mcp/tools/rental.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/rental/rental.go"
+      ],
+      "dependencies": [
+        "internal/modules/realestate/rental/handlers.go",
+        "internal/modules/realestate/rental/service.go",
+        "internal/modules/realestate/rental/storage.go",
+        "internal/modules/realestate/rental/storage_billing.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/rental/leases/{id}",
+        "GET /api/rental/leases/{id}/balance"
+      ],
+      "tests": [
+        "internal/mcp/tools/rental/rental_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "rental_home_status",
+      "docs": [
+        "docs/mcp/tools/rental.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/rental/rental.go"
+      ],
+      "dependencies": [
+        "internal/modules/realestate/rental/handlers.go",
+        "internal/modules/realestate/rental/service.go",
+        "internal/modules/realestate/rental/storage.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/rental/homes/{id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/rental/rental_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "rental_portfolio_summary",
+      "docs": [
+        "docs/mcp/tools/rental.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/rental/rental.go"
+      ],
+      "dependencies": [
+        "internal/modules/realestate/portfolio/handlers.go",
+        "internal/modules/realestate/portfolio/service.go",
+        "internal/modules/realestate/portfolio/storage.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/rental/portfolio/summary"
+      ],
+      "tests": [
+        "internal/mcp/tools/rental/rental_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "debt_bills_list",
+      "docs": [
+        "docs/mcp/tools/debts.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/debts/debts.go"
+      ],
+      "dependencies": [
+        "internal/api/debt_handlers.go",
+        "internal/services/debt.go",
+        "internal/storage/debt_bill.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/debts/{id}/bills",
+        "GET /api/debt-bills"
+      ],
+      "tests": [
+        "internal/mcp/tools/debts/debts_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "credit_card_statements_list",
+      "docs": [
+        "docs/mcp/tools/cards.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/cards/cards.go"
+      ],
+      "dependencies": [
+        "internal/modules/bank/creditcard/handlers.go",
+        "internal/modules/bank/creditcard/service.go",
+        "internal/modules/bank/creditcard/storage.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/credit-cards/{id}/statements"
+      ],
+      "tests": [
+        "internal/mcp/tools/cards/cards_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "credit_card_statements_get",
+      "docs": [
+        "docs/mcp/tools/cards.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/cards/cards.go"
+      ],
+      "dependencies": [
+        "internal/modules/bank/creditcard/handlers.go",
+        "internal/modules/bank/creditcard/service.go",
+        "internal/modules/bank/creditcard/storage.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/credit-card-statements/{id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/cards/cards_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "home_maintenance_list",
+      "docs": [
+        "docs/mcp/tools/home-maintenance.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/homemaint/homemaint.go"
+      ],
+      "dependencies": [
+        "internal/modules/home/maintenance/handlers.go",
+        "internal/modules/home/maintenance/service.go",
+        "internal/modules/home/maintenance/storage.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/maintenances"
+      ],
+      "tests": [
+        "internal/mcp/tools/homemaint/homemaint_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "autos_inspection_alerts",
+      "docs": [
+        "docs/mcp/tools/autos.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/fleet/fleet.go"
+      ],
+      "dependencies": [
+        "internal/api/auto_inspection_handlers.go",
+        "internal/services/auto_inspection.go",
+        "internal/storage/auto_inspection.go",
+        "internal/storage/auto.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/autos/inspection-alerts"
+      ],
+      "tests": [
+        "internal/mcp/tools/fleet/fleet_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "bills_by_month",
+      "docs": [
+        "docs/mcp/tools/bills.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/billviews/billviews.go"
+      ],
+      "dependencies": [
+        "internal/api/bill_handlers.go",
+        "internal/services/service_bill.go",
+        "internal/storage/bill.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/service-bills"
+      ],
+      "tests": [
+        "internal/mcp/tools/billviews/billviews_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "bills_summary",
+      "docs": [
+        "docs/mcp/tools/bills.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/billviews/billviews.go"
+      ],
+      "dependencies": [
+        "internal/api/bill_handlers.go",
+        "internal/services/service_bill.go",
+        "internal/storage/bill.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/service-bills/summary"
+      ],
+      "tests": [
+        "internal/mcp/tools/billviews/billviews_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "bills_projection",
+      "docs": [
+        "docs/mcp/tools/bills.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/billviews/billviews.go"
+      ],
+      "dependencies": [
+        "internal/api/bill_handlers.go",
+        "internal/services/service_bill.go",
+        "internal/storage/bill.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/service-bills/projection"
+      ],
+      "tests": [
+        "internal/mcp/tools/billviews/billviews_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "services_get",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/catalog/catalog.go"
+      ],
+      "dependencies": [
+        "internal/api/service_handlers.go",
+        "internal/services/service.go",
+        "internal/storage/service.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/services/{id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/catalog/catalog_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "automation_accounts_list",
+      "docs": [
+        "docs/mcp/tools/automation.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/automation/automation.go"
+      ],
+      "dependencies": [
+        "internal/api/automation_handlers.go",
+        "internal/services/automation.go",
+        "internal/storage/automation.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/automation/accounts"
+      ],
+      "tests": [
+        "internal/mcp/tools/automation/automation_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "automation_runs_list",
+      "docs": [
+        "docs/mcp/tools/automation.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/automation/automation.go"
+      ],
+      "dependencies": [
+        "internal/api/automation_handlers.go",
+        "internal/services/automation.go",
+        "internal/storage/automation.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/automation/accounts/{id}/bills",
+        "GET /api/automation/accounts/{id}/webhook/logs"
+      ],
+      "tests": [
+        "internal/mcp/tools/automation/automation_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "alerts_list",
+      "docs": [
+        "docs/mcp/tools/alerts.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/alerts/alerts.go"
+      ],
+      "dependencies": [
+        "internal/api/alerts_handlers.go",
+        "internal/services/alert_service.go",
+        "internal/storage/alert_storage.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/alerts"
+      ],
+      "tests": [
+        "internal/mcp/tools/alerts/alerts_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "settings_status",
+      "docs": [
+        "docs/mcp/tools/settings.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/settings/settings.go"
+      ],
+      "dependencies": [
+        "internal/api/system_settings_handlers.go",
+        "internal/services/system_settings.go",
+        "internal/storage/system_settings.go",
+        "internal/mcp/api/reads.go",
+        "internal/mcp/tools/toolkit/read.go",
+        "internal/mcp/tools/toolkit/toolkit.go"
+      ],
+      "endpoints": [
+        "GET /api/system-settings"
+      ],
+      "tests": [
+        "internal/mcp/tools/settings/settings_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
     }
   ],
   "shared": {

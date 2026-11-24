@@ -432,6 +432,22 @@ Todos los errores devuelven `isError=true` y un objeto `{error, message, hint?}`
 }
 ```
 
+## `services_get`
+
+Detalle completo de un servicio. Solo lectura.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `service_id` | integer | Sí | ID del servicio |
+
+```json
+{ "service_id": 12 }
+```
+
+Devuelve facturación, día de cobro, recurrencia, vigencia, ciclo, contrato y último estado de factura, que `entities_search` no incluye.
+
+A diferencia de `GET /api/services` (listado, que reconcilia facturas del período), este endpoint **no escribe**.
+
 ## Flujo recomendado para un agente
 
 1. Reunir los datos mínimos con el usuario: nombre y, para servicios, hogar y moneda.
