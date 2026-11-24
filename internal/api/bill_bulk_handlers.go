@@ -53,7 +53,7 @@ func (h *BillHandlers) GenerateBills(w http.ResponseWriter, r *http.Request) {
 		Amount:        req.Amount,
 		DryRun:        req.DryRun,
 		AllowInactive: req.AllowInactive,
-		Source:        r.Header.Get(bulkSourceHeader),
+		Source:        requestBillSource(r),
 		Now:           time.Now(),
 	})
 	if err != nil {
@@ -86,7 +86,7 @@ func (h *BillHandlers) PayBills(w http.ResponseWriter, r *http.Request) {
 		DriveURL:         req.DriveURL,
 		PaymentReference: req.PaymentReference,
 		DryRun:           req.DryRun,
-		Source:           r.Header.Get(bulkSourceHeader),
+		Source:           requestBillSource(r),
 		Now:              time.Now(),
 	})
 	if err != nil {

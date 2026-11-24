@@ -5,20 +5,20 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/config"
 )
 
+const testAPIKey = "p40la_demo-demo-demo-demo-demo-demo-demo"
+
 func newTestClient(t *testing.T, serverURL string) *Client {
 	t.Helper()
 	client, err := New(config.Config{
-		BaseURL:  serverURL,
-		Email:    "demo@example.com",
-		Password: "demo-password",
-		Timeout:  5 * time.Second,
+		BaseURL: serverURL,
+		APIKey:  testAPIKey,
+		Timeout: 5 * time.Second,
 	})
 	if err != nil {
 		t.Fatalf("crear cliente: %v", err)
@@ -26,42 +26,39 @@ func newTestClient(t *testing.T, serverURL string) *Client {
 	return client
 }
 
-func TestClientLoginAndCalls(t *testing.T) {
-	var logins atomic.Int32
+func TestClientSendsAuthorizationAndCalls(t *testing.T) {
 	var generateHeader, payHeader string
+	checkAuth := func(w http.ResponseWriter, r *http.Request) bool {
+		if r.Header.Get("Authorization") != "Bearer "+testAPIKey {
+			http.Error(w, "missing api key", http.StatusUnauthorized)
+			return false
+		}
+		return true
+	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/login", func(w http.ResponseWriter, r *http.Request) {
-		logins.Add(1)
-		var payload struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			t.Errorf("decodificar login: %v", err)
-			http.Error(w, "bad request", http.StatusBadRequest)
-			return
-		}
-		if payload.Email != "demo@example.com" || payload.Password != "demo-password" {
-			t.Errorf("credenciales inesperadas")
-		}
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: "demo-session", Path: "/"})
-		writeJSON(w, map[string]string{"email": payload.Email})
-	})
 	mux.HandleFunc("GET /api/services/12", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := r.Cookie("session"); err != nil {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+		if !checkAuth(w, r) {
 			return
 		}
 		writeJSON(w, Service{ID: 12, Name: "Servicio Demo", Frequency: "monthly", Active: true})
 	})
 	mux.HandleFunc("GET /api/services/12/bills", func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuth(w, r) {
+			return
+		}
 		writeJSON(w, []Bill{{ID: 1, ServiceID: 12, Year: 2026, Month: 1, Amount: 100, Status: "pending"}})
 	})
 	mux.HandleFunc("POST /api/services/12/bills/generate", func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuth(w, r) {
+			return
+		}
 		generateHeader = r.Header.Get(sourceHeader)
 		writeJSON(w, GenerateResult{ServiceID: 12, From: "2026-01", To: "2026-02", Created: 2})
 	})
 	mux.HandleFunc("POST /api/services/12/bills/pay", func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuth(w, r) {
+			return
+		}
 		payHeader = r.Header.Get(sourceHeader)
 		writeJSON(w, PayResult{ServiceID: 12, Paid: 1})
 	})
@@ -91,48 +88,13 @@ func TestClientLoginAndCalls(t *testing.T) {
 	if _, err := client.PayBills(ctx, 12, PayRequest{Month: "2026-01"}); err != nil {
 		t.Fatalf("pay: %v", err)
 	}
-	if logins.Load() != 1 {
-		t.Fatalf("logins = %d, quiero 1", logins.Load())
-	}
 	if generateHeader != sourceMCP || payHeader != sourceMCP {
 		t.Fatalf("headers = generate:%q pay:%q, quiero mcp", generateHeader, payHeader)
 	}
 }
 
-func TestClientReloginAfter401(t *testing.T) {
-	var logins atomic.Int32
-	var billsCalls atomic.Int32
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/login", func(w http.ResponseWriter, r *http.Request) {
-		logins.Add(1)
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: "demo-session", Path: "/"})
-		writeJSON(w, map[string]string{"email": "demo@example.com"})
-	})
-	mux.HandleFunc("GET /api/services/1/bills", func(w http.ResponseWriter, r *http.Request) {
-		if billsCalls.Add(1) == 1 {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		writeJSON(w, []Bill{})
-	})
-	server := httptest.NewServer(mux)
-	defer server.Close()
-
-	client := newTestClient(t, server.URL)
-	if _, err := client.ListBills(context.Background(), 1); err != nil {
-		t.Fatalf("list bills con relogin: %v", err)
-	}
-	if logins.Load() != 2 {
-		t.Fatalf("logins = %d, quiero 2", logins.Load())
-	}
-}
-
 func TestClientAPIErrorMapping(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/login", func(w http.ResponseWriter, r *http.Request) {
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: "demo-session", Path: "/"})
-		writeJSON(w, map[string]string{"email": "demo@example.com"})
-	})
 	mux.HandleFunc("GET /api/services/99", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		writeJSON(w, map[string]string{"error": "service_not_found", "message": "el servicio no existe"})
@@ -151,37 +113,22 @@ func TestClientAPIErrorMapping(t *testing.T) {
 	}
 }
 
-func TestClientSessionCookieSkipsLogin(t *testing.T) {
-	var logins atomic.Int32
+func TestClientUnauthorized(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/login", func(w http.ResponseWriter, r *http.Request) {
-		logins.Add(1)
-		writeJSON(w, map[string]string{"email": "demo@example.com"})
-	})
 	mux.HandleFunc("GET /api/services/1/bills", func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("session")
-		if err != nil || cookie.Value != "demo-cookie" {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		writeJSON(w, []Bill{})
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	client, err := New(config.Config{
-		BaseURL:       server.URL,
-		SessionCookie: "demo-cookie",
-		Timeout:       5 * time.Second,
-	})
-	if err != nil {
-		t.Fatalf("crear cliente: %v", err)
+	client := newTestClient(t, server.URL)
+	_, err := client.ListBills(context.Background(), 1)
+	apiErr, ok := err.(*APIError)
+	if !ok {
+		t.Fatalf("error inesperado: %v", err)
 	}
-	if _, err := client.ListBills(context.Background(), 1); err != nil {
-		t.Fatalf("list bills con cookie: %v", err)
-	}
-	if logins.Load() != 0 {
-		t.Fatalf("logins = %d, quiero 0", logins.Load())
+	if apiErr.Status != http.StatusUnauthorized || apiErr.Code != "auth_failed" {
+		t.Fatalf("error = %+v", apiErr)
 	}
 }
 

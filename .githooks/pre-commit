@@ -9,6 +9,7 @@
 #   4. Guardrail de UI (<select> nativo / checkbox nativo) si hay .tsx staged.
 #   5. Guardrail de i18n (claves usadas existen en es/en y no apuntan a objetos).
 #   6. Guardrail de campos numéricos (NumberInput, sin <input type="number"> nuevo).
+#   7. Guardrail de documentación MCP (MCP modificado exige docs/mcp/).
 #
 # Fail-safe: si el hook falla internamente, NO bloquea el commit.
 # Omitir (solo con autorización explícita del usuario): git commit --no-verify
@@ -16,25 +17,7 @@
 set -uo pipefail
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
-cd "$ROOT" 2>/dev/null || # ---------------------------------------------------------------------------
-# 6. Guardrail de campos numéricos (UI-NUMBER-INPUT)
-# ---------------------------------------------------------------------------
-
-if printf '%s\n' "${staged}" | grep -Eq '^frontend/src/.*\.(tsx|jsx)$'; then
-  if [ -d frontend/node_modules ]; then
-    if ! (cd frontend && npm run --silent check:numbers >/dev/null 2>&1); then
-      echo "" >&2
-      (cd frontend && npm run --silent check:numbers) >&2 || true
-      fail "El guardrail de campos numéricos falló." \
-           "  Usá NumberInput en lugar de <input type=\"number\">." \
-           "UI-NUMBER-INPUT"
-    fi
-  else
-    echo "[pre-commit] aviso: frontend/node_modules no existe; se omite check:numbers." >&2
-  fi
-fi
-
-exit 0
+cd "$ROOT" 2>/dev/null || exit 0
 
 staged="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)"
 [ -z "${staged}" ] && exit 0
@@ -136,6 +119,36 @@ if printf '%s\n' "${staged}" | grep -Eq '^frontend/(src/.*\.(ts|tsx)|public/i18n
   else
     echo "[pre-commit] aviso: frontend/node_modules no existe; se omite check:i18n." >&2
   fi
+fi
+
+# ---------------------------------------------------------------------------
+# 6. Guardrail de campos numéricos (UI-NUMBER-INPUT)
+# ---------------------------------------------------------------------------
+
+if printf '%s\n' "${staged}" | grep -Eq '^frontend/src/.*\.(tsx|jsx)$'; then
+  if [ -d frontend/node_modules ]; then
+    if ! (cd frontend && npm run --silent check:numbers >/dev/null 2>&1); then
+      echo "" >&2
+      (cd frontend && npm run --silent check:numbers) >&2 || true
+      fail "El guardrail de campos numéricos falló." \
+           "  Usá NumberInput en lugar de <input type=\"number\">." \
+           "UI-NUMBER-INPUT"
+    fi
+  else
+    echo "[pre-commit] aviso: frontend/node_modules no existe; se omite check:numbers." >&2
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# 7. Guardrail de documentación MCP (DELIV-MCP-DOCS)
+# ---------------------------------------------------------------------------
+
+if [ -x "${ROOT}/scripts/check-mcp-docs.sh" ]; then
+  if ! "${ROOT}/scripts/check-mcp-docs.sh" --staged; then
+    exit 1
+  fi
+else
+  echo "[pre-commit] aviso: falta scripts/check-mcp-docs.sh; se omite DELIV-MCP-DOCS." >&2
 fi
 
 exit 0

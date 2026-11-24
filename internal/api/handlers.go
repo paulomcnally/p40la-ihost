@@ -45,6 +45,8 @@ type Handler struct {
 	budget              *BudgetHandlers
 	automation          *AutomationHandlers
 	bank                *BankHandlers
+	apiKeys             *services.APIKeyService
+	apiKey              *APIKeyHandlers
 	moduleRegistry      *modules.Registry
 }
 

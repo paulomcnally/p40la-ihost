@@ -48,7 +48,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 | `UX-FEEDBACK` | Toda tool devuelve un resumen por ítem (`creada`, `omitida`, `fallida`) con motivo, además de totales. El `dry_run` muestra el resultado antes de escribir. | `CA-UX-FEEDBACK` |
 | `UX-BACK`, `UX-MODAL`, `UX-MODAL-CONFIRM`, `UX-DETAIL-ACTIONS`, `UX-DETAIL-READONLY`, `UX-EMPTY`, `UX-LOADING`, `UX-FORMS` | N/A justificado: no hay pantallas, rutas ni modales nuevos. | — |
 | `DATA-SQLITE` | N/A justificado: no cambia la configuración de SQLite; las operaciones masivas usan `BillStorage` existente. | — |
-| `DATA-MIGRATIONS` | Una migración reversible (`0058_bill_history_source_mcp`) habilita `source=mcp` en `bill_history`; no crea tablas nuevas. | `CA-DATA-MIGRATIONS` |
+| `DATA-MIGRATIONS` | Una migración reversible (`0058_bill_history_source_mcp`) habilita `source=mcp` en `bill_history`; la key global usa `system_settings` y no requiere tabla nueva. | `CA-DATA-MIGRATIONS` |
 | `DATA-NO-DROP` | El MCP nunca abre ni reemplaza `data/app.db`; las pruebas usan `/tmp/test-app.db`. | `CA-DATA-NO-DROP` |
 | `DATA-PRODCOPY` | La validación con datos reales se hace sobre una copia `.backup` en `/tmp`; nunca contra la DB local ni escribiendo producción durante pruebas. | `CA-DATA-PRODCOPY` |
 | `DATA-PROD-WRITE` | Las escrituras reales se hacen por la API, no con SQL directo. Antes del primer backfill en el iHost se exige copia de respaldo y confirmación explícita del usuario. | `CA-DATA-PROD-WRITE` |
@@ -72,7 +72,9 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 | `DELIV-COMMIT` | Commits con formato `SPEC-145: descripción corta`. | `CA-DELIV-COMMIT` |
 | `DELIV-RELEASE` | Se sigue el flujo completo de release (merge, tracker, label, issue, limpieza). | `CA-DELIV-RELEASE` |
 | `DELIV-CHECKRELEASE` | Se ejecuta `/spec-check-release` antes de declarar terminada la spec. | `CA-DELIV-CHECKRELEASE` |
-| `DELIV-HOOKS` | Hooks instalados en el worktree; sin `--no-verify`. | `CA-DELIV-HOOKS` |
+| `DELIV-HOOKS` | Hooks instalados en el worktree; sin `--no-verify`; incluye `check-mcp-docs.sh`. | `CA-DELIV-HOOKS` |
+| `DELIV-MCP-DOCS` | Cada cambio de la superficie MCP incluye `docs/mcp/` en el mismo commit; el hook lo bloquea si falta. | `CA-DELIV-MCP-DOCS` |
+| `DELIV-MCP-DOCS-SUBAGENT` | La actualización de `docs/mcp/` se delega a un subagente en paralelo y el principal la revisa. | `CA-DELIV-MCP-DOCS-SUBAGENT` |
 | `DELIV-DOCKER` | N/A justificado: no se crea ni publica una imagen nueva. El binario MCP se compila localmente con `go build`; si en el futuro se publica una imagen, deberá ser multi-arch. | — |
 | `DELIV-LABELS` | Issue con `spec/draft`; transiciones con labels válidos y cierre solo en release. | `CA-DELIV-LABELS` |
 | `DELIV-DEPLOY` | El deploy al iHost lo aprueba el usuario y se verifica `/health` después. | `CA-DELIV-DEPLOY` |
@@ -89,34 +91,35 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 3. **REQ-003 — Tool `bills_list`**: lista facturas de un servicio con filtros `from`, `to`, `status` (`pending`, `paid`, `all`). Solo lectura.
 4. **REQ-004 — Tool `bills_generate`**: genera facturas de un servicio para un rango inclusivo `from`/`to` en formato `YYYY-MM`, con `to` por defecto el mes actual. Para servicios mensuales genera una por mes; para anuales genera la de enero (`month=0`). Omite períodos que ya tienen factura activa y reporta los que tienen una factura soft-deleted. Máximo 36 períodos. `dry_run` por defecto `true` en la capa MCP.
 5. **REQ-005 — Tool `bills_pay`**: paga facturas de un servicio con **exactamente un** selector: `bill_ids`, `month` (`YYYY-MM`), `from`+`to` (`YYYY-MM`) o `all_pending_up_to` (`YYYY-MM`). `paid_at` por defecto hoy; no acepta fechas futuras. Omite las ya pagadas. `dry_run` por defecto `true`.
-6. **REQ-006 — Autenticación**: el MCP se autentica con `POST /api/login` usando credenciales por variables de entorno y mantiene la cookie de sesión **solo en memoria**. Ante `401`, reintenta el login una vez.
+6. **REQ-006 — Autenticación por API key global**: el MCP se autentica con una única API key de sistema (`Authorization: Bearer ...`), nunca con usuario/contraseña ni cookie. La key es global, tiene todos los permisos, se guarda hasheada en `system_settings` y se puede rotar o revocar.
 7. **REQ-007 — Compuerta de escritura**: `bills_generate` y `bills_pay` solo escriben si `P40LA_MCP_ALLOW_WRITES=true`. Sin la compuerta, `dry_run=true` funciona y `dry_run=false` devuelve `writes_disabled`.
 8. **REQ-008 — Endpoints masivos de backend**: `POST /api/services/{id}/bills/generate` y `POST /api/services/{id}/bills/pay`, con lógica en `BillService`, respuesta de resumen por ítem y código HTTP 200 aun con fallos parciales; las precondiciones inválidas devuelven 4xx.
 9. **REQ-009 — Auditoría**: las altas y pagos hechos por las tools registran el origen `mcp` en `bill_history` (nuevo `BillSourceMCP`), sin alterar el origen `dashboard` de la UI. El origen se toma de un header interno `X-P40LA-Source` con allowlist. La migración `0058_bill_history_source_mcp` amplía el `CHECK` de `source` y es reversible.
 10. **REQ-010 — Documentación**: `docs/mcp/` con índice, arquitectura, configuración, seguridad, operación, desarrollo de nuevas tools, catálogo y referencia de `bills_*`, más ejemplos de configuración para OpenCode y Claude Desktop. Markdown plano con frontmatter Docusaurus.
 11. **REQ-011 — Idempotencia**: repetir `bills_generate` sobre el mismo rango no duplica facturas; repetir `bills_pay` sobre facturas pagadas devuelve `skipped` con motivo `already_paid`.
 12. **REQ-012 — Errores accionables**: errores con código estable (`invalid_range`, `service_not_found`, `service_inactive`, `amount_unresolved`, `deleted_slot`, `writes_disabled`, `auth_failed`, `upstream_error`) y mensaje en español claro, sin stack traces ni datos sensibles.
+13. **REQ-013 — Gestión de la API key global**: hash SHA-256 y prefijo en `system_settings`, con `created_at` y `last_used_at`. Endpoints autenticados por sesión para consultar estado, regenerar (rotación) y revocar; la key completa se muestra una sola vez. Script `scripts/create-api-key.sh` para provisionar. Una sola key global con todos los permisos; sin scopes ni tabla de keys.
 
 ### 3.2 Requerimientos Funcionales (P1 - Importantes)
 
-1. **REQ-013 — Fechas de emisión y vencimiento**: extender `POST /api/bills` y los endpoints masivos para aceptar `issue_date` y `due_date` (`YYYY-MM-DD`), calculando el vencimiento con `billing_day` del servicio y el último día del mes.
-2. **REQ-014 — Montos por período**: permitir un mapa opcional `amounts: {"2026-01": 1000.00, ...}` para backfills con montos históricos distintos.
-3. **REQ-015 — `invoice_number` opcional**: aceptar una plantilla simple (ej. `F-{YYYY}{MM}-{service_id}`) con validación de longitud, sin duplicados.
-4. **REQ-016 — Script de build**: `scripts/build-mcp.sh` que compile `bin/p40la-mcp` para `linux/amd64`, `linux/arm64` y `darwin/arm64`, con versión embebida.
-5. **REQ-017 — Preflight de salud**: la tool `bills_list` o un recurso MCP `health` consulta `GET /health` para diagnosticar conectividad antes de operar.
+1. **REQ-014 — Fechas de emisión y vencimiento**: extender `POST /api/bills` y los endpoints masivos para aceptar `issue_date` y `due_date` (`YYYY-MM-DD`), calculando el vencimiento con `billing_day` del servicio y el último día del mes.
+2. **REQ-015 — Montos por período**: permitir un mapa opcional `amounts: {"2026-01": 1000.00, ...}` para backfills con montos históricos distintos.
+3. **REQ-016 — `invoice_number` opcional**: aceptar una plantilla simple (ej. `F-{YYYY}{MM}-{service_id}`) con validación de longitud, sin duplicados.
+4. **REQ-017 — Script de build**: `scripts/build-mcp.sh` que compile `bin/p40la-mcp` para `linux/amd64`, `linux/arm64` y `darwin/arm64`, con versión embebida.
+5. **REQ-018 — Preflight de salud**: la tool `bills_list` o un recurso MCP `health` consulta `GET /health` para diagnosticar conectividad antes de operar.
 
 ### 3.3 Requerimientos Funcionales (P2 - Deseables)
 
-1. **REQ-018 — Transporte HTTP**: variante Streamable HTTP del MCP para clientes remotos, con token dedicado; no reemplaza stdio en la primera entrega.
-2. **REQ-019 — Nuevas tools de dominio**: deudas, presupuestos y automatizaciones usando el mismo registro, sin cambiar el transporte.
-3. **REQ-020 — Recursos MCP**: exponer recursos de solo lectura (ej. resumen de un servicio) además de tools.
+1. **REQ-019 — Transporte HTTP**: variante Streamable HTTP del MCP para clientes remotos, con token dedicado; no reemplaza stdio en la primera entrega.
+2. **REQ-020 — Nuevas tools de dominio**: deudas, presupuestos y automatizaciones usando el mismo registro, sin cambiar el transporte.
+3. **REQ-021 — Recursos MCP**: exponer recursos de solo lectura (ej. resumen de un servicio) además de tools.
 
 ### 3.4 Requerimientos No Funcionales
 
 - **Rendimiento**: una generación de 11 facturas debe completarse en menos de 5 segundos en LAN; máximo 36 períodos por llamada; llamadas secuenciales al backend (sin paralelismo).
 - **Memoria**: el binario MCP no se ejecuta dentro del add-on; objetivo de RSS menor a 30 MB. El server del iHost no aumenta su consumo por esta spec.
-- **Seguridad**: credenciales solo por entorno, nunca por argumentos ni logs; cookie de sesión en memoria; escrituras deshabilitadas por defecto; sin PII en documentación ni ejemplos.
-- **Almacenamiento**: sin tablas nuevas, archivos de estado ni caché persistente. Una migración acotada y reversible para habilitar el origen `mcp` en `bill_history`.
+- **Seguridad**: API key solo por entorno, nunca por argumentos ni logs; hasheada en la DB y mostrada una sola vez; revocable; escrituras deshabilitadas por defecto; sin PII en documentación ni ejemplos.
+- **Almacenamiento**: una migración acotada y reversible (`0058` para `source=mcp`); la key global vive hasheada en `system_settings`. Sin archivos de estado ni caché persistente.
 - **Disponibilidad**: el MCP no es un servicio residente; se inicia por el cliente MCP y termina al cerrarse la sesión. Timeout HTTP configurable, 15 s por defecto.
 - **iHost**: no se agrega Node.js al runtime; no se agregan procesos permanentes; el backend solo suma dos rutas HTTP y lógica ya existente.
 - **Compatibilidad**: la API nueva es aditiva; la UI y los webhooks actuales no cambian de comportamiento.
@@ -179,6 +182,11 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 - **Decisión**: Markdown plano, frontmatter estándar, `_category_.json`, enlaces relativos y ejemplos sintéticos. No se agrega build de Docusaurus en esta spec.
 - **Consecuencias**: publicar luego es montar la carpeta como `docs` o `docs/mcp`; no hay dependencias de Node en el repo por documentación.
 
+**ADR-007 — API key global en lugar de usuario/contraseña**
+- **Contexto**: el MCP no debe manejar la contraseña personal del usuario. La única autenticación existente es la sesión por cookie y la API key de webhooks es global pero está limitada a `/webhooks/{uuid}`.
+- **Decisión**: agregar una única API key global del sistema, hasheada y revocable, con todos los permisos. Se guarda en `system_settings` (hash, prefijo, fechas) y se gestiona con endpoints autenticados por sesión. El MCP usa solo `P40LA_API_KEY` y `Authorization: Bearer`.
+- **Consecuencias**: la key equivale a un usuario con acceso completo: si se filtra, hay que rotarla de inmediato. Se gana independencia de la contraseña, rotación y trazabilidad (`last_used_at`, auditoría `mcp`). No hay scopes granulares en esta entrega.
+
 ---
 
 ## 5. Diseño Técnico
@@ -191,11 +199,11 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 │ (OpenCode/Claude)  │                                    │ cmd/mcp-server      │
 └────────────────────┘                                    │ internal/mcp/*      │
                                                           └──────────┬──────────┘
-                                                                     │ HTTP + cookie
+                                                                     │ HTTP + Bearer token
                                                                      ▼
                                                           ┌─────────────────────┐
                                                           │ p40la-ihost server  │
-                                                          │ POST /api/login     │
+                                                          │ API key middleware  │
                                                           │ /api/services/...   │
                                                           │ /api/bills/...      │
                                                           └──────────┬──────────┘
@@ -219,11 +227,11 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 
 #### 5.2.2 `internal/mcp/config/`
 - **Responsabilidad**: cargar y validar variables de entorno; nunca imprime secretos.
-- **Variables**: `P40LA_BASE_URL` (default `http://ihost.local:8088`), `P40LA_EMAIL`, `P40LA_PASSWORD`, `P40LA_SESSION_COOKIE` (opcional, alternativa a usuario/clave), `P40LA_MCP_ALLOW_WRITES` (default `false`), `P40LA_TIMEOUT` (default `15s`), `P40LA_TIMEZONE` (default `America/Managua`).
-- **Validación**: URL absoluta `http`/`https`; credenciales presentes; timeout positivo y acotado (máx. 60 s).
+- **Variables**: `P40LA_BASE_URL` (default `http://ihost.local:8088`), `P40LA_API_KEY` (obligatoria, formato `p40la_...`), `P40LA_MCP_ALLOW_WRITES` (default `false`), `P40LA_TIMEOUT` (default `15s`), `P40LA_TIMEZONE` (default `America/Managua`).
+- **Validación**: URL absoluta `http`/`https`; API key con prefijo y longitud válidos; timeout positivo y acotado (máx. 60 s).
 
 #### 5.2.3 `internal/mcp/api/`
-- **Responsabilidad**: cliente HTTP de la API de p40la. Login, listado, generación y pago. Mantiene la cookie con `http.CookieJar` en memoria y reintenta login una vez ante 401.
+- **Responsabilidad**: cliente HTTP de la API de p40la. Envía `Authorization: Bearer <API key>` en cada llamada; no maneja login ni cookies.
 - **Métodos**: `Health`, `GetService`, `ListBills`, `GenerateBills`, `PayBills`.
 - **Errores**: `APIError{Status, Code, Message}` con el código estable devuelto por el backend; los errores de red se envuelven sin exponer payloads.
 - **Ubicación**: `internal/mcp/api/client.go`, `internal/mcp/api/types.go`.
@@ -269,9 +277,10 @@ El catálogo y los schemas los produce el SDK al registrar cada tool con `mcp.Ad
 docs/mcp/
 ├── README.md              # índice, qué es y cómo empezar
 ├── _category_.json        # metadatos de carpeta para Docusaurus
+├── api-key.md             # creación, rotación y revocación de la key global
 ├── architecture.md        # componentes, flujo y capas
 ├── configuration.md       # variables de entorno y clientes MCP
-├── security.md            # credenciales, compuerta de escritura, incidentes
+├── security.md            # API key, compuerta de escritura, incidentes
 ├── operations.md          # build, ejecución, diagnóstico, backup
 ├── development.md         # cómo agregar una tool nueva
 ├── tools/
@@ -282,9 +291,25 @@ docs/mcp/
     └── claude-desktop.json
 ```
 
+#### 5.2.9 API key global del sistema
+- **Servicio**: `internal/services/api_key.go` genera `p40la_<32 bytes base64url>`, guarda el hash SHA-256 y el prefijo en `system_settings`, valida en tiempo constante y actualiza `last_used_at`.
+- **Handlers**: `internal/api/api_key_handlers.go` con `GET /api/api-key` (estado), `POST /api/api-key/regenerate` (rotación) y `DELETE /api/api-key` (revocación), todos solo por sesión.
+- **Middleware**: `SessionOrAPIKeyMiddleware` acepta sesión o `Authorization: Bearer`/`X-API-Key`; la key global tiene todos los permisos y accede a cualquier ruta autenticada.
+- **Script**: `scripts/create-api-key.sh` inicia sesión una vez, rota/crea la key y la imprime.
+
 ### 5.3 Modelo de datos
 
-No hay tablas nuevas. Se reutilizan `bills` y `bill_history`; la migración `0058_bill_history_source_mcp` recrea `bill_history` para ampliar el `CHECK` de `source` con `mcp` (SQLite no permite alterar un `CHECK`).
+Se reutilizan `bills`, `bill_history` y `system_settings`. Solo se agrega una migración:
+
+- `0058_bill_history_source_mcp`: recrea `bill_history` para ampliar el `CHECK` de `source` con `mcp`.
+
+```
+Entidad: system_settings (existente, valores nuevos)
+- mcp_api_key_hash       (SHA-256 hex; nunca se guarda la key completa)
+- mcp_api_key_prefix     (primeros caracteres, para identificar la key)
+- mcp_api_key_created_at
+- mcp_api_key_last_used_at
+```
 
 ```
 Entidad: bills (existente)
@@ -312,6 +337,47 @@ Reglas de negocio del rango:
 - Período con factura soft-deleted: `skipped` (`deleted_slot`) y se informa el `bill_id`; no se resucita automáticamente.
 
 ### 5.4 APIs / Contratos
+
+#### Autenticación por API key
+
+Todas las rutas del MCP aceptan:
+
+```http
+Authorization: Bearer p40la_<secreto>
+```
+
+o, como alternativa:
+
+```http
+X-API-Key: p40la_<secreto>
+```
+
+La key se hashea (SHA-256) y se compara en tiempo constante contra `mcp_api_key_hash`. Una key inexistente, revocada o incorrecta devuelve `401 auth_failed`. La key global tiene todos los permisos y accede a cualquier ruta autenticada. Las peticiones autenticadas por key se auditan con `source=mcp` y no pueden simular `dashboard`.
+
+#### Endpoints de administración de la key global (solo sesión)
+
+`GET /api/api-key` devuelve el estado sin secreto:
+
+```json
+{
+  "configured": true,
+  "prefix": "p40la_AbCdEfGh",
+  "created_at": "2026-11-23T00:00:00Z",
+  "last_used_at": "2026-11-23T00:00:00Z"
+}
+```
+
+`POST /api/api-key/regenerate` genera una nueva key, invalida la anterior y devuelve el secreto **una sola vez**:
+
+```json
+{
+  "api_key": "p40la_...",
+  "prefix": "p40la_AbCdEfGh",
+  "created_at": "2026-11-23T00:00:00Z"
+}
+```
+
+`DELETE /api/api-key` revoca la key vigente; las peticiones con la key anterior pasan a `401`.
 
 #### Endpoint: `POST /api/services/{id}/bills/generate`
 
@@ -515,6 +581,7 @@ Contenido mínimo por archivo:
 | Archivo | Contenido |
 |---|---|
 | `README.md` | Qué es MCP, alcance, requisitos, inicio rápido, enlaces |
+| `api-key.md` | Key global: creación, rotación, revocación, headers y seguridad |
 | `architecture.md` | Diagrama, capas, por qué no hay acceso directo a SQLite, idempotencia |
 | `configuration.md` | Variables de entorno, ejemplo OpenCode y Claude Desktop, timeouts |
 | `security.md` | Credenciales, compuerta de escritura, `dry_run`, logs, incidentes |
@@ -544,7 +611,13 @@ La documentación no se publica en esta spec; queda lista para que un proyecto D
 - [ ] **CA-MCP-009**: servicio inexistente, rango invertido, más de 36 meses, mes futuro, selector de pago ausente o doble devuelven 4xx con código estable y sin escrituras parciales.
 - [ ] **CA-MCP-010**: las facturas creadas y pagadas por las tools quedan en `bill_history` con `source=mcp`; la UI sigue registrando `dashboard`.
 - [ ] **CA-MCP-011**: `docs/mcp/` contiene todos los archivos de 5.7, enlaces relativos válidos, ejemplos sintéticos y frontmatter Docusaurus.
-- [ ] **CA-MCP-012**: los ejemplos de configuración de OpenCode y Claude Desktop arrancan el binario y listan las tools con credenciales de entorno.
+- [ ] **CA-MCP-012**: los ejemplos de configuración de OpenCode y Claude Desktop arrancan el binario y listan las tools usando `P40LA_API_KEY`.
+- [ ] **CA-APIKEY-001**: regenerar la key devuelve el secreto completo una sola vez; `system_settings` guarda solo hash, prefijo y fechas; el estado nunca expone el secreto.
+- [ ] **CA-APIKEY-002**: la key global accede a todas las rutas autenticadas del sistema; una key inválida, revocada o rotada devuelve 401 `auth_failed`.
+- [ ] **CA-APIKEY-003**: el MCP funciona con `P40LA_API_KEY` y `Authorization: Bearer`, sin `P40LA_EMAIL`, `P40LA_PASSWORD` ni cookie.
+- [ ] **CA-APIKEY-004**: las operaciones del MCP quedan en `bill_history` con `source=mcp`; una key no puede declarar `source=dashboard`.
+- [ ] **CA-APIKEY-005**: rotar o revocar la key bloquea la siguiente petición de inmediato.
+- [ ] **CA-APIKEY-006**: `scripts/create-api-key.sh` crea/rota la key global y no la persiste en el repo; si se usa `KEY_FILE`, lo escribe con permisos `0600`.
 - [ ] **CA-UX-PREREQ**: el backend valida que el servicio exista y esté activo; el MCP devuelve un mensaje accionable.
 - [ ] **CA-UX-FEEDBACK**: cada operación devuelve totales y detalle por ítem con estado y motivo; el `dry_run` permite previsualizar.
 
@@ -555,11 +628,11 @@ La documentación no se publica en esta spec; queda lista para que un proyecto D
 - [ ] **CA-ARCH-LAYERS**: no hay SQL en handlers ni en `internal/mcp/`; las reglas de negocio están en `BillService`.
 - [ ] **CA-ARCH-GO**: `gofmt`, errores explícitos, `slog` a stderr, configuración por env; `go vet ./...` sin hallazgos.
 - [ ] **CA-ARCH-IHOST**: el add-on no arranca el MCP; el binario no se incluye en el proceso del server; RSS objetivo < 30 MB.
-- [ ] **CA-DATA-MIGRATIONS**: la migración `0058_bill_history_source_mcp` es reversible, no crea tablas y se aplicó correctamente en los tests.
+- [ ] **CA-DATA-MIGRATIONS**: la migración `0058_bill_history_source_mcp` es reversible y se aplicó correctamente en los tests; la key global usa `system_settings` sin migración.
 - [ ] **CA-DATA-NO-DROP**: ninguna prueba toca `data/app.db`; se usa `/tmp/test-app.db`.
 - [ ] **CA-DATA-PRODCOPY**: la validación con datos reales usa una copia `.backup` en `/tmp` y se borra al terminar.
 - [ ] **CA-DATA-PROD-WRITE**: antes del primer backfill real se toma respaldo, se corre `dry_run` y el usuario confirma.
-- [ ] **CA-SEC-NO-PII**: no hay PII, montos reales, cookies ni credenciales en código, docs, tests, issues ni logs.
+- [ ] **CA-SEC-NO-PII**: no hay PII, montos reales, cookies ni credenciales en código, docs, tests, issues ni logs; las API keys se guardan hasheadas y nunca se muestran en listados.
 - [ ] **CA-SEC-SYNTHETIC**: todos los ejemplos usan `demo-*` y montos ficticios.
 - [ ] **CA-SEC-PRODCOPY**: copias de producción solo en `/tmp`, eliminadas al finalizar.
 - [ ] **CA-SEC-COMMIT**: `git diff --cached` revisado antes de cada commit.
@@ -578,7 +651,9 @@ La documentación no se publica en esta spec; queda lista para que un proyecto D
 - [ ] **CA-DELIV-COMMIT**: mensajes `SPEC-145: ...`.
 - [ ] **CA-DELIV-RELEASE**: release completo en el mismo ciclo.
 - [ ] **CA-DELIV-CHECKRELEASE**: `/spec-check-release` ejecutado antes de declarar terminado.
-- [ ] **CA-DELIV-HOOKS**: hooks instalados y activos.
+- [ ] **CA-DELIV-HOOKS**: hooks instalados y activos, incluido el guardrail `check-mcp-docs.sh`.
+- [ ] **CA-DELIV-MCP-DOCS**: `./scripts/check-mcp-docs.sh --staged` bloquea un cambio de superficie MCP sin `docs/mcp/` y el `pre-commit` lo ejecuta.
+- [ ] **CA-DELIV-MCP-DOCS-SUBAGENT**: la actualización de `docs/mcp/` de esta spec fue redactada por un subagente y revisada por el agente principal.
 - [ ] **CA-DELIV-LABELS**: issue con `spec/draft` y transiciones con labels válidos.
 - [ ] **CA-DELIV-DEPLOY**: deploy aprobado por el usuario y `/health` verificado.
 - [ ] **CA-DELIV-ESCALATION**: bloqueo > 3 días documentado y escalado.
@@ -612,7 +687,8 @@ La documentación no se publica en esta spec; queda lista para que un proyecto D
 |---|---|---|---|
 | 1 | Servicio masivo (`bill_bulk.go`) + migración de auditoría `mcp` + tests unitarios | 1.5 días | Ninguna |
 | 2 | Endpoints HTTP masivos + validaciones + tests de handlers | 1 día | Fase 1 |
-| 3 | Esqueleto MCP: config, cliente API, registry, transporte stdio | 1.5 días | Fase 2 |
+| 2b | API key global: servicio, middleware, endpoints y script (sin tabla nueva) | 1 día | Fase 1 |
+| 3 | Esqueleto MCP: config, cliente API, registry, transporte stdio | 1.5 días | Fase 2, 2b |
 | 4 | Tools `bills_list`, `bills_generate`, `bills_pay` + tests con API falsa | 1.5 días | Fase 3 |
 | 5 | Documentación `docs/mcp/` + ejemplos de configuración | 1 día | Fase 4 |
 | 6 | Validación local contra copia de producción, prueba con usuario y ajustes | 1 día | Fases 1–5 |
@@ -632,10 +708,13 @@ Implementado en `feature/SPEC-145`:
 - `BillSourceMCP`, `CreateWithSource`, `PayBillWithSource`, `SetCurrencyStorage`.
 - `internal/services/bill_bulk.go` con generación/pago masivo, errores estables e idempotencia.
 - Endpoints `POST /api/services/{service_id}/bills/generate` y `POST /api/services/{service_id}/bills/pay`.
-- `internal/mcp/{config,api,registry,tools}` y `cmd/mcp-server`.
+- API key global hasheada en `system_settings`, middleware sesión-o-key y endpoints `GET/POST/DELETE /api/api-key`.
+- `scripts/create-api-key.sh` para crear/rotar la key con una sesión.
+- `internal/mcp/{config,api,registry,tools}` y `cmd/mcp-server`; el MCP usa solo `P40LA_API_KEY` con `Authorization: Bearer`.
 - Tools `bills_list`, `bills_generate` y `bills_pay` con compuerta de escritura y `dry_run`.
-- Documentación `docs/mcp/` lista para Docusaurus.
-- Tests de servicio, handlers, cliente HTTP, tools y protocolo MCP.
+- Documentación `docs/mcp/` lista para Docusaurus, incluida `api-key.md`.
+- Reglas `DELIV-MCP-DOCS` y `DELIV-MCP-DOCS-SUBAGENT` + guardrail `scripts/check-mcp-docs.sh` integrado en `.githooks/pre-commit`.
+- Tests de servicio, handlers, middleware, API key, cliente HTTP, tools y protocolo MCP.
 
 Pendiente: validación manual del usuario y release.
 
@@ -648,7 +727,8 @@ Pendiente: validación manual del usuario y release.
 | Duplicar facturas por reintentos o doble ejecución | Media | Alto | Idempotencia por período; `dry_run` por defecto; sin reintentos automáticos en escrituras |
 | Recrear una factura soft-deleted y violar `UNIQUE` | Media | Alto | `FindByServicePeriodIncludingDeleted`; se reporta `deleted_slot` y no se resucita |
 | Monto incorrecto en un backfill | Media | Alto | Preview obligatorio, resolución explícita de monto y confirmación del usuario |
-| Credenciales filtradas en logs o argumentos | Baja | Alto | Solo variables de entorno; redacción; nunca payloads en logs; protocolo de incidente |
+| Credenciales filtradas en logs o argumentos | Baja | Alto | API key solo por entorno; nunca payloads en logs; protocolo de incidente |
+| API key global filtrada | Baja | Alto | Hash en DB, mostrada una vez, rotación/revocación inmediata y `last_used_at`; rotar ante cualquier duda. Al ser global, equivale a acceso completo |
 | Carga excesiva al iHost | Baja | Medio | Máximo 36 períodos, llamadas secuenciales, timeout de 15 s |
 | Drift del protocolo MCP | Media | Medio | SDK oficial fijado; contrato propio aísla las tools |
 | Documentación desactualizada | Media | Medio | Checklist de docs en cada cambio de tool; ejemplos probados |
@@ -668,6 +748,7 @@ Pendiente: validación manual del usuario y release.
 - Worktrees y entrega: SPEC-066.
 - Documentación de webhooks como referencia de estilo: `docs/webhooks-api.md`.
 - Documentación del MCP: `docs/mcp/README.md`.
+- Provisión de API key: `scripts/create-api-key.sh`.
 - Issue de esta spec: [#148](https://github.com/paulomcnally/p40la-ihost/issues/148) (`spec/in_progress`).
 
 ---
@@ -678,3 +759,5 @@ Pendiente: validación manual del usuario y release.
 |-------|-------|-------------|
 | 2026-11-23 | opencode | Creación inicial de la especificación |
 | 2026-11-23 | opencode | Implementación inicial completa en `feature/SPEC-145`; pendiente validación del usuario y release |
+| 2026-11-23 | opencode | Se reemplaza usuario/contraseña por una API key global del sistema, hasheada en `system_settings`, con rotación/revocación y provisión por script |
+| 2026-11-23 | opencode | Se agregan `DELIV-MCP-DOCS` (docs obligatorias en cada cambio MCP) y `DELIV-MCP-DOCS-SUBAGENT` (docs por subagente) con hook `check-mcp-docs.sh` |

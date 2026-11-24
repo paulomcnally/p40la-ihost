@@ -9,10 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"strings"
-	"sync"
 
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/config"
 )
@@ -31,16 +29,11 @@ type API interface {
 	PayBills(ctx context.Context, serviceID int64, req PayRequest) (*PayResult, error)
 }
 
-// Client es el cliente HTTP autenticado contra p40la-ihost.
+// Client es el cliente HTTP autenticado con la API key global del sistema.
 type Client struct {
-	baseURL       *url.URL
-	http          *http.Client
-	email         string
-	password      string
-	sessionCookie string
-
-	mu       sync.Mutex
-	loggedIn bool
+	baseURL *url.URL
+	http    *http.Client
+	apiKey  string
 }
 
 // New crea un cliente a partir de la configuración validada.
@@ -49,22 +42,11 @@ func New(cfg config.Config) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("URL base inválida: %w", err)
 	}
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		return nil, fmt.Errorf("crear cookie jar: %w", err)
-	}
-	client := &Client{
-		baseURL:       baseURL,
-		http:          &http.Client{Jar: jar, Timeout: cfg.Timeout},
-		email:         cfg.Email,
-		password:      cfg.Password,
-		sessionCookie: cfg.SessionCookie,
-	}
-	if cfg.SessionCookie != "" {
-		jar.SetCookies(baseURL, []*http.Cookie{{Name: "session", Value: cfg.SessionCookie, Path: "/"}})
-		client.loggedIn = true
-	}
-	return client, nil
+	return &Client{
+		baseURL: baseURL,
+		http:    &http.Client{Timeout: cfg.Timeout},
+		apiKey:  cfg.APIKey,
+	}, nil
 }
 
 // Health consulta GET /health. Es útil para diagnóstico previo.
@@ -83,7 +65,7 @@ func (c *Client) Health(ctx context.Context) error {
 // GetService valida que el servicio exista y devuelve sus datos básicos.
 func (c *Client) GetService(ctx context.Context, id int64) (*Service, error) {
 	var service Service
-	if err := c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/services/%d", id), nil, &service, nil, true); err != nil {
+	if err := c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/services/%d", id), nil, &service, nil); err != nil {
 		return nil, err
 	}
 	return &service, nil
@@ -92,7 +74,7 @@ func (c *Client) GetService(ctx context.Context, id int64) (*Service, error) {
 // ListBills devuelve las facturas activas de un servicio.
 func (c *Client) ListBills(ctx context.Context, serviceID int64) ([]Bill, error) {
 	var bills []Bill
-	if err := c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/services/%d/bills", serviceID), nil, &bills, nil, true); err != nil {
+	if err := c.doJSON(ctx, http.MethodGet, fmt.Sprintf("/api/services/%d/bills", serviceID), nil, &bills, nil); err != nil {
 		return nil, err
 	}
 	return bills, nil
@@ -102,7 +84,7 @@ func (c *Client) ListBills(ctx context.Context, serviceID int64) ([]Bill, error)
 func (c *Client) GenerateBills(ctx context.Context, serviceID int64, req GenerateRequest) (*GenerateResult, error) {
 	var result GenerateResult
 	headers := map[string]string{sourceHeader: sourceMCP}
-	if err := c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/services/%d/bills/generate", serviceID), req, &result, headers, true); err != nil {
+	if err := c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/services/%d/bills/generate", serviceID), req, &result, headers); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -112,31 +94,19 @@ func (c *Client) GenerateBills(ctx context.Context, serviceID int64, req Generat
 func (c *Client) PayBills(ctx context.Context, serviceID int64, req PayRequest) (*PayResult, error) {
 	var result PayResult
 	headers := map[string]string{sourceHeader: sourceMCP}
-	if err := c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/services/%d/bills/pay", serviceID), req, &result, headers, true); err != nil {
+	if err := c.doJSON(ctx, http.MethodPost, fmt.Sprintf("/api/services/%d/bills/pay", serviceID), req, &result, headers); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-func (c *Client) doJSON(ctx context.Context, method, path string, payload, out any, headers map[string]string, retryAuth bool) error {
-	if err := c.ensureLogin(ctx); err != nil {
-		return err
-	}
+func (c *Client) doJSON(ctx context.Context, method, path string, payload, out any, headers map[string]string) error {
 	resp, err := c.send(ctx, method, path, payload, headers)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusUnauthorized && retryAuth {
-		c.mu.Lock()
-		c.loggedIn = false
-		c.mu.Unlock()
-		if err := c.ensureLogin(ctx); err != nil {
-			return err
-		}
-		return c.doJSON(ctx, method, path, payload, out, headers, false)
-	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return decodeAPIError(resp)
 	}
@@ -151,39 +121,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, payload, out a
 	return nil
 }
 
-func (c *Client) ensureLogin(ctx context.Context) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.loggedIn {
-		return nil
-	}
-	if c.sessionCookie != "" {
-		c.loggedIn = true
-		return nil
-	}
-	resp, err := c.sendLocked(ctx, http.MethodPost, "/api/login", map[string]any{
-		"email":    c.email,
-		"password": c.password,
-		"remember": true,
-	}, nil)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return decodeAPIError(resp)
-	}
-	c.loggedIn = true
-	return nil
-}
-
 func (c *Client) send(ctx context.Context, method, path string, payload any, headers map[string]string) (*http.Response, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.sendLocked(ctx, method, path, payload, headers)
-}
-
-func (c *Client) sendLocked(ctx context.Context, method, path string, payload any, headers map[string]string) (*http.Response, error) {
 	var body io.Reader
 	if payload != nil {
 		encoded, err := json.Marshal(payload)
@@ -198,6 +136,9 @@ func (c *Client) sendLocked(ctx context.Context, method, path string, payload an
 	}
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("User-Agent", "p40la-mcp")
+	if c.apiKey != "" {
+		request.Header.Set("Authorization", "Bearer "+c.apiKey)
+	}
 	if payload != nil {
 		request.Header.Set("Content-Type", "application/json")
 	}

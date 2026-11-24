@@ -5,8 +5,7 @@
       "command": ["/home/demo/bin/p40la-mcp"],
       "environment": {
         "P40LA_BASE_URL": "http://ihost.local:8088",
-        "P40LA_EMAIL": "demo@example.com",
-        "P40LA_PASSWORD": "{env:P40LA_PASSWORD}",
+        "P40LA_API_KEY": "{env:P40LA_API_KEY}",
         "P40LA_MCP_ALLOW_WRITES": "false",
         "P40LA_TIMEZONE": "America/Managua"
       },

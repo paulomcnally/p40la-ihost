@@ -1,7 +1,7 @@
 ---
 title: "Operación"
-sidebar_position: 5
-description: "Build, ejecución, diagnóstico y respaldo del servidor MCP"
+sidebar_position: 6
+description: "Build, ejecución, API key, diagnóstico y respaldo del servidor MCP"
 ---
 
 # Operación
@@ -22,14 +22,27 @@ GOOS=darwin GOARCH=arm64 go build -o bin/p40la-mcp-darwin-arm64 ./cmd/mcp-server
 
 El binario MCP **no** se incluye en la imagen Docker del servidor ni se inicia con el add-on. Se ejecuta en la máquina del cliente MCP y se conecta por HTTP al iHost. Esto evita sumar RAM y procesos al dispositivo.
 
-## Ejecución
+## Provisionar la API key
 
-El cliente MCP lanza el proceso y habla por stdin/stdout. Para probar manualmente:
+```bash
+EMAIL="demo@example.com" PASSWORD="demo-password" ./scripts/create-api-key.sh
+```
+
+La key se imprime una sola vez. Guardala en un gestor de secretos o en un archivo `0600`:
+
+```bash
+EMAIL="demo@example.com" PASSWORD="demo-password" \
+KEY_FILE="$HOME/.config/p40la/api-key" \
+./scripts/create-api-key.sh
+```
+
+La contraseña se usa solo para esta operación; el MCP no la necesita. Detalle en [api-key.md](api-key.md).
+
+## Ejecución
 
 ```bash
 P40LA_BASE_URL="http://ihost.local:8088" \
-P40LA_EMAIL="demo@example.com" \
-P40LA_PASSWORD="demo-password" \
+P40LA_API_KEY="p40la_..." \
 ./bin/p40la-mcp
 ```
 
@@ -40,9 +53,19 @@ El proceso espera mensajes JSON-RPC por stdin. Todo log va a stderr para no romp
 ```bash
 curl -s http://ihost.local:8088/health
 # {"status":"ok","timestamp":"..."}
+
+# Verificar que la key responde
+curl -s -H "Authorization: Bearer $P40LA_API_KEY" \
+  http://ihost.local:8088/api/services | head
 ```
 
 Si el health falla, el MCP no puede operar. Revisá red, URL base y que el contenedor esté corriendo.
+
+## Rotación y revocación
+
+- Rotar: `POST /api/api-key/regenerate` o el script. La key anterior deja de funcionar de inmediato.
+- Revocar: `DELETE /api/api-key`.
+- Después de rotar, actualizá `P40LA_API_KEY` en el cliente MCP y reiniciá el proceso.
 
 ## Procedimiento de backfill
 
@@ -61,7 +84,7 @@ No generes meses futuros: el backend los rechaza. No repitas a ciegas si hubo un
 
 | Síntoma | Causa probable | Acción |
 |---|---|---|
-| `auth_failed` | Credenciales o cookie vencida | Revisar `P40LA_EMAIL`/`P40LA_PASSWORD` o `P40LA_SESSION_COOKIE` |
+| `auth_failed` | Key inválida, revocada o rotada | Regenerar la key y actualizar `P40LA_API_KEY` |
 | `writes_disabled` | Compuerta apagada | Definir `P40LA_MCP_ALLOW_WRITES=true` o usar `dry_run=true` |
 | `upstream_error` | URL, red o servidor caído | Probar `/health`, revisar `P40LA_BASE_URL` |
 | `service_not_found` | `service_id` incorrecto | Verificar en la UI o con `bills_list` |
@@ -89,5 +112,5 @@ Los tests de integración usan una DB temporal (`t.TempDir()`), nunca `data/app.
 ## Logs
 
 - Nivel informativo al iniciar: versión, URL base, si las escrituras están habilitadas y la zona horaria.
-- Sin montos, emails, cookies ni cuerpos de request/response.
+- Sin API key, montos, emails ni cuerpos de request/response.
 - Los errores HTTP se muestran al agente con código y mensaje, no en logs con payload.
