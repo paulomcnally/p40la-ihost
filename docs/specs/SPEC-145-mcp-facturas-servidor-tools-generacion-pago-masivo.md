@@ -1,7 +1,7 @@
 ---
 title: "MCP de facturas: servidor de tools y generación/pago masivo por servicio"
 id: "SPEC-145"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 148
 # MCP de facturas: servidor de tools y generación/pago masivo por servicio
 
 **ID**: SPEC-145  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-23
@@ -716,7 +716,9 @@ Implementado en `feature/SPEC-145`:
 - Reglas `DELIV-MCP-DOCS` y `DELIV-MCP-DOCS-SUBAGENT` + guardrail `scripts/check-mcp-docs.sh` integrado en `.githooks/pre-commit`.
 - Tests de servicio, handlers, middleware, API key, cliente HTTP, tools y protocolo MCP.
 
-Validación local completada contra una copia de la DB del iHost: service 12 quedó con 11 facturas pagadas y la generación repetida no duplicó. `go test ./...` pasa. Pendiente: release (merge a `main`, tag e imagen multi-arch) y deploy al iHost.
+Validación local completada contra una copia de la DB del iHost: service 12 quedó con 11 facturas pagadas y la generación repetida no duplicó. `go test ./...` pasa.
+
+Release de imagen `v0.5.16`: merge de `feature/SPEC-145` en `main` (`fd8c83da`), bump/tag `5ccf61d5` (`v0.5.16`), workflow `45325348099` y manifiesto multi-arch verificado (`amd64`, `arm/v7`, `arm64`). El deploy al iHost queda pendiente por decisión del usuario; la spec se marca `released` a pedido explícito, con el add-on todavía en la versión anterior.
 
 ---
 
@@ -762,3 +764,4 @@ Validación local completada contra una copia de la DB del iHost: service 12 que
 | 2026-11-23 | opencode | Se reemplaza usuario/contraseña por una API key global del sistema, hasheada en `system_settings`, con rotación/revocación y provisión por script |
 | 2026-11-23 | opencode | Se agregan `DELIV-MCP-DOCS` (docs obligatorias en cada cambio MCP) y `DELIV-MCP-DOCS-SUBAGENT` (docs por subagente) con hook `check-mcp-docs.sh` |
 | 2026-11-23 | opencode | Merge con `main` (SPEC-143/144); migración renumerada a `0060`; validación local contra copia del iHost; estado `pending_release` |
+| 2026-11-23 | opencode | Release `v0.5.16` publicado (tag `5ccf61d5`, imagen multi-arch); estado `released` a pedido del usuario; deploy al iHost pendiente |
