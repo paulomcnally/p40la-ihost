@@ -15,7 +15,7 @@ description: "Variables de entorno y configuración de clientes MCP"
 | `P40LA_BASE_URL` | No | `http://ihost.local:8088` | URL base del servidor; admite un path (ej. detrás de proxy) |
 | `P40LA_API_KEY` | Sí | — | API key global `p40la_...` (ver [api-key.md](api-key.md)) |
 | `P40LA_MCP_TRANSPORT` | No | `stdio` | `stdio` o `http` |
-| `P40LA_MCP_ALLOW_WRITES` | No | `false` | Compuerta principal de escritura: aplica a toda tool que escribe (`bills_*`, `bank_accounts_*`, `credit_cards_*` y las futuras de entidades y autos) |
+| `P40LA_MCP_ALLOW_WRITES` | No | `false` | Compuerta principal de escritura: aplica a toda tool que escribe (`bills_*`, `autos_*`, `bank_accounts_*`, `credit_cards_*` y las `*_create` de entidades) |
 | `P40LA_TIMEOUT` | No | `15s` | Timeout HTTP por llamada (1s a 60s) |
 | `P40LA_TIMEZONE` | No | `America/Managua` | Zona para “mes actual” y “hoy” |
 
@@ -178,9 +178,9 @@ Reemplazá el valor por tu key real solo en tu configuración local (nunca en el
 
 ## dry_run y compuerta de escritura
 
-`P40LA_MCP_ALLOW_WRITES` es la compuerta principal y aplica a **toda** tool de escritura: `bills_*`, `bank_accounts_*`, `credit_cards_*` y las futuras de entidades y autos. En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
+`P40LA_MCP_ALLOW_WRITES` es la compuerta principal y aplica a **toda** tool de escritura: `bills_*`, `autos_*`, `bank_accounts_*`, `credit_cards_*` y las `*_create` de entidades. En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
 
-`dry_run` es propio de `bills_generate` y `bills_pay`:
+`dry_run` es propio de facturas y autos: `bills_generate`, `bills_pay`, `autos_create`, `autos_update`, `autos_maintenance_register`, `autos_inspection_register` y `autos_insurance_register`.
 
 - Vienen con `dry_run=true` por defecto en el MCP.
 - Un `dry_run=true` funciona aunque las escrituras estén deshabilitadas.
@@ -199,7 +199,7 @@ Sin la compuerta, `bills_generate` y `bills_pay` devuelven:
 }
 ```
 
-Las tools de banca devuelven el mismo error con un `hint` sin `dry_run`:
+Las tools de banca y las de alta de entidades devuelven el mismo error con un `hint` sin `dry_run`:
 
 ```json
 {
@@ -213,7 +213,7 @@ En modo HTTP ambos `hint` mencionan las dos variables (`P40LA_MCP_ALLOW_WRITES=t
 
 ## Zona horaria
 
-`P40LA_TIMEZONE` define el “mes actual” cuando `bills_generate` no recibe `to` y la fecha por defecto de `bills_pay`. El servidor usa su propia zona para validar; para evitar ambigüedad, el MCP siempre envía `to` y `paid_at` explícitos calculados en esta zona.
+`P40LA_TIMEZONE` define el “mes actual” cuando `bills_generate` no recibe `to`, la fecha por defecto de `bills_pay` y el “hoy” con el que se valida que `performed_at` de mantenimientos e inspecciones no sea futura. El servidor usa su propia zona para validar; para evitar ambigüedad, el MCP envía `to` y `paid_at` explícitos calculados en esta zona y valida las fechas de autos con el mismo criterio.
 
 ## Verificación
 

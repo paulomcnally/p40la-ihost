@@ -65,7 +65,7 @@ La administración de la key es **solo por sesión**: una key no puede crear ni 
 
 ## Compuerta de escritura
 
-`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que **cualquier** tool de escritura ejecute cambios: `bills_generate` y `bills_pay` (con `dry_run=false`), `bank_accounts_create`/`bank_accounts_update`, `credit_cards_create`/`credit_cards_update` y las futuras de entidades y autos. En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
+`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que **cualquier** tool de escritura ejecute cambios: `bills_generate` y `bills_pay` y las `autos_*` que escriben (con `dry_run=false`), `bank_accounts_create`/`bank_accounts_update`, `credit_cards_create`/`credit_cards_update` y las `*_create` de entidades (directas). En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
 
 | Modo | Escritura con compuertas apagadas | Escritura con compuertas encendidas |
 |---|---|---|
@@ -82,7 +82,7 @@ Recomendación: dejar `P40LA_MCP_REMOTE_WRITES=false` de forma permanente si cla
 
 Cuando se usa un conector remoto, las llamadas a tools y sus resultados se procesan en la infraestructura de Anthropic:
 
-- Viajan el nombre de la tool, sus argumentos (IDs, períodos, referencias de banco y moneda, alias, montos y `dry_run` cuando aplica) y el resultado (facturas, cuentas, tarjetas, estados y montos).
+- Viajan el nombre de la tool, sus argumentos (IDs, períodos, referencias de banco y moneda, alias, montos, fechas y `dry_run` cuando aplica; en autos, marca, modelo, placa, VIN y póliza) y el resultado (facturas, cuentas, tarjetas, estados, montos o registros de autos).
 - El canal es HTTPS 443; el contenido lo procesa Anthropic para generar la respuesta del modelo.
 - El binario no envía datos a ningún otro destino: solo llama a `P40LA_BASE_URL`.
 - La auditoría local no guarda argumentos ni resultados; el proveedor del modelo sí los ve para razonar.

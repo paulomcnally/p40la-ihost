@@ -17,14 +17,20 @@ El binario tiene dos transportes con el mismo catálogo de tools:
 
 El modo remoto está pensado para conectores que Anthropic ejecuta desde su infraestructura: exige HTTPS público, OAuth 2.1 y una contraseña de administración. El modo local no necesita nada de eso. Ver [http.md](http.md), [oauth.md](oauth.md) y [funnel.md](funnel.md).
 
-El catálogo cubre facturas de servicios, búsqueda y altas de entidades base, y banca (cuentas bancarias y tarjetas de crédito):
+El catálogo cubre facturas de servicios, autos, búsqueda y altas de entidades base, y banca (cuentas bancarias y tarjetas de crédito):
 
 | Tool | Tipo | Qué hace |
 |---|---|---|
 | `bills_list` | lectura | Lista facturas de un servicio con filtros de período y estado |
 | `entities_search` | lectura | Busca hogares, servicios, bancos o instituciones por nombre y devuelve sus IDs |
+| `autos_list` | lectura | Lista y filtra autos por marca, modelo, placa o VIN, o pide uno por ID |
 | `bills_generate` | escritura | Genera facturas de un rango de meses (por ejemplo, enero a la fecha) |
 | `bills_pay` | escritura | Paga una factura, un mes, un rango o todas las pendientes hasta una fecha |
+| `autos_create` | escritura | Crea un auto |
+| `autos_update` | escritura | Reemplaza los datos de un auto existente |
+| `autos_maintenance_register` | escritura | Registra un mantenimiento y sus líneas de mano de obra e insumos |
+| `autos_inspection_register` | escritura | Registra una inspección mecánica y devuelve el cronograma |
+| `autos_insurance_register` | escritura | Asocia un servicio de seguro a un auto |
 | `homes_create` | escritura | Crea un hogar con nombre, dirección y uso |
 | `institutions_create` | escritura | Crea una institución o proveedor y resuelve su categoría |
 | `banks_create` | escritura | Crea un banco con código corto, país y estado |
@@ -114,12 +120,12 @@ El runbook completo —prerrequisitos, API key, hash OAuth, volúmenes, alta por
 
 ## Flujo seguro de escritura
 
-1. En facturas, el agente llama `bills_generate` o `bills_pay` con `dry_run=true` (el valor por defecto) y muestra el resumen: períodos, montos y facturas omitidas. En banca, que no tiene `dry_run`, muestra antes el banco y la moneda resueltos, la entidad o el cuerpo que se enviará y si ya existe un duplicado.
+1. En facturas y autos, el agente llama la tool de escritura con `dry_run=true` (el valor por defecto) y muestra el resumen: períodos, montos, datos del registro e ítems omitidos. En entidades y banca, que no tienen `dry_run`, muestra antes la entidad, el banco y la moneda resueltos, el cuerpo que se enviará y si ya existe un duplicado.
 2. El usuario confirma.
-3. El agente ejecuta: repite en facturas con `dry_run=false` y llama a la tool de banca directamente. La compuerta `P40LA_MCP_ALLOW_WRITES=true` debe estar activa; si el transporte es HTTP, también `P40LA_MCP_REMOTE_WRITES=true`.
+3. El agente ejecuta: en facturas y autos repite con `dry_run=false`; las tools de entidades y banca se llaman directamente. La compuerta `P40LA_MCP_ALLOW_WRITES=true` debe estar activa; si el transporte es HTTP, también `P40LA_MCP_REMOTE_WRITES=true`.
 4. El agente reporta el resultado y verifica con una lectura.
 
-En facturas, las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`. En banca, las ediciones son idempotentes y las altas comprueban duplicados: repetir un alta devuelve `already_exists` con el `id` existente, sin crear otro registro.
+En facturas, las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`. En autos, solo `autos_update` es idempotente: repetir un alta de auto, mantenimiento o inspección crea otro registro, y repetir un seguro devuelve `already_exists`. En entidades y banca, las ediciones son idempotentes y las altas comprueban duplicados: repetir un alta devuelve `already_exists` con el `id` existente, sin crear otro registro.
 
 Antes de un alta, `entities_search` permite verificar si la entidad ya existe y obtener su `id`; es de solo lectura y no requiere la compuerta.
 
@@ -139,6 +145,7 @@ Las tools de alta (`homes_create`, `institutions_create`, `banks_create`, `servi
 - [Despliegue 24/7 en el iHost](ihost.md)
 - [Catálogo de tools](tools/README.md)
 - [Tools de facturas](tools/bills.md)
+- [Tools de autos](tools/autos.md)
 - [Tools de entidades](tools/entities.md)
 - [Tools de banca](tools/banking.md)
 

@@ -25,13 +25,22 @@ internal/mcp/
 ├── audit/                      # JSONL con rotación
 └── tools/
     ├── all/register.go         # único punto que importa los dominios
+    ├── toolkit/                # helpers compartidos (JSONResult, ToolError, APIError)
     ├── bills/                  # tools de facturas
     │   ├── tools.go            # Toolset + Register + writeMode
-    │   ├── results.go          # helpers de resultado/error
     │   ├── period.go           # períodos YYYY-MM
     │   ├── list.go
     │   ├── generate.go
     │   └── pay.go
+    ├── autos/                  # tools de autos, mantenimientos, inspecciones y seguros
+    │   ├── tools.go            # Toolset + Register + writeMode
+    │   ├── results.go          # apiError y aliases al toolkit
+    │   ├── list.go
+    │   ├── create.go
+    │   ├── update.go
+    │   ├── maintenance.go
+    │   ├── inspection.go
+    │   └── insurance.go
     ├── entities/               # búsqueda y altas de hogares, instituciones, bancos y servicios
     │   ├── tools.go            # Toolset + Register + checkWrites
     │   ├── resolve.go          # resolución por nombre/ID y errores accionables
@@ -94,11 +103,13 @@ Reglas:
 
 ```go
 // internal/mcp/tools/all/register.go
-func Register(r *registry.Registry, client api.API, cfg config.Config) {
+func Register(r *registry.Registry, client api.FullAPI, cfg config.Config) {
     r.Add(func(server *mcp.Server) {
         bills.Register(server, client, cfg)
     })
-    // r.Add(func(server *mcp.Server) { debts.Register(server, client, cfg) })
+    r.Add(func(server *mcp.Server) {
+        autos.Register(server, client, cfg)
+    })
 }
 ```
 
