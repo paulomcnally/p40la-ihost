@@ -9,21 +9,32 @@ description: "Cómo agregar una tool nueva al servidor MCP"
 ## Estructura
 
 ```
-cmd/mcp-server/                 # entrypoint stdio
+cmd/mcp-server/                 # entrypoint; stdio por defecto y HTTP opcional
 internal/mcp/
-├── config/                     # variables de entorno
+├── config/                     # variables de entorno (stdio y HTTP)
 ├── api/                        # cliente HTTP + tipos DTO + interfaz API
 ├── registry/                   # montaje de conjuntos de tools
+├── server/                     # modo HTTP (SPEC-147)
+│   ├── server.go               # listeners, auth, límites, health y revoke
+│   ├── middleware.go           # auditoría de tools/call
+│   ├── oauth/                  # discovery, DCR, PKCE, token y estado
+│   │   ├── provider.go
+│   │   ├── handlers.go
+│   │   └── store.go
+│   └── limiter/                # ventana fija en memoria
+├── audit/                      # JSONL con rotación
 └── tools/
     ├── all/register.go         # único punto que importa los dominios
     └── bills/                  # tools de facturas
-        ├── tools.go            # Toolset + Register
+        ├── tools.go            # Toolset + Register + writeMode
         ├── results.go          # helpers de resultado/error
         ├── period.go           # períodos YYYY-MM
         ├── list.go
         ├── generate.go
         └── pay.go
 ```
+
+Las tools no saben por qué transporte llegan: `cmd/mcp-server` monta el mismo `mcp.Server` en stdio o en Streamable HTTP. La compuerta de escritura sí consulta el transporte (`Config.WritesEnabled()`), porque el modo HTTP exige la segunda variable.
 
 ## Agregar una tool
 
@@ -83,12 +94,94 @@ func Register(r *registry.Registry, client api.API, cfg config.Config) {
 - **Tool**: API falsa que captura requests y devuelve respuestas; reloj fijo para períodos.
 - **Protocolo**: `initialize`, `tools/list` y `tools/call` con transporte en memoria.
 - **Backend**: DB temporal con migraciones; nunca la DB local del usuario.
+- **OAuth**: flujo completo con PKCE, contraseña incorrecta, redirect no allowlisted, token vencido.
+- **Servidor HTTP**: 401 sin token, 429, 413, `/healthz` y revocación en el listener admin.
+- **Auditoría**: JSONL y rotación por tamaño.
 
 ```bash
 go test ./internal/mcp/...
 go test ./internal/services/ ./internal/api/
 go build ./...
 ```
+
+## Probar el flujo OAuth local
+
+El modo HTTP permite `http://` solo para loopback, lo que facilita probar OAuth sin Funnel.
+
+```bash
+# 1. Compilar y generar el hash
+go build -o bin/p40la-mcp ./cmd/mcp-server
+read -rs -p "Contraseña: " P40LA_PASSWORD; echo
+HASH=$(printf '%s\n' "$P40LA_PASSWORD" | ./bin/p40la-mcp -hash-password)
+unset P40LA_PASSWORD
+
+# 2. Arrancar con estado temporal
+mkdir -p /tmp/p40la-mcp-state && chmod 700 /tmp/p40la-mcp-state
+P40LA_BASE_URL="http://127.0.0.1:8088" \
+P40LA_API_KEY="p40la_demo-demo-demo-demo-demo-demo" \
+P40LA_MCP_TRANSPORT=http \
+P40LA_MCP_PUBLIC_URL="http://127.0.0.1:8090" \
+P40LA_MCP_OAUTH_PASSWORD_HASH="$HASH" \
+P40LA_MCP_STATE_DIR="/tmp/p40la-mcp-state" \
+./bin/p40la-mcp
+```
+
+```bash
+# 3. Discovery y challenge
+curl -s http://127.0.0.1:8090/.well-known/oauth-protected-resource
+curl -s http://127.0.0.1:8090/.well-known/oauth-authorization-server
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/mcp   # 401
+
+# 4. Registro de un cliente de prueba (loopback /callback)
+CLIENT_ID=$(curl -s -X POST http://127.0.0.1:8090/register \
+  -H 'Content-Type: application/json' \
+  -d '{"client_name":"Demo local","redirect_uris":["http://localhost:33418/callback"],"token_endpoint_auth_method":"none"}' \
+  | jq -r .client_id)
+
+# 5. PKCE
+VERIFIER=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=')
+CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+
+# 6. Abrir la URL en el navegador, autorizar y copiar el code del redirect
+echo "http://127.0.0.1:8090/authorize?response_type=code&client_id=$CLIENT_ID&redirect_uri=http%3A%2F%2Flocalhost%3A33418%2Fcallback&code_challenge=$CHALLENGE&code_challenge_method=S256&state=demo-state"
+```
+
+Después de autorizar, el navegador redirige a `http://localhost:33418/callback?code=...&state=demo-state`. Copiá el `code` y canjealo:
+
+```bash
+curl -s -X POST http://127.0.0.1:8090/token \
+  -d grant_type=authorization_code \
+  -d code="$CODE" \
+  -d client_id="$CLIENT_ID" \
+  -d redirect_uri="http://localhost:33418/callback" \
+  -d code_verifier="$VERIFIER" | jq
+```
+
+```bash
+# 7. Llamar /mcp con el access token
+curl -s -X POST http://127.0.0.1:8090/mcp \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"demo","version":"0.1.0"}}}'
+```
+
+Para probar el protocolo completo, usá MCP Inspector (Node solo en la máquina de desarrollo):
+
+```bash
+npx @modelcontextprotocol/inspector
+# Transport: Streamable HTTP
+# URL: http://127.0.0.1:8090/mcp
+# Header: Authorization: Bearer <access token>
+```
+
+Verificaciones útiles:
+
+- Reutilizar el `code` debe fallar con `invalid_grant`.
+- Un `code_verifier` distinto debe fallar con `invalid_grant`.
+- `POST /admin/revoke` debe invalidar el access y el refresh.
+- `P40LA_MCP_REMOTE_WRITES=false` debe devolver `writes_disabled` con `dry_run=false`.
+- `audit.jsonl` debe tener una línea por `tools/call`, sin argumentos.
 
 ## Documentación obligatoria
 
@@ -98,14 +191,21 @@ Todo cambio en el código del MCP se documenta **en el mismo commit**. La superf
 |---|---|
 | Servidor | `cmd/mcp-server/` (código no-test) |
 | Dominio MCP | `internal/mcp/` (código no-test) |
+| Servidor HTTP y OAuth | `internal/mcp/server/` (incluye `oauth/` y `limiter/`) |
+| Auditoría | `internal/mcp/audit/` |
+| Imagen y publicación | `Dockerfile.mcp`, `scripts/build-mcp-image.sh`, `deploy/tailscale/` |
 | API keys | `scripts/create-api-key.sh`, `internal/services/api_key.go`, `internal/api/api_key_handlers.go` |
 | Generación y pago masivo | `internal/services/bill_bulk.go`, `internal/api/bill_bulk_handlers.go` |
+
+`scripts/check-mcp-docs.sh` cubre `cmd/mcp-server/`, `internal/mcp/` y los archivos de API key/bills; la imagen y `deploy/tailscale/` no disparan el hook por sí solos, pero también exigen actualizar `docs/mcp/` (regla `DELIV-MCP-DOCS`).
 
 **`DELIV-MCP-DOCS`** — agregar o cambiar una tool, un contrato HTTP, una variable de entorno o un flujo operativo exige actualizar `docs/mcp/` en el **mismo commit** que el código. Según el cambio:
 
 - Tool nueva o modificada → `docs/mcp/tools/<dominio>.md` y el catálogo de `docs/mcp/README.md`.
 - Variable de entorno o configuración → `docs/mcp/configuration.md`.
-- Flujo de API key, backup o verificación → `docs/mcp/operations.md` y `docs/mcp/api-key.md`.
+- Transporte HTTP, OAuth o límites → `docs/mcp/http.md`, `docs/mcp/oauth.md` y `docs/mcp/configuration.md`.
+- Publicación en Internet → `docs/mcp/funnel.md`.
+- Flujo de API key, build, deploy, backup o verificación → `docs/mcp/operations.md` y `docs/mcp/api-key.md`.
 - Modelo de amenazas, PII o permisos → `docs/mcp/security.md`.
 - Contrato entre binario y servidor → `docs/mcp/architecture.md`.
 

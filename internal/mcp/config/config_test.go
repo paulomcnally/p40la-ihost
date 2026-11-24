@@ -91,3 +91,82 @@ func TestLoadCustom(t *testing.T) {
 		t.Fatalf("timezone = %s", cfg.Location)
 	}
 }
+
+const demoHash = "$2a$10$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func httpEnv(extra map[string]string) map[string]string {
+	values := map[string]string{
+		"P40LA_API_KEY":                 "p40la_demo-demo-demo-demo-demo-demo-demo",
+		"P40LA_MCP_TRANSPORT":           "http",
+		"P40LA_MCP_PUBLIC_URL":          "https://demo-node.example.ts.net",
+		"P40LA_MCP_OAUTH_PASSWORD_HASH": demoHash,
+		"P40LA_MCP_STATE_DIR":           "/tmp/demo-mcp-state",
+	}
+	for key, value := range extra {
+		values[key] = value
+	}
+	return values
+}
+
+func TestLoadHTTPValid(t *testing.T) {
+	cfg, err := Load(testEnv(httpEnv(map[string]string{
+		"P40LA_MCP_ALLOW_WRITES":  "true",
+		"P40LA_MCP_REMOTE_WRITES": "false",
+		"P40LA_MCP_RATE_LIMIT":    "30",
+		"P40LA_MCP_AUDIT_MAX_MB":  "2",
+	})))
+	if err != nil {
+		t.Fatalf("cargar HTTP: %v", err)
+	}
+	if !cfg.IsHTTP() {
+		t.Fatal("transporte HTTP esperado")
+	}
+	if cfg.Listen != "127.0.0.1:8090" || cfg.AdminListen != "127.0.0.1:8091" {
+		t.Fatalf("listeners = %q / %q", cfg.Listen, cfg.AdminListen)
+	}
+	if cfg.WritesEnabled() {
+		t.Fatal("writes remotos deben estar deshabilitados")
+	}
+	cfg.RemoteWrites = true
+	if !cfg.WritesEnabled() {
+		t.Fatal("writes locales+remotos deben habilitarse")
+	}
+	if cfg.RateLimit != 30 || cfg.AuditMaxMB != 2 {
+		t.Fatalf("rate=%d audit=%d", cfg.RateLimit, cfg.AuditMaxMB)
+	}
+}
+
+func TestLoadHTTPValidation(t *testing.T) {
+	cases := []map[string]string{
+		{"P40LA_MCP_PUBLIC_URL": ""},
+		{"P40LA_MCP_OAUTH_PASSWORD_HASH": ""},
+		{"P40LA_MCP_OAUTH_PASSWORD_HASH": "texto"},
+		{"P40LA_MCP_LISTEN": "0.0.0.0:8090"},
+		{"P40LA_MCP_ADMIN_LISTEN": "192.0.2.10:8091"},
+		{"P40LA_MCP_LISTEN": "127.0.0.1:8091"}, // igual al admin
+		{"P40LA_MCP_PUBLIC_URL": "http://demo.example.com"},
+		{"P40LA_MCP_PUBLIC_URL": "https://demo.example.com/mcp"},
+		{"P40LA_MCP_REMOTE_WRITES": "quizás"},
+		{"P40LA_MCP_RATE_LIMIT": "0"},
+		{"P40LA_MCP_AUDIT_MAX_MB": "101"},
+	}
+	for _, extra := range cases {
+		if _, err := Load(testEnv(httpEnv(extra))); err == nil {
+			t.Fatalf("quiero error para %v", extra)
+		}
+	}
+}
+
+func TestLoadHTTPAllowsLoopbackDevelopment(t *testing.T) {
+	cfg, err := Load(testEnv(httpEnv(map[string]string{
+		"P40LA_MCP_PUBLIC_URL":   "http://127.0.0.1:8090",
+		"P40LA_MCP_LISTEN":       "127.0.0.1:8090",
+		"P40LA_MCP_ADMIN_LISTEN": "127.0.0.1:8091",
+	})))
+	if err != nil {
+		t.Fatalf("loopback HTTP: %v", err)
+	}
+	if cfg.PublicURL != "http://127.0.0.1:8090" {
+		t.Fatalf("public URL = %q", cfg.PublicURL)
+	}
+}
