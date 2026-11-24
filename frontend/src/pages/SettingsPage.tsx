@@ -277,6 +277,13 @@ export default function SettingsPage() {
         onClick: () => navigate('/settings/webhooks'),
       },
       {
+        key: 'mcp',
+        icon: 'key',
+        title: t('settings.mcp.title'),
+        subtitle: t('settings.mcp.nav_subtitle'),
+        onClick: () => navigate('/settings/mcp'),
+      },
+      {
         key: 'currencies',
         icon: 'savings',
         title: t('settings.nav.currencies'),
@@ -350,7 +357,7 @@ export default function SettingsPage() {
     </div>
   )
 
-  const advancedKeys = ['email', 'voice', 'telegramBot', 'webhooks', 'currencies', 'currencyFormat', 'emailAppearance']
+  const advancedKeys = ['email', 'voice', 'telegramBot', 'webhooks', 'mcp', 'currencies', 'currencyFormat', 'emailAppearance']
   const frequent = filtered.filter((r) => !advancedKeys.includes(r.key))
   const advanced = filtered.filter((r) => advancedKeys.includes(r.key))
 

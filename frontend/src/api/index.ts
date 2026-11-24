@@ -117,6 +117,20 @@ export const api = {
     getApiKey: () => get<{ api_key: string }>('/api/webhook/key'),
     regenerateApiKey: () => post<{ api_key: string }>('/api/webhook/key/regenerate', {}),
   },
+  mcpAPIKey: {
+    get: () => get<{
+      configured: boolean
+      prefix?: string
+      created_at?: string
+      last_used_at?: string
+    }>('/api/api-key'),
+    regenerate: () => post<{
+      api_key: string
+      prefix?: string
+      created_at?: string
+    }>('/api/api-key/regenerate', {}),
+    revoke: () => del<{ message: string }>('/api/api-key'),
+  },
   bills: {
     list: (serviceId: number) => get<Bill[]>(`/api/services/${serviceId}/bills`),
     get: (id: number) => get<Bill>(`/api/bills/${id}`),
