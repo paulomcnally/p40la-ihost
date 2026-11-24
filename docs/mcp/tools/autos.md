@@ -1,20 +1,21 @@
 ---
 title: "Tools de autos"
 sidebar_position: 5
-description: "Referencia de autos_list, autos_create, autos_update y el registro de mantenimientos, inspecciones y seguros"
+description: "Referencia de autos_list, autos_inspection_alerts, autos_create, autos_update y el registro de mantenimientos, inspecciones y seguros"
 ---
 
 # Tools de autos
 
-Las seis tools operan sobre el parque vehicular y sus registros asociados. El `auto_id` es el mismo que aparece en la URL de la UI, por ejemplo `/autos/1` → `auto_id: 1`; el `service_id` de un seguro es el servicio que se asocia al auto.
+Las siete tools operan sobre el parque vehicular y sus registros asociados. El `auto_id` es el mismo que aparece en la URL de la UI, por ejemplo `/autos/1` → `auto_id: 1`; el `service_id` de un seguro es el servicio que se asocia al auto.
 
-El MCP no accede a SQLite: cada tool llama a la API HTTP existente (`/api/autos`, `/api/autos/{id}/maintenances`, `/api/autos/{id}/inspections`, `/api/autos/{id}/services`). Las tools validan la **forma** de la entrada; las **reglas de dominio** las valida el backend. Ver [Validaciones de dominio](#validaciones-de-dominio).
+El MCP no accede a SQLite: cada tool llama a la API HTTP existente (`/api/autos`, `/api/autos/inspection-alerts`, `/api/autos/{id}/maintenances`, `/api/autos/{id}/inspections`, `/api/autos/{id}/services`). Las tools validan la **forma** de la entrada; las **reglas de dominio** las valida el backend. Ver [Validaciones de dominio](#validaciones-de-dominio).
 
 ## Resumen
 
 | Tool | Tipo | Qué hace | Idempotente |
 |---|---|---|---|
 | `autos_list` | Lectura | Lista y filtra autos; permite pedir uno por ID | — |
+| `autos_inspection_alerts` | Lectura | Estado de inspección de toda la flota en una llamada | — |
 | `autos_create` | Escritura | Crea un auto | No |
 | `autos_update` | Escritura | Reemplaza los datos de un auto | Sí |
 | `autos_maintenance_register` | Escritura | Registra un mantenimiento y sus líneas de mano de obra e insumos | No |
@@ -617,17 +618,54 @@ Las tools son adaptadores delgados: validan forma y hacen el preflight de `dry_r
 
 ## `autos_inspection_alerts`
 
-Estado de inspección de toda la flota. Solo lectura.
+Devuelve el estado de inspección de **toda la flota** en una sola llamada: autos al día, por vencer y vencidos. Solo lectura, sin parámetros y sin compuerta de escritura.
 
-Sin parámetros. Devuelve, por auto, el estado (`ok`, `due_soon` con ≤ 60 días o `overdue`) y el año del ciclo.
+### Entrada
+
+La tool no recibe campos: se llama con un objeto vacío.
+
+### Ejemplo
 
 ```json
 {}
 ```
 
+### Salida
+
+La respuesta es un **array** con un elemento por auto; no viene envuelta en un objeto.
+
 ```json
-[{ "auto_id": 1, "brand": "Marca Demo", "model": "Modelo Demo", "status": "due_soon", "inspection_year": 2026 }]
+[
+  {
+    "auto_id": 1,
+    "next_due_year": 2027,
+    "next_due_date": "2027-01-01",
+    "status": "due_soon",
+    "days_until_due": 38
+  },
+  {
+    "auto_id": 2,
+    "next_due_year": 2026,
+    "next_due_date": "2026-01-01",
+    "status": "overdue",
+    "days_until_due": -327
+  }
+]
 ```
+
+### Reglas
+
+- `status` es `ok`, `due_soon` (vence en **60 días o menos**) u `overdue`.
+- `next_due_year` y `next_due_date` corresponden al primer año sin inspección aprobada; `days_until_due` puede ser negativo si está vencida.
+- La tool **no** devuelve marca, modelo, placa ni VIN: para identificar el auto, cruzar `auto_id` con `autos_list`.
+- No registra inspecciones: para eso existe `autos_inspection_register`.
+
+### Errores
+
+| Código | Cuándo |
+|---|---|
+| `auth_failed` | API key inválida, revocada o rotada |
+| `upstream_error` | La API no responde o hay un error de red |
 
 Es la forma más rápida de responder «¿qué autos tienen inspección pendiente?» sin recorrer auto por auto.
 

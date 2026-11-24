@@ -2,7 +2,7 @@
 title: "Tools de entidades"
 sidebar_label: "Tools de entidades"
 sidebar_position: 3
-description: "Referencia de entities_search, homes_create, institutions_create, banks_create y services_create"
+description: "Referencia de entities_search, services_get, homes_create, institutions_create, banks_create y services_create"
 ---
 
 # Tools de entidades
@@ -10,6 +10,8 @@ description: "Referencia de entities_search, homes_create, institutions_create, 
 Las cuatro tools de alta crean entidades base del sistema: hogares, instituciones, bancos y servicios. Todas **escriben**, comprueban duplicados antes del POST y no tienen `dry_run`: se ejecutan en una sola llamada y dependen de la compuerta de escritura.
 
 `entities_search` es la contraparte de **solo lectura**: busca esas mismas entidades por nombre y devuelve sus IDs para usarlos en las tools de alta o en las de facturas.
+
+`services_get` completa esa lectura con el **detalle** de un servicio: configuración de facturación, vigencia, contrato y último estado de factura, sin escribir nada.
 
 ## `entities_search`
 
@@ -186,7 +188,7 @@ En el ejemplo, `currency_id: 1` corresponde a la moneda `NIO`. Sin `query` y con
 
 ## Requisitos comunes
 
-Estos requisitos aplican a las cuatro tools de alta (`homes_create`, `institutions_create`, `banks_create`, `services_create`). `entities_search` es de solo lectura y no depende de ellos.
+Estos requisitos aplican a las cuatro tools de alta (`homes_create`, `institutions_create`, `banks_create`, `services_create`). `entities_search` y `services_get` son de solo lectura y no dependen de ellos.
 
 ### Compuerta de escritura
 
@@ -434,24 +436,79 @@ Todos los errores devuelven `isError=true` y un objeto `{error, message, hint?}`
 
 ## `services_get`
 
-Detalle completo de un servicio. Solo lectura.
+Devuelve el detalle completo de un servicio: facturación, día de cobro, recurrencia, vigencia, vínculo con automatización, contrato y último estado de factura. Es la contraparte de detalle de `entities_search` y **no crea facturas**.
+
+Es de **solo lectura**: no requiere la compuerta de escritura. A diferencia de `GET /api/services` (listado, que reconcilia facturas del período), este endpoint no escribe.
+
+### Entrada
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `service_id` | integer | Sí | ID del servicio |
+| `service_id` | integer | Sí | ID del servicio; debe ser mayor que `0` |
+
+### Ejemplo
 
 ```json
-{ "service_id": 12 }
+{
+  "service_id": 12
+}
 ```
 
-Devuelve facturación, día de cobro, recurrencia, vigencia, ciclo, contrato y último estado de factura, que `entities_search` no incluye.
+### Salida
 
-A diferencia de `GET /api/services` (listado, que reconcilia facturas del período), este endpoint **no escribe**.
+```json
+{
+  "id": 12,
+  "home_id": 3,
+  "name": "Servicio Demo",
+  "institution": "Proveedor Demo",
+  "institution_id": 7,
+  "currency_id": 1,
+  "frequency": "monthly",
+  "suggested_amount": 1000.00,
+  "active": true,
+  "icon_key": "internet",
+  "billing_type": "fixed",
+  "billing_day": 5,
+  "auto_generate": false,
+  "is_recurring": true,
+  "is_insurance": false,
+  "start_date": "2026-01-01",
+  "latest_bill_status": "pending",
+  "has_contract": true,
+  "created_at": "2026-01-01T12:00:00Z",
+  "updated_at": "2026-11-01T12:00:00Z"
+}
+```
+
+### Reglas
+
+- `frequency` es `monthly` o `yearly`; `billing_type` es `fixed` o `variable`.
+- `billing_day` puede ser `null` si el servicio no define día de facturación.
+- `latest_bill_status` es `pending`, `paid` o `null` si el servicio no tiene facturas.
+- `has_contract` indica si existe un PDF de contrato en el volumen; no lo descarga.
+- `start_date` y `end_date` aparecen solo si están definidas; `end_date` marca el fin de vigencia.
+- `automation_account_id` aparece cuando el servicio está vinculado a una cuenta de automatización.
+- Un `service_id` inexistente devuelve `not_found` (la API responde `404`).
+- Un `service_id` menor o igual a `0` devuelve `invalid_request` sin llamar a la API.
+
+### Privacidad y datos ocultos
+
+La tool **no aplica allowlist**: devuelve el registro del servicio tal como lo entrega la API. Si el servicio tiene webhook propio, la respuesta puede incluir `webhook_uuid`, que es un secreto (`SEC-NO-PII`). No lo reproduzcas en respuestas, logs ni capturas, y no lo uses para construir URLs.
+
+### Errores
+
+| Código | Cuándo |
+|---|---|
+| `invalid_request` | `service_id` es `0` o negativo |
+| `not_found` | El servicio no existe |
+| `auth_failed` | API key inválida, revocada o rotada |
+| `upstream_error` | Error de red o respuesta del servidor no interpretable |
 
 ## Flujo recomendado para un agente
 
 1. Reunir los datos mínimos con el usuario: nombre y, para servicios, hogar y moneda.
-2. **Buscar antes de crear**: usar `entities_search` para reutilizar hogares, instituciones, bancos o servicios existentes y evitar duplicados.
+2. **Buscar antes de crear**: usar `entities_search` para reutilizar hogares, instituciones, bancos o servicios existentes y evitar duplicados. Con el `id` del servicio, `services_get` da el detalle antes de crear facturas o cambiarlo.
 3. Respetar las dependencias: hogar → institución o banco → servicio.
 4. Mostrar al usuario lo que se va a crear y pedir confirmación explícita; no hay `dry_run`.
 5. Ejecutar una llamada por entidad.

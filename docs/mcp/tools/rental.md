@@ -86,6 +86,7 @@ Los filtros se combinan con AND. Sin filtros se devuelven todos los contratos.
 - `status` no se valida en la tool: un valor fuera de la lista devuelve `count: 0`, no un error.
 - `home_name`, `home_address`, `agency_name`, `agent_name` y los campos de comisión aparecen solo cuando tienen valor.
 - `count` es la cantidad de contratos devueltos, no el total del sistema.
+- El listado no hace llamadas por contrato: una sola petición a `GET /api/rental/leases`.
 
 ### Errores
 
@@ -114,6 +115,8 @@ Devuelve el detalle de un contrato con sus partes y su balance de cobranza. Solo
 ```
 
 ### Salida
+
+Ejemplo abreviado: la API devuelve además los campos de comisión, mora, renovación y notas del contrato.
 
 ```json
 {
@@ -157,8 +160,9 @@ Devuelve el detalle de un contrato con sus partes y su balance de cobranza. Solo
 ### Reglas
 
 - Hace **2 llamadas**: el contrato y su balance. Si el contrato existe pero el balance falla, la tool responde error y no devuelve un objeto parcial.
-- `lease.parties` es la lista de partes con su rol (`tenant`, `guarantor`, `owner`, `agent`, entre otros) y la persona asociada.
+- `lease.parties` es la lista de partes con su rol (`tenant`, `guarantor`, `owner`, `agency_contact` o `agent`) y la persona asociada.
 - `balance.charged` es el total cargado del contrato, `balance.paid` lo cobrado y `balance.balance` la diferencia; `currency` repite la moneda del contrato.
+- El balance coincide con `charged_total`, `paid_total` y `balance` del contrato, pero se calcula en una llamada aparte.
 - Un `lease_id` inexistente devuelve `lease_not_found` (la API responde `404`).
 
 ### Errores
@@ -189,6 +193,8 @@ Devuelve el estado de una vivienda: uso, estado derivado de publicación, contra
 ```
 
 ### Salida
+
+Ejemplo abreviado: `active_lease` y `active_reservation` traen el registro completo cuando existen.
 
 ```json
 {

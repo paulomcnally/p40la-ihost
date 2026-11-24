@@ -11,8 +11,13 @@ import (
 
 func TestHomeMaintenanceList(t *testing.T) {
 	fake := &toolkitest.Fake{Responses: map[string]toolkitest.Response{
-		"/api/homes/3/maintenances?kind=preventive&year=2026": {Body: []map[string]any{
-			{"id": 1, "performed_at": "2026-03-10", "kind": "preventive", "totals_by_currency": []any{}},
+		"/api/homes/3/maintenances?kind=preventive&year=2026": {Body: map[string]any{
+			"items": []map[string]any{
+				{"id": 1, "performed_at": "2026-03-10", "kind": "preventive"},
+			},
+			"totals_by_currency": []map[string]any{
+				{"currency_code": "NIO", "labor_cost": 500.0, "supplies_cost": 200.0, "total": 700.0},
+			},
 		}},
 	}}
 	session := toolkitest.NewServer(t, func(server *mcp.Server) {
@@ -26,6 +31,9 @@ func TestHomeMaintenanceList(t *testing.T) {
 	})
 	if !strings.Contains(out, `"count": 1`) {
 		t.Fatalf("listado inesperado: %s", out)
+	}
+	if !strings.Contains(out, `"total": 700`) {
+		t.Fatalf("faltan totales por moneda: %s", out)
 	}
 }
 

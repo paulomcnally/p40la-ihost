@@ -51,5 +51,5 @@ func (t *Toolset) serviceGet(ctx context.Context, _ *mcp.CallToolRequest, input 
 	if err := t.client.ReadJSON(ctx, fmt.Sprintf("/api/services/%d", input.ServiceID), &service); err != nil {
 		return toolkit.APIError(err)
 	}
-	return toolkit.JSONResult(service)
+	return toolkit.JSONResult(toolkit.OmitDeep(service, "webhook_uuid"))
 }

@@ -65,13 +65,17 @@ func (t *Toolset) list(ctx context.Context, _ *mcp.CallToolRequest, input listIn
 			return toolkit.ToolError("invalid_request", "kind debe ser corrective o preventive", "")
 		}
 	}
-	var items []map[string]any
-	if err := t.client.ReadJSON(ctx, toolkit.WithQuery(fmt.Sprintf("/api/homes/%d/maintenances", input.HomeID), query), &items); err != nil {
+	var result struct {
+		Items            []map[string]any `json:"items"`
+		TotalsByCurrency any              `json:"totals_by_currency"`
+	}
+	if err := t.client.ReadJSON(ctx, toolkit.WithQuery(fmt.Sprintf("/api/homes/%d/maintenances", input.HomeID), query), &result); err != nil {
 		return toolkit.APIError(err)
 	}
 	return toolkit.JSONResult(map[string]any{
-		"home_id":      input.HomeID,
-		"count":        len(items),
-		"maintenances": items,
+		"home_id":            input.HomeID,
+		"count":              len(result.Items),
+		"maintenances":       result.Items,
+		"totals_by_currency": result.TotalsByCurrency,
 	})
 }
