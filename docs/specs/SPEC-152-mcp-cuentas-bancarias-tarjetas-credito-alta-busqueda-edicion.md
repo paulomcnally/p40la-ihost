@@ -1,7 +1,7 @@
 ---
 title: "MCP de cuentas bancarias y tarjetas de crédito: alta, búsqueda y edición"
 id: "SPEC-152"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,7 +11,7 @@ github_issue: 155
 # MCP de cuentas bancarias y tarjetas de crédito: alta, búsqueda y edición
 
 **ID**: SPEC-152  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-24  
 **Actualizado**: 2026-11-24
@@ -451,3 +451,4 @@ Las claves de salida usan `snake_case` y los campos opcionales se omiten con `om
 | 2026-11-24 | opencode | Creación inicial de la especificación |
 | 2026-11-24 | opencode | Implementación de DTOs, cliente HTTP, seis tools, resolución y tests; documentación MCP delegada a subagente |
 | 2026-11-24 | opencode | Preparación de release: build, vet, tests y live test con DB sintética; validación manual omitida por autorización explícita del usuario |
+| 2026-11-24 | opencode | Release: merge `cbf7aab1` a `main`; issue #155; sin migraciones, bump ni imagen (cambio solo del MCP) |
