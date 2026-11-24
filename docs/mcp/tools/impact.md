@@ -81,7 +81,7 @@ El analizador descubre las tools registradas con `go/parser`: solo reconoce `mcp
 }
 ```
 
-Es un extracto: el manifiesto real declara las tres tools y todas las rutas compartidas. `--check-map` falla si una tool registrada falta en el manifiesto, si el manifiesto declara una tool que el código no registra o si un archivo o patrón declarado no existe.
+Es un extracto: el manifiesto real declara las ocho tools (tres de facturas y cinco de entidades) y todas las rutas compartidas. `--check-map` falla si una tool registrada falta en el manifiesto, si el manifiesto declara una tool que el código no registra o si un archivo o patrón declarado no existe.
 
 ### Cómo se calcula el impacto
 
@@ -142,7 +142,7 @@ El entrypoint es `./scripts/check-mcp-impact.sh`, que ejecuta `go run ./scripts/
 ```
 
 ```text
-[mcp-impact] ✓ manifiesto válido: 3 tools registradas y todas sus rutas existen
+[mcp-impact] ✓ manifiesto válido: 8 tools registradas y todas sus rutas existen
 ```
 
 ### Consultar archivos antes de escribir código
@@ -210,7 +210,7 @@ Con `--gate`, el reporte agrega `spec` y, si algo falla, `ok: false` y `error`.
 ./scripts/check-mcp-impact.sh --staged --gate
 ```
 
-Con `--staged --gate`, el gate valida **toda spec nueva staged** (`git diff --cached --diff-filter=A`): debe tener `## Impacto en tools MCP` y `Validación subagente:` válida, aunque el cambio no toque una tool. Si no hay tools afectadas, después imprime `sin tools afectadas` y termina con éxito:
+Con `--staged --gate`, el gate valida **toda spec nueva staged** (`git diff --cached --diff-filter=A`): debe tener `## Impacto en tools MCP` y `Validación subagente:` válida, aunque el cambio no toque una tool. En un merge (`MERGE_HEAD` presente) el gate de spec se omite porque los commits integrados ya fueron validados; el manifiesto se sigue validando. Si no hay tools afectadas, después imprime `sin tools afectadas` y termina con éxito:
 
 ```text
 [mcp-impact] ✓ 1 spec(s) nueva(s) con impacto y validación subagente

@@ -135,6 +135,11 @@ func main() {
 		return
 	}
 
+	if *gate && isMergeInProgress(root) {
+		fmt.Println("[mcp-impact] merge en curso: se omite el gate de spec (los commits integrados ya fueron validados)")
+		return
+	}
+
 	changed := append([]string(files), flag.Args()...)
 	if *staged {
 		changed, err = stagedFiles(root)
@@ -432,6 +437,11 @@ func stagedAddedFiles(root string) ([]string, error) {
 		return nil, fmt.Errorf("git diff --cached --diff-filter=A: %w", err)
 	}
 	return splitLines(string(output)), nil
+}
+
+func isMergeInProgress(root string) bool {
+	cmd := exec.Command("git", "-C", root, "rev-parse", "-q", "--verify", "MERGE_HEAD")
+	return cmd.Run() == nil
 }
 
 // validateNewSpecs exige impacto y validación subagente en toda spec nueva,

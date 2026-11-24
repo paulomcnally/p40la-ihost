@@ -51,6 +51,36 @@ func (contractAPI) PayBills(context.Context, int64, api.PayRequest) (*api.PayRes
 	return &api.PayResult{}, nil
 }
 
+func (contractAPI) ListHomes(context.Context) ([]api.Home, error) { return nil, nil }
+
+func (contractAPI) CreateHome(context.Context, api.HomeCreateRequest) (*api.Home, error) {
+	return &api.Home{}, nil
+}
+
+func (contractAPI) ListInstitutions(context.Context) ([]api.Institution, error) { return nil, nil }
+
+func (contractAPI) CreateInstitution(context.Context, api.InstitutionCreateRequest) (*api.Institution, error) {
+	return &api.Institution{}, nil
+}
+
+func (contractAPI) ListBanks(context.Context) ([]api.Bank, error) { return nil, nil }
+
+func (contractAPI) CreateBank(context.Context, api.BankCreateRequest) (*api.Bank, error) {
+	return &api.Bank{}, nil
+}
+
+func (contractAPI) ListCurrencies(context.Context) ([]api.Currency, error) { return nil, nil }
+
+func (contractAPI) ListInstitutionCategories(context.Context) ([]api.InstitutionCategory, error) {
+	return nil, nil
+}
+
+func (contractAPI) ListServices(context.Context, *int64) ([]api.Service, error) { return nil, nil }
+
+func (contractAPI) CreateService(context.Context, api.ServiceCreateRequest) (*api.Service, error) {
+	return &api.Service{}, nil
+}
+
 // TestToolContracts congela el contrato visible de tools/list para todo el
 // catálogo: nombres, descripciones, esquemas y anotaciones. Un cambio
 // intencional se acepta con:

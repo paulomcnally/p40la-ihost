@@ -27,6 +27,17 @@ type API interface {
 	ListBills(ctx context.Context, serviceID int64) ([]Bill, error)
 	GenerateBills(ctx context.Context, serviceID int64, req GenerateRequest) (*GenerateResult, error)
 	PayBills(ctx context.Context, serviceID int64, req PayRequest) (*PayResult, error)
+
+	ListHomes(ctx context.Context) ([]Home, error)
+	CreateHome(ctx context.Context, req HomeCreateRequest) (*Home, error)
+	ListInstitutions(ctx context.Context) ([]Institution, error)
+	CreateInstitution(ctx context.Context, req InstitutionCreateRequest) (*Institution, error)
+	ListBanks(ctx context.Context) ([]Bank, error)
+	CreateBank(ctx context.Context, req BankCreateRequest) (*Bank, error)
+	ListCurrencies(ctx context.Context) ([]Currency, error)
+	ListInstitutionCategories(ctx context.Context) ([]InstitutionCategory, error)
+	ListServices(ctx context.Context, homeID *int64) ([]Service, error)
+	CreateService(ctx context.Context, req ServiceCreateRequest) (*Service, error)
 }
 
 // Client es el cliente HTTP autenticado con la API key global del sistema.
@@ -157,7 +168,11 @@ func (c *Client) send(ctx context.Context, method, path string, payload any, hea
 
 func (c *Client) urlFor(path string) string {
 	base := *c.baseURL
-	base.Path = strings.TrimRight(base.Path, "/") + path
+	rawPath, rawQuery, _ := strings.Cut(path, "?")
+	base.Path = strings.TrimRight(base.Path, "/") + rawPath
+	if rawQuery != "" {
+		base.RawQuery = rawQuery
+	}
 	return base.String()
 }
 

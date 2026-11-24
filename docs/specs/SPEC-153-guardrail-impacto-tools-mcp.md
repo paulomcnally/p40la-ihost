@@ -300,7 +300,7 @@ Salida humana esperada:
 | `bills_generate` | No | No se modifica su handler, schema, cliente, endpoint ni dependencias de backend; solo se agrega cobertura de contrato | Sin cambios |
 | `bills_pay` | No | No se modifica su handler, schema, cliente, endpoint ni dependencias de backend; solo se agrega cobertura de contrato | Sin cambios |
 
-Ninguna tool existente cambia su contrato; se listan las tres para dejar constancia. El nuevo test de contrato las cubre sin alterar su comportamiento.
+Ninguna tool existente cambia su contrato. La tabla lista las tres tools de facturas; tras el merge con `main`, el catálogo incluye además `homes_create`, `institutions_create`, `banks_create`, `services_create` y `entities_search`. El manifiesto y el golden cubren las ocho sin que esta spec modifique su comportamiento.
 
 **Validación subagente**: `explore` (sesión `ses_df33b054bffeAmsAjIt1f7vESs`) — veredicto: el binario MCP no importa el backend; la dependencia real es HTTP/JSON. No se modifica ningún handler, schema ni contrato de las tools existentes. El subagente confirmó la cadena de dependencias y recomendó mapear también `internal/api/handlers.go`, `internal/api/middleware.go`, `internal/storage/system_settings.go`, `internal/services/api_key.go`, `internal/config/`, `internal/db/` y `migrations/`; esos paths quedaron en el manifiesto. También recomendó un contrato backend↔MCP como siguiente capa; se implementó como `TestMCPBackendContract`.
 **Manifest**: `docs/mcp/tools/impact.json`
@@ -316,7 +316,7 @@ Ninguna tool existente cambia su contrato; se listan las tres para dejar constan
 
 - [ ] CA-ARCH-MCP-TOOLS-MAP: `./scripts/check-mcp-impact.sh --check-map` falla si una tool registrada con `mcp.AddTool` no está en el manifiesto, o si el manifiesto declara una tool que el código no registra.
 - [ ] CA-DELIV-MCP-IMPACT-001: `./scripts/check-mcp-impact.sh --files internal/services/bill_bulk.go` reporta `bills_generate` y `bills_pay`, y no reporta `bills_list`.
-- [ ] CA-DELIV-MCP-IMPACT-002: `--files internal/api/routes.go` reporta las tres tools por ser una dependencia compartida.
+- [ ] CA-DELIV-MCP-IMPACT-002: `--files internal/api/routes.go` reporta las ocho tools por ser una dependencia compartida.
 - [ ] CA-DELIV-MCP-IMPACT-003: `--files internal/api/bill_handlers.go` reporta solo `bills_list`.
 - [ ] CA-DELIV-MCP-IMPACT-004: `--staged --gate` bloquea si la spec en curso no existe, no tiene `## Impacto en tools MCP`, no menciona una tool afectada o no registra `Validación subagente:`.
 - [ ] CA-DELIV-MCP-IMPACT-006: `--staged --gate` bloquea una spec nueva sin sección de impacto o sin validación subagente, aunque no haya tools afectadas.

@@ -43,7 +43,16 @@ func TestImpactBulkService(t *testing.T) {
 func TestImpactSharedRoute(t *testing.T) {
 	manifest := loadTestManifest(t)
 	impact := computeImpact(manifest, []string{"internal/api/routes.go"})
-	want := []string{"bills_generate", "bills_list", "bills_pay"}
+	want := []string{
+		"banks_create",
+		"bills_generate",
+		"bills_list",
+		"bills_pay",
+		"entities_search",
+		"homes_create",
+		"institutions_create",
+		"services_create",
+	}
 	if got := impactNames(impact); !reflect.DeepEqual(got, want) {
 		t.Fatalf("tools afectadas = %v, quiero %v", got, want)
 	}

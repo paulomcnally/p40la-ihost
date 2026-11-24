@@ -3,6 +3,48 @@
   "generated_by": "go test ./internal/mcp/tools/all -run TestToolContracts -update-contracts",
   "tools": [
     {
+      "name": "banks_create",
+      "description": "Crea un banco. Requiere name; short_code, country ISO-2, notes y active son opcionales. Si ya existe un banco con el mismo nombre devuelve already_exists.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "description": "Activo; default true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "country": {
+            "description": "País ISO-2, por ejemplo NI (opcional)",
+            "type": "string"
+          },
+          "name": {
+            "description": "Nombre del banco (obligatorio)",
+            "type": "string"
+          },
+          "notes": {
+            "description": "Notas (opcional)",
+            "type": "string"
+          },
+          "short_code": {
+            "description": "Código corto (opcional)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
       "name": "bills_generate",
       "description": "Genera facturas de un servicio para un rango inclusivo de meses (máximo 36, sin períodos futuros). Omite períodos que ya tienen factura y reporta los slots con factura eliminada. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true. Mostrá el resumen al usuario y pedí confirmación antes de ejecutar con dry_run=false.",
       "input_schema": {
@@ -179,6 +221,226 @@
       "annotations": {
         "destructiveHint": false,
         "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "entities_search",
+      "description": "Busca servicios, hogares, bancos o instituciones por nombre y devuelve sus IDs. No distingue mayúsculas ni acentos; ordena exacto, prefijo y contenido. entity: service, home, bank o institution. query vacía lista las primeras entidades. Para service, home/home_id filtra por hogar. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "entity": {
+            "description": "Entidad a buscar: service, home, bank o institution",
+            "type": "string"
+          },
+          "home": {
+            "description": "Solo para service: nombre del hogar para filtrar",
+            "type": "string"
+          },
+          "home_id": {
+            "description": "Solo para service: ID del hogar para filtrar (gana sobre home)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "limit": {
+            "description": "Máximo de resultados (default 10, máximo 50)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "query": {
+            "description": "Texto a buscar por nombre (sin distinguir mayúsculas ni acentos). Vacío lista las primeras entidades",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "homes_create",
+      "description": "Crea un hogar. Requiere name; address y usage son opcionales. usage: rental (default), inhabited o unused. Si ya existe un hogar con el mismo nombre devuelve already_exists con el id existente.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "description": "Dirección (opcional)",
+            "type": "string"
+          },
+          "name": {
+            "description": "Nombre del hogar (obligatorio)",
+            "type": "string"
+          },
+          "usage": {
+            "description": "Uso: rental (default), inhabited o unused",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "institutions_create",
+      "description": "Crea una institución/proveedor. Requiere name; category_id o category son opcionales. category acepta la clave o el nombre de la categoría. Si ya existe una institución con el mismo nombre devuelve already_exists.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "description": "Clave o nombre de la categoría (opcional)",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "ID de la categoría (opcional; gana sobre category)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "name": {
+            "description": "Nombre de la institución (obligatorio)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "services_create",
+      "description": "Crea un servicio. Requiere name y un hogar (home o home_id) y una moneda (currency o currency_id). institution/institution_id, frequency, suggested_amount, icon_key, billing_type, billing_day, active, auto_generate, is_recurring, start_date y end_date son opcionales. Con active=true (default) el backend genera la factura del período actual. Si ya existe un servicio con el mismo nombre en el hogar devuelve already_exists.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "description": "Activo; default true. Con true se genera la factura del período actual",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "auto_generate": {
+            "description": "Generación automática (default false)",
+            "type": "boolean"
+          },
+          "billing_day": {
+            "description": "Día de facturación 1..31 (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "billing_type": {
+            "description": "fixed o variable (default)",
+            "type": "string"
+          },
+          "currency": {
+            "description": "Código o nombre de la moneda (uno de currency o currency_id)",
+            "type": "string"
+          },
+          "currency_id": {
+            "description": "ID de la moneda (uno de currency o currency_id)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "end_date": {
+            "description": "Fecha de fin YYYY-MM-DD (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "frequency": {
+            "description": "monthly (default) o yearly",
+            "type": "string"
+          },
+          "home": {
+            "description": "Nombre del hogar (uno de home o home_id)",
+            "type": "string"
+          },
+          "home_id": {
+            "description": "ID del hogar (uno de home o home_id)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "icon_key": {
+            "description": "Clave de ícono; default other",
+            "type": "string"
+          },
+          "institution": {
+            "description": "Nombre de la institución (opcional)",
+            "type": "string"
+          },
+          "institution_id": {
+            "description": "ID de la institución (opcional; gana sobre institution)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "is_recurring": {
+            "description": "Recurrente (default false)",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "Nombre del servicio (obligatorio)",
+            "type": "string"
+          },
+          "start_date": {
+            "description": "Fecha de inicio YYYY-MM-DD (opcional)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suggested_amount": {
+            "description": "Monto sugerido; default 0",
+            "type": [
+              "null",
+              "number"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
         "openWorldHint": false,
         "readOnlyHint": false
       }

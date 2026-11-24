@@ -8,11 +8,15 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/config"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/registry"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/bills"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/entities"
 )
 
 // Register agrega los conjuntos de tools al registry.
 func Register(r *registry.Registry, client api.API, cfg config.Config) {
 	r.Add(func(server *mcp.Server) {
 		bills.Register(server, client, cfg)
+	})
+	r.Add(func(server *mcp.Server) {
+		entities.Register(server, client, cfg)
 	})
 }

@@ -89,6 +89,161 @@
         "internal/mcp/tools/all/contract_test.go",
         "internal/api/mcp_backend_contract_test.go"
       ]
+    },
+    {
+      "name": "homes_create",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/homes.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/home_handlers.go",
+        "internal/services/home.go",
+        "internal/storage/home.go"
+      ],
+      "endpoints": [
+        "GET /api/homes",
+        "POST /api/homes"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "institutions_create",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/institutions.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/entities/resolve.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/institution_handlers.go",
+        "internal/api/institution_category_handlers.go",
+        "internal/services/institution.go",
+        "internal/services/institution_category.go",
+        "internal/storage/institution.go",
+        "internal/storage/institution_category.go"
+      ],
+      "endpoints": [
+        "GET /api/institutions",
+        "POST /api/institutions",
+        "GET /api/institution-categories"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "banks_create",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/banks.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/bank_handlers.go",
+        "internal/services/bank.go",
+        "internal/storage/bank.go"
+      ],
+      "endpoints": [
+        "GET /api/banks",
+        "POST /api/banks"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "services_create",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/services.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/entities/resolve.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/service_handlers.go",
+        "internal/api/home_handlers.go",
+        "internal/api/institution_handlers.go",
+        "internal/api/institution_category_handlers.go",
+        "internal/api/currency_handlers.go",
+        "internal/services/service.go",
+        "internal/services/home.go",
+        "internal/services/institution.go",
+        "internal/services/institution_category.go",
+        "internal/services/currency.go",
+        "internal/storage/service.go",
+        "internal/storage/home.go",
+        "internal/storage/institution.go",
+        "internal/storage/institution_category.go",
+        "internal/storage/currency.go",
+        "internal/storage/service_bill.go"
+      ],
+      "endpoints": [
+        "POST /api/services",
+        "GET /api/services",
+        "GET /api/homes",
+        "GET /api/currencies",
+        "GET /api/institution-categories",
+        "GET /api/institutions"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
+    },
+    {
+      "name": "entities_search",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/search.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/home_handlers.go",
+        "internal/api/institution_handlers.go",
+        "internal/api/bank_handlers.go",
+        "internal/api/service_handlers.go",
+        "internal/services/home.go",
+        "internal/services/institution.go",
+        "internal/services/bank.go",
+        "internal/services/service.go",
+        "internal/storage/home.go",
+        "internal/storage/institution.go",
+        "internal/storage/bank.go",
+        "internal/storage/service.go"
+      ],
+      "endpoints": [
+        "GET /api/homes",
+        "GET /api/institutions",
+        "GET /api/banks",
+        "GET /api/services"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/entities/search_test.go",
+        "internal/mcp/tools/all/contract_test.go"
+      ]
     }
   ],
   "shared": {
@@ -101,8 +256,8 @@
       "internal/mcp/audit/",
       "internal/mcp/api/",
       "internal/mcp/tools/all/",
+      "internal/mcp/tools/toolkit/",
       "internal/mcp/tools/bills/tools.go",
-      "internal/mcp/tools/bills/results.go",
       "internal/mcp/tools/bills/period.go",
       "internal/api/routes.go",
       "internal/api/handlers.go",
