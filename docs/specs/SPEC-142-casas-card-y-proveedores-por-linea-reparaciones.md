@@ -1,7 +1,7 @@
 ---
 title: "Casas: card sin link Ver y proveedores por línea en reparaciones"
 id: "SPEC-142"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 145
 # Casas: card sin link Ver y proveedores por línea en reparaciones
 
 **ID**: SPEC-142  
-**Estado**: pending_release  
+**Estado**: released  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-23
@@ -277,7 +277,16 @@ home_maintenance_items.institution_id INTEGER NULL  (aplica a labor y supplies)
 
 - Reglas: `docs/rules/20-ui.md`, `30-ux.md`, `10-architecture.md`, `50-security.md`, `60-testing.md`, `70-delivery.md`.
 - Precedentes: SPEC-140 (`UI-SELECT-ADD`), SPEC-141 (módulo de reparaciones), SPEC-117/134 (`UX-DETAIL-ACTIONS`).
-- Issue de GitHub: pendiente de creación.
+- Issue de GitHub: #145 (cerrado).
+
+### Release
+
+- **Estado**: released (2026-11-23)
+- **Commit de implementación**: `45eef67d`
+- **Merge a `main`**: `e1a563b9`
+- **Migraciones**: ninguna (columnas existentes desde 0057)
+- **Issue**: #145 (cerrado)
+- **Validación**: `go build ./...`, `go test ./...`, `check:ui`, `check:i18n`, `check:numbers` y build de Vite en verde; smoke test de API en `http://localhost:8090` con base sintética en `/tmp` (mano de obra e insumos con `institution_id`, institución inexistente rechazada). Release aprobado por el usuario.
 
 ---
 
@@ -287,3 +296,4 @@ home_maintenance_items.institution_id INTEGER NULL  (aplica a labor y supplies)
 |-------|-------|-------------|
 | 2026-11-23 | opencode | Creación inicial de la especificación |
 | 2026-11-23 | opencode | Implementación completa; guardrails `go build`, `go test`, `check:ui`, `check:i18n`, `check:numbers` y build del frontend en verde. Estado pasa a `pending_release`. |
+| 2026-11-23 | opencode | Release: merge `e1a563b9` a `main`, estado `released`, issue #145 cerrado y tracker actualizado |
