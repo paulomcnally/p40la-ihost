@@ -135,8 +135,9 @@ func main() {
 		return
 	}
 
-	if *gate && isMergeInProgress(root) {
-		fmt.Println("[mcp-impact] merge en curso: se omite el gate de spec (los commits integrados ya fueron validados)")
+	branch := currentBranch(root)
+	if *gate && (isMergeInProgress(root) || branch == "main") {
+		fmt.Println("[mcp-impact] rama main o merge en curso: se omite el gate de spec (release/bump)")
 		return
 	}
 
@@ -159,7 +160,6 @@ func main() {
 	changed = normalizeFiles(root, changed)
 
 	impact := computeImpact(manifest, changed)
-	branch := currentBranch(root)
 
 	report := Report{Affected: impact, OK: true}
 	if len(impact) == 0 {

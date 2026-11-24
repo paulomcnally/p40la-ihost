@@ -69,6 +69,7 @@ func TestImpactNoMCPSurface(t *testing.T) {
 		"docs/mcp/tools/bills.md",
 		"README.md",
 		"internal/mcp/tools/all/contract_test.go",
+		"docker-compose.yml",
 	})
 	if len(impact) != 0 {
 		t.Fatalf("tools afectadas = %v, quiero ninguna", impactNames(impact))
