@@ -1,7 +1,7 @@
 ---
 title: "MCP de facturas: servidor de tools y generación/pago masivo por servicio"
 id: "SPEC-145"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 148
 # MCP de facturas: servidor de tools y generación/pago masivo por servicio
 
 **ID**: SPEC-145  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-23
@@ -48,7 +48,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 | `UX-FEEDBACK` | Toda tool devuelve un resumen por ítem (`creada`, `omitida`, `fallida`) con motivo, además de totales. El `dry_run` muestra el resultado antes de escribir. | `CA-UX-FEEDBACK` |
 | `UX-BACK`, `UX-MODAL`, `UX-MODAL-CONFIRM`, `UX-DETAIL-ACTIONS`, `UX-DETAIL-READONLY`, `UX-EMPTY`, `UX-LOADING`, `UX-FORMS` | N/A justificado: no hay pantallas, rutas ni modales nuevos. | — |
 | `DATA-SQLITE` | N/A justificado: no cambia la configuración de SQLite; las operaciones masivas usan `BillStorage` existente. | — |
-| `DATA-MIGRATIONS` | Una migración reversible (`0058_bill_history_source_mcp`) habilita `source=mcp` en `bill_history`; la key global usa `system_settings` y no requiere tabla nueva. | `CA-DATA-MIGRATIONS` |
+| `DATA-MIGRATIONS` | Una migración reversible (`0060_bill_history_source_mcp`) habilita `source=mcp` en `bill_history`; la key global usa `system_settings` y no requiere tabla nueva. | `CA-DATA-MIGRATIONS` |
 | `DATA-NO-DROP` | El MCP nunca abre ni reemplaza `data/app.db`; las pruebas usan `/tmp/test-app.db`. | `CA-DATA-NO-DROP` |
 | `DATA-PRODCOPY` | La validación con datos reales se hace sobre una copia `.backup` en `/tmp`; nunca contra la DB local ni escribiendo producción durante pruebas. | `CA-DATA-PRODCOPY` |
 | `DATA-PROD-WRITE` | Las escrituras reales se hacen por la API, no con SQL directo. Antes del primer backfill en el iHost se exige copia de respaldo y confirmación explícita del usuario. | `CA-DATA-PROD-WRITE` |
@@ -94,7 +94,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`).
 6. **REQ-006 — Autenticación por API key global**: el MCP se autentica con una única API key de sistema (`Authorization: Bearer ...`), nunca con usuario/contraseña ni cookie. La key es global, tiene todos los permisos, se guarda hasheada en `system_settings` y se puede rotar o revocar.
 7. **REQ-007 — Compuerta de escritura**: `bills_generate` y `bills_pay` solo escriben si `P40LA_MCP_ALLOW_WRITES=true`. Sin la compuerta, `dry_run=true` funciona y `dry_run=false` devuelve `writes_disabled`.
 8. **REQ-008 — Endpoints masivos de backend**: `POST /api/services/{id}/bills/generate` y `POST /api/services/{id}/bills/pay`, con lógica en `BillService`, respuesta de resumen por ítem y código HTTP 200 aun con fallos parciales; las precondiciones inválidas devuelven 4xx.
-9. **REQ-009 — Auditoría**: las altas y pagos hechos por las tools registran el origen `mcp` en `bill_history` (nuevo `BillSourceMCP`), sin alterar el origen `dashboard` de la UI. El origen se toma de un header interno `X-P40LA-Source` con allowlist. La migración `0058_bill_history_source_mcp` amplía el `CHECK` de `source` y es reversible.
+9. **REQ-009 — Auditoría**: las altas y pagos hechos por las tools registran el origen `mcp` en `bill_history` (nuevo `BillSourceMCP`), sin alterar el origen `dashboard` de la UI. El origen se toma de un header interno `X-P40LA-Source` con allowlist. La migración `0060_bill_history_source_mcp` amplía el `CHECK` de `source` y es reversible.
 10. **REQ-010 — Documentación**: `docs/mcp/` con índice, arquitectura, configuración, seguridad, operación, desarrollo de nuevas tools, catálogo y referencia de `bills_*`, más ejemplos de configuración para OpenCode y Claude Desktop. Markdown plano con frontmatter Docusaurus.
 11. **REQ-011 — Idempotencia**: repetir `bills_generate` sobre el mismo rango no duplica facturas; repetir `bills_pay` sobre facturas pagadas devuelve `skipped` con motivo `already_paid`.
 12. **REQ-012 — Errores accionables**: errores con código estable (`invalid_range`, `service_not_found`, `service_inactive`, `amount_unresolved`, `deleted_slot`, `writes_disabled`, `auth_failed`, `upstream_error`) y mensaje en español claro, sin stack traces ni datos sensibles.
@@ -301,7 +301,7 @@ docs/mcp/
 
 Se reutilizan `bills`, `bill_history` y `system_settings`. Solo se agrega una migración:
 
-- `0058_bill_history_source_mcp`: recrea `bill_history` para ampliar el `CHECK` de `source` con `mcp`.
+- `0060_bill_history_source_mcp`: recrea `bill_history` para ampliar el `CHECK` de `source` con `mcp`.
 
 ```
 Entidad: system_settings (existente, valores nuevos)
@@ -628,7 +628,7 @@ La documentación no se publica en esta spec; queda lista para que un proyecto D
 - [ ] **CA-ARCH-LAYERS**: no hay SQL en handlers ni en `internal/mcp/`; las reglas de negocio están en `BillService`.
 - [ ] **CA-ARCH-GO**: `gofmt`, errores explícitos, `slog` a stderr, configuración por env; `go vet ./...` sin hallazgos.
 - [ ] **CA-ARCH-IHOST**: el add-on no arranca el MCP; el binario no se incluye en el proceso del server; RSS objetivo < 30 MB.
-- [ ] **CA-DATA-MIGRATIONS**: la migración `0058_bill_history_source_mcp` es reversible y se aplicó correctamente en los tests; la key global usa `system_settings` sin migración.
+- [ ] **CA-DATA-MIGRATIONS**: la migración `0060_bill_history_source_mcp` es reversible y se aplicó correctamente en los tests; la key global usa `system_settings` sin migración.
 - [ ] **CA-DATA-NO-DROP**: ninguna prueba toca `data/app.db`; se usa `/tmp/test-app.db`.
 - [ ] **CA-DATA-PRODCOPY**: la validación con datos reales usa una copia `.backup` en `/tmp` y se borra al terminar.
 - [ ] **CA-DATA-PROD-WRITE**: antes del primer backfill real se toma respaldo, se corre `dry_run` y el usuario confirma.
@@ -704,7 +704,7 @@ La documentación no se publica en esta spec; queda lista para que un proyecto D
 
 Implementado en `feature/SPEC-145`:
 
-- Migración `0058_bill_history_source_mcp` (up/down).
+- Migración `0060_bill_history_source_mcp` (up/down).
 - `BillSourceMCP`, `CreateWithSource`, `PayBillWithSource`, `SetCurrencyStorage`.
 - `internal/services/bill_bulk.go` con generación/pago masivo, errores estables e idempotencia.
 - Endpoints `POST /api/services/{service_id}/bills/generate` y `POST /api/services/{service_id}/bills/pay`.
@@ -716,7 +716,7 @@ Implementado en `feature/SPEC-145`:
 - Reglas `DELIV-MCP-DOCS` y `DELIV-MCP-DOCS-SUBAGENT` + guardrail `scripts/check-mcp-docs.sh` integrado en `.githooks/pre-commit`.
 - Tests de servicio, handlers, middleware, API key, cliente HTTP, tools y protocolo MCP.
 
-Pendiente: validación manual del usuario y release.
+Validación local completada contra una copia de la DB del iHost: service 12 quedó con 11 facturas pagadas y la generación repetida no duplicó. `go test ./...` pasa. Pendiente: release (merge a `main`, tag e imagen multi-arch) y deploy al iHost.
 
 ---
 
@@ -761,3 +761,4 @@ Pendiente: validación manual del usuario y release.
 | 2026-11-23 | opencode | Implementación inicial completa en `feature/SPEC-145`; pendiente validación del usuario y release |
 | 2026-11-23 | opencode | Se reemplaza usuario/contraseña por una API key global del sistema, hasheada en `system_settings`, con rotación/revocación y provisión por script |
 | 2026-11-23 | opencode | Se agregan `DELIV-MCP-DOCS` (docs obligatorias en cada cambio MCP) y `DELIV-MCP-DOCS-SUBAGENT` (docs por subagente) con hook `check-mcp-docs.sh` |
+| 2026-11-23 | opencode | Merge con `main` (SPEC-143/144); migración renumerada a `0060`; validación local contra copia del iHost; estado `pending_release` |
