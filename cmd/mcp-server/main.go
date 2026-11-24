@@ -68,7 +68,7 @@ func run() error {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:        "p40la-mcp",
 		Title:       "p40la-ihost MCP",
-		Description: "Tools para operar facturas de p40la-ihost",
+		Description: "Tools para operar facturas, autos, mantenimientos, inspecciones y seguros de p40la-ihost",
 		Version:     version,
 	}, nil)
 

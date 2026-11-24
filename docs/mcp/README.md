@@ -17,13 +17,19 @@ El binario tiene dos transportes con el mismo catálogo de tools:
 
 El modo remoto está pensado para conectores que Anthropic ejecuta desde su infraestructura: exige HTTPS público, OAuth 2.1 y una contraseña de administración. El modo local no necesita nada de eso. Ver [http.md](http.md), [oauth.md](oauth.md) y [funnel.md](funnel.md).
 
-La primera entrega cubre facturas de servicios:
+El catálogo cubre facturas de servicios y autos:
 
 | Tool | Tipo | Qué hace |
 |---|---|---|
 | `bills_list` | lectura | Lista facturas de un servicio con filtros de período y estado |
 | `bills_generate` | escritura | Genera facturas de un rango de meses (por ejemplo, enero a la fecha) |
 | `bills_pay` | escritura | Paga una factura, un mes, un rango o todas las pendientes hasta una fecha |
+| `autos_list` | lectura | Lista y filtra autos por marca, modelo, placa o VIN, o pide uno por ID |
+| `autos_create` | escritura | Crea un auto |
+| `autos_update` | escritura | Reemplaza los datos de un auto existente |
+| `autos_maintenance_register` | escritura | Registra un mantenimiento y sus líneas de mano de obra e insumos |
+| `autos_inspection_register` | escritura | Registra una inspección mecánica y devuelve el cronograma |
+| `autos_insurance_register` | escritura | Asocia un servicio de seguro a un auto |
 
 ## Requisitos
 
@@ -103,12 +109,12 @@ El runbook completo —prerrequisitos, API key, hash OAuth, volúmenes, alta por
 
 ## Flujo seguro de escritura
 
-1. El agente llama `bills_generate` o `bills_pay` **sin** `dry_run=false` (el valor por defecto es `true`).
-2. Muestra el resumen al usuario: períodos, montos, facturas omitidas.
+1. El agente llama una tool de escritura (por ejemplo `bills_generate`, `bills_pay` o `autos_maintenance_register`) **sin** `dry_run=false` (el valor por defecto es `true`).
+2. Muestra el resumen al usuario: períodos, montos o datos del registro, y los ítems omitidos.
 3. El usuario confirma.
 4. El agente repite con `dry_run=false`. La compuerta `P40LA_MCP_ALLOW_WRITES=true` debe estar activa; si el transporte es HTTP, también `P40LA_MCP_REMOTE_WRITES=true`.
 
-Las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`.
+En facturas, las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`. En autos, solo `autos_update` es idempotente: repetir un alta de auto, mantenimiento o inspección crea otro registro, y repetir un seguro devuelve `already_exists`.
 
 ## Documentación
 
@@ -124,6 +130,7 @@ Las operaciones son idempotentes por período: repetir una generación no duplic
 - [Despliegue 24/7 en el iHost](ihost.md)
 - [Catálogo de tools](tools/README.md)
 - [Tools de facturas](tools/bills.md)
+- [Tools de autos](tools/autos.md)
 
 ## Publicación web
 

@@ -25,13 +25,22 @@ internal/mcp/
 ├── audit/                      # JSONL con rotación
 └── tools/
     ├── all/register.go         # único punto que importa los dominios
-    └── bills/                  # tools de facturas
+    ├── bills/                  # tools de facturas
+    │   ├── tools.go            # Toolset + Register + writeMode
+    │   ├── results.go          # helpers de resultado/error
+    │   ├── period.go           # períodos YYYY-MM
+    │   ├── list.go
+    │   ├── generate.go
+    │   └── pay.go
+    └── autos/                  # tools de autos, mantenimientos, inspecciones y seguros
         ├── tools.go            # Toolset + Register + writeMode
         ├── results.go          # helpers de resultado/error
-        ├── period.go           # períodos YYYY-MM
         ├── list.go
-        ├── generate.go
-        └── pay.go
+        ├── create.go
+        ├── update.go
+        ├── maintenance.go
+        ├── inspection.go
+        └── insurance.go
 ```
 
 Las tools no saben por qué transporte llegan: `cmd/mcp-server` monta el mismo `mcp.Server` en stdio o en Streamable HTTP. La compuerta de escritura sí consulta el transporte (`Config.WritesEnabled()`), porque el modo HTTP exige la segunda variable.
@@ -78,11 +87,13 @@ Reglas:
 
 ```go
 // internal/mcp/tools/all/register.go
-func Register(r *registry.Registry, client api.API, cfg config.Config) {
+func Register(r *registry.Registry, client api.FullAPI, cfg config.Config) {
     r.Add(func(server *mcp.Server) {
         bills.Register(server, client, cfg)
     })
-    // r.Add(func(server *mcp.Server) { debts.Register(server, client, cfg) })
+    r.Add(func(server *mcp.Server) {
+        autos.Register(server, client, cfg)
+    })
 }
 ```
 

@@ -15,7 +15,7 @@ description: "Variables de entorno y configuración de clientes MCP"
 | `P40LA_BASE_URL` | No | `http://ihost.local:8088` | URL base del servidor; admite un path (ej. detrás de proxy) |
 | `P40LA_API_KEY` | Sí | — | API key global `p40la_...` (ver [api-key.md](api-key.md)) |
 | `P40LA_MCP_TRANSPORT` | No | `stdio` | `stdio` o `http` |
-| `P40LA_MCP_ALLOW_WRITES` | No | `false` | Habilita `bills_generate` y `bills_pay` con `dry_run=false` |
+| `P40LA_MCP_ALLOW_WRITES` | No | `false` | Habilita las tools de escritura (facturas y autos) con `dry_run=false` |
 | `P40LA_TIMEOUT` | No | `15s` | Timeout HTTP por llamada (1s a 60s) |
 | `P40LA_TIMEZONE` | No | `America/Managua` | Zona para “mes actual” y “hoy” |
 
@@ -178,7 +178,7 @@ Reemplazá el valor por tu key real solo en tu configuración local (nunca en el
 
 ## dry_run y compuerta de escritura
 
-- `bills_generate` y `bills_pay` tienen `dry_run=true` por defecto en el MCP.
+- Todas las tools de escritura (`bills_generate`, `bills_pay`, `autos_create`, `autos_update`, `autos_maintenance_register`, `autos_inspection_register` y `autos_insurance_register`) tienen `dry_run=true` por defecto en el MCP.
 - Un `dry_run=true` funciona aunque las escrituras estén deshabilitadas.
 - En **stdio**, para ejecutar cambios se necesitan **dos** condiciones: `dry_run=false` en la llamada y `P40LA_MCP_ALLOW_WRITES=true` en el entorno.
 - En **HTTP**, se agrega una tercera: `P40LA_MCP_REMOTE_WRITES=true`. Sin ambas compuertas, la tool devuelve `writes_disabled`.
@@ -196,7 +196,7 @@ En modo HTTP el `hint` menciona las dos variables (`P40LA_MCP_ALLOW_WRITES=true 
 
 ## Zona horaria
 
-`P40LA_TIMEZONE` define el “mes actual” cuando `bills_generate` no recibe `to` y la fecha por defecto de `bills_pay`. El servidor usa su propia zona para validar; para evitar ambigüedad, el MCP siempre envía `to` y `paid_at` explícitos calculados en esta zona.
+`P40LA_TIMEZONE` define el “mes actual” cuando `bills_generate` no recibe `to`, la fecha por defecto de `bills_pay` y el “hoy” con el que se valida que `performed_at` de mantenimientos e inspecciones no sea futura. El servidor usa su propia zona para validar; para evitar ambigüedad, el MCP envía `to` y `paid_at` explícitos calculados en esta zona y valida las fechas de autos con el mismo criterio.
 
 ## Verificación
 
