@@ -53,13 +53,26 @@ const (
 
 var RefundPolicies = []string{RefundRefundable, RefundForfeitable, RefundCustom}
 
-// Estados de promoción derivados (ADR-002).
+// Usos de la vivienda (SPEC-143). El uso es manual; el estado de alquiler se
+// deriva de contratos y reservas.
 const (
-	ListingAvailable = "available"
-	ListingReserved  = "reserved"
-	ListingRented    = "rented"
-	ListingUnlisted  = "unlisted"
+	UsageRental    = "rental"
+	UsageInhabited = "inhabited"
+	UsageUnused    = "unused"
 )
+
+var Usages = []string{UsageRental, UsageInhabited, UsageUnused}
+
+// Estados derivados de la vivienda (SPEC-143).
+const (
+	StateListed    = "listed"
+	StateReserved  = "reserved"
+	StateRented    = "rented"
+	StateInhabited = "inhabited"
+	StateUnused    = "unused"
+)
+
+var HomeStates = []string{StateListed, StateReserved, StateRented, StateInhabited, StateUnused}
 
 // Tipos de cargo.
 const (
@@ -226,7 +239,7 @@ type HomeRentalStatus struct {
 	HomeID            int64        `json:"home_id"`
 	HomeName          string       `json:"home_name"`
 	HomeAddress       string       `json:"home_address"`
-	ListingEnabled    bool         `json:"listing_enabled"`
+	Usage             string       `json:"usage"`
 	ListingStatus     string       `json:"listing_status"`
 	ActiveLease       *Lease       `json:"active_lease,omitempty"`
 	ActiveReservation *Reservation `json:"active_reservation,omitempty"`

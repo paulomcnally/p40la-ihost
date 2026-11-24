@@ -1,8 +1,12 @@
+export type HomeUsage = 'rental' | 'inhabited' | 'unused'
+export type HomeState = 'listed' | 'reserved' | 'rented' | 'inhabited' | 'unused'
+
 export interface Home {
   id: number
   name: string
   address: string
   sort_order: number
+  usage: HomeUsage
 }
 
 export interface Currency {

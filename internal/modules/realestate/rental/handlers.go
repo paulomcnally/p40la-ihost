@@ -22,7 +22,6 @@ func (h *handlers) register(mux *http.ServeMux, auth func(http.Handler) http.Han
 	mux.Handle("DELETE /api/rental/people/{id}", auth(http.HandlerFunc(h.deletePerson)))
 
 	mux.Handle("GET /api/rental/homes/{id}", auth(http.HandlerFunc(h.getHomeStatus)))
-	mux.Handle("PUT /api/rental/homes/{id}/listing", auth(http.HandlerFunc(h.setListing)))
 
 	mux.Handle("GET /api/rental/leases", auth(http.HandlerFunc(h.listLeases)))
 	mux.Handle("POST /api/rental/leases", auth(http.HandlerFunc(h.createLease)))
@@ -161,27 +160,6 @@ func (h *handlers) getHomeStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	item, err := h.service.GetHomeStatus(r.Context(), id)
-	if err != nil {
-		respondRentalError(w, err)
-		return
-	}
-	respondJSON(w, http.StatusOK, item)
-}
-
-func (h *handlers) setListing(w http.ResponseWriter, r *http.Request) {
-	id, err := pathID(r, "id")
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
-		return
-	}
-	var req struct {
-		ListingEnabled bool `json:"listing_enabled"`
-	}
-	if err := decodeJSON(r, &req); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
-		return
-	}
-	item, err := h.service.SetListingEnabled(r.Context(), id, req.ListingEnabled)
 	if err != nil {
 		respondRentalError(w, err)
 		return
@@ -1025,6 +1003,8 @@ func respondRentalError(w http.ResponseWriter, err error) {
 		respondError(w, http.StatusNotFound, "reminder_not_found", "Recordatorio no encontrado")
 	case errors.Is(err, ErrHomeUnavailable):
 		respondError(w, http.StatusConflict, "home_not_available", "La vivienda ya tiene un apartado o contrato vigente")
+	case errors.Is(err, ErrHomeNotAvailable):
+		respondError(w, http.StatusConflict, "home_not_available", "La vivienda no está disponible para alquilar")
 	case errors.Is(err, ErrLeaseNotDraft):
 		respondError(w, http.StatusConflict, "lease_not_draft", "Solo se puede editar un contrato en borrador")
 	case errors.Is(err, ErrInvoiceImmutable):
