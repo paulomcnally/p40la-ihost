@@ -1,7 +1,7 @@
 ---
 title: "UI de API key global del MCP en Configuración"
 id: "SPEC-149"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-23"
 updated: "2026-11-23"
@@ -11,7 +11,7 @@ github_issue: 152
 # UI de API key global del MCP en Configuración
 
 **ID**: SPEC-149  
-**Estado**: in_progress  
+**Estado**: pending_release  
 **Autor**: opencode  
 **Creado**: 2026-11-23  
 **Actualizado**: 2026-11-23
@@ -140,3 +140,4 @@ Esta spec agrega una página en **Configuración → MCP** con estado de la key,
 | Fecha | Autor | Descripción |
 |---|---|---|
 | 2026-11-23 | opencode | Creación inicial |
+| 2026-11-23 | opencode | Implementación de la página, ruta, cliente API, i18n y checks frontend |
