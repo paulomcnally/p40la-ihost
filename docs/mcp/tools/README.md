@@ -8,24 +8,36 @@ description: "Convenciones y listado de tools MCP disponibles"
 
 ## Convención de nombres
 
-- `snake_case`, con el dominio primero: `bills_list`, `entities_search`, `homes_create`.
-- Verbo al final: `list`/`search` (lectura), `create` (alta), `generate` (alta masiva), `pay` (acción).
-- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas además declaran `dry_run`; las de alta (`*_create`) no tienen previsualización y verifican duplicados antes del POST. `entities_search` es de solo lectura y no depende de la compuerta.
+- `snake_case`, con el dominio primero: `bills_list`, `entities_search`, `autos_maintenance_register`, `bank_accounts_search`.
+- Verbo al final: `list`/`search` (lectura), `create` (alta), `update` (edición), `generate` (alta masiva), `pay` (acción), `register` (registro de un hecho).
+- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas y autos declaran `dry_run`; las altas de entidades y las de banca no tienen previsualización y verifican duplicados antes del POST. Las de banca resuelven banco y moneda por nombre/código. Las búsquedas (`entities_search`, `bank_accounts_search`, `credit_cards_search`, `autos_list`) son de solo lectura y no dependen de la compuerta.
 
 ## Tools actuales
 
-El catálogo tiene **8 tools**: 2 de lectura y 6 de escritura.
+El catálogo tiene **20 tools**: 5 de lectura y 15 de escritura.
 
 | Tool | Dominio | Tipo | Documentación |
 |---|---|---|---|
 | `bills_list` | Facturas | Lectura | [bills.md](bills.md) |
 | `entities_search` | Entidades | Lectura | [entities.md](entities.md) |
+| `autos_list` | Autos | Lectura | [autos.md](autos.md) |
 | `bills_generate` | Facturas | Escritura | [bills.md](bills.md) |
 | `bills_pay` | Facturas | Escritura | [bills.md](bills.md) |
+| `autos_create` | Autos | Escritura | [autos.md](autos.md) |
+| `autos_update` | Autos | Escritura | [autos.md](autos.md) |
+| `autos_maintenance_register` | Autos | Escritura | [autos.md](autos.md) |
+| `autos_inspection_register` | Autos | Escritura | [autos.md](autos.md) |
+| `autos_insurance_register` | Autos | Escritura | [autos.md](autos.md) |
 | `homes_create` | Hogares | Escritura | [entities.md](entities.md) |
 | `institutions_create` | Instituciones | Escritura | [entities.md](entities.md) |
 | `banks_create` | Bancos | Escritura | [entities.md](entities.md) |
 | `services_create` | Servicios | Escritura | [entities.md](entities.md) |
+| `bank_accounts_search` | Banca | Lectura | [banking.md](banking.md) |
+| `bank_accounts_create` | Banca | Escritura | [banking.md](banking.md) |
+| `bank_accounts_update` | Banca | Escritura | [banking.md](banking.md) |
+| `credit_cards_search` | Banca | Lectura | [banking.md](banking.md) |
+| `credit_cards_create` | Banca | Escritura | [banking.md](banking.md) |
+| `credit_cards_update` | Banca | Escritura | [banking.md](banking.md) |
 
 ## Contrato congelado y manifiesto de impacto
 
@@ -55,7 +67,7 @@ El catálogo no cambia según el transporte. `p40la-mcp` monta el mismo `mcp.Ser
 
 Lo que cambia es la **compuerta de escritura**:
 
-| Transporte | Lectura (`bills_list`, `entities_search`) | Escritura (`dry_run=false` o cualquier `*_create`) |
+| Transporte | Lectura (`bills_list`, `entities_search`, `autos_list`, `bank_accounts_search`, `credit_cards_search`) | Escritura (`dry_run=false`, `*_create` o `*_update` de banca) |
 |---|---|---|
 | stdio | Siempre disponible | Requiere `P40LA_MCP_ALLOW_WRITES=true` |
 | HTTP | Siempre disponible | Requiere `P40LA_MCP_ALLOW_WRITES=true` **y** `P40LA_MCP_REMOTE_WRITES=true` |
@@ -69,6 +81,8 @@ Si falta la compuerta remota, la tool responde:
   "hint": "Definí P40LA_MCP_ALLOW_WRITES=true y P40LA_MCP_REMOTE_WRITES=true, o repetí con dry_run=true para previsualizar."
 }
 ```
+
+En las tools de banca, que no tienen `dry_run`, el `hint` omite esa alternativa y solo indica las variables de la compuerta.
 
 El modo HTTP no agrega tools nuevas ni cambia los schemas de entrada. Los límites de body (1 MiB), rate limit y auditoría son del servidor, no de cada tool. Ver [http.md](../http.md), [oauth.md](../oauth.md) y [security.md](../security.md).
 
@@ -88,8 +102,10 @@ Las tools devuelven contenido de texto JSON y `structuredContent` con el mismo o
 
 ## Anotaciones MCP
 
-- `bills_list` y `entities_search`: `readOnlyHint=true`, `openWorldHint=false`.
-- `bills_generate` y `bills_pay`: `destructiveHint=false`, `idempotentHint=true`, `openWorldHint=false`.
-- `homes_create`, `institutions_create`, `banks_create` y `services_create`: `destructiveHint=true`, `openWorldHint=false`. No declaran `idempotentHint`.
+- Lectura: `bills_list`, `entities_search`, `autos_list`, `bank_accounts_search` y `credit_cards_search` usan `readOnlyHint=true`, `openWorldHint=false`.
+- Escritura idempotente de facturas y autos: `bills_generate`, `bills_pay` y `autos_update` usan `destructiveHint=false`, `idempotentHint=true`, `openWorldHint=false`.
+- Altas de autos: `autos_create`, `autos_maintenance_register`, `autos_inspection_register` y `autos_insurance_register` usan `destructiveHint=false`, `idempotentHint=false`, `openWorldHint=false`.
+- Altas de entidades: `homes_create`, `institutions_create`, `banks_create` y `services_create` usan `destructiveHint=true`, `openWorldHint=false`. No declaran `idempotentHint`.
+- Escritura de banca: las altas y ediciones usan `destructiveHint=true` y `openWorldHint=false`. Las ediciones (`*_update`) usan `idempotentHint=true`; las altas (`*_create`) usan `idempotentHint=false`.
 
-`destructiveHint=false` en facturas significa que son aditivas (crean o actualizan estado), no borran datos. En las tools de alta el valor es `true` de forma conservadora: la tool no garantiza ser segura ante reintentos, aunque en la práctica solo agrega registros y nunca borra. La confirmación humana sigue siendo obligatoria por el impacto en los datos.
+`destructiveHint=false` en facturas y autos significa que son aditivas (crean o actualizan estado), no borran datos. En las altas de entidades y en banca el valor es `true` de forma conservadora: las tools de alta no garantizan ser seguras ante reintentos, aunque en la práctica solo agregan registros y nunca borran; las ediciones modifican datos existentes. La confirmación humana sigue siendo obligatoria por el impacto en los datos. `autos_insurance_register` declara `idempotentHint=false`; repetir con el mismo `service_id` devuelve `already_exists` y no crea un duplicado.

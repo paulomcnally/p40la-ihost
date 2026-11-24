@@ -38,6 +38,17 @@ type API interface {
 	ListInstitutionCategories(ctx context.Context) ([]InstitutionCategory, error)
 	ListServices(ctx context.Context, homeID *int64) ([]Service, error)
 	CreateService(ctx context.Context, req ServiceCreateRequest) (*Service, error)
+
+	ListBankRefs(ctx context.Context) ([]BankRef, error)
+	ListCurrencyRefs(ctx context.Context) ([]CurrencyRef, error)
+	ListBankAccounts(ctx context.Context, bankID int64) ([]BankAccount, error)
+	GetBankAccount(ctx context.Context, id int64) (*BankAccount, error)
+	CreateBankAccount(ctx context.Context, bankID int64, input BankAccountInput) (*BankAccount, error)
+	UpdateBankAccount(ctx context.Context, id int64, input BankAccountInput) (*BankAccount, error)
+	ListCreditCards(ctx context.Context, bankID int64) ([]CreditCard, error)
+	GetCreditCard(ctx context.Context, id int64) (*CreditCard, error)
+	CreateCreditCard(ctx context.Context, bankID int64, input CreditCardInput) (*CreditCard, error)
+	UpdateCreditCard(ctx context.Context, id int64, input CreditCardInput) (*CreditCard, error)
 }
 
 // Client es el cliente HTTP autenticado con la API key global del sistema.

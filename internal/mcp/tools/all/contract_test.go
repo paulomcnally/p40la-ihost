@@ -81,6 +81,86 @@ func (contractAPI) CreateService(context.Context, api.ServiceCreateRequest) (*ap
 	return &api.Service{}, nil
 }
 
+func (contractAPI) ListBankRefs(context.Context) ([]api.BankRef, error) { return nil, nil }
+
+func (contractAPI) ListCurrencyRefs(context.Context) ([]api.CurrencyRef, error) { return nil, nil }
+
+func (contractAPI) ListBankAccounts(context.Context, int64) ([]api.BankAccount, error) {
+	return nil, nil
+}
+
+func (contractAPI) GetBankAccount(context.Context, int64) (*api.BankAccount, error) {
+	return &api.BankAccount{}, nil
+}
+
+func (contractAPI) CreateBankAccount(context.Context, int64, api.BankAccountInput) (*api.BankAccount, error) {
+	return &api.BankAccount{}, nil
+}
+
+func (contractAPI) UpdateBankAccount(context.Context, int64, api.BankAccountInput) (*api.BankAccount, error) {
+	return &api.BankAccount{}, nil
+}
+
+func (contractAPI) ListCreditCards(context.Context, int64) ([]api.CreditCard, error) {
+	return nil, nil
+}
+
+func (contractAPI) GetCreditCard(context.Context, int64) (*api.CreditCard, error) {
+	return &api.CreditCard{}, nil
+}
+
+func (contractAPI) CreateCreditCard(context.Context, int64, api.CreditCardInput) (*api.CreditCard, error) {
+	return &api.CreditCard{}, nil
+}
+
+func (contractAPI) UpdateCreditCard(context.Context, int64, api.CreditCardInput) (*api.CreditCard, error) {
+	return &api.CreditCard{}, nil
+}
+
+func (contractAPI) ListAutos(context.Context) ([]api.Auto, error) { return nil, nil }
+
+func (contractAPI) GetAuto(context.Context, int64) (*api.Auto, error) { return &api.Auto{}, nil }
+
+func (contractAPI) CreateAuto(context.Context, api.AutoRequest) (*api.Auto, error) {
+	return &api.Auto{}, nil
+}
+
+func (contractAPI) UpdateAuto(context.Context, int64, api.AutoRequest) (*api.Auto, error) {
+	return &api.Auto{}, nil
+}
+
+func (contractAPI) ListAvailableServices(context.Context, int64) ([]api.AvailableService, error) {
+	return nil, nil
+}
+
+func (contractAPI) CreateMaintenance(context.Context, int64, api.MaintenanceRequest) (*api.Maintenance, error) {
+	return &api.Maintenance{}, nil
+}
+
+func (contractAPI) GetMaintenance(context.Context, int64, int64) (*api.Maintenance, error) {
+	return &api.Maintenance{}, nil
+}
+
+func (contractAPI) CreateMaintenanceItem(context.Context, int64, int64, api.MaintenanceItemRequest) (*api.MaintenanceItem, error) {
+	return &api.MaintenanceItem{}, nil
+}
+
+func (contractAPI) CreateInspection(context.Context, int64, api.InspectionRequest) (*api.Inspection, error) {
+	return &api.Inspection{}, nil
+}
+
+func (contractAPI) ListInspections(context.Context, int64) (*api.InspectionList, error) {
+	return &api.InspectionList{}, nil
+}
+
+func (contractAPI) ListInsurances(context.Context, int64) ([]api.InsuranceDetail, error) {
+	return nil, nil
+}
+
+func (contractAPI) CreateInsurance(context.Context, int64, api.InsuranceRequest) (*api.Insurance, error) {
+	return &api.Insurance{}, nil
+}
+
 // TestToolContracts congela el contrato visible de tools/list para todo el
 // catálogo: nombres, descripciones, esquemas y anotaciones. Un cambio
 // intencional se acepta con:

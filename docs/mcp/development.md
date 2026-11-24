@@ -25,21 +25,37 @@ internal/mcp/
 ├── audit/                      # JSONL con rotación
 └── tools/
     ├── all/register.go         # único punto que importa los dominios
-    ├── toolkit/                # helpers de resultado/error compartidos
+    ├── toolkit/                # helpers compartidos (JSONResult, ToolError, APIError)
     ├── bills/                  # tools de facturas
     │   ├── tools.go            # Toolset + Register + writeMode
     │   ├── period.go           # períodos YYYY-MM
     │   ├── list.go
     │   ├── generate.go
     │   └── pay.go
-    └── entities/               # búsqueda y altas de hogares, instituciones, bancos y servicios
-        ├── tools.go            # Toolset + Register + checkWrites
-        ├── resolve.go          # resolución por nombre/ID y errores accionables
-        ├── search.go           # entities_search (solo lectura)
-        ├── homes.go
-        ├── institutions.go
-        ├── banks.go
-        └── services.go
+    ├── autos/                  # tools de autos, mantenimientos, inspecciones y seguros
+    │   ├── tools.go            # Toolset + Register + writeMode
+    │   ├── results.go          # apiError y aliases al toolkit
+    │   ├── list.go
+    │   ├── create.go
+    │   ├── update.go
+    │   ├── maintenance.go
+    │   ├── inspection.go
+    │   └── insurance.go
+    ├── entities/               # búsqueda y altas de hogares, instituciones, bancos y servicios
+    │   ├── tools.go            # Toolset + Register + checkWrites
+    │   ├── resolve.go          # resolución por nombre/ID y errores accionables
+    │   ├── search.go           # entities_search (solo lectura)
+    │   ├── homes.go
+    │   ├── institutions.go
+    │   ├── banks.go
+    │   └── services.go
+    └── banking/                # tools de cuentas y tarjetas (SPEC-152)
+        ├── tools.go            # Toolset + Register + gate de escritura
+        ├── resolve.go          # banco, moneda, duplicados y ranking
+        ├── results.go          # helpers de resultado/error
+        ├── util.go             # límite de resultados y helpers
+        ├── accounts.go
+        └── cards.go
 ```
 
 Las tools no saben por qué transporte llegan: `cmd/mcp-server` monta el mismo `mcp.Server` en stdio o en Streamable HTTP. La compuerta de escritura sí consulta el transporte (`Config.WritesEnabled()`), porque el modo HTTP exige la segunda variable.
@@ -53,7 +69,7 @@ Las tools no saben por qué transporte llegan: `cmd/mcp-server` monta el mismo `
 5. **Registrá el dominio** en `internal/mcp/tools/all/register.go` con un `r.Add(...)`.
 6. **Congelá el contrato** del dominio y revisá el diff del golden (ver [Contrato y guardrails](#contrato-y-guardrails)).
 7. **Escribí tests** con una API falsa y, si aplica, un test de protocolo con `mcp.NewInMemoryTransports`.
-8. **Documentá** la tool en `docs/mcp/tools/<dominio>.md` y actualizá los catálogos de `docs/mcp/README.md` y `docs/mcp/tools/README.md`.
+8. **Documentá** la tool en `docs/mcp/tools/<dominio>.md` (por ejemplo, `docs/mcp/tools/banking.md` para cuentas bancarias y tarjetas) y actualizá los catálogos de `docs/mcp/README.md` y `docs/mcp/tools/README.md`.
 9. **Verificá** el manifiesto y los tests:
    ```bash
    ./scripts/check-mcp-impact.sh --check-map
@@ -95,11 +111,13 @@ Reglas:
 
 ```go
 // internal/mcp/tools/all/register.go
-func Register(r *registry.Registry, client api.API, cfg config.Config) {
+func Register(r *registry.Registry, client api.FullAPI, cfg config.Config) {
     r.Add(func(server *mcp.Server) {
         bills.Register(server, client, cfg)
     })
-    // r.Add(func(server *mcp.Server) { debts.Register(server, client, cfg) })
+    r.Add(func(server *mcp.Server) {
+        autos.Register(server, client, cfg)
+    })
 }
 ```
 
@@ -221,7 +239,7 @@ Verificaciones útiles:
 - Reutilizar el `code` debe fallar con `invalid_grant`.
 - Un `code_verifier` distinto debe fallar con `invalid_grant`.
 - `POST /admin/revoke` debe invalidar el access y el refresh.
-- `P40LA_MCP_REMOTE_WRITES=false` debe devolver `writes_disabled` con `dry_run=false`.
+- `P40LA_MCP_REMOTE_WRITES=false` debe devolver `writes_disabled` (por ejemplo, `bills_pay` con `dry_run=false` o un `bank_accounts_create`).
 - `audit.jsonl` debe tener una línea por `tools/call`, sin argumentos.
 
 ## Documentación obligatoria
@@ -242,7 +260,7 @@ Todo cambio en el código del MCP se documenta **en el mismo commit**. La superf
 
 **`DELIV-MCP-DOCS`** — agregar o cambiar una tool, un contrato HTTP, una variable de entorno o un flujo operativo exige actualizar `docs/mcp/` en el **mismo commit** que el código. Según el cambio:
 
-- Tool nueva o modificada → `docs/mcp/tools/<dominio>.md`, el manifiesto y el contrato en `docs/mcp/tools/`, y los catálogos de `docs/mcp/README.md` y `docs/mcp/tools/README.md`.
+- Tool nueva o modificada → `docs/mcp/tools/<dominio>.md`, el manifiesto y el contrato en `docs/mcp/tools/`, y los catálogos de `docs/mcp/README.md` y `docs/mcp/tools/README.md` (banca: `docs/mcp/tools/banking.md`).
 - Variable de entorno o configuración → `docs/mcp/configuration.md`.
 - Transporte HTTP, OAuth o límites → `docs/mcp/http.md`, `docs/mcp/oauth.md` y `docs/mcp/configuration.md`.
 - Publicación en Internet → `docs/mcp/funnel.md`.

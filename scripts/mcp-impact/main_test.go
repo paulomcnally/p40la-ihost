@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -43,16 +44,11 @@ func TestImpactBulkService(t *testing.T) {
 func TestImpactSharedRoute(t *testing.T) {
 	manifest := loadTestManifest(t)
 	impact := computeImpact(manifest, []string{"internal/api/routes.go"})
-	want := []string{
-		"banks_create",
-		"bills_generate",
-		"bills_list",
-		"bills_pay",
-		"entities_search",
-		"homes_create",
-		"institutions_create",
-		"services_create",
+	want := make([]string, 0, len(manifest.Tools))
+	for _, tool := range manifest.Tools {
+		want = append(want, tool.Name)
 	}
+	sort.Strings(want)
 	if got := impactNames(impact); !reflect.DeepEqual(got, want) {
 		t.Fatalf("tools afectadas = %v, quiero %v", got, want)
 	}

@@ -171,7 +171,7 @@ Puntos clave:
 
 - `P40LA_BASE_URL` usa **loopback** porque el MCP comparte la red host con la app. No uses el hostname del nodo del dashboard ni dependas de MagicDNS desde el contenedor.
 - `P40LA_MCP_PUBLIC_URL` es el hostname del **nodo dedicado** (sin `/mcp`), no `ihost.example.ts.net`. Debe coincidir exactamente con el FQDN que publica Funnel.
-- Las dos compuertas de escritura se habilitan solo con aprobación del usuario. El flujo seguro (`dry_run` primero) está en [README.md](README.md#flujo-seguro-de-escritura).
+- Las dos compuertas de escritura se habilitan solo con aprobación del usuario. El flujo seguro (en facturas, `dry_run` primero; en banca, resumen y confirmación) está en [README.md](README.md#flujo-seguro-de-escritura).
 - El hash bcrypt contiene `$`: si editás el archivo desde una shell, citá con comillas simples. `docker --env-file` lo lee tal cual.
 - `P40LA_MCP_STATE_DIR=/data` apunta al volumen persistente.
 
@@ -392,7 +392,7 @@ Checklist:
 3. Autenticación: **OAuth** (registro dinámico de cliente). Claude descubre los endpoints desde `/.well-known/*`.
 4. Iniciá sesión con la **contraseña de administración** (la que hasheaste). No uses la del dashboard.
 5. Autorizá el conector y verificá que aparezcan las tools.
-6. Probá una lectura (`bills_list`). Para una escritura, primero `dry_run=true`, mostrá el resumen y pedí confirmación; recién después `dry_run=false`.
+6. Probá una lectura (`bills_list` o `bank_accounts_search`). En facturas, para una escritura primero usá `dry_run=true`, mostrá el resumen y pedí confirmación; recién después `dry_run=false`. En banca no hay `dry_run`: mostrá el banco y la moneda resueltos, el cuerpo y los duplicados, pedí confirmación y ejecutá.
 7. Revisá `audit.jsonl` en el volumen para confirmar que la llamada quedó registrada.
 
 Si el conector queda en `401` después de autorizar, revisá [oauth.md](oauth.md) y la sección de revocación de [operations.md](operations.md#rotación-y-revocación).

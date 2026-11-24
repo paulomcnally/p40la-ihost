@@ -31,6 +31,22 @@ const serviceColumns = `
 	deleted_at, created_at, updated_at
 `
 
+// serviceColumnsQualified es serviceColumns con el alias s para queries que
+// hacen JOIN con services (SPEC-151).
+const serviceColumnsQualified = `
+	s.id, s.home_id, s.name, s.institution, s.currency_id, s.frequency,
+	s.suggested_amount, s.active, s.icon_key, s.billing_type, s.billing_day, s.auto_generate,
+	s.institution_id, s.institution_analyzer_id,
+	s.start_date, s.end_date, s.is_recurring, s.webhook_uuid,
+	s.last_webhook_request, s.automation_account_id,
+	(SELECT b.status FROM bills b WHERE b.service_id = s.id AND (b.amount > 0 OR b.invoice_number != '') ORDER BY b.year DESC, b.month DESC, b.id DESC LIMIT 1) AS latest_bill_status,
+	EXISTS (
+		SELECT 1 FROM institutions i JOIN institution_categories ic ON ic.id = i.category_id
+		WHERE i.id = s.institution_id AND ic.key = 'insurance'
+	) AS is_insurance,
+	s.deleted_at, s.created_at, s.updated_at
+`
+
 func (s *ServiceStorage) List(ctx context.Context, homeID *int64) ([]models.Service, error) {
 	query := "SELECT " + serviceColumns + " FROM services WHERE deleted_at IS NULL"
 	var args []any

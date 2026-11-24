@@ -42,6 +42,8 @@ Claude Code / Desktop local                claude.ai / Claude móvil / Cowork
 
 Los dos transportes comparten configuración de API, registry y tools. La única diferencia es cómo llega el JSON-RPC al binario y qué autenticación protege la entrada.
 
+El diagrama usa facturas como ejemplo; las tools de autos recorren el mismo camino contra `/api/autos`, `/api/autos/{id}/maintenances`, `/api/autos/{id}/inspections` y `/api/autos/{id}/services`.
+
 ## Despliegue en el iHost: dos nodos Tailscale
 
 El iHost ya publica el dashboard con **Serve** en 443, solo dentro de la tailnet. Como Tailscale no permite Serve y Funnel en el mismo puerto, el MCP usa un **nodo dedicado** con su propio estado y su propio Funnel; el nodo del dashboard queda intacto.
@@ -93,6 +95,8 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 | Cliente API | `internal/mcp/api` | `Authorization: Bearer`, llamadas HTTP y errores tipados |
 | Registry | `internal/mcp/registry` | Punto de montaje de conjuntos de tools |
 | Tools de facturas | `internal/mcp/tools/bills` | `bills_list`, `bills_generate`, `bills_pay` |
+| Tools de autos | `internal/mcp/tools/autos` | `autos_list`, `autos_create`, `autos_update`, `autos_maintenance_register`, `autos_inspection_register`, `autos_insurance_register` |
+| Tools de banca | `internal/mcp/tools/banking` | `bank_accounts_search`, `bank_accounts_create`, `bank_accounts_update`, `credit_cards_search`, `credit_cards_create`, `credit_cards_update` |
 | Registro global | `internal/mcp/tools/all` | Único lugar que importa los paquetes de tools |
 | Servidor HTTP | `internal/mcp/server/server.go` | Listeners público y admin, auth, rate limit, body limit, headers, health y revocación |
 | Middleware de auditoría | `internal/mcp/server/middleware.go` | Registra solo `tools/call`, sin argumentos ni resultados |
@@ -216,6 +220,7 @@ El MCP solo traduce la tool a una llamada HTTP y presenta el resumen.
 - La generación consulta `FindByServicePeriodIncludingDeleted` antes de crear.
 - Repetir una generación devuelve `skipped` con motivo `exists_pending`, `exists_paid` o `deleted_slot`.
 - Repetir un pago devuelve `skipped` con motivo `already_paid`.
+- En autos, `autos_update` es idempotente porque `PUT` reemplaza el registro. Las altas de auto, mantenimiento e inspección crean un registro nuevo en cada llamada; el alta de seguro corta con `already_exists` si el auto ya tiene ese `service_id`.
 - No hay reintentos automáticos de escrituras.
 
 ## Auditoría
