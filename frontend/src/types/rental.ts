@@ -1,6 +1,8 @@
+import type { HomeState, HomeUsage } from '.'
+
 export type LeaseStatus = 'draft' | 'active' | 'ended' | 'terminated' | 'cancelled'
 export type ReservationStatus = 'active' | 'converted' | 'expired' | 'cancelled' | 'forfeited'
-export type ListingStatus = 'available' | 'reserved' | 'rented' | 'unlisted'
+export type ListingStatus = HomeState
 export type PartyRole = 'tenant' | 'guarantor' | 'owner' | 'agency_contact' | 'agent'
 export type ChargeKind = 'rent' | 'maintenance' | 'deposit' | 'late_fee' | 'utility' | 'other'
 export type ChargeStatus = 'pending' | 'invoiced' | 'partially_paid' | 'paid' | 'void'
@@ -223,11 +225,97 @@ export interface HomeRentalStatus {
   home_id: number
   home_name: string
   home_address: string
-  listing_enabled: boolean
+  usage: HomeUsage
   listing_status: ListingStatus
   active_lease?: Lease | null
   active_reservation?: Reservation | null
   next_due_date?: string
   upcoming_charges?: Charge[]
   reminders?: Reminder[]
+}
+
+export interface PortfolioMoney {
+  currency: string
+  amount: number
+}
+
+export interface PortfolioHomeSummary {
+  home_id: number
+  name: string
+  address: string
+  usage: HomeUsage
+  state: HomeState
+  income: PortfolioMoney[]
+  expenses: PortfolioMoney[]
+  net: PortfolioMoney[]
+  pending_income: PortfolioMoney[]
+  pending_expenses: PortfolioMoney[]
+}
+
+export interface PortfolioTotals {
+  income: PortfolioMoney[]
+  expenses: PortfolioMoney[]
+  net: PortfolioMoney[]
+  pending_income: PortfolioMoney[]
+  pending_expenses: PortfolioMoney[]
+}
+
+export interface PortfolioSummary {
+  year: number
+  month: number
+  homes: PortfolioHomeSummary[]
+  totals: PortfolioTotals
+  state_counts: Record<string, number>
+}
+
+export type FinanceItemType = 'payment' | 'reservation' | 'bill' | 'maintenance' | 'commission'
+export type FinanceBreakdownKind = 'services' | 'maintenance' | 'commission'
+
+export interface FinanceMonth {
+  year: number
+  month: number
+  income: PortfolioMoney[]
+  expenses: PortfolioMoney[]
+  net: PortfolioMoney[]
+}
+
+export interface FinanceBreakdown {
+  kind: FinanceBreakdownKind
+  amounts: PortfolioMoney[]
+}
+
+export interface FinanceItem {
+  type: FinanceItemType
+  date: string
+  description: string
+  detail: string
+  status: string
+  method?: string
+  kind?: string
+  area?: string
+  amounts: PortfolioMoney[]
+  lease_id?: number
+  reservation_id?: number
+  bill_id?: number
+  service_id?: number
+  maintenance_id?: number
+}
+
+export interface HomeFinances {
+  home_id: number
+  home_name: string
+  address: string
+  usage: HomeUsage
+  state: HomeState
+  year: number
+  month: number
+  currencies: string[]
+  months: FinanceMonth[]
+  income: PortfolioMoney[]
+  expenses: PortfolioMoney[]
+  net: PortfolioMoney[]
+  pending_income: PortfolioMoney[]
+  pending_expenses: PortfolioMoney[]
+  breakdown: FinanceBreakdown[]
+  items: FinanceItem[]
 }

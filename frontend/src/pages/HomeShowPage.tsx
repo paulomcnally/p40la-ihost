@@ -3,27 +3,29 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
-import { useToast } from '../components/Toast'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CardMenu from '../components/CardMenu'
-import Toggle from '../components/Toggle'
 import { Icon } from '../components/Icons'
 import { Badge, Money, PrimaryButton, SectionCard } from '../components/rental/RentalUI'
 import HomeMaintenanceTab from '../components/home/HomeMaintenanceTab'
+import HomeFinancesTab from '../components/home/HomeFinancesTab'
+import HomeStateBadge from '../components/home/HomeStateBadge'
 import type { Home } from '../types'
 import type { HomeRentalStatus } from '../types/rental'
 
-type Tab = 'summary' | 'maintenance' | 'rental'
+type Tab = 'summary' | 'maintenance' | 'rental' | 'finances'
 
 export default function HomeShowPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const homeId = Number(id)
   const { t } = useI18nStore()
-  const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const rawTab = searchParams.get('tab')
-  const tab: Tab = rawTab === 'rental' ? 'rental' : rawTab === 'maintenance' ? 'maintenance' : 'summary'
+  const tab: Tab = rawTab === 'rental' ? 'rental'
+    : rawTab === 'maintenance' ? 'maintenance'
+      : rawTab === 'finances' ? 'finances'
+        : 'summary'
   const [home, setHome] = useState<Home | null>(null)
   const [status, setStatus] = useState<HomeRentalStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -57,16 +59,6 @@ export default function HomeShowPage() {
     setSearchParams(params, { replace: true })
   }
 
-  const toggleListing = async (enabled: boolean) => {
-    try {
-      const next = await api.rental.homes.setListing(homeId, enabled)
-      setStatus(next)
-      showToast(t('rental.listing_updated'), 'success')
-    } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : t('errors.generic'), 'error')
-    }
-  }
-
   if (loading) return <LoadingSpinner />
 
   if (!home) {
@@ -77,10 +69,6 @@ export default function HomeShowPage() {
       </div>
     )
   }
-
-  const listingTone = status?.listing_status === 'rented' ? 'info'
-    : status?.listing_status === 'reserved' ? 'warning'
-      : status?.listing_status === 'available' ? 'success' : 'neutral'
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -97,7 +85,7 @@ export default function HomeShowPage() {
             {home.address && <p className="text-sm text-text-secondary mt-0.5">{home.address}</p>}
             {status && (
               <div className="mt-2">
-                <Badge tone={listingTone}>{t(`rental.listing.${status.listing_status}`)}</Badge>
+                <HomeStateBadge state={status.listing_status} />
               </div>
             )}
           </div>
@@ -107,8 +95,9 @@ export default function HomeShowPage() {
       <div className="flex gap-1 p-1 bg-bg rounded-ios-sm" role="tablist">
         {([
           { key: 'summary' as Tab, label: t('rental.tab_summary') },
-          { key: 'maintenance' as Tab, label: t('homeMaintenance.tab') },
           { key: 'rental' as Tab, label: t('rental.tab_rental') },
+          { key: 'finances' as Tab, label: t('home.finances.tab') },
+          { key: 'maintenance' as Tab, label: t('homeMaintenance.tab') },
         ]).map((item) => (
           <button
             key={item.key}
@@ -140,26 +129,24 @@ export default function HomeShowPage() {
         </SectionCard>
       ) : tab === 'maintenance' ? (
         <HomeMaintenanceTab homeId={homeId} />
+      ) : tab === 'finances' ? (
+        <HomeFinancesTab homeId={homeId} />
       ) : (
         <div className="space-y-4">
-          <SectionCard
-            title={t('rental.listing.title')}
-            subtitle={t('rental.listing.hint')}
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium">{t('rental.listing.publish')}</p>
-                <p className="text-xs text-text-secondary mt-0.5">{t('rental.listing.publish_hint')}</p>
+          {status?.usage && status.usage !== 'rental' ? (
+            <SectionCard title={t('rental.rental_title')}>
+              <div className="border-2 border-dashed border-border rounded-ios p-6 text-center">
+                <p className="font-medium">{t('home.rental_blocked')}</p>
+                <p className="text-sm text-text-secondary mt-1">{t('home.rental_blocked_hint')}</p>
+                <div className="mt-4 flex justify-center">
+                  <PrimaryButton onClick={() => navigate(`/home/edit/${home.id}`)}>
+                    <Icon name="edit" className="w-4 h-4" />
+                    {t('app.edit')}
+                  </PrimaryButton>
+                </div>
               </div>
-              <Toggle
-                checked={status?.listing_enabled ?? true}
-                onChange={toggleListing}
-                ariaLabel={t('rental.listing.publish')}
-              />
-            </div>
-          </SectionCard>
-
-          {status?.active_lease ? (
+            </SectionCard>
+          ) : status?.active_lease ? (
             <SectionCard
               title={t('rental.lease.current')}
               action={<Badge tone="info">{t(`rental.lease_status.${status.active_lease.status}`)}</Badge>}

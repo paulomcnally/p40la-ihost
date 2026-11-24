@@ -5,7 +5,8 @@ import { useI18nStore } from '../stores/i18nStore'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { api } from '../api'
 import { Icon } from '../components/Icons'
-import type { Home } from '../types'
+import Select from '../components/Select'
+import type { Home, HomeUsage } from '../types'
 
 export default function HomeFormPage() {
   const navigate = useNavigate()
@@ -15,6 +16,9 @@ export default function HomeFormPage() {
   const isEdit = !!id
   const [name, setName] = useState('')
   const [address, setAddress] = useState('')
+  const [usage, setUsage] = useState<HomeUsage>('rental')
+  const [usageError, setUsageError] = useState('')
+  const [saveError, setSaveError] = useState('')
   const [loading, setLoading] = useState(false)
 
   usePageTitle(isEdit ? (name || null) : t('home.create'))
@@ -25,15 +29,24 @@ export default function HomeFormPage() {
       if (home) {
         setName(home.name)
         setAddress(home.address)
+        setUsage(home.usage || 'rental')
       }
     }
   }, [id, homes, isEdit])
 
+  const usageOptions = [
+    { value: 'rental', label: t('home.usage.rental') },
+    { value: 'inhabited', label: t('home.usage.inhabited') },
+    { value: 'unused', label: t('home.usage.unused') },
+  ]
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setUsageError('')
+    setSaveError('')
     try {
-      const data: Partial<Home> = { name, address }
+      const data: Partial<Home> = { name, address, usage }
       if (isEdit) {
         await api.homes.update(Number(id), data)
       } else {
@@ -41,8 +54,13 @@ export default function HomeFormPage() {
       }
       loadHomes()
       navigate('/home')
-    } catch {
-      // handled by api
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('errors.generic')
+      if (/contrato|reserva|rental|lease|reservation/i.test(message)) {
+        setUsageError(message)
+      } else {
+        setSaveError(message)
+      }
     } finally {
       setLoading(false)
     }
@@ -71,6 +89,17 @@ export default function HomeFormPage() {
             className="w-full px-3 py-2 border border-border rounded-ios-sm focus:outline-none focus:border-primary min-h-[44px]"
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">{t('home.usage_label')}</label>
+          <Select
+            options={usageOptions}
+            value={usage}
+            onChange={(value) => setUsage(value as HomeUsage)}
+          />
+          <p className="text-xs text-text-secondary mt-1">{t('home.usage_hint')}</p>
+          {usageError && <p className="text-sm text-danger mt-1">{usageError}</p>}
+        </div>
+        {saveError && <p className="text-sm text-danger">{saveError}</p>}
         <div className="flex justify-end gap-3 pt-4 border-t border-border">
           <button
             type="button"
