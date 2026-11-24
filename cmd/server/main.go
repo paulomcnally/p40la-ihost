@@ -122,6 +122,7 @@ func main() {
 	serviceService.SetContractStore(contractStore)
 	billService := services.NewBillService(billStorage, serviceStorage)
 	billService.SetBillHistoryStorage(billHistoryStorage)
+	billService.SetCurrencyStorage(currencyStorage)
 	institutionService := services.NewInstitutionService(institutionStorage)
 	documentService := services.NewDocumentService(serviceStorage, billStorage, institutionStorage)
 	documentService.SetBillHistoryStorage(billHistoryStorage)

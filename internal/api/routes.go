@@ -87,6 +87,9 @@ func BuildRouter(handler *Handler, auth *services.AuthService, staticDir string)
 
 	// APIs de facturas
 	mux.Handle("GET /api/services/{service_id}/bills", authMiddleware(http.HandlerFunc(handler.bill.ListBills)))
+	// Operaciones masivas de facturas (SPEC-145)
+	mux.Handle("POST /api/services/{service_id}/bills/generate", authMiddleware(http.HandlerFunc(handler.bill.GenerateBills)))
+	mux.Handle("POST /api/services/{service_id}/bills/pay", authMiddleware(http.HandlerFunc(handler.bill.PayBills)))
 	// Home global de Servicios (SPEC-120)
 	mux.Handle("GET /api/service-bills", authMiddleware(http.HandlerFunc(handler.bill.ListServiceBillsByMonth)))
 	mux.Handle("GET /api/service-bills/summary", authMiddleware(http.HandlerFunc(handler.bill.ServiceBillsSummary)))
