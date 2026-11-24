@@ -62,11 +62,29 @@ func filterClause(homeID int64, filter Filter) (string, []any) {
 		where = append(where, "substr(m.performed_at, 1, 4) = ?")
 		args = append(args, fmt.Sprintf("%04d", filter.Year))
 	}
+	if filter.Date != "" {
+		where = append(where, "m.performed_at = ?")
+		args = append(args, filter.Date)
+	}
 	if filter.Kind != "" {
 		where = append(where, "m.kind = ?")
 		args = append(args, filter.Kind)
 	}
+	if filter.ItemType != "" {
+		where = append(where, "EXISTS (SELECT 1 FROM home_maintenance_items fit WHERE fit.maintenance_id = m.id AND fit.item_type = ?)")
+		args = append(args, filter.ItemType)
+	}
+	if filter.Query != "" {
+		pattern := likePattern(filter.Query)
+		where = append(where, `(m.description LIKE ? ESCAPE '\' OR EXISTS (SELECT 1 FROM home_maintenance_items qit WHERE qit.maintenance_id = m.id AND qit.description LIKE ? ESCAPE '\'))`)
+		args = append(args, pattern, pattern)
+	}
 	return " WHERE " + strings.Join(where, " AND "), args
+}
+
+func likePattern(value string) string {
+	replacer := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	return "%" + replacer.Replace(strings.TrimSpace(value)) + "%"
 }
 
 // List devuelve el histórico de una vivienda sin las líneas.
@@ -76,6 +94,10 @@ func (s *Storage) List(ctx context.Context, homeID int64, filter Filter) ([]Main
 		SELECT ` + maintenanceColumns + maintenanceFrom + clause + `
 		ORDER BY m.performed_at DESC, m.id DESC
 	`
+	if filter.Limit > 0 {
+		query += " LIMIT ?"
+		args = append(args, filter.Limit)
+	}
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("listar mantenimientos: %w", err)
@@ -200,6 +222,46 @@ func (s *Storage) Create(ctx context.Context, homeID int64, input Input) (int64,
 	return id, nil
 }
 
+// CreateWithItem inserta el mantenimiento y su primera línea en una sola
+// transacción. Si la línea falla, no queda un mantenimiento vacío.
+func (s *Storage) CreateWithItem(ctx context.Context, homeID int64, input Input, item ItemInput) (int64, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("iniciar transacción del mantenimiento: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.ExecContext(ctx, `
+		INSERT INTO home_maintenances
+			(home_id, performed_at, kind, area, institution_id, description)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`,
+		homeID, input.PerformedAt, input.Kind, input.Area,
+		nullableID(input.InstitutionID), input.Description,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("crear mantenimiento: %w", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("id de mantenimiento: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO home_maintenance_items
+			(maintenance_id, item_type, description, quantity, unit, amount, currency_id, institution_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`,
+		id, item.ItemType, item.Description, item.Quantity,
+		item.Unit, item.Amount, item.CurrencyID, nullableID(item.InstitutionID),
+	); err != nil {
+		return 0, fmt.Errorf("crear línea del mantenimiento: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("confirmar mantenimiento: %w", err)
+	}
+	return id, nil
+}
+
 // Update actualiza un mantenimiento de la vivienda.
 func (s *Storage) Update(ctx context.Context, homeID, id int64, input Input) (bool, error) {
 	res, err := s.db.ExecContext(ctx, `
@@ -288,6 +350,57 @@ func (s *Storage) ListItems(ctx context.Context, maintenanceID int64) ([]Item, e
 		return nil, fmt.Errorf("recorrer líneas: %w", err)
 	}
 	return items, nil
+}
+
+// ListItemsByMaintenanceIDs devuelve las líneas de varios mantenimientos en una
+// sola consulta, agrupadas por mantenimiento. Corta en limit y avisa si quedó
+// truncado para no exceder la memoria del iHost.
+func (s *Storage) ListItemsByMaintenanceIDs(ctx context.Context, maintenanceIDs []int64, limit int) (map[int64][]Item, bool, error) {
+	grouped := make(map[int64][]Item)
+	if len(maintenanceIDs) == 0 {
+		return grouped, false, nil
+	}
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(maintenanceIDs)), ",")
+	args := make([]any, 0, len(maintenanceIDs)+1)
+	for _, id := range maintenanceIDs {
+		args = append(args, id)
+	}
+	query := `
+		SELECT ` + itemColumns + itemFrom + `
+		WHERE it.maintenance_id IN (` + placeholders + `)
+		ORDER BY it.maintenance_id, it.item_type, it.id
+	`
+	if limit > 0 {
+		query += " LIMIT ?"
+		args = append(args, limit+1)
+	}
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, false, fmt.Errorf("listar líneas por mantenimiento: %w", err)
+	}
+	defer rows.Close()
+
+	count := 0
+	truncated := false
+	for rows.Next() {
+		if limit > 0 && count >= limit {
+			truncated = true
+			break
+		}
+		item, err := scanItem(rows)
+		if err != nil {
+			return nil, false, err
+		}
+		if item == nil {
+			continue
+		}
+		grouped[item.MaintenanceID] = append(grouped[item.MaintenanceID], *item)
+		count++
+	}
+	if err := rows.Err(); err != nil {
+		return nil, false, fmt.Errorf("recorrer líneas por mantenimiento: %w", err)
+	}
+	return grouped, truncated, nil
 }
 
 // GetItem devuelve una línea del mantenimiento o nil si no existe.

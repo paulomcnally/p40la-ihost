@@ -30,7 +30,12 @@ func (h *handlers) list(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
 		return
 	}
-	filter := Filter{Kind: r.URL.Query().Get("kind")}
+	filter := Filter{
+		Kind:     r.URL.Query().Get("kind"),
+		Date:     r.URL.Query().Get("date"),
+		ItemType: r.URL.Query().Get("item_type"),
+		Query:    r.URL.Query().Get("q"),
+	}
 	if raw := r.URL.Query().Get("year"); raw != "" {
 		year, err := strconv.Atoi(raw)
 		if err != nil || year < 1900 || year > 9999 {
@@ -38,6 +43,14 @@ func (h *handlers) list(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		filter.Year = year
+	}
+	if raw := r.URL.Query().Get("include_items"); raw != "" {
+		value, err := strconv.ParseBool(raw)
+		if err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_filter", "include_items debe ser true o false")
+			return
+		}
+		filter.IncludeItems = value
 	}
 	result, err := h.service.List(r.Context(), homeID, filter)
 	if err != nil {
@@ -66,12 +79,12 @@ func (h *handlers) create(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid_id", "ID inválido")
 		return
 	}
-	var req Input
+	var req CreateInput
 	if err := decodeJSON(r, &req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
 		return
 	}
-	item, err := h.service.Create(r.Context(), homeID, req)
+	item, err := h.service.CreateWithItem(r.Context(), homeID, req.Input, req.Item)
 	if err != nil {
 		respondModuleError(w, err)
 		return

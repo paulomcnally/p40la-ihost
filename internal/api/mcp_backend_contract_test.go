@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
@@ -10,6 +11,8 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/db"
 	mcpapi "github.com/paulomcnally/p40la-ihost/internal/mcp/api"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/config"
+	"github.com/paulomcnally/p40la-ihost/internal/modules"
+	homemaintenance "github.com/paulomcnally/p40la-ihost/internal/modules/home/maintenance"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
 )
@@ -62,11 +65,15 @@ func TestMCPBackendContract(t *testing.T) {
 		t.Fatalf("generar API key de prueba: %v", err)
 	}
 
+	moduleRegistry := modules.NewRegistry()
+	moduleRegistry.Register(homemaintenance.New(database))
+
 	handler := &Handler{
-		service:  serviceHandlers,
-		bill:     billHandlers,
-		webhooks: &WebhookHandlers{},
-		apiKeys:  apiKeyService,
+		service:        serviceHandlers,
+		bill:           billHandlers,
+		webhooks:       &WebhookHandlers{},
+		apiKeys:        apiKeyService,
+		moduleRegistry: moduleRegistry,
 	}
 	server := httptest.NewServer(BuildRouter(handler, nil, t.TempDir()))
 	t.Cleanup(server.Close)
@@ -135,6 +142,91 @@ func TestMCPBackendContract(t *testing.T) {
 	}
 	if !paid.DryRun || paid.Selector != "month" || len(paid.Items) != 1 {
 		t.Fatalf("pago dry-run inesperado: %+v", paid)
+	}
+
+	maintenance, err := client.CreateHomeMaintenance(requestCtx, 1, mcpapi.HomeMaintenanceRequest{
+		PerformedAt: "2026-03-10",
+		Kind:        "corrective",
+		Area:        "plumbing",
+		Description: "Reparación demo",
+		Item: &mcpapi.HomeMaintenanceItemRequest{
+			ItemType: "labor", Description: "Mano de obra demo", Amount: 50, CurrencyID: 1,
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeMaintenance: %v", err)
+	}
+	if maintenance.ID == 0 || len(maintenance.Items) != 1 {
+		t.Fatalf("mantenimiento inesperado: %+v", maintenance)
+	}
+	createdItem := maintenance.Items[0]
+	if createdItem.ItemType != "labor" || createdItem.Quantity != 1 || createdItem.Unit != "unit" || createdItem.CurrencyID != 1 {
+		t.Fatalf("línea inesperada: %+v", createdItem)
+	}
+
+	list, err := client.ListHomeMaintenances(requestCtx, 1, mcpapi.HomeMaintenanceFilter{
+		Date: "2026-03-10", ItemType: "labor", Query: "demo", IncludeItems: true,
+	})
+	if err != nil {
+		t.Fatalf("ListHomeMaintenances: %v", err)
+	}
+	if len(list.Items) != 1 || len(list.Items[0].Items) != 1 || list.Truncated {
+		t.Fatalf("listado inesperado: %+v", list)
+	}
+	if len(list.TotalsByCurrency) != 1 || list.TotalsByCurrency[0].LaborCost != 50 {
+		t.Fatalf("totales inesperados: %+v", list.TotalsByCurrency)
+	}
+
+	detail, err := client.GetHomeMaintenance(requestCtx, 1, maintenance.ID)
+	if err != nil {
+		t.Fatalf("GetHomeMaintenance: %v", err)
+	}
+	if len(detail.Items) != 1 || detail.Items[0].ID != createdItem.ID {
+		t.Fatalf("detalle inesperado: %+v", detail)
+	}
+
+	supplies, err := client.CreateHomeMaintenanceItem(requestCtx, 1, maintenance.ID, mcpapi.HomeMaintenanceItemRequest{
+		ItemType: "supplies", Description: "Insumo demo", Quantity: 2, Unit: "kg", Amount: 30, CurrencyID: 1,
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeMaintenanceItem: %v", err)
+	}
+	if supplies.ItemType != "supplies" || supplies.Quantity != 2 || supplies.Unit != "kg" {
+		t.Fatalf("insumo inesperado: %+v", supplies)
+	}
+
+	list, err = client.ListHomeMaintenances(requestCtx, 1, mcpapi.HomeMaintenanceFilter{
+		Date: "2026-03-10", ItemType: "supplies", IncludeItems: true,
+	})
+	if err != nil {
+		t.Fatalf("ListHomeMaintenances supplies: %v", err)
+	}
+	if len(list.Items) != 1 || len(list.Items[0].Items) != 2 {
+		t.Fatalf("listado con insumos inesperado: %+v", list)
+	}
+	if len(list.TotalsByCurrency) != 1 || list.TotalsByCurrency[0].LaborCost != 50 || list.TotalsByCurrency[0].SuppliesCost != 30 {
+		t.Fatalf("totales con insumos inesperados: %+v", list.TotalsByCurrency)
+	}
+
+	_, err = client.CreateHomeMaintenance(requestCtx, 1, mcpapi.HomeMaintenanceRequest{
+		PerformedAt: "2026-03-11", Kind: "corrective", Area: "other", Description: "Reparación demo",
+		Item: &mcpapi.HomeMaintenanceItemRequest{
+			ItemType: "labor", Description: "Mano de obra demo", Amount: 10, CurrencyID: 999999,
+		},
+	})
+	var apiErr *mcpapi.APIError
+	if !errors.As(err, &apiErr) || apiErr.Code != "currency_not_found" {
+		t.Fatalf("esperaba currency_not_found: %v", err)
+	}
+
+	_, err = client.CreateHomeMaintenance(requestCtx, 1, mcpapi.HomeMaintenanceRequest{
+		PerformedAt: "2999-01-01", Kind: "corrective", Area: "other", Description: "Reparación demo",
+		Item: &mcpapi.HomeMaintenanceItemRequest{
+			ItemType: "labor", Description: "Mano de obra demo", Amount: 10, CurrencyID: 1,
+		},
+	})
+	if !errors.As(err, &apiErr) || apiErr.Code != "future_date" {
+		t.Fatalf("esperaba future_date: %v", err)
 	}
 
 	var source string

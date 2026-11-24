@@ -9,13 +9,16 @@ import (
 )
 
 const (
-	maxDescriptionLen  = 500
-	maxItemDescription = 200
-	dateLayout         = "2006-01-02"
-	defaultArea        = AreaOther
-	defaultKind        = KindCorrective
-	defaultUnit        = UnitUnit
-	defaultQuantity    = 1.0
+	maxDescriptionLen        = 500
+	maxItemDescription       = 200
+	maxQueryLen              = 100
+	maxMaintenancesWithItems = 100
+	maxItemsPerList          = 1000
+	dateLayout               = "2006-01-02"
+	defaultArea              = AreaOther
+	defaultKind              = KindCorrective
+	defaultUnit              = UnitUnit
+	defaultQuantity          = 1.0
 )
 
 // Service contiene la lógica de negocio del módulo (ARCH-MODULES).
@@ -40,10 +43,35 @@ func (s *Service) List(ctx context.Context, homeID int64, filter Filter) (*List,
 	if filter.Kind != "" && !contains(Kinds, filter.Kind) {
 		return nil, invalid("invalid_kind", "El tipo de mantenimiento no es válido")
 	}
+	if filter.Year > 0 && filter.Date != "" {
+		return nil, invalid("invalid_filter", "year y date no se pueden combinar")
+	}
+	if filter.Date != "" {
+		parsed, err := time.Parse(dateLayout, strings.TrimSpace(filter.Date))
+		if err != nil {
+			return nil, invalid("invalid_date", "La fecha debe tener formato YYYY-MM-DD")
+		}
+		filter.Date = parsed.Format(dateLayout)
+	}
+	if filter.ItemType != "" && !contains(ItemTypes, filter.ItemType) {
+		return nil, invalid("invalid_item_type", "El tipo de línea debe ser mano de obra o insumos")
+	}
+	filter.Query = strings.TrimSpace(filter.Query)
+	if utf8.RuneCountInString(filter.Query) > maxQueryLen {
+		return nil, invalid("invalid_query", "El texto de búsqueda supera el máximo permitido")
+	}
+	if filter.IncludeItems {
+		filter.Limit = maxMaintenancesWithItems + 1
+	}
 
 	items, err := s.storage.List(ctx, homeID, filter)
 	if err != nil {
 		return nil, err
+	}
+	truncated := false
+	if filter.IncludeItems && len(items) > maxMaintenancesWithItems {
+		items = items[:maxMaintenancesWithItems]
+		truncated = true
 	}
 	grouped, err := s.storage.TotalsByMaintenance(ctx, homeID, filter)
 	if err != nil {
@@ -52,11 +80,29 @@ func (s *Service) List(ctx context.Context, homeID int64, filter Filter) (*List,
 	for index := range items {
 		items[index].TotalsByCurrency = roundTotals(grouped[items[index].ID])
 	}
+	if filter.IncludeItems && len(items) > 0 {
+		ids := make([]int64, 0, len(items))
+		for _, item := range items {
+			ids = append(ids, item.ID)
+		}
+		details, itemsTruncated, err := s.storage.ListItemsByMaintenanceIDs(ctx, ids, maxItemsPerList)
+		if err != nil {
+			return nil, err
+		}
+		truncated = truncated || itemsTruncated
+		for index := range items {
+			if list, ok := details[items[index].ID]; ok {
+				items[index].Items = list
+			} else {
+				items[index].Items = []Item{}
+			}
+		}
+	}
 	totals, err := s.storage.TotalsByCurrency(ctx, homeID, filter)
 	if err != nil {
 		return nil, err
 	}
-	return &List{Items: items, TotalsByCurrency: roundTotals(totals)}, nil
+	return &List{Items: items, TotalsByCurrency: roundTotals(totals), Truncated: truncated}, nil
 }
 
 // Get devuelve un mantenimiento con sus líneas.
@@ -82,13 +128,30 @@ func (s *Service) Get(ctx context.Context, homeID, id int64) (*Maintenance, erro
 
 // Create registra un mantenimiento.
 func (s *Service) Create(ctx context.Context, homeID int64, input Input) (*Maintenance, error) {
+	return s.CreateWithItem(ctx, homeID, input, nil)
+}
+
+// CreateWithItem registra un mantenimiento y, si item no es nil, su primera
+// línea en la misma transacción.
+func (s *Service) CreateWithItem(ctx context.Context, homeID int64, input Input, item *ItemInput) (*Maintenance, error) {
 	if err := s.requireHome(ctx, homeID); err != nil {
 		return nil, err
 	}
 	if err := s.prepare(ctx, &input); err != nil {
 		return nil, err
 	}
-	id, err := s.storage.Create(ctx, homeID, input)
+	if item != nil {
+		if err := s.prepareItem(ctx, item); err != nil {
+			return nil, err
+		}
+	}
+	var id int64
+	var err error
+	if item == nil {
+		id, err = s.storage.Create(ctx, homeID, input)
+	} else {
+		id, err = s.storage.CreateWithItem(ctx, homeID, input, *item)
+	}
 	if err != nil {
 		return nil, err
 	}
