@@ -6,14 +6,14 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 
 | Métrica | Valor |
 |---------|-------|
-| **Total de specs** | 159 |
+| **Total de specs** | 160 |
 | **En draft** | 0 🟡 |
 | **Pending execution** | 0 🔵 |
 | **In progress** | 0 🟣 |
 | **Pending release** | 0 🟠 |
-| **Released** | 159 🟢 |
+| **Released** | 160 🟢 |
 | **Canceladas** | 0 ⚫ |
-| **Último ID usado** | SPEC-159 |
+| **Último ID usado** | SPEC-160 |
 
 ---
 
@@ -180,8 +180,11 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-157 | MCP: alta de reparaciones sin líneas y movimiento de insumos/mano de obra entre reparaciones | released | 2026-11-24 | opencode |
 | SPEC-158 | Release unificado: app e imagen MCP desde release.sh | released | 2026-11-24 | opencode |
 | SPEC-159 | MCP: consulta, edición y borrado de líneas en reparaciones del hogar | released | 2026-11-24 | opencode |
+| SPEC-160 | Evitar releases sin cambios en app, MCP y wrapper Tailscale | released | 2026-11-25 | opencode |
 
 ---
+
+Última actualización del tracker: 2026-11-25 — SPEC-160 released: la app no se publicó al no tener cambios; MCP `mcp-v0.6.2` y wrapper Tailscale `tailscale-v0.1.0` publicados; workflows exitosos `45664805241` y `45664810481`; merge `a297751d`; issue #163 cerrado.
 
 ## 🔄 Flujo de Estados
 

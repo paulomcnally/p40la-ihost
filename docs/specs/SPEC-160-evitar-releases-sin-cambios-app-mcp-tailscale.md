@@ -1,20 +1,22 @@
 ---
 title: "Evitar releases sin cambios: app, MCP y wrapper Tailscale"
 id: "SPEC-160"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-25"
 updated: "2026-11-25"
 github_issue: 163
+release: "2026-11-25; merge a main a297751dce5414435cbabe8dbbb0ec15266ecd51; app sin cambios ni publicación; MCP mcp-v0.6.2; Tailscale tailscale-v0.1.0; workflows https://github.com/paulomcnally/p40la-ihost/actions/runs/45664805241 y https://github.com/paulomcnally/p40la-ihost/actions/runs/45664810481"
 ---
 
 # Evitar releases sin cambios: app, MCP y wrapper Tailscale
 
 **ID**: SPEC-160
-**Estado**: pending_release
+**Estado**: released
 **Autor**: opencode
 **Creado**: 2026-11-25
 **Actualizado**: 2026-11-25
+**Release**: 2026-11-25 — merge a `main` `a297751d`; app sin cambios ni publicación; MCP `mcp-v0.6.2` (workflow [45664805241](https://github.com/paulomcnally/p40la-ihost/actions/runs/45664805241)); Tailscale `tailscale-v0.1.0` (workflow [45664810481](https://github.com/paulomcnally/p40la-ihost/actions/runs/45664810481)); imágenes publicadas; iHost responde `{"status":"ok"}`; issue #163 cerrado.
 
 ---
 
@@ -328,4 +330,4 @@ Validación subagente: `explore` — sesión `ses_dee8622dcffexdyuyyMrehejFS` �
 | 2026-11-25 | opencode | Creación inicial de la especificación (draft); validación multiagente (explore + general) integrada |
 | 2026-11-25 | opencode | Estado `pending_execution`; issue de GitHub #163 |
 | 2026-11-25 | opencode | Estado `in_progress` (implementación): se agrega `scripts/test-release-detection.sh` como suite automatizada de la matriz de detección (§7.3), se documenta `APP_VERSION` y `--list-tags` en la interfaz (§5.2) y el archivo de tests en §5.5 |
-| 2026-11-25 | DevOps | Estado `pending_release`: QA y Security aprobaron SPEC-160; worktree verificado y plan read-only confirma publicar MCP `mcp-v0.6.2` y wrapper `tailscale-v0.1.0`, sin versionar la app |
+| 2026-11-25 | DevOps | Release completado: app omitida por falta de cambios; publicación MCP `mcp-v0.6.2` y wrapper Tailscale `tailscale-v0.1.0`; workflows exitosos |
