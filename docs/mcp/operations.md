@@ -24,23 +24,47 @@ GOOS=darwin GOARCH=arm64 go build -o bin/p40la-mcp-darwin-arm64 ./cmd/mcp-server
 
 `Dockerfile.mcp` es independiente de la imagen del add-on web. La imagen final es distroless `nonroot` (UID/GID 65532), expone 8090 y 8091, y guarda el estado en `/data`.
 
-```bash
-GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
-
-# Personalizar imagen y tag
-IMAGE="paulomcnally/p40la-mcp" TAG="0.4.0" \
-GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
-```
-
-El script construye y publica las tres plataformas obligatorias (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) con `docker buildx`. Verificá los manifests:
-
-```bash
-docker buildx imagetools inspect paulomcnally/p40la-mcp:0.5.0
-```
-
-El token de GitHub se pasa como secreto de BuildKit (`id=gh_token`) porque el módulo de plugins es privado; no queda en la imagen.
-
 El binario MCP **no** se incluye en la imagen Docker del servidor web ni se inicia con el add-on principal. Puede correr en la máquina del cliente (stdio), como contenedor aparte con OAuth (HTTP) o en el iHost con red host. Esto evita sumar procesos al add-on web y mantiene separadas las credenciales.
+
+## Release y publicación
+
+Un solo comando libera la app y, si corresponde, la imagen del MCP:
+
+```bash
+./scripts/release.sh                       # app: bump patch; MCP si hay cambios
+./scripts/release.sh 0.5.20                # app 0.5.20; MCP automático
+./scripts/release.sh 0.5.20 0.6.0          # app y MCP explícitos
+MCP_VERSION=0.6.0 ./scripts/release.sh     # MCP explícito por entorno
+./scripts/release.sh --no-mcp              # solo app (o MCP_VERSION=skip)
+./scripts/release.sh --check               # plan sin escrituras
+```
+
+| Artefacto | Tag git | Workflow | Imágenes en Docker Hub |
+|---|---|---|---|
+| App web | `vX.Y.Z` | `Build & Push Docker Image` | `paulomcnally/p40la-ihost` |
+| MCP | `mcp-vX.Y.Z` | `Build & Push MCP Image` | `paulomcnally/p40la-mcp` y `paulomcnally/p40la-mcp-tailscale` |
+
+`release.sh` exige estar en `main` con el árbol limpio (con `--check` solo avisa si estás en otra rama), crea el commit de bump (`docker-compose.yml`, `frontend/package.json`), los tags y espera la conclusión de cada workflow disparado; si uno falla, sale con error para no dejar un release parcial.
+
+El MCP se publica solo si hay cambios desde el último tag `mcp-v*` en `cmd/mcp-server/`, `internal/mcp/`, `Dockerfile.mcp`, `deploy/mcp/`, `.github/workflows/mcp-publish.yml`, `go.mod` o `go.sum`. Sin tag previo publica `0.1.0`; con tag previo, bumpea el patch. Una versión explícita (`MCP_VERSION` o el segundo argumento) publica aunque no haya cambios.
+
+El workflow `Build & Push MCP Image` construye las tres plataformas obligatorias (`linux/amd64`, `linux/arm/v7`, `linux/arm64`), arma el manifest multi-arch y publica además la imagen del nodo Tailscale (`deploy/mcp/tailscale/`) con la misma versión y `latest`.
+
+### Verificar la publicación
+
+```bash
+docker buildx imagetools inspect paulomcnally/p40la-mcp:latest
+docker buildx imagetools inspect paulomcnally/p40la-mcp:0.6.0
+# Platform: linux/amd64, linux/arm/v7, linux/arm64
+```
+
+El tag `latest` y el de la versión deben listar las tres plataformas; si falta alguna, el job `merge` no pudo crear el manifest y hay que reintentar el workflow.
+
+### Publicación manual
+
+Si hiciste el release de la app sin el MCP, o necesitás republicar una imagen, dispará `workflow_dispatch` del workflow `Build & Push MCP Image` con la versión (`X.Y.Z`) como input. Publica las imágenes con esa versión y `latest`, sin crear ni mover tags git.
+
+El token de GitHub se pasa como secreto de BuildKit (`id=gh_token`) en CI, porque el módulo de plugins es privado; no queda en la imagen.
 
 ## Provisionar la API key
 
