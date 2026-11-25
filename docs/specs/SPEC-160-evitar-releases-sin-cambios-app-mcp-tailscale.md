@@ -1,7 +1,7 @@
 ---
 title: "Evitar releases sin cambios: app, MCP y wrapper Tailscale"
 id: "SPEC-160"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-25"
 updated: "2026-11-25"
@@ -11,7 +11,7 @@ github_issue: 163
 # Evitar releases sin cambios: app, MCP y wrapper Tailscale
 
 **ID**: SPEC-160
-**Estado**: in_progress
+**Estado**: pending_release
 **Autor**: opencode
 **Creado**: 2026-11-25
 **Actualizado**: 2026-11-25
@@ -328,3 +328,4 @@ Validación subagente: `explore` — sesión `ses_dee8622dcffexdyuyyMrehejFS` �
 | 2026-11-25 | opencode | Creación inicial de la especificación (draft); validación multiagente (explore + general) integrada |
 | 2026-11-25 | opencode | Estado `pending_execution`; issue de GitHub #163 |
 | 2026-11-25 | opencode | Estado `in_progress` (implementación): se agrega `scripts/test-release-detection.sh` como suite automatizada de la matriz de detección (§7.3), se documenta `APP_VERSION` y `--list-tags` en la interfaz (§5.2) y el archivo de tests en §5.5 |
+| 2026-11-25 | DevOps | Estado `pending_release`: QA y Security aprobaron SPEC-160; worktree verificado y plan read-only confirma publicar MCP `mcp-v0.6.2` y wrapper `tailscale-v0.1.0`, sin versionar la app |
