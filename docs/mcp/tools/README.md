@@ -10,11 +10,11 @@ description: "Convenciones y listado de tools MCP disponibles"
 
 - `snake_case`, con el dominio primero: `bills_list`, `entities_search`, `autos_maintenance_register`, `bank_accounts_search`.
 - Verbo al final: `list`/`search` (lectura), `create` (alta), `update` (edición), `generate` (alta masiva), `pay` (acción), `register` (registro de un hecho).
-- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas, autos y las cuatro de reparaciones del hogar declaran `dry_run`; las altas de entidades y las de banca no tienen previsualización y verifican duplicados antes del POST. Las de banca resuelven banco y moneda por nombre/código; las de reparaciones incluyen el alta de la reparación vacía, el registro de líneas —que resuelve o crea el mantenimiento del día y deduplica por línea— y el movimiento de líneas entre reparaciones del mismo hogar. Las **24 tools de lectura** no dependen de la compuerta: búsquedas (`entities_search`, `bank_accounts_search`, `credit_cards_search`, `autos_list`) y las vistas y detalles agregados en SPEC-154 (pensión, alquileres, deudas, estados de cuenta, reparaciones, facturas por mes, alertas y configuración).
+- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas, autos y las cuatro de reparaciones del hogar declaran `dry_run`; las altas de entidades y las de banca no tienen previsualización y verifican duplicados antes del POST; `homes_update` es una edición idempotente de un hogar, rechaza un `name` que ya pertenece a otro hogar y tampoco tiene `dry_run`. Las de banca resuelven banco y moneda por nombre/código; las de reparaciones incluyen el alta de la reparación vacía, el registro de líneas —que resuelve o crea el mantenimiento del día y deduplica por línea— y el movimiento de líneas entre reparaciones del mismo hogar. Las **24 tools de lectura** no dependen de la compuerta: búsquedas (`entities_search`, `bank_accounts_search`, `credit_cards_search`, `autos_list`) y las vistas y detalles agregados en SPEC-154 (pensión, alquileres, deudas, estados de cuenta, reparaciones, facturas por mes, alertas y configuración).
 
 ## Tools actuales
 
-El catálogo tiene **43 tools**: 24 de lectura y 19 de escritura.
+El catálogo tiene **44 tools**: 24 de lectura y 20 de escritura.
 
 | Tool | Dominio | Tipo | Documentación |
 |---|---|---|---|
@@ -54,6 +54,7 @@ El catálogo tiene **43 tools**: 24 de lectura y 19 de escritura.
 | `home_maintenance_supplies_register` | Reparaciones | Escritura | [home-maintenance.md](home-maintenance.md) |
 | `home_maintenance_item_move` | Reparaciones | Escritura | [home-maintenance.md](home-maintenance.md) |
 | `homes_create` | Hogares | Escritura | [entities.md](entities.md) |
+| `homes_update` | Hogares | Escritura | [entities.md](entities.md) |
 | `institutions_create` | Instituciones | Escritura | [entities.md](entities.md) |
 | `banks_create` | Bancos | Escritura | [entities.md](entities.md) |
 | `services_create` | Servicios | Escritura | [entities.md](entities.md) |
@@ -134,6 +135,7 @@ Las tools devuelven contenido de texto JSON y `structuredContent` con el mismo o
 - Altas de autos: `autos_create`, `autos_maintenance_register`, `autos_inspection_register` y `autos_insurance_register` usan `destructiveHint=false`, `idempotentHint=false`, `openWorldHint=false`.
 - Reparaciones del hogar: `home_maintenance_create`, `home_maintenance_labor_register` y `home_maintenance_supplies_register` son aditivas y declaran `destructiveHint=false`, `idempotentHint=false`, `openWorldHint=false`; el alta no deduplica y las de registro deduplican por día antes de escribir, pero dos llamadas concurrentes podrían crear líneas distintas. `home_maintenance_item_move` declara `destructiveHint=true` (con `delete_source_if_empty=true` puede borrar la reparación de origen), `idempotentHint=false` y `openWorldHint=false`. Sus anotaciones quedan congeladas en `contracts.json`.
 - Altas de entidades: `homes_create`, `institutions_create`, `banks_create` y `services_create` usan `destructiveHint=true`, `openWorldHint=false`. No declaran `idempotentHint`.
+- Edición de hogares: `homes_update` usa `destructiveHint=true`, `idempotentHint=true`, `openWorldHint=false`. No tiene `dry_run`.
 - Escritura de banca: las altas y ediciones usan `destructiveHint=true` y `openWorldHint=false`. Las ediciones (`*_update`) usan `idempotentHint=true`; las altas (`*_create`) usan `idempotentHint=false`.
 
 `destructiveHint=false` en facturas y autos significa que son aditivas (crean o actualizan estado), no borran datos. En las altas de entidades y en banca el valor es `true` de forma conservadora: las tools de alta no garantizan ser seguras ante reintentos, aunque en la práctica solo agregan registros y nunca borran; las ediciones modifican datos existentes. La confirmación humana sigue siendo obligatoria por el impacto en los datos. `autos_insurance_register` declara `idempotentHint=false`; repetir con el mismo `service_id` devuelve `already_exists` y no crea un duplicado.

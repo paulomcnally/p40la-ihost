@@ -79,8 +79,8 @@ Reglas aplicables según `docs/rules/00-index.md`. La spec toca backend, MCP y S
 | `DELIV-HOOKS` | Hooks instalados; `./scripts/install-hooks.sh` al crear el worktree | `CA-DELIV-HOOKS` |
 | `DELIV-LABELS` | Issue con `spec/draft` y transiciones a `spec/in-progress`, `spec/pending-release` y `spec/released` | `CA-DELIV-LABELS` |
 | `DELIV-RELEASE` | Merge, push, tracker, label, cierre de issue y limpieza del worktree en el mismo ciclo | `CA-DELIV-RELEASE` |
-| `DELIV-DOCKER` | Aplica al release del servidor MCP: imagen `paulomcnally/p40la-mcp` multi-arch (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) con tag nuevo; el Dockerfile no cambia | `CA-DELIV-DOCKER` |
-| `DELIV-DEPLOY` | El deploy al iHost lo aprueba el usuario; si se despliega, se verifica `GET /health` | `CA-DELIV-DEPLOY` |
+| `DELIV-DOCKER` | **N/A**: esta spec no publica imagen ni cambia el Dockerfile; la imagen MCP no se publica en este ciclo | — |
+| `DELIV-DEPLOY` | **N/A**: no se despliega al iHost en esta spec | — |
 
 ---
 
@@ -434,12 +434,12 @@ La reparación vacía **sí aparece** en `home_maintenance_list` (la consulta no
 | `internal/mcp/tools/all/contract_test.go` | stub `MoveHomeMaintenanceItems` |
 | `internal/api/mcp_backend_contract_test.go` | alta vacía + movimiento por la cadena real |
 | `docs/mcp/tools/impact.json` | 2 tools nuevas y dependencia `internal/mcp/tools/homemaint/` para `home_maintenance_list` |
-| `docs/mcp/tools/contracts.json` | golden regenerado (41 → 43) |
+| `docs/mcp/tools/contracts.json` | golden regenerado (42 → 44) |
 | `docs/mcp/tools/home-maintenance.md` | secciones de create/move |
-| `docs/mcp/tools/README.md` | catálogo 41 → 43 |
+| `docs/mcp/tools/README.md` | catálogo 42 → 44 |
 | `docs/mcp/README.md` | conteo y tabla de escritura |
 | `docs/mcp/security.md` | tools sujetas a la compuerta |
-| `docs/mcp/tools/impact.md` | conteos 41 → 43 |
+| `docs/mcp/tools/impact.md` | conteos 42 → 44 |
 | `docs/specs/README.md` | tracker en el release |
 
 **Sin migraciones**: el esquema de `0057_home_maintenance` no cambia.
@@ -467,11 +467,11 @@ La reparación vacía **sí aparece** en `home_maintenance_list` (la consulta no
 
 ### 6.3 Ruta compartida `internal/mcp/api/` y `internal/mcp/tools/all/`
 
-El manifiesto declara ambos directorios en `shared.affects_all`. Agregar `MoveHomeMaintenanceItems` a `HomeMaintenanceAPI` y el stub en `contract_test.go` hace que el analizador reporte **las 41 tools existentes** por recompilación, aunque su comportamiento no cambia. El gate exige declararlas; se listan a continuación para que quede explícito:
+El manifiesto declara ambos directorios en `shared.affects_all`. Agregar `MoveHomeMaintenanceItems` a `HomeMaintenanceAPI` y el stub en `contract_test.go` hace que el analizador reporte **las 42 tools existentes** por recompilación, aunque su comportamiento no cambia. El gate exige declararlas; se listan a continuación para que quede explícito:
 
-`alerts_list`, `automation_accounts_list`, `automation_runs_list`, `autos_create`, `autos_inspection_alerts`, `autos_inspection_register`, `autos_insurance_register`, `autos_list`, `autos_maintenance_register`, `autos_update`, `bank_accounts_create`, `bank_accounts_search`, `bank_accounts_update`, `banks_create`, `bills_by_month`, `bills_generate`, `bills_list`, `bills_pay`, `bills_projection`, `bills_summary`, `credit_card_statements_get`, `credit_card_statements_list`, `credit_cards_create`, `credit_cards_search`, `credit_cards_update`, `debt_bills_list`, `entities_search`, `home_maintenance_labor_register`, `home_maintenance_list`, `home_maintenance_supplies_register`, `homes_create`, `institutions_create`, `pension_catalogs_list`, `pension_month_summary`, `rental_home_status`, `rental_lease_get`, `rental_leases_list`, `rental_portfolio_summary`, `services_create`, `services_get`, `settings_status`.
+`alerts_list`, `automation_accounts_list`, `automation_runs_list`, `autos_create`, `autos_inspection_alerts`, `autos_inspection_register`, `autos_insurance_register`, `autos_list`, `autos_maintenance_register`, `autos_update`, `bank_accounts_create`, `bank_accounts_search`, `bank_accounts_update`, `banks_create`, `bills_by_month`, `bills_generate`, `bills_list`, `bills_pay`, `bills_projection`, `bills_summary`, `credit_card_statements_get`, `credit_card_statements_list`, `credit_cards_create`, `credit_cards_search`, `credit_cards_update`, `debt_bills_list`, `entities_search`, `home_maintenance_labor_register`, `home_maintenance_list`, `home_maintenance_supplies_register`, `homes_update`, `homes_create`, `institutions_create`, `pension_catalogs_list`, `pension_month_summary`, `rental_home_status`, `rental_lease_get`, `rental_leases_list`, `rental_portfolio_summary`, `services_create`, `services_get`, `settings_status`.
 
-**Impacto real**: nulo en el comportamiento de esas 41 tools; solo se recompila el paquete `internal/mcp/api` y el catálogo de tests. Las tools con cambio funcional son las dos nuevas.
+**Impacto real**: nulo en el comportamiento de esas 42 tools; solo se recompila el paquete `internal/mcp/api` y el catálogo de tests. Las tools con cambio funcional son las dos nuevas.
 
 ### 6.4 Contrato y tests
 
@@ -479,7 +479,7 @@ El manifiesto declara ambos directorios en `shared.affects_all`. Agregar `MoveHo
 - `docs/mcp/tools/impact.json`: se agregan las dos tools nuevas con sus dependencias y endpoints.
 - `internal/mcp/tools/all/contract_test.go`: `contractAPI` debe implementar `MoveHomeMaintenanceItems` o el paquete de tests no compila.
 - `internal/api/mcp_backend_contract_test.go`: agregar el alta de una reparación **sin líneas** y el movimiento de una línea `labor` y otra `supplies` a un destino creado en la misma llamada; verificar `moved_count`, `source_item_count` y los tags JSON.
-- `docs/mcp/README.md`, `docs/mcp/security.md` y `docs/mcp/tools/README.md`: actualizar el catálogo 41 → 43 (24 lectura + 19 escritura) y la lista de tools sujetas a `P40LA_MCP_ALLOW_WRITES`.
+- `docs/mcp/README.md`, `docs/mcp/security.md` y `docs/mcp/tools/README.md`: actualizar el catálogo 42 → 44 (24 lectura + 20 escritura) y la lista de tools sujetas a `P40LA_MCP_ALLOW_WRITES`.
 
 Tests:
 - `internal/modules/home/maintenance/service_test.go` (movimiento, destino nuevo, rollback, `item_not_in_source`, `same_maintenance`, borrado opt-in).
@@ -492,7 +492,7 @@ Tests:
 - `./scripts/check-mcp-impact.sh --staged --gate`
 - `./scripts/check-mcp-docs.sh --staged`
 
-**Validación subagente:** explore — sesión `ses_def14145effeMb6W52YuK1kjYz` — veredicto: **viable con cambios**; 2 tools nuevas y catálogo 41 → 43; las 41 existentes se declaran por `shared.affects_all` (`internal/mcp/api/`) sin cambio funcional ni de contrato; el backend ya permitía crear la reparación sin líneas, así que `home_maintenance_create` reutiliza el endpoint; requiere `impact.json` + `contracts.json`, stub `MoveHomeMaintenanceItems` en `contract_test.go` y `fakeAPI`, montar create/move en `TestMCPBackendContract` y validar `item_type` también en backend; el ruteo `POST .../items/move` no choca con `PUT/DELETE .../items/{item_id}`.
+**Validación subagente:** explore — sesión `ses_def14145effeMb6W52YuK1kjYz` — veredicto: **viable con cambios**; 2 tools nuevas y catálogo 42 → 44; las 42 existentes se declaran por `shared.affects_all` (`internal/mcp/api/`) sin cambio funcional ni de contrato; el backend ya permitía crear la reparación sin líneas, así que `home_maintenance_create` reutiliza el endpoint; requiere `impact.json` + `contracts.json`, stub `MoveHomeMaintenanceItems` en `contract_test.go` y `fakeAPI`, montar create/move en `TestMCPBackendContract` y validar `item_type` también en backend; el ruteo `POST .../items/move` no choca con `PUT/DELETE .../items/{item_id}`.
 
 **Manifest**: `docs/mcp/tools/impact.json`
 **Contrato**: `docs/mcp/tools/contracts.json`
@@ -525,8 +525,6 @@ Tests:
 - [x] `CA-TEST-MCP-CONTRACT`: `TestToolContracts` y `TestMCPBackendContract` verdes; golden revisado.
 - [x] `CA-DELIV-MCP-IMPACT`: `./scripts/check-mcp-impact.sh --staged --gate` verde antes del commit.
 - [x] `CA-DELIV-WORKTREE`: `./scripts/check-worktree.sh` verde en `../p40la-ihost-spec-157`.
-- [ ] `CA-DELIV-DOCKER`: imagen `p40la-mcp` publicada multi-arch con el tag del release y 3 manifiestos verificados (solo en el release).
-- [ ] `CA-DELIV-DEPLOY`: deploy al iHost aprobado por el usuario y `/health` verde (solo si se despliega).
 - [ ] `CA-TEST-USER-FLOW`: el usuario confirma las pruebas manuales antes de `pending_release`.
 
 ### 7.3 Testing
@@ -566,7 +564,7 @@ Tests:
 | El origen queda vacío y el usuario no lo nota | Media | Bajo | `source_item_count` en la respuesta y warning; borrado solo con `delete_source_if_empty=true` |
 | Dos movimientos concurrentes sobre las mismas líneas | Baja | Medio | `UPDATE ... WHERE maintenance_id = origen` + `RowsAffected`; `move_conflict` con rollback |
 | La respuesta crece demasiado en el iHost | Baja | Medio | Máximo 100 líneas y cliente corta en 1 MiB |
-| El cambio en `internal/mcp/api/` se interpreta como impacto en las 41 tools | Alta (analizador) | Bajo | Declarado en 6.3; sin cambio de comportamiento; tests MCP completos |
+| El cambio en `internal/mcp/api/` se interpreta como impacto en las 42 tools | Alta (analizador) | Bajo | Declarado en 6.3; sin cambio de comportamiento; tests MCP completos |
 | Regenerar el golden sin revisar el diff | Baja | Medio | Diff revisado y declarado en la spec; `TestToolContracts` sin `-update` |
 | El endpoint nuevo choca con `PUT/DELETE .../items/{item_id}` | Baja | Medio | `POST` + literal `move` es más específico que `{item_id}`; test de ruteo |
 
@@ -575,7 +573,7 @@ Tests:
 ## 10. Notas y Referencias
 
 - Reglas: `docs/rules/00-index.md`, `10-architecture.md`, `40-data.md`, `50-security.md`, `60-testing.md`, `70-delivery.md`.
-- Specs relacionadas: SPEC-141 (módulo `home.maintenance`), SPEC-142 (proveedor por línea), SPEC-145 (MCP y compuerta de escritura), SPEC-153 (guardrail de impacto), SPEC-154 (catálogo de tools), SPEC-155 (registro de mano de obra e insumos).
+- Specs relacionadas: SPEC-141 (módulo `home.maintenance`), SPEC-142 (proveedor por línea), SPEC-145 (MCP y compuerta de escritura), SPEC-153 (guardrail de impacto), SPEC-154 (catálogo de tools), SPEC-155 (registro de mano de obra e insumos), SPEC-156 (edición de hogares, integrada en el release).
 - Documentación: `docs/mcp/tools/home-maintenance.md`, `docs/mcp/tools/impact.md`.
 
 ---
@@ -585,5 +583,5 @@ Tests:
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-24 | opencode | Creación inicial de la especificación; issue #160 |
-| 2026-11-24 | opencode | Implementación: endpoint transaccional `POST .../items/move`, `MoveInput`/`MoveResult`, tools `home_maintenance_create` y `home_maintenance_item_move`, validación de `item_type` en backend, manifiesto 41 → 43, contrato regenerado y tests. `go build ./...`, `go test ./...` y `TestMCPBackendContract` verdes |
-| 2026-11-24 | opencode | Documentación MCP actualizada (catálogo 43 tools, secciones de create/move y compuerta); `check-mcp-docs.sh --staged` y `check-mcp-impact.sh --staged --gate` verdes. Pendiente la validación manual del usuario |
+| 2026-11-24 | opencode | Implementación: endpoint transaccional `POST .../items/move`, `MoveInput`/`MoveResult`, tools `home_maintenance_create` y `home_maintenance_item_move`, validación de `item_type` en backend, manifiesto 41 → 43 (44 al integrar SPEC-156), contrato regenerado y tests. `go build ./...`, `go test ./...` y `TestMCPBackendContract` verdes |
+| 2026-11-24 | opencode | Documentación MCP actualizada (catálogo 44 tools al integrar SPEC-156, secciones de create/move y compuerta); `check-mcp-docs.sh --staged` y `check-mcp-impact.sh --staged --gate` verdes. Pendiente la validación manual del usuario |

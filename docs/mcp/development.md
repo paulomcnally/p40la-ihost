@@ -41,7 +41,7 @@ internal/mcp/
     │   ├── maintenance.go
     │   ├── inspection.go
     │   └── insurance.go
-    ├── entities/               # búsqueda y altas de hogares, instituciones, bancos y servicios
+    ├── entities/               # búsqueda, altas y edición de hogares, instituciones, bancos y servicios
     │   ├── tools.go            # Toolset + Register + checkWrites
     │   ├── resolve.go          # resolución por nombre/ID y errores accionables
     │   ├── search.go           # entities_search (solo lectura)

@@ -37,6 +37,17 @@ func TestClientEntityCalls(t *testing.T) {
 		}
 		writeJSON(w, Home{ID: 8, Name: req.Name, Address: req.Address, Usage: req.Usage})
 	})
+	mux.HandleFunc("PUT /api/homes/{id}", func(w http.ResponseWriter, r *http.Request) {
+		if !check(w, r, http.MethodPut, "/api/homes/7") {
+			return
+		}
+		var req HomeUpdateRequest
+		if err := decodeJSON(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		writeJSON(w, Home{ID: 7, Name: req.Name, Address: req.Address, Usage: req.Usage})
+	})
 	mux.HandleFunc("GET /api/institutions", func(w http.ResponseWriter, r *http.Request) {
 		if !check(w, r, http.MethodGet, "/api/institutions") {
 			return
@@ -94,6 +105,14 @@ func TestClientEntityCalls(t *testing.T) {
 	home, err := client.CreateHome(ctx, HomeCreateRequest{Name: "Hogar Demo", Address: "Calle Demo 123", Usage: "rental"})
 	if err != nil || home.ID != 8 || home.Usage != "rental" {
 		t.Fatalf("create home: %v %#v", err, home)
+	}
+	updated, err := client.UpdateHome(ctx, 7, HomeUpdateRequest{
+		Name:    "Hogar Demo",
+		Address: "Calle Demo 123",
+		Usage:   "inhabited",
+	})
+	if err != nil || updated.ID != 7 || updated.Usage != "inhabited" || updated.Address != "Calle Demo 123" {
+		t.Fatalf("update home: %v %#v", err, updated)
 	}
 	if _, err := client.ListInstitutions(ctx); err != nil {
 		t.Fatalf("list institutions: %v", err)

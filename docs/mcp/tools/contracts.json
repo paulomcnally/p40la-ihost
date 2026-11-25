@@ -2039,6 +2039,51 @@
       }
     },
     {
+      "name": "homes_update",
+      "description": "Edita un hogar existente. Identificalo con home_id o home (nombre); si vienen ambos gana home_id. name, address y usage son opcionales: lo que se omite conserva su valor actual. address vacío limpia la dirección. usage acepta rental, inhabited o unused. No se puede cambiar el uso fuera de rental si hay un contrato o reserva activa (home_has_active_rental). Si el nombre nuevo ya existe en otro hogar devuelve already_exists. Devuelve el hogar actualizado.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "description": "Dirección nueva; si se omite se conserva y con cadena vacía se limpia",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "home": {
+            "description": "Nombre del hogar a editar; usá home_id o home",
+            "type": "string"
+          },
+          "home_id": {
+            "description": "ID del hogar a editar; usá home_id o home",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "name": {
+            "description": "Nombre nuevo; si se omite se conserva el actual",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "usage": {
+            "description": "Uso nuevo: rental, inhabited o unused; si se omite se conserva",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
       "name": "institutions_create",
       "description": "Crea una institución/proveedor. Requiere name; category_id o category son opcionales. category acepta la clave o el nombre de la categoría. Si ya existe una institución con el mismo nombre devuelve already_exists.",
       "input_schema": {
