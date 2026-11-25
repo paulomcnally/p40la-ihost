@@ -1,7 +1,7 @@
 ---
 title: "MCP: consultar categorías del presupuesto y registrar gastos (transacciones)"
 id: "SPEC-163"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-25"
 updated: "2026-11-25"
@@ -11,7 +11,7 @@ github_issue: 165
 # MCP: consultar categorías del presupuesto y registrar gastos (transacciones)
 
 **ID**: SPEC-163  
-**Estado**: in_progress  
+**Estado**: pending_release
 **Autor**: opencode  
 **Creado**: 2026-11-25  
 **Actualizado**: 2026-11-25
@@ -521,3 +521,4 @@ Validación subagente: explore — sesión `ses_debecb6d5ffeMS3Gjo78ljA1Lk` — 
 | 2026-11-25 | opencode | Creación inicial de la especificación; issue #165 |
 | 2026-11-25 | opencode | Estado draft → pending_execution (modo develop); spec lista para implementar |
 | 2026-11-25 | Developer | Estado pending_execution → in_progress; toolset `budget` implementado con tests, manifiesto, contrato y documentación MCP |
+| 2026-11-25 | DevOps | Estado in_progress → pending_release; QA y Security aprobaron |
