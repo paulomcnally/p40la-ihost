@@ -1,7 +1,7 @@
 ---
 title: "Operación"
 sidebar_position: 6
-description: "Build, ejecución, API key, diagnóstico y respaldo del servidor MCP"
+description: "Build, release, ejecución, API key, diagnóstico y respaldo del servidor MCP"
 ---
 
 # Operación
@@ -62,7 +62,7 @@ El tag `latest` y el de la versión deben listar las tres plataformas; si falta 
 
 ### Publicación manual
 
-Si hiciste el release de la app sin el MCP, o necesitás republicar una imagen, dispará `workflow_dispatch` del workflow `Build & Push MCP Image` con la versión (`X.Y.Z`) como input. Publica las imágenes con esa versión y `latest`, sin crear ni mover tags git.
+Si hiciste el release de la app sin el MCP, o necesitás republicar una imagen, dispará `workflow_dispatch` del workflow `Build & Push MCP Image` con la versión (`X.Y.Z`) como input. Publica las imágenes con esa versión y `latest`, sin crear ni mover tags git; tené en cuenta que `latest` queda apuntando a la versión indicada.
 
 El token de GitHub se pasa como secreto de BuildKit (`id=gh_token`) en CI, porque el módulo de plugins es privado; no queda en la imagen.
 

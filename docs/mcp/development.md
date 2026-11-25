@@ -258,7 +258,7 @@ Todo cambio en el código del MCP se documenta **en el mismo commit**. La superf
 
 `scripts/check-mcp-docs.sh` cubre `cmd/mcp-server/`, `internal/mcp/` y los archivos de API key/bills; la imagen, `scripts/release.sh` y `deploy/mcp/tailscale/` no disparan el hook por sí solos, pero también exigen actualizar `docs/mcp/` (regla `DELIV-MCP-DOCS`).
 
-El release de la imagen es `./scripts/release.sh` (tag `mcp-vX.Y.Z` + workflow `Build & Push MCP Image`); el detalle de opciones y verificación está en [operations.md](operations.md#release-y-publicación).
+El release oficial es `./scripts/release.sh`: publica la app y, si hay cambios del MCP, crea el tag `mcp-vX.Y.Z` que dispara el workflow `Build & Push MCP Image`. El detalle de opciones y verificación está en [operations.md](operations.md#release-y-publicación).
 
 **`DELIV-MCP-DOCS`** — agregar o cambiar una tool, un contrato HTTP, una variable de entorno o un flujo operativo exige actualizar `docs/mcp/` en el **mismo commit** que el código. Según el cambio:
 
