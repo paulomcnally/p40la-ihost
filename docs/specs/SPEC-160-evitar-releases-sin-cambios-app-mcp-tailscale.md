@@ -1,7 +1,7 @@
 ---
 title: "Evitar releases sin cambios: app, MCP y wrapper Tailscale"
 id: "SPEC-160"
-status: "pending_execution"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-25"
 updated: "2026-11-25"
@@ -11,7 +11,7 @@ github_issue: 163
 # Evitar releases sin cambios: app, MCP y wrapper Tailscale
 
 **ID**: SPEC-160
-**Estado**: pending_execution
+**Estado**: in_progress
 **Autor**: opencode
 **Creado**: 2026-11-25
 **Actualizado**: 2026-11-25
@@ -189,9 +189,11 @@ La validación multiagente se realizó con dos subagentes: `explore` (superficie
 ./scripts/release.sh 0.5.22 0.7.0 0.2.0       # fuerza app + MCP + tailscale
 MCP_VERSION=0.7.0 ./scripts/release.sh        # MCP explícito
 TAILSCALE_VERSION=0.2.0 ./scripts/release.sh  # tailscale explícito
+APP_VERSION=0.5.22 ./scripts/release.sh       # app explícita por entorno (REQ-005)
 ./scripts/release.sh --no-mcp                 # omitir MCP
 ./scripts/release.sh --no-tailscale           # omitir wrapper (nuevo)
 ./scripts/release.sh --check                  # plan read-only
+./scripts/release.sh --list-tags              # último tag + cambios pendientes (REQ-014)
 ```
 
 ### 5.3 Allowlists de detección
@@ -218,6 +220,7 @@ TAILSCALE_VERSION=0.2.0 ./scripts/release.sh  # tailscale explícito
 | Archivo | Cambio |
 |---|---|
 | `scripts/release.sh` | detección por artefacto, `tailscale-v*`, `--check` read-only, `--no-tailscale`, `TAILSCALE_VERSION`, fallo global si algún workflow falla |
+| `scripts/test-release-detection.sh` | **nuevo**: tests de la matriz de detección con fixtures git en `/tmp` (orientado a `scripts/release.sh`, sin red ni Docker Hub) |
 | `.github/workflows/mcp-publish.yml` | eliminar job `build-tailscale` |
 | `.github/workflows/tailscale-publish.yml` | **nuevo**: build multi-arch + push del wrapper `p40la-mcp-tailscale` |
 | `docs/mcp/operations.md` | documentar detección independiente, tags `tailscale-v*`, `--check` read-only, `--no-tailscale` |
@@ -267,6 +270,7 @@ Validación subagente: `explore` — sesión `ses_dee8622dcffexdyuyyMrehejFS` �
 
 ### 7.3 Testing
 
+- **Automatizado**: `./scripts/test-release-detection.sh` construye fixtures git descartables en `$TMPDIR` (repo + origen bare local), aplica la matriz de detección y valida 27 casos sin red ni Docker Hub (`bash -n`, estructura de workflows, detección, `--check` read-only, versiones forzadas, `--list-tags`, colisión de tags local/remota y propagación de fallos de workflow con `gh` simulado).
 - **Estáticos**: `bash -n scripts/release.sh`; `shellcheck` si está disponible (opcional).
 - **Casos de detección**: con un fixture git en `/tmp` (repositorio temporal con tags `v*`/`mcp-v*`/`tailscale-v*` y commits sobre rutas específicas), verificar la matriz de detección (docs-only, mcp-only, tailscale-only, combinados) sin tocar Docker Hub.
 - **`--check` read-only**: capturar `git show-ref` antes/después y verificar que no cambia.
@@ -323,3 +327,4 @@ Validación subagente: `explore` — sesión `ses_dee8622dcffexdyuyyMrehejFS` �
 |-------|-------|-------------|
 | 2026-11-25 | opencode | Creación inicial de la especificación (draft); validación multiagente (explore + general) integrada |
 | 2026-11-25 | opencode | Estado `pending_execution`; issue de GitHub #163 |
+| 2026-11-25 | opencode | Estado `in_progress` (implementación): se agrega `scripts/test-release-detection.sh` como suite automatizada de la matriz de detección (§7.3), se documenta `APP_VERSION` y `--list-tags` en la interfaz (§5.2) y el archivo de tests en §5.5 |

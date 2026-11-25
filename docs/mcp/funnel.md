@@ -56,7 +56,7 @@ p40la-mcp.example.ts.net ── Funnel 443 ──► 127.0.0.1:8090  (MCP; públ
 
 - El nodo actual conserva su contenedor, `serve.json`, volumen y estado. **No se reinicia ni se le cambia la configuración.**
 - El nodo nuevo corre en el contenedor `tailscale-mcp` con `TS_USERSPACE=true` (el iHost no tiene `/dev/net/tun`), `TS_HOSTNAME=p40la-mcp`, estado propio en `/var/lib/tailscale` y un `serve.json` propio.
-- La imagen wrapper `paulomcnally/p40la-mcp-tailscale:0.1.0` incluye ese `serve.json` con `443` HTTPS → `http://127.0.0.1:8090` y `AllowFunnel: true`. No hay que editar archivos dentro del contenedor.
+- La imagen wrapper `paulomcnally/p40la-mcp-tailscale:latest` incluye ese `serve.json` con `443` HTTPS → `http://127.0.0.1:8090` y `AllowFunnel: true`. No hay que editar archivos dentro del contenedor.
 - El FQDN público es el del nodo dedicado y debe coincidir con `P40LA_MCP_PUBLIC_URL`.
 
 El runbook completo (prerrequisitos, API key, volúmenes, alta por UI, verificación y rollback) está en [ihost.md](ihost.md). Si el MCP corre en una laptop, usá esa máquina como nodo dedicado con el mismo `serve.json`.
@@ -108,7 +108,7 @@ Si el add-on de Tailscale carga `serve.json` desde el repo, usá la variante con
 
 El archivo del repo (`deploy/tailscale/serve-funnel.example.json`) usa `${TS_CERT_DOMAIN}` como placeholder del FQDN. No apliques el comando y el JSON a la vez: son dos formas de configurar lo mismo.
 
-En el iHost no edites este archivo: la imagen `paulomcnally/p40la-mcp-tailscale:0.1.0` ya incluye su propio `serve.json` con el proxy al MCP. El nodo del dashboard conserva el suyo, con `AllowFunnel: false`.
+En el iHost no edites este archivo: la imagen `paulomcnally/p40la-mcp-tailscale:latest` ya incluye su propio `serve.json` con el proxy al MCP. El nodo del dashboard conserva el suyo, con `AllowFunnel: false`.
 
 ## Verificar
 

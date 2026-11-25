@@ -1,0 +1,63 @@
+name: Build & Push Tailscale Image
+
+on:
+  push:
+    tags: ["tailscale-v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión del wrapper Tailscale (X.Y.Z)"
+        required: true
+        default: "0.1.0"
+
+env:
+  IMAGE_NAME: paulomcnally/p40la-mcp-tailscale
+
+jobs:
+  # Un único job multi-arch: no hay manifest parcial porque buildx publica el
+  # índice completo en un solo paso (a diferencia de la matriz de app y MCP).
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/tailscale-v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/tailscale-v}"
+          else
+            TAG="${{ inputs.version }}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v7
+        with:
+          context: deploy/mcp/tailscale
+          file: deploy/mcp/tailscale/Dockerfile
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
+            ${{ env.IMAGE_NAME }}:latest
+          provenance: false
+
+      - name: Verify manifests
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          docker buildx imagetools inspect "${{ env.IMAGE_NAME }}:${TAG}"
+          docker buildx imagetools inspect "${{ env.IMAGE_NAME }}:latest"

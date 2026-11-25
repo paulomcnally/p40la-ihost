@@ -127,7 +127,7 @@ Cuando el MCP corre 24/7 en el iHost, se usa un **nodo Tailscale dedicado** para
 Imágenes usadas en el iHost:
 
 - `paulomcnally/p40la-mcp:0.5.0` — servidor MCP, red host, estado en `/data`.
-- `paulomcnally/p40la-mcp-tailscale:0.1.0` — nodo Tailscale dedicado, basado en `tailscale/tailscale`, con `serve.json` incluido y estado en `/var/lib/tailscale`.
+- `paulomcnally/p40la-mcp-tailscale:latest` — nodo Tailscale dedicado, basado en `tailscale/tailscale`, con `serve.json` incluido y estado en `/var/lib/tailscale`.
 
 No uses `ihost.example.ts.net` como `P40LA_MCP_PUBLIC_URL`: ese es el nodo del dashboard y **no se modifica**. El runbook completo está en [ihost.md](ihost.md).
 

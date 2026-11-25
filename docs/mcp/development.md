@@ -252,13 +252,13 @@ Todo cambio en el código del MCP se documenta **en el mismo commit**. La superf
 | Dominio MCP | `internal/mcp/` (código no-test) |
 | Servidor HTTP y OAuth | `internal/mcp/server/` (incluye `oauth/` y `limiter/`) |
 | Auditoría | `internal/mcp/audit/` |
-| Imagen y publicación | `Dockerfile.mcp`, `scripts/release.sh`, `.github/workflows/mcp-publish.yml`, `deploy/mcp/tailscale/` |
+| Imagen y publicación | `Dockerfile.mcp`, `scripts/release.sh`, `.github/workflows/mcp-publish.yml`, `.github/workflows/tailscale-publish.yml`, `deploy/mcp/tailscale/` |
 | API keys | `scripts/create-api-key.sh`, `internal/services/api_key.go`, `internal/api/api_key_handlers.go` |
 | Generación y pago masivo | `internal/services/bill_bulk.go`, `internal/api/bill_bulk_handlers.go` |
 
 `scripts/check-mcp-docs.sh` cubre `cmd/mcp-server/`, `internal/mcp/` y los archivos de API key/bills; la imagen, `scripts/release.sh` y `deploy/mcp/tailscale/` no disparan el hook por sí solos, pero también exigen actualizar `docs/mcp/` (regla `DELIV-MCP-DOCS`).
 
-El release oficial es `./scripts/release.sh`: publica la app y, si hay cambios del MCP, crea el tag `mcp-vX.Y.Z` que dispara el workflow `Build & Push MCP Image`. El detalle de opciones y verificación está en [operations.md](operations.md#release-y-publicación).
+El release oficial es `./scripts/release.sh`: publica de forma independiente la app (`vX.Y.Z`), el MCP (`mcp-vX.Y.Z`, workflow `Build & Push MCP Image`) y el wrapper Tailscale (`tailscale-vX.Y.Z`, workflow `Build & Push Tailscale Image`) solo cuando hay cambios en la allowlist de cada artefacto. El detalle de opciones y verificación está en [operations.md](operations.md#release-y-publicación).
 
 **`DELIV-MCP-DOCS`** — agregar o cambiar una tool, un contrato HTTP, una variable de entorno o un flujo operativo exige actualizar `docs/mcp/` en el **mismo commit** que el código. Según el cambio:
 
