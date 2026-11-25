@@ -76,7 +76,7 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 1. **App `0.5.17` o superior** desplegada en el iHost. Esa versión incluye los endpoints de API key de SPEC-145; sin ella no se puede provisionar la key.
 2. **Imágenes publicadas en Docker Hub y multi-arch** (`linux/amd64`, `linux/arm/v7`, `linux/arm64`):
    - `paulomcnally/p40la-mcp:0.5.0` — servidor MCP.
-   - `paulomcnally/p40la-mcp-tailscale:0.1.0` — nodo Tailscale dedicado con `serve.json` incluido.
+   - `paulomcnally/p40la-mcp-tailscale:latest` — nodo Tailscale dedicado con `serve.json` incluido.
    El iHost es `armv7l`; verificá que el manifiesto `arm/v7` exista antes de crear los contenedores.
 3. **Auth key de Tailscale** para el nodo nuevo. Recomendado: one-off, con tag `tag:p40la-mcp`. Si la key no trae tag, anunciá el tag con `TS_EXTRA_ARGS` (ver [contenedores](#52-tailscale-mcp)).
 4. **Tailnet preparada**: MagicDNS y *HTTPS Certificates* habilitados, y el atributo `funnel` para el tag o el nodo en *Access controls*. Sin eso, Funnel falla por permisos.
@@ -262,7 +262,7 @@ La UI de Docker y el API del iHost **no** aceptan el payload del `docker-compose
 | Campo | Valor |
 |---|---|
 | Nombre | `tailscale-mcp` |
-| Imagen | `paulomcnally/p40la-mcp-tailscale:0.1.0` |
+| Imagen | `paulomcnally/p40la-mcp-tailscale:latest` |
 | Red | `host` (primario) |
 | Restart | `unless-stopped` |
 | Volumen | `tailscale-mcp-state` → `/var/lib/tailscale` |

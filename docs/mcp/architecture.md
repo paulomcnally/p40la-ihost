@@ -79,10 +79,11 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 | Nodo | Contenedor / imagen | Publicación | Alcance |
 |---|---|---|---|
 | `ihost.example.ts.net` | Tailscale actual del add-on | Serve 443 → `127.0.0.1:8088` | Solo tailnet |
-| `p40la-mcp.example.ts.net` | `tailscale-mcp` · `paulomcnally/p40la-mcp-tailscale:0.1.0` | Funnel 443 → `127.0.0.1:8090` | Internet + OAuth |
+| `p40la-mcp.example.ts.net` | `tailscale-mcp` · `paulomcnally/p40la-mcp-tailscale:latest` | Funnel 443 → `127.0.0.1:8090` | Internet + OAuth |
 
 - `p40la-mcp` corre con la imagen `paulomcnally/p40la-mcp:0.5.0`, red host, `restart: unless-stopped` y estado en `/data`.
 - `tailscale-mcp` está basado en `tailscale/tailscale`, usa `TS_USERSPACE=true` (no hay `/dev/net/tun` en el iHost), estado en `/var/lib/tailscale` y un `serve.json` incluido en la imagen.
+- El wrapper Tailscale tiene tag y versión propios (`tailscale-vX.Y.Z`) y se publica con `tailscale-publish.yml`; no hereda la versión del MCP. El detalle del release está en [operations.md](operations.md#release-y-publicación).
 - El nodo del dashboard **no se reinicia, no se reconfigura y no se publica**: su `serve.json` conserva `AllowFunnel: false`.
 - El runbook completo está en [ihost.md](ihost.md) y el detalle de Funnel en [funnel.md](funnel.md).
 
@@ -104,7 +105,7 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 | Rate limit | `internal/mcp/server/limiter` | Ventana fija en memoria por token o IP |
 | Auditoría | `internal/mcp/audit` | JSONL con rotación por tamaño |
 | Imagen del MCP | `Dockerfile.mcp`, `scripts/release.sh`, `.github/workflows/mcp-publish.yml` | El release crea el tag `mcp-vX.Y.Z`; CI publica la imagen multi-arch independiente del add-on web |
-| Imagen del nodo Tailscale | `deploy/mcp/tailscale/Dockerfile` | Wrapper de `tailscale/tailscale` con `serve.json` para Funnel 443 → MCP |
+| Imagen del nodo Tailscale | `deploy/mcp/tailscale/Dockerfile`, `scripts/release.sh`, `.github/workflows/tailscale-publish.yml` | El release crea el tag `tailscale-vX.Y.Z`; CI publica la imagen multi-arch con tags `X.Y.Z` y `latest`, de forma independiente del MCP |
 | Despliegue en el iHost | `deploy/mcp/` | Compose de referencia, env example y runbook del nodo dedicado |
 | Funnel | `deploy/mcp/tailscale/serve.json` | `serve.json` con Funnel 443 → `127.0.0.1:8090`, incluido en la imagen del nodo dedicado |
 | Backend masivo | `internal/services/bill_bulk.go` | Reglas de generación y pago por rango |

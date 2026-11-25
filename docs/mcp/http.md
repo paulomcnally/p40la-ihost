@@ -148,12 +148,13 @@ Invalida todos los access tokens, refresh tokens y códigos pendientes; los clie
 
 `Dockerfile.mcp` construye una imagen independiente del add-on web, con usuario `nonroot` (UID/GID 65532) y estado en `/data`.
 
-El release oficial se hace con `./scripts/release.sh` (ver [operations.md](operations.md)): el script crea el tag `mcp-vX.Y.Z` cuando hay cambios del MCP y el workflow `Build & Push MCP Image` publica la imagen multi-arch.
+El release oficial se hace con `./scripts/release.sh` (ver [operations.md](operations.md)): el script publica solo lo que cambió. Crea el tag `mcp-vX.Y.Z` cuando hay cambios del MCP y el workflow `Build & Push MCP Image` publica la imagen multi-arch; el wrapper Tailscale tiene su propio tag `tailscale-v*` y se publica aparte con `tailscale-publish.yml`.
 
 ```bash
+./scripts/release.sh                       # libera solo los artefactos con cambios
 ./scripts/release.sh --check               # plan sin escrituras
-./scripts/release.sh                       # app + MCP si hay cambios
-./scripts/release.sh 0.5.20 0.6.0          # app y MCP con versión explícita
+./scripts/release.sh --no-tailscale        # omite el wrapper Tailscale
+./scripts/release.sh 0.5.22 0.7.0          # app y MCP con versión explícita
 # Imagen multi-arch: linux/amd64, linux/arm/v7, linux/arm64
 ```
 

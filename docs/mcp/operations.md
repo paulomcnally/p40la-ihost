@@ -28,41 +28,59 @@ El binario MCP **no** se incluye en la imagen Docker del servidor web ni se inic
 
 ## Release y publicación
 
-Un solo comando libera la app y, si corresponde, la imagen del MCP:
+Cada artefacto —app web, MCP y wrapper Tailscale— se versiona y publica de forma **independiente**. `release.sh` compara el contenido de la allowlist de cada artefacto contra el commit del último tag de ese artefacto (`git diff --name-only <sha>..HEAD -- <rutas>`) y solo crea tag y dispara el workflow si hay cambios relevantes.
+
+| Artefacto | Tag git | Allowlist | Workflow | Imagen en Docker Hub |
+|---|---|---|---|---|
+| App web | `vX.Y.Z` | `cmd/server/`, `internal/` (sin `internal/mcp/`), `frontend/`, `public/`, `migrations/`, `go.mod`, `go.sum`, `Dockerfile`, `.github/workflows/docker-publish.yml` | `Build & Push Docker Image` (`docker-publish.yml`) | `paulomcnally/p40la-ihost` |
+| MCP | `mcp-vX.Y.Z` | `cmd/mcp-server/`, `internal/mcp/`, `Dockerfile.mcp`, `.github/workflows/mcp-publish.yml`, `go.mod`, `go.sum` | `Build & Push MCP Image` (`mcp-publish.yml`) | `paulomcnally/p40la-mcp` |
+| Tailscale | `tailscale-vX.Y.Z` | `deploy/mcp/tailscale/` | `Build & Push Tailscale Image` (`tailscale-publish.yml`) | `paulomcnally/p40la-mcp-tailscale` |
+
+La allowlist de la app excluye `internal/mcp/`: el binario de la app no importa ese paquete y los grafos de build están separados, así que un cambio solo del MCP no versiona la app.
 
 ```bash
-./scripts/release.sh                       # app: bump patch; MCP si hay cambios
-./scripts/release.sh 0.5.20                # app 0.5.20; MCP automático
-./scripts/release.sh 0.5.20 0.6.0          # app y MCP explícitos
-MCP_VERSION=0.6.0 ./scripts/release.sh     # MCP explícito por entorno
-./scripts/release.sh --no-mcp              # solo app (o MCP_VERSION=skip)
-./scripts/release.sh --check               # plan sin escrituras
+./scripts/release.sh                             # libera solo lo que cambió (bump patch por artefacto)
+./scripts/release.sh 0.5.22                      # fuerza la app; MCP y Tailscale automáticos
+./scripts/release.sh 0.5.22 0.7.0                # fuerza app y MCP
+./scripts/release.sh 0.5.22 0.7.0 0.2.0          # fuerza app, MCP y wrapper Tailscale
+APP_VERSION=0.5.22 MCP_VERSION=0.7.0 TAILSCALE_VERSION=0.2.0 ./scripts/release.sh
+./scripts/release.sh --no-mcp                    # omite el MCP (o MCP_VERSION=skip)
+./scripts/release.sh --no-tailscale              # omite el wrapper (o TAILSCALE_VERSION=skip)
+./scripts/release.sh --check                     # plan read-only
+./scripts/release.sh --list-tags                 # último tag y cambios pendientes por artefacto
 ```
 
-| Artefacto | Tag git | Workflow | Imágenes en Docker Hub |
-|---|---|---|---|
-| App web | `vX.Y.Z` | `Build & Push Docker Image` | `paulomcnally/p40la-ihost` |
-| MCP | `mcp-vX.Y.Z` | `Build & Push MCP Image` | `paulomcnally/p40la-mcp` y `paulomcnally/p40la-mcp-tailscale` |
+- **Sin cambios relevantes:** si desde el último tag solo cambiaron docs u otros archivos fuera de la allowlist de la app, la app no se versiona ni se publica. Si ningún artefacto cambió y no hay versiones explícitas, el script imprime «Nada para liberar» y termina sin commits, tags ni workflows.
+- **Primera release:** el MCP y el wrapper Tailscale arrancan en `0.1.0` si no tienen tag previo. Con tag previo, el bump es de patch.
+- **Versión explícita:** publica aunque no haya cambios y avisa con `AVISO: ... no se detectaron cambios ... por versión explícita`.
+- **Wrapper Tailscale:** tiene tag y versión propios y ya **no** hereda la versión del MCP. `mcp-publish.yml` ya no incluye el job `build-tailscale`; el wrapper se publica con `tailscale-publish.yml`, que construye `linux/amd64`, `linux/arm/v7` y `linux/arm64` y publica `X.Y.Z` y `latest`.
 
-`release.sh` exige estar en `main` con el árbol limpio (con `--check` solo avisa si estás en otra rama), crea el commit de bump (`docker-compose.yml`, `frontend/package.json`), los tags y espera la conclusión de cada workflow disparado; si uno falla, sale con error para no dejar un release parcial.
+`release.sh` exige estar en `main` con el árbol limpio (con `--check` o `--list-tags` solo avisa si estás en otra rama), crea el commit de bump de la app (`docker-compose.yml`, `frontend/package.json`) solo si la app se publica, crea los tags y espera la conclusión de cada workflow disparado. Antes de crear cualquier tag valida que no exista ni local ni remotamente y aborta si existe. En el release real hace `git fetch --tags origin` antes de detectar cambios.
 
-El MCP se publica solo si hay cambios desde el último tag `mcp-v*` en `cmd/mcp-server/`, `internal/mcp/`, `Dockerfile.mcp`, `deploy/mcp/`, `.github/workflows/mcp-publish.yml`, `go.mod` o `go.sum`. Sin tag previo publica `0.1.0`; con tag previo, bumpea el patch. Una versión explícita (`MCP_VERSION` o el segundo argumento) publica aunque no haya cambios.
+`--check` es un plan read-only: imprime por artefacto el último tag, la versión a crear, los archivos cambiados y la decisión, sin crear commits ni tags ni hacer push, y sin ejecutar `git fetch --tags` (resuelve los tags remotos con `git ls-remote --tags origin`). Requiere que los commits de los tags base estén presentes localmente. `--list-tags` muestra, por artefacto, el último tag y si hay cambios pendientes, sin armar plan.
 
-El workflow `Build & Push MCP Image` construye las tres plataformas obligatorias (`linux/amd64`, `linux/arm/v7`, `linux/arm64`), arma el manifest multi-arch y publica además la imagen del nodo Tailscale (`deploy/mcp/tailscale/`) con la misma versión y `latest`.
+**Propagación de fallos:** si un workflow disparado no aparece o su conclusión no es `success`, el script sale con error y deja los tags creados para reintentar el workflow desde GitHub Actions. La app y el MCP publican una imagen por plataforma y un job de manifest (`merge`) que depende de **todos** los jobs de build de su workflow; el wrapper usa un único job multi-arch. Si falta una plataforma en el manifest, el job `merge` no pudo completarse y hay que reintentar el workflow.
 
 ### Verificar la publicación
 
 ```bash
 docker buildx imagetools inspect paulomcnally/p40la-mcp:latest
-docker buildx imagetools inspect paulomcnally/p40la-mcp:0.6.0
+docker buildx imagetools inspect paulomcnally/p40la-mcp:0.7.0
+docker buildx imagetools inspect paulomcnally/p40la-mcp-tailscale:latest
+docker buildx imagetools inspect paulomcnally/p40la-mcp-tailscale:0.2.0
 # Platform: linux/amd64, linux/arm/v7, linux/arm64
 ```
 
-El tag `latest` y el de la versión deben listar las tres plataformas; si falta alguna, el job `merge` no pudo crear el manifest y hay que reintentar el workflow.
+El tag `latest` y el de la versión deben listar las tres plataformas en cada imagen; si falta alguna, el manifest no se pudo crear y hay que reintentar el workflow.
 
 ### Publicación manual
 
-Si hiciste el release de la app sin el MCP, o necesitás republicar una imagen, dispará `workflow_dispatch` del workflow `Build & Push MCP Image` con la versión (`X.Y.Z`) como input. Publica las imágenes con esa versión y `latest`, sin crear ni mover tags git; tené en cuenta que `latest` queda apuntando a la versión indicada.
+Si hiciste el release de un artefacto sin otro, o necesitás republicar una imagen, dispará `workflow_dispatch` del workflow correspondiente con la versión (`X.Y.Z`) como input:
+
+- `Build & Push MCP Image` publica `paulomcnally/p40la-mcp`.
+- `Build & Push Tailscale Image` publica `paulomcnally/p40la-mcp-tailscale` con esa versión y `latest`.
+
+Ninguno crea ni mueve tags git; tené en cuenta que `latest` queda apuntando a la versión indicada.
 
 El token de GitHub se pasa como secreto de BuildKit (`id=gh_token`) en CI, porque el módulo de plugins es privado; no queda en la imagen.
 
@@ -164,7 +182,7 @@ El runbook completo —por qué dos nodos Tailscale, API key, hash OAuth, volúm
 | Recurso | Valor |
 |---|---|
 | Imagen del MCP | `paulomcnally/p40la-mcp:0.5.0` |
-| Imagen del nodo dedicado | `paulomcnally/p40la-mcp-tailscale:0.1.0` |
+| Imagen del nodo dedicado | `paulomcnally/p40la-mcp-tailscale:latest` |
 | Contenedor MCP | `p40la-mcp`, red `host`, `restart: unless-stopped` |
 | Contenedor Tailscale | `tailscale-mcp`, red `host`, `restart: unless-stopped` |
 | Volumen MCP | `p40la-mcp-data` → `/data` |
