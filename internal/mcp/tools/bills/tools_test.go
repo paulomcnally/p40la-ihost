@@ -379,6 +379,9 @@ func (f *fakeAPI) ListHomes(context.Context) ([]api.Home, error) { return nil, n
 func (f *fakeAPI) CreateHome(context.Context, api.HomeCreateRequest) (*api.Home, error) {
 	return nil, nil
 }
+func (f *fakeAPI) UpdateHome(context.Context, int64, api.HomeUpdateRequest) (*api.Home, error) {
+	return nil, nil
+}
 func (f *fakeAPI) ListInstitutions(context.Context) ([]api.Institution, error) { return nil, nil }
 func (f *fakeAPI) CreateInstitution(context.Context, api.InstitutionCreateRequest) (*api.Institution, error) {
 	return nil, nil

@@ -29,6 +29,7 @@ func Register(server *mcp.Server, client api.API, cfg config.Config) {
 func (t *Toolset) Register(server *mcp.Server) {
 	destructive := true
 	openWorld := false
+	idempotent := true
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "homes_create",
@@ -37,6 +38,17 @@ func (t *Toolset) Register(server *mcp.Server) {
 			"Si ya existe un hogar con el mismo nombre devuelve already_exists con el id existente.",
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: &destructive, OpenWorldHint: &openWorld},
 	}, t.homesCreate)
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "homes_update",
+		Description: "Edita un hogar existente. Identificalo con home_id o home (nombre); si vienen ambos gana home_id. " +
+			"name, address y usage son opcionales: lo que se omite conserva su valor actual. " +
+			"address vacío limpia la dirección. usage acepta rental, inhabited o unused. " +
+			"No se puede cambiar el uso fuera de rental si hay un contrato o reserva activa " +
+			"(home_has_active_rental). Si el nombre nuevo ya existe en otro hogar devuelve already_exists. " +
+			"Devuelve el hogar actualizado.",
+		Annotations: &mcp.ToolAnnotations{DestructiveHint: &destructive, IdempotentHint: idempotent, OpenWorldHint: &openWorld},
+	}, t.homesUpdate)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "institutions_create",

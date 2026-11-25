@@ -30,6 +30,7 @@ type API interface {
 
 	ListHomes(ctx context.Context) ([]Home, error)
 	CreateHome(ctx context.Context, req HomeCreateRequest) (*Home, error)
+	UpdateHome(ctx context.Context, id int64, req HomeUpdateRequest) (*Home, error)
 	ListInstitutions(ctx context.Context) ([]Institution, error)
 	CreateInstitution(ctx context.Context, req InstitutionCreateRequest) (*Institution, error)
 	ListBanks(ctx context.Context) ([]Bank, error)

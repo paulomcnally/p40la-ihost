@@ -51,12 +51,14 @@ func TestMCPBackendContract(t *testing.T) {
 	billService.SetCurrencyStorage(currencyStorage)
 
 	serviceService := services.NewServiceService(serviceStorage, homeStorage, currencyStorage, billStorage)
+	homeService := services.NewHomeService(homeStorage)
 	serviceHandlers := NewServiceHandlers(
 		serviceService,
-		services.NewHomeService(homeStorage),
+		homeService,
 		storage.NewInstitutionStorage(database),
 		nil,
 	)
+	homeHandlers := NewHomeHandlers(homeService)
 	billHandlers := NewBillHandlers(billService)
 
 	apiKeyService := services.NewAPIKeyService(systemSettingsStorage)
@@ -71,6 +73,7 @@ func TestMCPBackendContract(t *testing.T) {
 	handler := &Handler{
 		service:        serviceHandlers,
 		bill:           billHandlers,
+		home:           homeHandlers,
 		webhooks:       &WebhookHandlers{},
 		apiKeys:        apiKeyService,
 		moduleRegistry: moduleRegistry,
@@ -95,6 +98,18 @@ func TestMCPBackendContract(t *testing.T) {
 	}
 	if service.Name != "Servicio Demo" || service.ID != 1 {
 		t.Fatalf("servicio inesperado: %+v", service)
+	}
+
+	home, err := client.UpdateHome(requestCtx, 1, mcpapi.HomeUpdateRequest{
+		Name:    "Casa Demo",
+		Address: "Calle Demo 123",
+		Usage:   "inhabited",
+	})
+	if err != nil {
+		t.Fatalf("UpdateHome: %v", err)
+	}
+	if home.ID != 1 || home.Name != "Casa Demo" || home.Address != "Calle Demo 123" || home.Usage != "inhabited" {
+		t.Fatalf("hogar inesperado: %+v", home)
 	}
 
 	initialBills, err := client.ListBills(requestCtx, 1)

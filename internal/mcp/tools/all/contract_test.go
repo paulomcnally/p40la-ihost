@@ -60,6 +60,10 @@ func (contractAPI) CreateHome(context.Context, api.HomeCreateRequest) (*api.Home
 	return &api.Home{}, nil
 }
 
+func (contractAPI) UpdateHome(context.Context, int64, api.HomeUpdateRequest) (*api.Home, error) {
+	return &api.Home{}, nil
+}
+
 func (contractAPI) ListInstitutions(context.Context) ([]api.Institution, error) { return nil, nil }
 
 func (contractAPI) CreateInstitution(context.Context, api.InstitutionCreateRequest) (*api.Institution, error) {
