@@ -90,7 +90,7 @@ func (t *Toolset) checkWrites() (*mcp.CallToolResult, any, error) {
 	if t.cfg.WritesEnabled() {
 		return nil, nil, nil
 	}
-	hint := "Definí P40LA_MCP_ALLOW_WRITES=true para ejecutar altas."
+	hint := "Definí P40LA_MCP_ALLOW_WRITES=true para ejecutar cambios."
 	if t.cfg.IsHTTP() {
 		hint = "Definí P40LA_MCP_ALLOW_WRITES=true y P40LA_MCP_REMOTE_WRITES=true para ejecutar altas."
 	}

@@ -1,7 +1,7 @@
 ---
 title: "MCP: tool homes_update para editar hogares"
 id: "SPEC-156"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,10 +11,11 @@ github_issue: 159
 # MCP: tool `homes_update` para editar hogares
 
 **ID**: SPEC-156<br>
-**Estado**: pending_release<br>
+**Estado**: released<br>
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
-**Actualizado**: 2026-11-24
+**Actualizado**: 2026-11-24<br>
+**Release**: 2026-11-24 — merge a `main` `1a5c025d`; implementación `14960d85`; catálogo MCP 41 → 42 tools; edición parcial de hogares con validación de uso y `already_exists`; build de Go y frontend verdes; sin migraciones ni dependencias nuevas; imagen MCP no publicada en este ciclo; issue #159 cerrado
 
 ---
 
@@ -293,31 +294,31 @@ Validación subagente: `explore` — sesión `ses_def199f01ffe3qp9V3W9BDaBIF` �
 
 ### 7.1 Funcionales
 
-- [ ] CA-ARCH-MCP-TOOLS-MAP: `homes_update` se registra con nombre literal y tiene entrada en `docs/mcp/tools/impact.json`.
-- [ ] CA-DELIV-MCP-IMPACT: `./scripts/check-mcp-impact.sh --staged --gate` pasa y la sección 6 menciona todas las tools reportadas.
-- [ ] CA-DELIV-MCP-IMPACT-SUBAGENT: la sección 6 registra agente, sesión y veredicto del subagente.
-- [ ] CA-DELIV-MCP-DOCS: `docs/mcp/tools/entities.md`, `docs/mcp/tools/README.md`, `docs/mcp/README.md`, `docs/mcp/security.md` y `docs/mcp/tools/impact.md` documentan `homes_update` en el mismo commit.
-- [ ] CA-TEST-MCP-CONTRACT: `TestToolContracts` y `TestMCPBackendContract` pasan; el golden solo agrega `homes_update`.
-- [ ] CA-FUNC-001: editar solo `usage` de un hogar existente devuelve el hogar con el nuevo uso y conserva `name` y `address`.
-- [ ] CA-FUNC-002: `address: ""` limpia la dirección; omitir `address` la conserva.
-- [ ] CA-FUNC-003: `usage` fuera de `rental|inhabited|unused` devuelve `invalid_value` y no llama al `PUT`.
-- [ ] CA-FUNC-004: un `home_id` inexistente devuelve `not_found` con opciones `id=nombre`; un nombre ambiguo devuelve `ambiguous_reference`.
-- [ ] CA-FUNC-005: con la compuerta cerrada devuelve `writes_disabled` y no resuelve ni escribe.
-- [ ] CA-FUNC-006: un 409 `home_has_active_rental` se propaga con hint accionable y no se reintenta.
-- [ ] CA-FUNC-007: renombrar a un nombre que ya tiene otro hogar devuelve `already_exists` y no llama al `PUT`; el mismo nombre actual no se considera duplicado.
-- [ ] CA-UX-PREREQ: el hogar se valida antes de escribir y el error indica cómo corregir la referencia.
-- [ ] CA-SEC-NO-PII: la respuesta solo contiene los campos del hogar; no se agregan datos personales.
-- [ ] CA-SEC-SYNTHETIC: ejemplos y tests usan `Hogar Demo`, `Calle Demo 123` y datos `demo-*`.
-- [ ] CA-ARCH-IHOST: sin dependencias nuevas, sin caché y sin procesos en background.
-- [ ] CA-TEST-LOCAL: `go build ./...` y `go test ./...` pasan.
-- [ ] CA-DELIV-WORKTREE: la spec vive en `../p40la-ihost-spec-156` y `./scripts/check-worktree.sh` pasa.
-- [ ] CA-DELIV-CONFIRM: merge y push autorizados explícitamente por el usuario, sin `--force`.
-- [ ] CA-DELIV-RELEASE: merge, push, tracker, label y cierre del issue en el mismo ciclo.
+- [x] CA-ARCH-MCP-TOOLS-MAP: `homes_update` se registra con nombre literal y tiene entrada en `docs/mcp/tools/impact.json`.
+- [x] CA-DELIV-MCP-IMPACT: `./scripts/check-mcp-impact.sh --staged --gate` pasa y la sección 6 menciona todas las tools reportadas.
+- [x] CA-DELIV-MCP-IMPACT-SUBAGENT: la sección 6 registra agente, sesión y veredicto del subagente.
+- [x] CA-DELIV-MCP-DOCS: `docs/mcp/tools/entities.md`, `docs/mcp/tools/README.md`, `docs/mcp/README.md`, `docs/mcp/security.md` y `docs/mcp/tools/impact.md` documentan `homes_update` en el mismo commit.
+- [x] CA-TEST-MCP-CONTRACT: `TestToolContracts` y `TestMCPBackendContract` pasan; el golden solo agrega `homes_update`.
+- [x] CA-FUNC-001: editar solo `usage` de un hogar existente devuelve el hogar con el nuevo uso y conserva `name` y `address`.
+- [x] CA-FUNC-002: `address: ""` limpia la dirección; omitir `address` la conserva.
+- [x] CA-FUNC-003: `usage` fuera de `rental|inhabited|unused` devuelve `invalid_value` y no llama al `PUT`.
+- [x] CA-FUNC-004: un `home_id` inexistente devuelve `not_found` con opciones `id=nombre`; un nombre ambiguo devuelve `ambiguous_reference`.
+- [x] CA-FUNC-005: con la compuerta cerrada devuelve `writes_disabled` y no resuelve ni escribe.
+- [x] CA-FUNC-006: un 409 `home_has_active_rental` se propaga con hint accionable y no se reintenta.
+- [x] CA-FUNC-007: renombrar a un nombre que ya tiene otro hogar devuelve `already_exists` y no llama al `PUT`; el mismo nombre actual no se considera duplicado.
+- [x] CA-UX-PREREQ: el hogar se valida antes de escribir y el error indica cómo corregir la referencia.
+- [x] CA-SEC-NO-PII: la respuesta solo contiene los campos del hogar; no se agregan datos personales.
+- [x] CA-SEC-SYNTHETIC: ejemplos y tests usan `Hogar Demo`, `Calle Demo 123` y datos `demo-*`.
+- [x] CA-ARCH-IHOST: sin dependencias nuevas, sin caché y sin procesos en background.
+- [x] CA-TEST-LOCAL: `go build ./...` y `go test ./...` pasan.
+- [x] CA-DELIV-WORKTREE: la spec vive en `../p40la-ihost-spec-156` y `./scripts/check-worktree.sh` pasa.
+- [x] CA-DELIV-CONFIRM: merge y push autorizados explícitamente por el usuario, sin `--force`.
+- [x] CA-DELIV-RELEASE: merge, push, tracker, label y cierre del issue en el mismo ciclo.
 
 ### 7.2 No funcionales
 
-- [ ] CA-NF-001: una edición hace como máximo una consulta de resolución y un `PUT`; no hay escrituras adicionales.
-- [ ] CA-NF-002: el binario MCP no incorpora dependencias nuevas.
+- [x] CA-NF-001: una edición hace como máximo una consulta de resolución y un `PUT`; no hay escrituras adicionales.
+- [x] CA-NF-002: el binario MCP no incorpora dependencias nuevas.
 
 ### 7.3 Testing
 
@@ -374,3 +375,4 @@ Validación subagente: `explore` — sesión `ses_def199f01ffe3qp9V3W9BDaBIF` �
 |---|---|---|
 | 2026-11-24 | draft | Creación de la spec: tool `homes_update` con edición parcial, validación de uso y conflicto de alquiler activo |
 | 2026-11-24 | pending_release | Implementación completa: tool, cliente, tests, manifiesto, contrato y docs; `go build ./...`, `go test ./...`, gate MCP y contrato backend verdes |
+| 2026-11-24 | released | Release: merge `1a5c025d`; build de Go y frontend verdes; issue #159 cerrado |

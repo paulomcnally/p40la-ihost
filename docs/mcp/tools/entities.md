@@ -194,7 +194,7 @@ Estos requisitos aplican a las cuatro tools de alta (`homes_create`, `institutio
 
 ### Compuerta de escritura
 
-La compuerta se evalúa **antes** de validar la entrada. Sin ella, la tool devuelve `writes_disabled` y no llama a la API.
+La compuerta se evalúa **antes** de validar la entrada. Sin ella, la tool devuelve `writes_disabled` y no llama a la API. El hint de la compuerta cubre altas y ediciones (`homes_update`): «Definí P40LA_MCP_ALLOW_WRITES=true para ejecutar cambios.»
 
 | Transporte | Requisito |
 |---|---|
