@@ -1,20 +1,20 @@
 ---
 title: "MCP: consulta, edición y borrado de líneas en reparaciones del hogar"
 id: "SPEC-159"
-status: "pending_execution"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-24"
-updated: "2026-11-24"
+updated: "2026-11-25"
 github_issue: 162
 ---
 
 # MCP: consulta, edición y borrado de líneas en reparaciones del hogar
 
 **ID**: SPEC-159<br>
-**Estado**: pending_execution<br>
+**Estado**: pending_release<br>
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
-**Actualizado**: 2026-11-24
+**Actualizado**: 2026-11-25
 
 ---
 
@@ -720,3 +720,4 @@ Tests:
 | 2026-11-24 | opencode | Creación inicial: get, update, item_update e item_delete para reparaciones del hogar |
 | 2026-11-24 | opencode | Spec lista para implementar; issue #162 y veredicto de impacto MCP integrado |
 | 2026-11-25 | opencode | Implementación: 4 tools, cliente MCP, merge parcial, totales recalculados, tests, manifiesto y contrato 44 → 48 |
+| 2026-11-25 | opencode | Preparar release: build, tests, contrato, manifiesto y documentación MCP verificados |
