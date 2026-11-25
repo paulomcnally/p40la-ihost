@@ -498,7 +498,7 @@ Registra una línea de **insumos** (`item_type=supplies`) con cantidad y unidad.
 
 ## `home_maintenance_item_move`
 
-Mueve entre **1 y 100 líneas** de mano de obra y/o insumos de una reparación **origen** a una **destino** del mismo hogar. El destino puede existir (`target_maintenance_id`) o crearse en la misma llamada (`target`); en ese caso el backend crea la reparación, mueve las líneas y, si se pide, elimina el origen vacío en **una sola transacción**.
+Mueve entre **1 y 100 líneas** de mano de obra y/o insumos de una reparación **origen** a una reparación **destino** del mismo hogar. El destino puede existir (`target_maintenance_id`) o crearse en la misma llamada (`target`); en ese caso el backend crea la reparación, mueve las líneas y, si se pide, elimina el origen vacío en **una sola transacción**.
 
 ### Entrada
 
