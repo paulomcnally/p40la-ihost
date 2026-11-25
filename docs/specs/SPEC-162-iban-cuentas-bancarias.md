@@ -1,7 +1,7 @@
 ---
 title: "Agregar IBAN a cuentas bancarias y tools de gestión"
 id: "SPEC-162"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-25"
 updated: "2026-11-25"
@@ -11,7 +11,7 @@ github_issue: 164
 # Agregar IBAN a cuentas bancarias y tools de gestión
 
 **ID**: SPEC-162
-**Estado**: in_progress
+**Estado**: pending_release
 **Autor**: opencode
 **Creado**: 2026-11-25
 **Actualizado**: 2026-11-25
@@ -375,3 +375,4 @@ Validación subagente: explore — sesión ses_debfd4218ffe8IKTtKnlWOHlBM — ve
 | 2026-11-25 | opencode | Creación inicial de la especificación (IBAN en cuentas bancarias y tools MCP) |
 | 2026-11-25 | opencode | Pasa a `pending_execution`; issue de GitHub #164 |
 | 2026-11-25 | opencode | Implementación completa (migración 0061, backend, frontend, MCP y docs); pasa a `in_progress` |
+| 2026-11-25 | DevOps | QA y Security aprobados; preparada para release |
