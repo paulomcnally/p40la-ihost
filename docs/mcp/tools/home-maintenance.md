@@ -131,6 +131,7 @@ Los filtros se combinan con AND. Sin filtros se devuelve el histórico completo 
 - `kind` es `corrective` o `preventive`; cualquier otro valor devuelve `invalid_request` **sin** llamar a la API.
 - `year` fuera de `1900..9999` devuelve `invalid_request` sin llamar a la API.
 - `item_type` filtra **qué mantenimientos aparecen** (los que tienen al menos una línea de ese tipo). `totals_by_currency` sigue sumando **todas** las líneas de esos mantenimientos con el desglose `labor_cost` / `supplies_cost`: la columna del otro tipo no se anula para no perder el total de la reparación. El `totals_by_currency` de nivel superior aplica la misma regla sobre el conjunto filtrado.
+- Las reparaciones sin líneas (creadas con `home_maintenance_create`) se devuelven con `items: []` y `totals_by_currency: []`, y `count` las incluye; el filtro `item_type` no las devuelve.
 - `query` busca en `description` del mantenimiento y en la de sus líneas; `%`, `_` y `\` se escapan y no se interpretan como patrón. Más de 100 caracteres devuelve `invalid_request`.
 - `include_items=true` pide las líneas de cada mantenimiento en la misma llamada. Sin el flag, la respuesta se limita a los mantenimientos y sus totales por moneda.
 - La consulta con líneas tiene topes de **100 mantenimientos** y **1.000 líneas**. Si se superan, `truncated=true` y la respuesta sigue siendo válida: los datos devueltos son un subconjunto, no un error.
@@ -224,7 +225,7 @@ Crea una **reparación vacía**: solo la cabecera, con `0` insumos y `0` mano de
 
 ### Reglas
 
-- **Solo cabecera**: la tool nunca envía `item`; la reparación queda con `items: []` y `totals_by_currency: []`.
+- **Solo cabecera**: la tool nunca envía `item`; la reparación queda con `items: []` y `totals_by_currency: []`. No requiere `currency_id`: la moneda vive en cada línea.
 - **`description` opcional** de hasta 500 caracteres. Es independiente del máximo de 200 de las líneas.
 - **`kind` y `area`** usan los mismos valores que el resto del dominio; sin valor se aplican `corrective` y `other`.
 - **`institution_id`** es opcional; si viene, debe existir. Un proveedor inexistente devuelve `institution_not_found`.
