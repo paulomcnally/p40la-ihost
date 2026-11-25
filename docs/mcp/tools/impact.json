@@ -1400,6 +1400,187 @@
         "internal/mcp/tools/all/contract_test.go",
         "internal/api/mcp_backend_contract_test.go"
       ]
+    },
+    {
+      "name": "budget_categories_list",
+      "docs": [
+        "docs/mcp/tools/budget.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/budget/list.go"
+      ],
+      "dependencies": [
+        "internal/api/budget_handlers.go",
+        "internal/api/routes.go",
+        "internal/models/budget_month.go",
+        "internal/models/category.go",
+        "internal/models/category_group.go",
+        "internal/models/transaction.go",
+        "internal/services/category_group.go",
+        "internal/services/category.go",
+        "internal/services/transaction.go",
+        "internal/storage/category.go",
+        "internal/storage/category_group.go",
+        "internal/storage/transaction.go",
+        "internal/mcp/api/budget.go"
+      ],
+      "endpoints": [
+        "GET /api/budget/category-groups"
+      ],
+      "tests": [
+        "internal/mcp/tools/budget/budget_test.go",
+        "internal/mcp/api/budget_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "budget_accounts_list",
+      "docs": [
+        "docs/mcp/tools/budget.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/budget/list.go"
+      ],
+      "dependencies": [
+        "internal/api/budget_handlers.go",
+        "internal/api/routes.go",
+        "internal/models/budget_month.go",
+        "internal/models/category.go",
+        "internal/models/category_group.go",
+        "internal/models/transaction.go",
+        "internal/services/category_group.go",
+        "internal/services/category.go",
+        "internal/services/transaction.go",
+        "internal/storage/category.go",
+        "internal/storage/category_group.go",
+        "internal/storage/transaction.go",
+        "internal/mcp/api/budget.go",
+        "internal/models/account.go",
+        "internal/services/account.go",
+        "internal/storage/account.go",
+        "internal/storage/currency.go"
+      ],
+      "endpoints": [
+        "GET /api/budget/accounts"
+      ],
+      "tests": [
+        "internal/mcp/tools/budget/budget_test.go",
+        "internal/mcp/api/budget_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "budget_transactions_create",
+      "docs": [
+        "docs/mcp/tools/budget.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/budget/create.go"
+      ],
+      "dependencies": [
+        "internal/api/budget_handlers.go",
+        "internal/api/routes.go",
+        "internal/models/budget_month.go",
+        "internal/models/category.go",
+        "internal/models/category_group.go",
+        "internal/models/transaction.go",
+        "internal/services/category_group.go",
+        "internal/services/category.go",
+        "internal/services/transaction.go",
+        "internal/storage/category.go",
+        "internal/storage/category_group.go",
+        "internal/storage/transaction.go",
+        "internal/mcp/api/budget.go",
+        "internal/models/account.go",
+        "internal/services/account.go",
+        "internal/services/currency.go",
+        "internal/storage/account.go",
+        "internal/storage/currency.go"
+      ],
+      "endpoints": [
+        "GET /api/budget/category-groups",
+        "GET /api/budget/accounts",
+        "GET /api/budget/transactions",
+        "POST /api/budget/transactions"
+      ],
+      "tests": [
+        "internal/mcp/tools/budget/budget_test.go",
+        "internal/mcp/api/budget_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "budget_transactions_list",
+      "docs": [
+        "docs/mcp/tools/budget.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/budget/list.go"
+      ],
+      "dependencies": [
+        "internal/api/budget_handlers.go",
+        "internal/api/routes.go",
+        "internal/models/budget_month.go",
+        "internal/models/category.go",
+        "internal/models/category_group.go",
+        "internal/models/transaction.go",
+        "internal/services/category_group.go",
+        "internal/services/category.go",
+        "internal/services/transaction.go",
+        "internal/storage/category.go",
+        "internal/storage/category_group.go",
+        "internal/storage/transaction.go",
+        "internal/mcp/api/budget.go"
+      ],
+      "endpoints": [
+        "GET /api/budget/transactions"
+      ],
+      "tests": [
+        "internal/mcp/tools/budget/budget_test.go",
+        "internal/mcp/api/budget_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
+      "name": "budget_month_view",
+      "docs": [
+        "docs/mcp/tools/budget.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/budget/list.go"
+      ],
+      "dependencies": [
+        "internal/api/budget_handlers.go",
+        "internal/api/routes.go",
+        "internal/models/budget_month.go",
+        "internal/models/category.go",
+        "internal/models/category_group.go",
+        "internal/models/transaction.go",
+        "internal/services/category_group.go",
+        "internal/services/category.go",
+        "internal/services/transaction.go",
+        "internal/storage/category.go",
+        "internal/storage/category_group.go",
+        "internal/storage/transaction.go",
+        "internal/mcp/api/budget.go",
+        "internal/services/budget.go",
+        "internal/storage/assignment.go",
+        "internal/storage/budget_month.go",
+        "internal/storage/recurring_rule.go"
+      ],
+      "endpoints": [
+        "GET /api/budget/months/{year}/{month}"
+      ],
+      "tests": [
+        "internal/mcp/tools/budget/budget_test.go",
+        "internal/mcp/api/budget_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
     }
   ],
   "shared": {

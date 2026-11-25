@@ -200,6 +200,24 @@ func (contractAPI) MoveHomeMaintenanceItems(context.Context, int64, int64, api.H
 	return &api.HomeMaintenanceMoveResult{}, nil
 }
 
+func (contractAPI) ListCategoryGroups(context.Context) ([]api.CategoryGroup, error) {
+	return nil, nil
+}
+
+func (contractAPI) ListAccounts(context.Context) ([]api.Account, error) { return nil, nil }
+
+func (contractAPI) ListTransactions(context.Context, int, int) ([]api.Transaction, error) {
+	return nil, nil
+}
+
+func (contractAPI) MonthView(context.Context, int, int) (*api.MonthView, error) {
+	return &api.MonthView{}, nil
+}
+
+func (contractAPI) CreateTransaction(context.Context, api.TransactionRequest) (*api.Transaction, error) {
+	return &api.Transaction{}, nil
+}
+
 // TestToolContracts congela el contrato visible de tools/list para todo el
 // catálogo: nombres, descripciones, esquemas y anotaciones. Un cambio
 // intencional se acepta con:

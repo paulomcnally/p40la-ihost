@@ -13,6 +13,7 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/banking"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/bills"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/billviews"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/budget"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/cards"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/catalog"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/debts"
@@ -72,5 +73,10 @@ func Register(r *registry.Registry, client api.FullAPI, cfg config.Config) {
 	})
 	r.Add(func(server *mcp.Server) {
 		settings.Register(server, client, cfg)
+	})
+
+	// SPEC-163 — presupuesto: categorías, cuentas y registro de gastos.
+	r.Add(func(server *mcp.Server) {
+		budget.Register(server, client, cfg)
 	})
 }

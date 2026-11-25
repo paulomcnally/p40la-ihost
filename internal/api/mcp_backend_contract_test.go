@@ -61,6 +61,29 @@ func TestMCPBackendContract(t *testing.T) {
 	homeHandlers := NewHomeHandlers(homeService)
 	billHandlers := NewBillHandlers(billService)
 
+	// Presupuesto (SPEC-163): la cadena real de /api/budget/* contra el router.
+	mustExec("INSERT INTO category_groups (name, icon, sort_order) VALUES ('Necesidades', 'cart', 0)")
+	mustExec("INSERT INTO categories (category_group_id, name, icon, sort_order) VALUES (1, 'Comida', 'food', 0)")
+	mustExec("INSERT INTO accounts (name, type, currency_id, starting_balance) VALUES ('Cuenta Demo', 'checking', 1, 1000)")
+
+	budgetGroupStorage := storage.NewCategoryGroupStorage(database)
+	budgetCategoryStorage := storage.NewCategoryStorage(database)
+	budgetAccountStorage := storage.NewAccountStorage(database)
+	budgetMonthStorage := storage.NewBudgetMonthStorage(database)
+	budgetAssignmentStorage := storage.NewAssignmentStorage(database)
+	budgetRuleStorage := storage.NewRecurringRuleStorage(database)
+	budgetTransactionStorage := storage.NewTransactionStorage(database)
+	budgetTransferStorage := storage.NewTransferStorage(database)
+	budgetHandlers := NewBudgetHandlers(
+		services.NewBudgetService(budgetGroupStorage, budgetCategoryStorage, budgetMonthStorage,
+			budgetAssignmentStorage, budgetRuleStorage, budgetTransactionStorage, currencyStorage),
+		services.NewCategoryGroupService(budgetGroupStorage, budgetCategoryStorage),
+		services.NewCategoryService(budgetCategoryStorage, budgetGroupStorage),
+		services.NewAccountService(budgetAccountStorage, currencyStorage),
+		services.NewBudgetTransactionService(budgetTransactionStorage, budgetAccountStorage, budgetCategoryStorage, currencyStorage),
+		services.NewTransferService(budgetTransferStorage, budgetAccountStorage, currencyStorage),
+	)
+
 	apiKeyService := services.NewAPIKeyService(systemSettingsStorage)
 	apiKey, _, err := apiKeyService.Regenerate(ctx)
 	if err != nil {
@@ -74,6 +97,7 @@ func TestMCPBackendContract(t *testing.T) {
 		service:        serviceHandlers,
 		bill:           billHandlers,
 		home:           homeHandlers,
+		budget:         budgetHandlers,
 		webhooks:       &WebhookHandlers{},
 		apiKeys:        apiKeyService,
 		moduleRegistry: moduleRegistry,
@@ -397,5 +421,100 @@ func TestMCPBackendContract(t *testing.T) {
 	}
 	if source != "mcp" {
 		t.Fatalf("source = %q, quiero mcp", source)
+	}
+
+	// Presupuesto (SPEC-163): categorías, cuentas, transacciones y vista mensual.
+	groups, err := client.ListCategoryGroups(requestCtx)
+	if err != nil {
+		t.Fatalf("ListCategoryGroups: %v", err)
+	}
+	if len(groups) != 1 || groups[0].Name != "Necesidades" || len(groups[0].Categories) != 1 {
+		t.Fatalf("grupos inesperados: %+v", groups)
+	}
+	category := groups[0].Categories[0]
+	if category.ID != 1 || category.Name != "Comida" || category.CategoryGroupID != 1 {
+		t.Fatalf("categoría inesperada: %+v", category)
+	}
+
+	budgetAccounts, err := client.ListAccounts(requestCtx)
+	if err != nil {
+		t.Fatalf("ListAccounts: %v", err)
+	}
+	if len(budgetAccounts) != 1 {
+		t.Fatalf("cuentas = %d, quiero 1", len(budgetAccounts))
+	}
+	if account := budgetAccounts[0]; account.ID != 1 || account.Name != "Cuenta Demo" ||
+		account.Type != "checking" || account.CurrencyID != 1 || account.CurrencyCode != "NIO" ||
+		account.StartingBalance != 1000 || account.Balance != 1000 {
+		t.Fatalf("cuenta inesperada: %+v", account)
+	}
+
+	initialTransactions, err := client.ListTransactions(requestCtx, 2026, 3)
+	if err != nil {
+		t.Fatalf("ListTransactions inicial: %v", err)
+	}
+	if len(initialTransactions) != 0 {
+		t.Fatalf("transacciones iniciales = %d, quiero 0", len(initialTransactions))
+	}
+
+	categoryID := category.ID
+	createdTransaction, err := client.CreateTransaction(requestCtx, mcpapi.TransactionRequest{
+		AccountID:  1,
+		CategoryID: &categoryID,
+		CurrencyID: 1,
+		Date:       "2026-03-10",
+		Payee:      "Proveedor Demo",
+		Memo:       "Compra demo",
+		Outflow:    1200,
+		Inflow:     0,
+		Cleared:    false,
+	})
+	if err != nil {
+		t.Fatalf("CreateTransaction: %v", err)
+	}
+	if createdTransaction.ID == 0 || createdTransaction.AccountID != 1 || createdTransaction.AccountName != "Cuenta Demo" ||
+		createdTransaction.CategoryID == nil || *createdTransaction.CategoryID != 1 ||
+		createdTransaction.CategoryName != "Comida" || createdTransaction.CurrencyID != 1 ||
+		createdTransaction.CurrencyCode != "NIO" || createdTransaction.Date != "2026-03-10" ||
+		createdTransaction.Payee != "Proveedor Demo" || createdTransaction.Memo != "Compra demo" ||
+		createdTransaction.Outflow != 1200 || createdTransaction.Inflow != 0 || createdTransaction.Cleared {
+		t.Fatalf("transacción creada inesperada: %+v", createdTransaction)
+	}
+
+	transactions, err := client.ListTransactions(requestCtx, 2026, 3)
+	if err != nil {
+		t.Fatalf("ListTransactions posterior: %v", err)
+	}
+	if len(transactions) != 1 || transactions[0].ID != createdTransaction.ID {
+		t.Fatalf("transacciones del mes inesperadas: %+v", transactions)
+	}
+
+	view, err := client.MonthView(requestCtx, 2026, 3)
+	if err != nil {
+		t.Fatalf("MonthView: %v", err)
+	}
+	if view.Year != 2026 || view.Month != 3 || len(view.Groups) != 1 || len(view.Groups[0].Categories) != 1 {
+		t.Fatalf("vista mensual inesperada: %+v", view)
+	}
+	row := view.Groups[0].Categories[0]
+	if row.ID != 1 || row.Name != "Comida" {
+		t.Fatalf("fila de categoría inesperada: %+v", row)
+	}
+	if row.Activity[1] != 1200 || row.Available[1] != -1200 {
+		t.Fatalf("activity/available inesperados: activity=%v available=%v", row.Activity, row.Available)
+	}
+	if len(view.CurrencyTotals) != 1 || view.CurrencyTotals[0].CurrencyID != 1 ||
+		view.CurrencyTotals[0].Code != "NIO" || view.CurrencyTotals[0].Unassigned != 0 {
+		t.Fatalf("totales por moneda inesperados: %+v", view.CurrencyTotals)
+	}
+
+	_, err = client.CreateTransaction(requestCtx, mcpapi.TransactionRequest{
+		AccountID:  999999,
+		CurrencyID: 1,
+		Date:       "2026-03-10",
+		Outflow:    10,
+	})
+	if !errors.As(err, &apiErr) || apiErr.Code != "invalid_request" {
+		t.Fatalf("esperaba invalid_request por cuenta inexistente: %v", err)
 	}
 }

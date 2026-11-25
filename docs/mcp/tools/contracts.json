@@ -1027,6 +1027,163 @@
       }
     },
     {
+      "name": "budget_accounts_list",
+      "description": "Lista las cuentas activas del presupuesto con su moneda y saldo calculado. Toda transacción del presupuesto exige una cuenta de esta lista; no son cuentas bancarias (para esas usá bank_accounts_search). Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "budget_categories_list",
+      "description": "Lista los grupos y las categorías activas del presupuesto (estilo YNAB) con su id, nombre, ícono, objetivo y cuenta vinculada si existe. Sirve para mapear un gasto a su categoría antes de registrarlo. No son cuentas bancarias. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "budget_month_view",
+      "description": "Devuelve la vista mensual del presupuesto por grupo y categoría con lo asignado, la actividad y lo disponible por moneda, más los totales por moneda. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "month": {
+            "description": "Mes del presupuesto, 1 a 12 (obligatorio)",
+            "type": "integer"
+          },
+          "year": {
+            "description": "Año del presupuesto (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "month"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "budget_transactions_create",
+      "description": "Registra un gasto (outflow) en el presupuesto del mes al que pertenece la fecha. Resuelve la categoría por category_id o por nombre exacto y la cuenta por account_id, por la cuenta vinculada a la categoría o por la primera cuenta activa; la moneda sale de la cuenta. Antes de escribir busca un gasto equivalente (misma fecha, categoría, monto y payee) y devuelve status=duplicate sin crear otra fila; usá allow_duplicate=true solo para un registro distinto. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_id": {
+            "description": "ID de la cuenta del presupuesto; si falta, se usa la cuenta vinculada a la categoría o la primera cuenta activa",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "allow_duplicate": {
+            "description": "Si es true permite un gasto equivalente el mismo día; por defecto false",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "amount": {
+            "description": "Monto del gasto en la moneda de la cuenta (mayor que cero)",
+            "type": "number"
+          },
+          "category": {
+            "description": "Nombre exacto de la categoría activa (alternativa a category_id)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category_id": {
+            "description": "ID de la categoría del presupuesto (alternativa a category)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "date": {
+            "description": "Fecha del gasto YYYY-MM-DD (obligatorio); determina el mes y no puede ser futura",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "memo": {
+            "description": "Nota libre",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "payee": {
+            "description": "Beneficiario o comercio; se compara para detectar duplicados",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "budget_transactions_list",
+      "description": "Lista las transacciones de un mes del presupuesto (year y month obligatorios). Útil para verificar lo ya registrado antes de crear un gasto. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "month": {
+            "description": "Mes del presupuesto, 1 a 12 (obligatorio)",
+            "type": "integer"
+          },
+          "year": {
+            "description": "Año del presupuesto (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "month"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
       "name": "credit_card_statements_get",
       "description": "Devuelve un estado de cuenta con su resumen por tipo de movimiento y su conciliación (base cash y base balance). Solo lectura.",
       "input_schema": {
