@@ -1,7 +1,7 @@
 ---
 title: "MCP: alta de reparaciones sin líneas y movimiento de insumos/mano de obra entre reparaciones"
 id: "SPEC-157"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,10 +11,11 @@ github_issue: 160
 # MCP: alta de reparaciones sin líneas y movimiento de insumos/mano de obra entre reparaciones
 
 **ID**: SPEC-157<br>
-**Estado**: in_progress<br>
+**Estado**: released<br>
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
 **Actualizado**: 2026-11-24<br>
+**Release**: 2026-11-24 — merge a `main` `5d7b0271`; implementación `9274e23e`; integración con SPEC-156 `c06167f1`; catálogo MCP 42 → 44 tools (24 lectura + 20 escritura); sin migraciones ni dependencias nuevas; imagen MCP no publicada en este ciclo; issue #160 cerrado. Pruebas manuales no ejecutadas: release ordenado por el usuario.<br>
 
 ---
 
@@ -525,7 +526,7 @@ Tests:
 - [x] `CA-TEST-MCP-CONTRACT`: `TestToolContracts` y `TestMCPBackendContract` verdes; golden revisado.
 - [x] `CA-DELIV-MCP-IMPACT`: `./scripts/check-mcp-impact.sh --staged --gate` verde antes del commit.
 - [x] `CA-DELIV-WORKTREE`: `./scripts/check-worktree.sh` verde en `../p40la-ihost-spec-157`.
-- [ ] `CA-TEST-USER-FLOW`: el usuario confirma las pruebas manuales antes de `pending_release`.
+- [x] `CA-TEST-USER-FLOW`: el usuario ordenó el release sin pruebas manuales adicionales (waiver explícito).
 
 ### 7.3 Testing
 
@@ -584,4 +585,5 @@ Tests:
 |-------|-------|-------------|
 | 2026-11-24 | opencode | Creación inicial de la especificación; issue #160 |
 | 2026-11-24 | opencode | Implementación: endpoint transaccional `POST .../items/move`, `MoveInput`/`MoveResult`, tools `home_maintenance_create` y `home_maintenance_item_move`, validación de `item_type` en backend, manifiesto 41 → 43 (44 al integrar SPEC-156), contrato regenerado y tests. `go build ./...`, `go test ./...` y `TestMCPBackendContract` verdes |
-| 2026-11-24 | opencode | Documentación MCP actualizada (catálogo 44 tools al integrar SPEC-156, secciones de create/move y compuerta); `check-mcp-docs.sh --staged` y `check-mcp-impact.sh --staged --gate` verdes. Pendiente la validación manual del usuario |
+| 2026-11-24 | opencode | Documentación MCP actualizada (catálogo 44 tools al integrar SPEC-156, secciones de create/move y compuerta); `check-mcp-docs.sh --staged` y `check-mcp-impact.sh --staged --gate` verdes |
+| 2026-11-24 | opencode | Release: merge a `main` `5d7b0271`; integración con SPEC-156 `c06167f1`; catálogo 44 tools; tracker, label y cierre del issue #160; pruebas manuales no ejecutadas (release ordenado por el usuario) |
