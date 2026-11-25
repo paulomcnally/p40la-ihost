@@ -41,6 +41,7 @@ type BankAccount struct {
 	BankName       string               `json:"bank_name,omitempty"`
 	Alias          string               `json:"alias"`
 	AccountNumber  string               `json:"account_number"`
+	IBAN           string               `json:"iban"`
 	AccountType    string               `json:"account_type"`
 	CurrencyID     int64                `json:"currency_id"`
 	CurrencyCode   string               `json:"currency_code,omitempty"`

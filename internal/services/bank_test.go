@@ -211,6 +211,80 @@ func TestBankAccountsAndFormats(t *testing.T) {
 	}
 }
 
+func TestBankAccountIBAN(t *testing.T) {
+	service, database := setupBankTest(t)
+	ctx := context.Background()
+	currency := currencyID(t, database)
+
+	bank, err := service.CreateBank(ctx, validBank("Banco Demo"))
+	if err != nil {
+		t.Fatalf("CreateBank: %v", err)
+	}
+
+	account := validBankAccount(bank.ID, currency)
+	account.IBAN = "  NI00DEMO00000000000000000000  "
+	created, err := service.CreateAccount(ctx, account)
+	if err != nil {
+		t.Fatalf("CreateAccount con iban: %v", err)
+	}
+	if created.IBAN != "NI00DEMO00000000000000000000" {
+		t.Fatalf("iban debería recortarse, got %q", created.IBAN)
+	}
+
+	// El iban se persiste y se lee de la DB, no solo del struct.
+	var stored string
+	if err := database.QueryRow(`SELECT iban FROM bank_accounts WHERE id = ?`, created.ID).Scan(&stored); err != nil {
+		t.Fatalf("leer iban persistido: %v", err)
+	}
+	if stored != "NI00DEMO00000000000000000000" {
+		t.Fatalf("iban persistido: got %q", stored)
+	}
+
+	// Actualizar el iban lo reemplaza.
+	created.IBAN = "NI00DEMO00000000000000000001"
+	updated, err := service.UpdateAccount(ctx, created)
+	if err != nil {
+		t.Fatalf("UpdateAccount con iban: %v", err)
+	}
+	if updated.IBAN != "NI00DEMO00000000000000000001" {
+		t.Fatalf("iban actualizado: got %q", updated.IBAN)
+	}
+
+	// Vaciar el iban lo limpia.
+	updated.IBAN = ""
+	cleared, err := service.UpdateAccount(ctx, updated)
+	if err != nil {
+		t.Fatalf("UpdateAccount sin iban: %v", err)
+	}
+	if cleared.IBAN != "" {
+		t.Fatalf("iban debería quedar vacío, got %q", cleared.IBAN)
+	}
+
+	// Un iban de más de 34 caracteres se rechaza.
+	tooLong := validBankAccount(bank.ID, currency)
+	tooLong.AccountNumber = "0000000002"
+	tooLong.IBAN = strings.Repeat("N", 35)
+	if _, err := service.CreateAccount(ctx, tooLong); err == nil {
+		t.Fatal("se esperaba error de validación por iban demasiado largo")
+	} else {
+		var validationErr *BankValidationError
+		if !errors.As(err, &validationErr) || validationErr.Code != "validation_error" {
+			t.Fatalf("error de validación esperado, got %v", err)
+		}
+		if !strings.Contains(validationErr.Message, "34") {
+			t.Fatalf("mensaje sin límite: %q", validationErr.Message)
+		}
+	}
+
+	// Exactamente 34 caracteres es válido.
+	limit := validBankAccount(bank.ID, currency)
+	limit.AccountNumber = "0000000003"
+	limit.IBAN = strings.Repeat("N", 34)
+	if _, err := service.CreateAccount(ctx, limit); err != nil {
+		t.Fatalf("iban de 34 caracteres debería aceptarse: %v", err)
+	}
+}
+
 func TestBankFormatValidation(t *testing.T) {
 	service, database := setupBankTest(t)
 	ctx := context.Background()

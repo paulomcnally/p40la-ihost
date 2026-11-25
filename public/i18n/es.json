@@ -434,6 +434,8 @@
     "empty_accounts_subtitle": "Agregá una cuenta para definir sus formatos de transferencia.",
     "alias": "Alias",
     "account_number": "Número de cuenta",
+    "iban": "IBAN",
+    "iban_hint": "Opcional. Máximo 34 caracteres.",
     "account_type": "Tipo de cuenta",
     "account_type_savings": "Ahorro",
     "account_type_checking": "Corriente",

@@ -178,7 +178,7 @@ func (s *BankStorage) DeleteBank(ctx context.Context, id int64) error {
 }
 
 const bankAccountColumns = `
-	a.id, a.bank_id, b.name, a.alias, a.account_number, a.account_type,
+	a.id, a.bank_id, b.name, a.alias, a.account_number, a.iban, a.account_type,
 	a.currency_id, COALESCE(c.code, ''), COALESCE(c.symbol, ''),
 	a.beneficiary, a.notes, a.active, a.created_at, a.updated_at
 `
@@ -264,9 +264,9 @@ func (s *BankStorage) CreateAccount(ctx context.Context, account *models.BankAcc
 
 	result, err := s.db.ExecContext(ctx, `
 		INSERT INTO bank_accounts
-			(bank_id, alias, account_number, account_type, currency_id, beneficiary, notes, active)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, account.BankID, account.Alias, account.AccountNumber, account.AccountType,
+			(bank_id, alias, account_number, iban, account_type, currency_id, beneficiary, notes, active)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, account.BankID, account.Alias, account.AccountNumber, account.IBAN, account.AccountType,
 		account.CurrencyID, account.Beneficiary, account.Notes, account.Active)
 	if err != nil {
 		if isUniqueConstraintError(err) {
@@ -300,11 +300,11 @@ func (s *BankStorage) UpdateAccount(ctx context.Context, account *models.BankAcc
 
 	if _, err := s.db.ExecContext(ctx, `
 		UPDATE bank_accounts
-		SET bank_id = ?, alias = ?, account_number = ?, account_type = ?,
+		SET bank_id = ?, alias = ?, account_number = ?, iban = ?, account_type = ?,
 		    currency_id = ?, beneficiary = ?, notes = ?, active = ?,
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
-	`, account.BankID, account.Alias, account.AccountNumber, account.AccountType,
+	`, account.BankID, account.Alias, account.AccountNumber, account.IBAN, account.AccountType,
 		account.CurrencyID, account.Beneficiary, account.Notes, account.Active,
 		account.ID); err != nil {
 		if isUniqueConstraintError(err) {
@@ -431,7 +431,7 @@ func scanBank(scanner interface{ Scan(...any) error }) (*models.Bank, error) {
 func scanBankAccount(scanner interface{ Scan(...any) error }) (*models.BankAccount, error) {
 	var account models.BankAccount
 	if err := scanner.Scan(&account.ID, &account.BankID, &account.BankName, &account.Alias,
-		&account.AccountNumber, &account.AccountType, &account.CurrencyID,
+		&account.AccountNumber, &account.IBAN, &account.AccountType, &account.CurrencyID,
 		&account.CurrencyCode, &account.CurrencySymbol, &account.Beneficiary,
 		&account.Notes, &account.Active, &account.CreatedAt, &account.UpdatedAt); err != nil {
 		return nil, err

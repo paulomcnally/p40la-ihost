@@ -25,6 +25,7 @@ type AccountItem struct {
 	BankName      string `json:"bank_name,omitempty"`
 	Alias         string `json:"alias"`
 	AccountNumber string `json:"account_number"`
+	IBAN          string `json:"iban,omitempty"`
 	AccountType   string `json:"account_type"`
 	CurrencyID    int64  `json:"currency_id"`
 	CurrencyCode  string `json:"currency_code,omitempty"`
@@ -48,6 +49,7 @@ type AccountCreateInput struct {
 	BankID        *int64  `json:"bank_id,omitempty" jsonschema:"ID del banco (alternativa a bank)"`
 	Alias         string  `json:"alias" jsonschema:"Alias de la cuenta (obligatorio)"`
 	AccountNumber string  `json:"account_number" jsonschema:"Número de cuenta (obligatorio)"`
+	IBAN          *string `json:"iban,omitempty" jsonschema:"IBAN de la cuenta (opcional, máximo 34 caracteres)"`
 	Currency      *string `json:"currency,omitempty" jsonschema:"Código de moneda, ej. NIO o USD (obligatorio si no se envía currency_id)"`
 	CurrencyID    *int64  `json:"currency_id,omitempty" jsonschema:"ID de la moneda (alternativa a currency)"`
 	Beneficiary   string  `json:"beneficiary" jsonschema:"Beneficiario de la cuenta (obligatorio)"`
@@ -61,6 +63,7 @@ type AccountUpdateInput struct {
 	ID            int64   `json:"id" jsonschema:"ID de la cuenta (obligatorio)"`
 	Alias         *string `json:"alias,omitempty" jsonschema:"Nuevo alias (opcional)"`
 	AccountNumber *string `json:"account_number,omitempty" jsonschema:"Nuevo número de cuenta (opcional)"`
+	IBAN          *string `json:"iban,omitempty" jsonschema:"Nuevo IBAN; vacío lo limpia (opcional, máximo 34 caracteres)"`
 	Currency      *string `json:"currency,omitempty" jsonschema:"Nuevo código de moneda (opcional)"`
 	CurrencyID    *int64  `json:"currency_id,omitempty" jsonschema:"Nuevo ID de moneda (opcional)"`
 	Beneficiary   *string `json:"beneficiary,omitempty" jsonschema:"Nuevo beneficiario (opcional)"`
@@ -125,6 +128,7 @@ func (t *Toolset) accountsSearch(ctx context.Context, _ *mcp.CallToolRequest, in
 			score := matchScore([]string{
 				account.Alias,
 				account.AccountNumber,
+				account.IBAN,
 				account.Beneficiary,
 				account.BankName,
 				bank.Name,
@@ -230,9 +234,11 @@ func (t *Toolset) accountsCreate(ctx context.Context, _ *mcp.CallToolRequest, in
 	if input.Notes != nil {
 		notes = strings.TrimSpace(*input.Notes)
 	}
+	iban := strings.TrimSpace(stringValue(input.IBAN))
 	created, err := t.client.CreateBankAccount(ctx, bank.ID, api.BankAccountInput{
 		Alias:         alias,
 		AccountNumber: accountNumber,
+		IBAN:          iban,
 		AccountType:   accountType,
 		CurrencyID:    currency.ID,
 		Beneficiary:   beneficiary,
@@ -271,6 +277,7 @@ func (t *Toolset) accountsUpdate(ctx context.Context, _ *mcp.CallToolRequest, in
 
 	alias := current.Alias
 	accountNumber := current.AccountNumber
+	iban := current.IBAN
 	beneficiary := current.Beneficiary
 	accountType := current.AccountType
 	currencyID := current.CurrencyID
@@ -282,6 +289,9 @@ func (t *Toolset) accountsUpdate(ctx context.Context, _ *mcp.CallToolRequest, in
 	}
 	if input.AccountNumber != nil {
 		accountNumber = strings.TrimSpace(*input.AccountNumber)
+	}
+	if input.IBAN != nil {
+		iban = strings.TrimSpace(*input.IBAN)
 	}
 	if input.Beneficiary != nil {
 		beneficiary = strings.TrimSpace(*input.Beneficiary)
@@ -338,6 +348,7 @@ func (t *Toolset) accountsUpdate(ctx context.Context, _ *mcp.CallToolRequest, in
 	updated, err := t.client.UpdateBankAccount(ctx, input.ID, api.BankAccountInput{
 		Alias:         alias,
 		AccountNumber: accountNumber,
+		IBAN:          iban,
 		AccountType:   accountType,
 		CurrencyID:    currencyID,
 		Beneficiary:   beneficiary,
@@ -367,6 +378,7 @@ func accountItem(account api.BankAccount) AccountItem {
 		BankName:      account.BankName,
 		Alias:         account.Alias,
 		AccountNumber: account.AccountNumber,
+		IBAN:          account.IBAN,
 		AccountType:   account.AccountType,
 		CurrencyID:    account.CurrencyID,
 		CurrencyCode:  account.CurrencyCode,

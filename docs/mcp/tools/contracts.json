@@ -467,7 +467,7 @@
     },
     {
       "name": "bank_accounts_create",
-      "description": "Crea una cuenta bancaria. Requiere bank (nombre, short_code o bank_id), alias, account_number, currency (código o id) y beneficiary. account_type (savings default o checking), notes y active son opcionales. Si la cuenta ya existe en el banco devuelve already_exists. Requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "description": "Crea una cuenta bancaria. Requiere bank (nombre, short_code o bank_id), alias, account_number, currency (código o id) y beneficiary. account_type (savings default o checking), iban (máximo 34 caracteres), notes y active son opcionales. Si la cuenta ya existe en el banco devuelve already_exists. Requiere P40LA_MCP_ALLOW_WRITES=true.",
       "input_schema": {
         "additionalProperties": false,
         "properties": {
@@ -525,6 +525,13 @@
               "integer"
             ]
           },
+          "iban": {
+            "description": "IBAN de la cuenta (opcional, máximo 34 caracteres)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "notes": {
             "description": "Notas (opcional)",
             "type": [
@@ -549,7 +556,7 @@
     },
     {
       "name": "bank_accounts_search",
-      "description": "Busca cuentas bancarias por alias, número de cuenta, beneficiario o banco. Solo lectura. query, bank/bank_id, active y limit son opcionales (limit default 10, máximo 50). Ordena coincidencias exactas, luego prefijo y luego contenido.",
+      "description": "Busca cuentas bancarias por alias, número de cuenta, IBAN, beneficiario o banco. Solo lectura. query, bank/bank_id, active y limit son opcionales (limit default 10, máximo 50). Ordena coincidencias exactas, luego prefijo y luego contenido.",
       "input_schema": {
         "additionalProperties": false,
         "properties": {
@@ -599,7 +606,7 @@
     },
     {
       "name": "bank_accounts_update",
-      "description": "Edita una cuenta bancaria por id. Solo cambia los campos enviados; el resto se conserva. El banco no se cambia. Requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "description": "Edita una cuenta bancaria por id. Solo cambia los campos enviados; el resto se conserva. iban es opcional y vacío lo limpia. El banco no se cambia. Requiere P40LA_MCP_ALLOW_WRITES=true.",
       "input_schema": {
         "additionalProperties": false,
         "properties": {
@@ -664,6 +671,13 @@
             "type": [
               "null",
               "integer"
+            ]
+          },
+          "iban": {
+            "description": "Nuevo IBAN; vacío lo limpia (opcional, máximo 34 caracteres)",
+            "type": [
+              "null",
+              "string"
             ]
           },
           "id": {

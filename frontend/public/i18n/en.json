@@ -434,6 +434,8 @@
     "empty_accounts_subtitle": "Add an account to define its transfer formats.",
     "alias": "Alias",
     "account_number": "Account number",
+    "iban": "IBAN",
+    "iban_hint": "Optional. Up to 34 characters.",
     "account_type": "Account type",
     "account_type_savings": "Savings",
     "account_type_checking": "Checking",

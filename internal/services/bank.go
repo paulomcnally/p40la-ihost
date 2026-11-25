@@ -20,6 +20,7 @@ const (
 	maxBankNotes         = 500
 	maxBankAccountAlias  = 100
 	maxBankAccountNumber = 50
+	maxBankAccountIBAN   = 34
 	maxBankBeneficiary   = 150
 	maxBankAccountNotes  = 500
 	maxBankFormatFields  = 30
@@ -269,6 +270,7 @@ func prepareBank(bank *models.Bank) error {
 func (s *BankService) prepareAccount(ctx context.Context, account *models.BankAccount) error {
 	account.Alias = strings.TrimSpace(account.Alias)
 	account.AccountNumber = strings.TrimSpace(account.AccountNumber)
+	account.IBAN = strings.TrimSpace(account.IBAN)
 	account.AccountType = strings.TrimSpace(strings.ToLower(account.AccountType))
 	account.Beneficiary = strings.TrimSpace(account.Beneficiary)
 	account.Notes = strings.TrimSpace(account.Notes)
@@ -294,6 +296,9 @@ func (s *BankService) prepareAccount(ctx context.Context, account *models.BankAc
 	}
 	if utf8.RuneCountInString(account.AccountNumber) > maxBankAccountNumber {
 		return newBankValidationError(fmt.Sprintf("El número de cuenta no puede superar los %d caracteres.", maxBankAccountNumber))
+	}
+	if utf8.RuneCountInString(account.IBAN) > maxBankAccountIBAN {
+		return newBankValidationError(fmt.Sprintf("El IBAN no puede superar los %d caracteres.", maxBankAccountIBAN))
 	}
 	if !isBankAccountType(account.AccountType) {
 		return newBankValidationError("El tipo de cuenta no es válido.")

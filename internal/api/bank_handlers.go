@@ -30,6 +30,7 @@ type bankRequest struct {
 type bankAccountRequest struct {
 	Alias         string `json:"alias"`
 	AccountNumber string `json:"account_number"`
+	IBAN          string `json:"iban"`
 	AccountType   string `json:"account_type"`
 	CurrencyID    int64  `json:"currency_id"`
 	Beneficiary   string `json:"beneficiary"`
@@ -156,6 +157,7 @@ func (h *BankHandlers) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		BankID:        bankID,
 		Alias:         req.Alias,
 		AccountNumber: req.AccountNumber,
+		IBAN:          req.IBAN,
 		AccountType:   req.AccountType,
 		CurrencyID:    req.CurrencyID,
 		Beneficiary:   req.Beneficiary,
@@ -202,6 +204,7 @@ func (h *BankHandlers) UpdateAccount(w http.ResponseWriter, r *http.Request) {
 		ID:            id,
 		Alias:         req.Alias,
 		AccountNumber: req.AccountNumber,
+		IBAN:          req.IBAN,
 		AccountType:   req.AccountType,
 		CurrencyID:    req.CurrencyID,
 		Beneficiary:   req.Beneficiary,

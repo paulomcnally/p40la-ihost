@@ -693,6 +693,7 @@ export interface BankAccount {
   bank_name?: string
   alias: string
   account_number: string
+  iban: string
   account_type: BankAccountType
   currency_id: number
   currency_code?: string

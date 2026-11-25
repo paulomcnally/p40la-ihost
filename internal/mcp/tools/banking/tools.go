@@ -30,7 +30,7 @@ func (t *Toolset) Register(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "bank_accounts_search",
-		Description: "Busca cuentas bancarias por alias, número de cuenta, beneficiario o banco. " +
+		Description: "Busca cuentas bancarias por alias, número de cuenta, IBAN, beneficiario o banco. " +
 			"Solo lectura. query, bank/bank_id, active y limit son opcionales (limit default 10, máximo 50). " +
 			"Ordena coincidencias exactas, luego prefijo y luego contenido.",
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &openWorld},
@@ -39,7 +39,8 @@ func (t *Toolset) Register(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "bank_accounts_create",
 		Description: "Crea una cuenta bancaria. Requiere bank (nombre, short_code o bank_id), alias, account_number, " +
-			"currency (código o id) y beneficiary. account_type (savings default o checking), notes y active son opcionales. " +
+			"currency (código o id) y beneficiary. account_type (savings default o checking), iban (máximo 34 caracteres), " +
+			"notes y active son opcionales. " +
 			"Si la cuenta ya existe en el banco devuelve already_exists. Requiere P40LA_MCP_ALLOW_WRITES=true.",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(true),
@@ -51,6 +52,7 @@ func (t *Toolset) Register(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "bank_accounts_update",
 		Description: "Edita una cuenta bancaria por id. Solo cambia los campos enviados; el resto se conserva. " +
+			"iban es opcional y vacío lo limpia. " +
 			"El banco no se cambia. Requiere P40LA_MCP_ALLOW_WRITES=true.",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(true),

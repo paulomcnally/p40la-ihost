@@ -78,6 +78,7 @@ func (f *fakeAPI) CreateBankAccount(_ context.Context, bankID int64, input api.B
 		BankName:      "Banco Demo",
 		Alias:         input.Alias,
 		AccountNumber: input.AccountNumber,
+		IBAN:          input.IBAN,
 		AccountType:   input.AccountType,
 		CurrencyID:    input.CurrencyID,
 		CurrencyCode:  "NIO",
@@ -97,6 +98,7 @@ func (f *fakeAPI) UpdateBankAccount(_ context.Context, id int64, input api.BankA
 		BankName:      "Banco Demo",
 		Alias:         input.Alias,
 		AccountNumber: input.AccountNumber,
+		IBAN:          input.IBAN,
 		AccountType:   input.AccountType,
 		CurrencyID:    input.CurrencyID,
 		CurrencyCode:  "USD",
@@ -389,6 +391,95 @@ func TestUpdateAccountKeepsUnsentFields(t *testing.T) {
 		fake.updatedAcc.AccountType != "checking" || fake.updatedAcc.CurrencyID != 2 ||
 		fake.updatedAcc.Beneficiary != "Titular Demo" || !fake.updatedAcc.Active {
 		t.Fatalf("merge inesperado: %+v", fake.updatedAcc)
+	}
+}
+
+func TestCreateAccountPassesIBAN(t *testing.T) {
+	toolset, fake := testToolset(true)
+
+	_, output, err := toolset.accountsCreate(context.Background(), nil, AccountCreateInput{
+		Bank:          strPtr("Banco Demo"),
+		Alias:         "Cuenta con IBAN",
+		AccountNumber: "demo-account-010",
+		Currency:      strPtr("NIO"),
+		Beneficiary:   "Titular Demo",
+		IBAN:          strPtr("  NI00DEMO00000000000000000000  "),
+	})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if fake.createdAcc.IBAN != "NI00DEMO00000000000000000000" {
+		t.Fatalf("iban enviado a la API: %q", fake.createdAcc.IBAN)
+	}
+	item := output.(AccountItem)
+	if item.IBAN != "NI00DEMO00000000000000000000" {
+		t.Fatalf("iban en la salida: %q", item.IBAN)
+	}
+}
+
+func TestUpdateAccountIBANPartial(t *testing.T) {
+	toolset, fake := testToolset(true)
+	fake.getAccount = &api.BankAccount{
+		ID: 5, BankID: 1, BankName: "Banco Demo", Alias: "Cuenta", AccountNumber: "demo-account-001",
+		IBAN: "NI00DEMO00000000000000000000", AccountType: "savings", CurrencyID: 1,
+		Beneficiary: "Titular Demo", Active: true,
+	}
+
+	// Omitido: conserva el IBAN actual.
+	if _, _, err := toolset.accountsUpdate(context.Background(), nil, AccountUpdateInput{
+		ID:    5,
+		Alias: strPtr("Cuenta"),
+	}); err != nil {
+		t.Fatalf("update sin iban: %v", err)
+	}
+	if fake.updatedAcc.IBAN != "NI00DEMO00000000000000000000" {
+		t.Fatalf("iban debía conservarse: %q", fake.updatedAcc.IBAN)
+	}
+
+	// Valor nuevo: lo actualiza (recortando extremos).
+	if _, _, err := toolset.accountsUpdate(context.Background(), nil, AccountUpdateInput{
+		ID:   5,
+		IBAN: strPtr("  NI00DEMO00000000000000000001  "),
+	}); err != nil {
+		t.Fatalf("update con iban: %v", err)
+	}
+	if fake.updatedAcc.IBAN != "NI00DEMO00000000000000000001" {
+		t.Fatalf("iban debía actualizarse: %q", fake.updatedAcc.IBAN)
+	}
+
+	// Vacío: lo limpia.
+	if _, _, err := toolset.accountsUpdate(context.Background(), nil, AccountUpdateInput{
+		ID:   5,
+		IBAN: strPtr(""),
+	}); err != nil {
+		t.Fatalf("update con iban vacío: %v", err)
+	}
+	if fake.updatedAcc.IBAN != "" {
+		t.Fatalf("iban debía quedar vacío: %q", fake.updatedAcc.IBAN)
+	}
+}
+
+func TestAccountSearchMatchesIBAN(t *testing.T) {
+	toolset, fake := testToolset(false)
+	fake.accounts[1] = []api.BankAccount{
+		{ID: 1, BankID: 1, BankName: "Banco Demo", Alias: "Cuenta Demo", AccountNumber: "demo-account-001",
+			IBAN: "NI00DEMO00000000000000000000", Beneficiary: "Titular Demo", Active: true},
+		{ID: 2, BankID: 1, BankName: "Banco Demo", Alias: "Otra Cuenta", AccountNumber: "demo-account-002",
+			IBAN: "NI00DEMO00000000000000000001", Beneficiary: "Titular Demo", Active: true},
+	}
+
+	_, output, err := toolset.accountsSearch(context.Background(), nil, AccountSearchInput{
+		Query: strPtr("NI00DEMO00000000000000000001"),
+	})
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	result := output.(AccountSearchOutput)
+	if result.Total != 1 || result.Items[0].ID != 2 {
+		t.Fatalf("resultado inesperado: %+v", result)
+	}
+	if result.Items[0].IBAN != "NI00DEMO00000000000000000001" {
+		t.Fatalf("iban en la salida: %q", result.Items[0].IBAN)
 	}
 }
 

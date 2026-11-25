@@ -149,6 +149,7 @@ export default function BankAccountShowPage() {
         <h3 className="font-semibold mb-2">{t('banks.account_info')}</h3>
         <div>
           <InfoRow label={t('banks.account_number_label')} value={account.account_number} mono />
+          <InfoRow label={t('banks.iban')} value={account.iban?.trim() || '—'} mono />
           <InfoRow label={t('banks.account_type')} value={bankAccountTypeLabel(account.account_type, t)} />
           <InfoRow
             label={t('banks.currency')}

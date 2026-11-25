@@ -15,7 +15,7 @@ Las tools aceptan el **banco** y la **moneda** por nombre, código o ID, resuelv
 
 | Tool | Tipo | Qué hace | Idempotente |
 |---|---|---|---|
-| `bank_accounts_search` | Lectura | Busca cuentas por alias, número, beneficiario o banco | — |
+| `bank_accounts_search` | Lectura | Busca cuentas por alias, número, IBAN, beneficiario o banco | — |
 | `bank_accounts_create` | Escritura | Crea una cuenta bancaria | No (repetir devuelve `already_exists`) |
 | `bank_accounts_update` | Escritura | Edita una cuenta sin cambiar el banco | Sí |
 | `credit_cards_search` | Lectura | Busca tarjetas por alias, últimos cuatro, titular o banco | — |
@@ -87,6 +87,7 @@ Si varias coinciden con la misma prioridad, responde `ambiguous_reference` con l
 |---|---|---|
 | Alias | `alias` | `alias` |
 | Número | `account_number` | `last4` (últimos cuatro dígitos) |
+| IBAN | `iban` | — |
 | Persona | `beneficiary` | `holder` (titular) |
 | Marca | — | `network` |
 | Banco | `bank_name` | `bank_name` |
@@ -114,6 +115,7 @@ Reglas:
 - `count`: entidades devueltas.
 - `total`: coincidencias antes de aplicar `limit`.
 - `truncated`: `true` cuando hay más coincidencias que `count`.
+- `iban`: aparece en cada cuenta solo cuando tiene un IBAN cargado.
 
 Sin resultados **no es un error**: devuelve `count: 0`, `items: []` y un `hint`.
 
@@ -151,7 +153,7 @@ La verificación corre antes de crear y antes de editar (excluyendo la propia en
 `bank_accounts_update` y `credit_cards_update` leen la entidad, mezclan **solo los campos enviados** y mandan el `PUT` completo que exige la API (que reemplaza el recurso). Así, omitir un campo nunca lo pone en cero.
 
 - Campo ausente = sin cambios.
-- Cadena vacía = limpia el campo (`notes: ""`, `holder: ""`).
+- Cadena vacía = limpia el campo (`notes: ""`, `iban: ""`, `holder: ""`).
 - `secondary_currency: ""` (o `secondary_currency_id: 0`) limpia la moneda secundaria de una tarjeta.
 - Los numéricos aceptan `0` explícito cuando el rango lo permite (`bonus_due_day: 0`, `credit_limit: 0`).
 - No envíes `null` para limpiar: usá `""`.
@@ -166,7 +168,7 @@ Busca cuentas bancarias. Solo lectura.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `query` | string | No | Texto libre sobre alias, número de cuenta, beneficiario y banco |
+| `query` | string | No | Texto libre sobre alias, número de cuenta, IBAN, beneficiario y banco |
 | `bank` | string | No | Nombre, `short_code` o ID como texto del banco |
 | `bank_id` | integer | No | ID del banco; si viene con `bank`, gana `bank_id` |
 | `active` | boolean | No | Filtra por estado; omitido devuelve activas e inactivas |
@@ -197,6 +199,7 @@ Busca cuentas bancarias. Solo lectura.
       "bank_name": "Banco Demo",
       "alias": "Cuenta Demo",
       "account_number": "demo-account-001",
+      "iban": "NI00DEMO00000000000000000000",
       "account_type": "savings",
       "currency_id": 1,
       "currency_code": "NIO",
@@ -219,6 +222,7 @@ Crea una cuenta bancaria. Requiere la compuerta de escritura.
 | `bank_id` | integer | Sí* | ID del banco; si viene con `bank`, gana `bank_id` |
 | `alias` | string | Sí | Nombre corto de la cuenta (máx. 100 caracteres) |
 | `account_number` | string | Sí | Número de cuenta (máx. 50 caracteres) |
+| `iban` | string | No | IBAN de la cuenta (opcional, máx. 34 caracteres) |
 | `currency` | string | Sí* | Código o nombre de la moneda, o ID como texto |
 | `currency_id` | integer | Sí* | ID de la moneda; si viene con `currency`, gana `currency_id` |
 | `beneficiary` | string | Sí | Titular o beneficiario (máx. 150 caracteres) |
@@ -232,6 +236,8 @@ Crea una cuenta bancaria. Requiere la compuerta de escritura.
 
 - El banco y la moneda se resuelven antes del `POST /api/banks/{bank_id}/accounts`.
 - Verifica duplicados por `bank_id` + `account_number`; si existe, responde `already_exists` y no escribe.
+- `iban` es opcional: se recortan los espacios al inicio y al final antes de guardarlo.
+- `iban` solo se valida por longitud (máx. 34 caracteres). **No** se valida formato ni checksum: el valor se guarda tal cual, en el formato que envíe el cliente.
 - Devuelve la cuenta creada con su `id`.
 
 ### Ejemplo
@@ -241,6 +247,7 @@ Crea una cuenta bancaria. Requiere la compuerta de escritura.
   "bank": "Banco Demo",
   "alias": "Cuenta Demo",
   "account_number": "demo-account-001",
+  "iban": "NI00DEMO00000000000000000000",
   "currency": "NIO",
   "beneficiary": "Titular Demo",
   "account_type": "savings",
@@ -257,6 +264,7 @@ Crea una cuenta bancaria. Requiere la compuerta de escritura.
   "bank_name": "Banco Demo",
   "alias": "Cuenta Demo",
   "account_number": "demo-account-001",
+  "iban": "NI00DEMO00000000000000000000",
   "account_type": "savings",
   "currency_id": 1,
   "currency_code": "NIO",
@@ -276,6 +284,7 @@ Edita una cuenta con semántica parcial. Requiere la compuerta de escritura.
 | `id` | integer | Sí | ID de la cuenta |
 | `alias` | string | No | Nuevo alias |
 | `account_number` | string | No | Nuevo número de cuenta |
+| `iban` | string | No | Nuevo IBAN; `""` lo limpia (opcional, máx. 34 caracteres) |
 | `currency` | string | No | Nueva moneda por código, nombre o ID |
 | `currency_id` | integer | No | Nueva moneda por ID |
 | `beneficiary` | string | No | Nuevo beneficiario |
@@ -286,13 +295,25 @@ Edita una cuenta con semántica parcial. Requiere la compuerta de escritura.
 
 Enviá solo los campos que cambian. El resto se conserva tal como estaba.
 
+`iban` sigue la misma regla que `notes`: si se omite, conserva el valor actual; si se envía `""`, lo limpia; si se envía un valor, lo reemplaza (recortando espacios al inicio y al final). Igual que en el alta, solo se valida la longitud de 34 caracteres.
+
 ### Ejemplo
 
 ```json
 {
   "id": 1,
   "alias": "Cuenta Demo Nómina",
+  "iban": "NI00DEMO00000000000000000000",
   "active": false
+}
+```
+
+Para quitar el IBAN de una cuenta, enviá el campo vacío:
+
+```json
+{
+  "id": 1,
+  "iban": ""
 }
 ```
 
@@ -305,6 +326,7 @@ Enviá solo los campos que cambian. El resto se conserva tal como estaba.
   "bank_name": "Banco Demo",
   "alias": "Cuenta Demo Nómina",
   "account_number": "demo-account-001",
+  "iban": "NI00DEMO00000000000000000000",
   "account_type": "savings",
   "currency_id": 1,
   "currency_code": "NIO",
@@ -547,9 +569,11 @@ Enviá solo los campos que cambian. El resto se conserva tal como estaba.
 | `not_found` | Banco, moneda o entidad inexistente | Lista de opciones o el `id` que no existe |
 | `ambiguous_reference` | Varios bancos o monedas coinciden con la referencia | Enviá `bank_id` o el código exacto, con los candidatos |
 | `already_exists` | Cuenta o tarjeta duplicada | Devuelve el `id` de la entidad existente |
-| `invalid_value` | Campo obligatorio vacío, `limit` fuera de 1..50, allowlist o rango inválido, monto negativo, `id` inválido o intento de cambiar el banco | Mensaje del backend o de la tool |
+| `invalid_value` | Campo obligatorio vacío, `limit` fuera de 1..50, allowlist o rango inválido, monto negativo, `id` inválido, IBAN de más de 34 caracteres o intento de cambiar el banco | Mensaje del backend o de la tool |
 | `upstream_error` | Fallo de red o respuesta 5xx | Verificá `P40LA_BASE_URL` y `GET /health` |
 | `auth_failed` | API key inválida, revocada o rotada | Revisá la key y [api-key.md](../api-key.md) |
+
+Un `iban` de más de 34 caracteres hace que el backend responda `400` con código `validation_error` y el mensaje «El IBAN no puede superar los 34 caracteres.»; la tool lo devuelve como `invalid_value` con ese mismo mensaje. Dentro del límite, el backend no valida formato ni checksum: cualquier texto de hasta 34 caracteres se acepta y se guarda.
 
 ## Flujo recomendado para un agente
 

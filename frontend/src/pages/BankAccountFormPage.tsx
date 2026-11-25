@@ -34,6 +34,7 @@ export default function BankAccountFormPage() {
   const [currencyId, setCurrencyId] = useState<number | ''>('')
   const [beneficiary, setBeneficiary] = useState('')
   const [notes, setNotes] = useState('')
+  const [iban, setIban] = useState('')
   const [active, setActive] = useState(true)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -47,6 +48,7 @@ export default function BankAccountFormPage() {
     setCurrencyId(detail.currency_id)
     setBeneficiary(detail.beneficiary)
     setNotes(detail.notes || '')
+    setIban(detail.iban || '')
     setActive(detail.active)
   }, [])
 
@@ -95,6 +97,7 @@ export default function BankAccountFormPage() {
         currency_id: Number(currencyId),
         beneficiary: beneficiary.trim(),
         notes: notes.trim(),
+        iban: iban.trim(),
         active,
       }
       if (isNew) {
@@ -197,6 +200,18 @@ export default function BankAccountFormPage() {
               className={inputClass}
               autoComplete="off"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('banks.iban')}</label>
+            <input
+              type="text"
+              value={iban}
+              onChange={(e) => setIban(e.target.value)}
+              maxLength={34}
+              className={`${inputClass} font-mono`}
+              autoComplete="off"
+            />
+            <p className="text-xs text-text-secondary mt-1">{t('banks.iban_hint')}</p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">{t('banks.account_notes')}</label>
