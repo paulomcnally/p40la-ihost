@@ -1,7 +1,7 @@
 ---
 title: "MCP: consulta, edición y borrado de líneas en reparaciones del hogar"
 id: "SPEC-159"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-25"
@@ -11,10 +11,11 @@ github_issue: 162
 # MCP: consulta, edición y borrado de líneas en reparaciones del hogar
 
 **ID**: SPEC-159<br>
-**Estado**: pending_release<br>
+**Estado**: released<br>
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
-**Actualizado**: 2026-11-25
+**Actualizado**: 2026-11-25<br>
+**Release**: 2026-11-25 — merge a `main` `e1abd8d5`; implementación `9e6af4ad`; preparación de release `fbbe1021`; bump `d26d79cf`; app `v0.5.21` (workflow [45559764409](https://github.com/paulomcnally/p40la-ihost/actions/runs/45559764409)); MCP `mcp-v0.6.1` (workflow [45559768235](https://github.com/paulomcnally/p40la-ihost/actions/runs/45559768235)); catálogo MCP 44 → 48 tools; sin migraciones ni dependencias nuevas; issue #162 cerrado. Pruebas manuales no ejecutadas: release ordenado por el usuario.
 
 ---
 
@@ -721,3 +722,4 @@ Tests:
 | 2026-11-24 | opencode | Spec lista para implementar; issue #162 y veredicto de impacto MCP integrado |
 | 2026-11-25 | opencode | Implementación: 4 tools, cliente MCP, merge parcial, totales recalculados, tests, manifiesto y contrato 44 → 48 |
 | 2026-11-25 | opencode | Preparar release: build, tests, contrato, manifiesto y documentación MCP verificados |
+| 2026-11-25 | opencode | Release v0.5.21 y mcp-v0.6.1; spec released; issue #162 cerrado |
