@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -54,6 +55,14 @@ type HomeCreateRequest struct {
 	Usage   string `json:"usage,omitempty"`
 }
 
+// HomeUpdateRequest es el contrato de PUT /api/homes/{id}. El backend reemplaza
+// el registro, por eso la tool envía siempre name, address y usage completos.
+type HomeUpdateRequest struct {
+	Name    string `json:"name"`
+	Address string `json:"address"`
+	Usage   string `json:"usage"`
+}
+
 // InstitutionCreateRequest es el contrato de POST /api/institutions.
 type InstitutionCreateRequest struct {
 	Name       string `json:"name"`
@@ -101,6 +110,16 @@ func (c *Client) ListHomes(ctx context.Context) ([]Home, error) {
 func (c *Client) CreateHome(ctx context.Context, req HomeCreateRequest) (*Home, error) {
 	var home Home
 	if err := c.doJSON(ctx, http.MethodPost, "/api/homes", req, &home, nil); err != nil {
+		return nil, err
+	}
+	return &home, nil
+}
+
+// UpdateHome reemplaza los datos de un hogar existente.
+func (c *Client) UpdateHome(ctx context.Context, id int64, req HomeUpdateRequest) (*Home, error) {
+	var home Home
+	path := fmt.Sprintf("/api/homes/%d", id)
+	if err := c.doJSON(ctx, http.MethodPut, path, req, &home, sourceHeaders()); err != nil {
 		return nil, err
 	}
 	return &home, nil

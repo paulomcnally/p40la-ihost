@@ -22,6 +22,10 @@ type fakeAPI struct {
 	createdHome  *api.HomeCreateRequest
 	createdSvc   *api.ServiceCreateRequest
 	posts        int
+	updates      int
+	updatedID    int64
+	updatedHome  *api.HomeUpdateRequest
+	updateErr    error
 }
 
 func (f *fakeAPI) GetService(context.Context, int64) (*api.Service, error) { return nil, nil }
@@ -41,6 +45,25 @@ func (f *fakeAPI) CreateHome(_ context.Context, req api.HomeCreateRequest) (*api
 	home := api.Home{ID: f.nextID, Name: req.Name, Address: req.Address, Usage: req.Usage}
 	f.homes = append(f.homes, home)
 	return &home, nil
+}
+
+func (f *fakeAPI) UpdateHome(_ context.Context, id int64, req api.HomeUpdateRequest) (*api.Home, error) {
+	if f.updateErr != nil {
+		return nil, f.updateErr
+	}
+	f.updates++
+	f.updatedID = id
+	f.updatedHome = &req
+	for i := range f.homes {
+		if f.homes[i].ID == id {
+			f.homes[i].Name = req.Name
+			f.homes[i].Address = req.Address
+			f.homes[i].Usage = req.Usage
+			home := f.homes[i]
+			return &home, nil
+		}
+	}
+	return nil, &api.APIError{Status: 404, Code: "not_found", Message: "Hogar no encontrado"}
 }
 
 func (f *fakeAPI) ListInstitutions(context.Context) ([]api.Institution, error) {
@@ -168,6 +191,137 @@ func TestHomesInvalidUsage(t *testing.T) {
 	}
 }
 
+func TestHomesUpdatePartialKeepsCurrentFields(t *testing.T) {
+	f := &fakeAPI{homes: []api.Home{{ID: 7, Name: "Hogar Demo", Address: "Calle Demo 123", Usage: "rental"}}}
+	tool := newTestToolset(f, true)
+	id := int64(7)
+
+	result, output, err := tool.homesUpdate(context.Background(), nil, HomesUpdateInput{
+		HomeID: &id,
+		Usage:  "inhabited",
+	})
+	if err != nil || result.IsError {
+		t.Fatalf("update: err=%v result=%#v", err, result)
+	}
+	home, ok := output.(*api.Home)
+	if !ok || home.Usage != "inhabited" || home.Name != "Hogar Demo" || home.Address != "Calle Demo 123" {
+		t.Fatalf("home=%#v", output)
+	}
+	if f.updatedHome == nil || f.updatedHome.Name != "Hogar Demo" ||
+		f.updatedHome.Address != "Calle Demo 123" || f.updatedHome.Usage != "inhabited" {
+		t.Fatalf("request=%#v", f.updatedHome)
+	}
+}
+
+func TestHomesUpdateClearsAddress(t *testing.T) {
+	f := &fakeAPI{homes: []api.Home{{ID: 7, Name: "Hogar Demo", Address: "Calle Demo 123", Usage: "rental"}}}
+	tool := newTestToolset(f, true)
+	id := int64(7)
+	empty := ""
+
+	result, output, err := tool.homesUpdate(context.Background(), nil, HomesUpdateInput{
+		HomeID:  &id,
+		Address: &empty,
+	})
+	if err != nil || result.IsError {
+		t.Fatalf("update: err=%v result=%#v", err, result)
+	}
+	home, ok := output.(*api.Home)
+	if !ok || home.Address != "" || home.Name != "Hogar Demo" || home.Usage != "rental" {
+		t.Fatalf("home=%#v", output)
+	}
+}
+
+func TestHomesUpdateDuplicateName(t *testing.T) {
+	f := &fakeAPI{homes: []api.Home{
+		{ID: 7, Name: "Hogar Demo", Usage: "rental"},
+		{ID: 8, Name: "Casa Demo", Usage: "rental"},
+	}}
+	tool := newTestToolset(f, true)
+	id := int64(7)
+	name := "Casa Demo"
+
+	result, output, _ := tool.homesUpdate(context.Background(), nil, HomesUpdateInput{HomeID: &id, Name: &name})
+	if !result.IsError || output.(map[string]any)["error"] != "already_exists" {
+		t.Fatalf("result=%#v output=%v", result, output)
+	}
+	if f.updates != 0 {
+		t.Fatalf("updates=%d, quiero 0", f.updates)
+	}
+}
+
+func TestHomesUpdateInvalidUsage(t *testing.T) {
+	f := &fakeAPI{homes: []api.Home{{ID: 7, Name: "Hogar Demo", Usage: "rental"}}}
+	tool := newTestToolset(f, true)
+	id := int64(7)
+
+	result, output, _ := tool.homesUpdate(context.Background(), nil, HomesUpdateInput{
+		HomeID: &id,
+		Usage:  "otro",
+	})
+	if !result.IsError || output.(map[string]any)["error"] != "invalid_value" {
+		t.Fatalf("result=%#v output=%v", result, output)
+	}
+	if f.updates != 0 {
+		t.Fatalf("updates=%d, quiero 0", f.updates)
+	}
+}
+
+func TestHomesUpdateNotFound(t *testing.T) {
+	f := &fakeAPI{homes: []api.Home{{ID: 7, Name: "Hogar Demo", Usage: "rental"}}}
+	tool := newTestToolset(f, true)
+	id := int64(99)
+
+	result, output, _ := tool.homesUpdate(context.Background(), nil, HomesUpdateInput{HomeID: &id, Usage: "unused"})
+	if !result.IsError || output.(map[string]any)["error"] != "not_found" {
+		t.Fatalf("result=%#v output=%v", result, output)
+	}
+	if f.updates != 0 {
+		t.Fatalf("updates=%d, quiero 0", f.updates)
+	}
+}
+
+func TestHomesUpdateAmbiguousName(t *testing.T) {
+	f := &fakeAPI{homes: []api.Home{
+		{ID: 7, Name: "Hogar Demo", Usage: "rental"},
+		{ID: 8, Name: "hogar demo", Usage: "rental"},
+	}}
+	tool := newTestToolset(f, true)
+
+	result, output, _ := tool.homesUpdate(context.Background(), nil, HomesUpdateInput{Home: "Hogar Demo", Usage: "unused"})
+	if !result.IsError || output.(map[string]any)["error"] != "ambiguous_reference" {
+		t.Fatalf("result=%#v output=%v", result, output)
+	}
+	if f.updates != 0 {
+		t.Fatalf("updates=%d, quiero 0", f.updates)
+	}
+}
+
+func TestHomesUpdateActiveRentalConflict(t *testing.T) {
+	f := &fakeAPI{
+		homes: []api.Home{{ID: 7, Name: "Hogar Demo", Usage: "rental"}},
+		updateErr: &api.APIError{
+			Status:  409,
+			Code:    "home_has_active_rental",
+			Message: "la vivienda tiene un alquiler o reserva activa",
+		},
+	}
+	tool := newTestToolset(f, true)
+	id := int64(7)
+
+	result, output, _ := tool.homesUpdate(context.Background(), nil, HomesUpdateInput{HomeID: &id, Usage: "unused"})
+	if !result.IsError {
+		t.Fatal("quiero home_has_active_rental")
+	}
+	payload := output.(map[string]any)
+	if payload["error"] != "home_has_active_rental" {
+		t.Fatalf("payload=%v", payload)
+	}
+	if hint, _ := payload["hint"].(string); !strings.Contains(hint, "Cerrá el contrato") {
+		t.Fatalf("hint=%q", hint)
+	}
+}
+
 func TestWritesDisabled(t *testing.T) {
 	f := &fakeAPI{}
 	tool := newTestToolset(f, false)
@@ -175,8 +329,13 @@ func TestWritesDisabled(t *testing.T) {
 	if output.(map[string]any)["error"] != "writes_disabled" {
 		t.Fatalf("output=%v", output)
 	}
-	if f.posts != 0 {
-		t.Fatalf("posts=%d", f.posts)
+	id := int64(7)
+	_, output, _ = tool.homesUpdate(context.Background(), nil, HomesUpdateInput{HomeID: &id, Usage: "unused"})
+	if output.(map[string]any)["error"] != "writes_disabled" {
+		t.Fatalf("output=%v", output)
+	}
+	if f.posts != 0 || f.updates != 0 {
+		t.Fatalf("posts=%d updates=%d", f.posts, f.updates)
 	}
 }
 
@@ -274,7 +433,7 @@ func TestProtocolToolsList(t *testing.T) {
 	for _, tool := range tools.Tools {
 		names[tool.Name] = true
 	}
-	for _, want := range []string{"entities_search", "homes_create", "institutions_create", "banks_create", "services_create"} {
+	for _, want := range []string{"entities_search", "homes_create", "homes_update", "institutions_create", "banks_create", "services_create"} {
 		if !names[want] {
 			t.Fatalf("falta %q en %v", want, names)
 		}

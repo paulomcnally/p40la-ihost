@@ -115,6 +115,32 @@
       ]
     },
     {
+      "name": "homes_update",
+      "docs": [
+        "docs/mcp/tools/entities.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/entities/homes.go"
+      ],
+      "dependencies": [
+        "internal/mcp/tools/entities/tools.go",
+        "internal/mcp/tools/toolkit/toolkit.go",
+        "internal/api/home_handlers.go",
+        "internal/services/home.go",
+        "internal/storage/home.go"
+      ],
+      "endpoints": [
+        "GET /api/homes",
+        "PUT /api/homes/{id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/entities/tools_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/mcp/api/entities_test.go",
+        "internal/api/mcp_backend_contract_test.go"
+      ]
+    },
+    {
       "name": "institutions_create",
       "docs": [
         "docs/mcp/tools/entities.md"

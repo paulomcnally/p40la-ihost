@@ -11,7 +11,7 @@ description: "API key global, OAuth, compuerta de escritura, datos y protocolo d
 1. **Dos credenciales separadas**: OAuth 2.1 protege la entrada remota; la API key global protege la salida hacia la API del sistema.
 2. **Sin contraseña del dashboard en el MCP**: el agente usa una API key, no las credenciales del usuario. La contraseña del MCP remoto es otra credencial, solo para autorizar clientes OAuth.
 3. **Menor exposición**: las credenciales se guardan hasheadas, se muestran una vez y se pueden revocar.
-4. **Confirmación humana**: toda tool de escritura exige confirmación del usuario antes de ejecutar. Las de facturas, autos y reparaciones previsualizan con `dry_run`; las de banca no tienen `dry_run` y el agente debe mostrar el resumen (banco y moneda resueltos, cuerpo y duplicados) antes de escribir. Las altas de entidades tampoco tienen `dry_run`: se muestra el cuerpo y si ya existe un duplicado.
+4. **Confirmación humana**: toda tool de escritura exige confirmación del usuario antes de ejecutar. Las de facturas, autos y reparaciones previsualizan con `dry_run`; las de banca no tienen `dry_run` y el agente debe mostrar el resumen (banco y moneda resueltos, cuerpo y duplicados) antes de escribir. Las altas de entidades tampoco tienen `dry_run`: se muestra el cuerpo y si ya existe un duplicado. `homes_update` es una edición directa: se muestra el hogar resuelto y los campos que cambian.
 5. **Datos mínimos**: los logs no incluyen montos, tokens, cookies ni payloads.
 6. **Lectura por defecto en remoto**: publicar el MCP en Internet no habilita escrituras.
 
@@ -65,7 +65,7 @@ La administración de la key es **solo por sesión**: una key no puede crear ni 
 
 ## Compuerta de escritura
 
-`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que **cualquier** tool de escritura ejecute cambios: `bills_generate` y `bills_pay`, las `autos_*` que escriben y `home_maintenance_labor_register`/`home_maintenance_supplies_register` (con `dry_run=false`), `bank_accounts_create`/`bank_accounts_update`, `credit_cards_create`/`credit_cards_update` y las `*_create` de entidades (directas). En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
+`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que **cualquier** tool de escritura ejecute cambios: `bills_generate` y `bills_pay`, las `autos_*` que escriben y `home_maintenance_labor_register`/`home_maintenance_supplies_register` (con `dry_run=false`), `bank_accounts_create`/`bank_accounts_update`, `credit_cards_create`/`credit_cards_update`, `homes_update` y las `*_create` de entidades (directas). En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
 
 | Modo | Escritura con compuertas apagadas | Escritura con compuertas encendidas |
 |---|---|---|
