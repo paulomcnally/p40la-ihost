@@ -1,7 +1,7 @@
 ---
 title: "Release unificado: app e imagen MCP desde release.sh"
 id: "SPEC-158"
-status: "in_progress"
+status: "released"
 author: "opencode"
 created: "2026-11-24"
 updated: "2026-11-24"
@@ -11,10 +11,11 @@ github_issue: 161
 # Release unificado: app e imagen MCP desde release.sh
 
 **ID**: SPEC-158<br>
-**Estado**: in_progress<br>
+**Estado**: released<br>
 **Autor**: opencode<br>
 **Creado**: 2026-11-24<br>
 **Actualizado**: 2026-11-24<br>
+**Release**: 2026-11-24 — merge a `main` `6839e217`; implementación `4bbe1c76`; `release.sh` libera app y MCP en el mismo ciclo; se elimina `build-mcp-image.sh`; el release de imágenes se ejecuta con `release.sh 0.5.20 0.6.0`; issue #161 cerrado.<br>
 
 ---
 
@@ -267,3 +268,4 @@ Ninguna tool MCP se agrega, elimina ni cambia de contrato. El cambio es exclusiv
 |-------|-------|-------------|
 | 2026-11-24 | opencode | Creación inicial de la especificación; issue #161 |
 | 2026-11-24 | opencode | Implementación: detección MCP por diff desde `mcp-v*`, versión automática/explícita, tag `mcp-vX.Y.Z`, espera y verificación de conclusión de ambos workflows, `--check` y `--no-mcp`; eliminado `build-mcp-image.sh`; docs MCP actualizadas. `bash -n` verde |
+| 2026-11-24 | opencode | Release: merge a `main` `6839e217`; tracker, label y cierre del issue #161; `--check` validado con v0.5.20 y mcp-v0.6.0 |
