@@ -1658,6 +1658,73 @@
       }
     },
     {
+      "name": "home_maintenance_get",
+      "description": "Devuelve una reparación o mantenimiento del hogar con sus líneas de mano de obra e insumos y los totales por moneda. Es el detalle completo, sin el tope de 100 reparaciones de home_maintenance_list. Solo lectura; no aplica la compuerta de escritura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "maintenance_id": {
+            "description": "ID de la reparación (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "maintenance_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "home_maintenance_item_delete",
+      "description": "Borra una línea de mano de obra o insumos de una reparación. No borra la cabecera: si era la última línea, la reparación queda vacía y se informa maintenance_empty=true. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "item_id": {
+            "description": "ID de la línea a borrar (obligatorio)",
+            "type": "integer"
+          },
+          "maintenance_id": {
+            "description": "ID de la reparación que contiene la línea (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "maintenance_id",
+          "item_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
       "name": "home_maintenance_item_move",
       "description": "Mueve líneas de mano de obra y/o insumos de una reparación a otra del mismo hogar. El destino puede existir (target_maintenance_id) o crearse en la misma llamada (target). Valida que las líneas pertenezcan al origen y no permite mover al mismo mantenimiento. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
       "input_schema": {
@@ -1765,6 +1832,95 @@
       "annotations": {
         "destructiveHint": true,
         "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "home_maintenance_item_update",
+      "description": "Edita una línea de mano de obra o insumos de una reparación. Solo cambia los campos enviados; los omitidos conservan su valor. Cambiar item_type a labor fuerza quantity=1 y unit=unit. institution_id=0 limpia el proveedor. Devuelve la línea y los totales por moneda recalculados. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "Monto de la línea (mayor o igual a 0); omitir conserva",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "currency_id": {
+            "description": "ID de la moneda; omitir conserva",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "description": {
+            "description": "Descripción de la línea (máximo 200); omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "institution_id": {
+            "description": "ID del proveedor o contratista; 0 limpia; omitir conserva",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "item_id": {
+            "description": "ID de la línea a editar (obligatorio)",
+            "type": "integer"
+          },
+          "item_type": {
+            "description": "Tipo: labor o supplies; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "maintenance_id": {
+            "description": "ID de la reparación que contiene la línea (obligatorio)",
+            "type": "integer"
+          },
+          "quantity": {
+            "description": "Cantidad para insumos (mayor que cero); labor fuerza 1; omitir conserva",
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "unit": {
+            "description": "Unidad de insumos; labor fuerza unit; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "home_id",
+          "maintenance_id",
+          "item_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
         "openWorldHint": false,
         "readOnlyHint": false
       }
@@ -2003,6 +2159,76 @@
       "annotations": {
         "destructiveHint": false,
         "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "home_maintenance_update",
+      "description": "Edita una reparación existente. Solo cambia los campos enviados; los omitidos conservan su valor. institution_id=0 limpia la institución y description vacía limpia la descripción. No cambia las líneas: usá home_maintenance_item_update para eso. Si no hay cambios efectivos devuelve status=unchanged. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "area": {
+            "description": "Área: plumbing, electrical, roof, paint, carpentry, appliances, garden, cleaning u other; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "description": {
+            "description": "Descripción libre; vacío limpia; máximo 500; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "institution_id": {
+            "description": "ID del proveedor o contratista; 0 limpia; omitir conserva",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "kind": {
+            "description": "Tipo: corrective o preventive; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "maintenance_id": {
+            "description": "ID de la reparación (obligatorio)",
+            "type": "integer"
+          },
+          "performed_at": {
+            "description": "Fecha YYYY-MM-DD, no futura; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "home_id",
+          "maintenance_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
         "openWorldHint": false,
         "readOnlyHint": false
       }

@@ -1027,3 +1027,93 @@ func TestStorageMoveItemsRollsBackOnConflict(t *testing.T) {
 		t.Fatalf("el destino no debía persistir: antes %d, después %d", before, after)
 	}
 }
+
+func TestUpdateMaintenancePersistsHeader(t *testing.T) {
+	ctx := context.Background()
+	service, _, homeID, institutionID := newTestService(t)
+	record, err := service.Create(ctx, homeID, Input{
+		PerformedAt:   "2026-03-15",
+		Kind:          KindCorrective,
+		Area:          AreaPlumbing,
+		InstitutionID: &institutionID,
+		Description:   "Reparación demo original",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := service.Update(ctx, homeID, record.ID, Input{
+		PerformedAt: "2026-03-16",
+		Kind:        KindPreventive,
+		Area:        AreaPaint,
+		Description: "Reparación demo actualizada",
+	})
+	if err != nil {
+		t.Fatalf("actualizar: %v", err)
+	}
+	if updated.PerformedAt != "2026-03-16" || updated.Kind != KindPreventive ||
+		updated.Area != AreaPaint || updated.Description != "Reparación demo actualizada" {
+		t.Fatalf("cabecera inesperada: %+v", updated)
+	}
+	if updated.InstitutionID != nil {
+		t.Fatalf("la institución debía quedar vacía: %v", *updated.InstitutionID)
+	}
+}
+
+func TestUpdateAndDeleteItemRecalculateTotals(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+	record, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-15", Kind: KindCorrective, Area: AreaPaint,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	labor, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 50, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	supplies, err := service.CreateItem(ctx, homeID, record.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Insumo demo", Quantity: 1, Unit: UnitUnit, Amount: 30, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := service.UpdateItem(ctx, homeID, record.ID, labor.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Quantity: 1, Unit: UnitUnit, Amount: 75, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatalf("actualizar línea: %v", err)
+	}
+	if updated.Amount != 75 {
+		t.Fatalf("monto = %v, quería 75", updated.Amount)
+	}
+
+	detail, err := service.Get(ctx, homeID, record.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	total, ok := totalFor(detail.TotalsByCurrency, "USD")
+	if !ok || total.LaborCost != 75 || total.SuppliesCost != 30 || total.Total != 105 {
+		t.Fatalf("totales tras editar: %+v", detail.TotalsByCurrency)
+	}
+
+	if err := service.DeleteItem(ctx, homeID, record.ID, supplies.ID); err != nil {
+		t.Fatalf("borrar línea: %v", err)
+	}
+	detail, err = service.Get(ctx, homeID, record.ID)
+	if err != nil {
+		t.Fatalf("la cabecera debía sobrevivir al borrado: %v", err)
+	}
+	if len(detail.Items) != 1 {
+		t.Fatalf("líneas = %d, quería 1", len(detail.Items))
+	}
+	total, ok = totalFor(detail.TotalsByCurrency, "USD")
+	if !ok || total.Total != 75 {
+		t.Fatalf("totales tras borrar: %+v", detail.TotalsByCurrency)
+	}
+}

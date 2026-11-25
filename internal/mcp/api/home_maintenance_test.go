@@ -143,3 +143,118 @@ func TestHomeMaintenanceClientMoveSendsSourceAndTarget(t *testing.T) {
 		t.Fatalf("respuesta inesperada: %+v", result)
 	}
 }
+
+func TestHomeMaintenanceClientUpdateSendsFullHeaderAndSource(t *testing.T) {
+	var gotSource, gotPath, gotMethod string
+	var gotBody HomeMaintenanceUpdateRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotSource = r.Header.Get("X-P40LA-Source")
+		gotPath = r.URL.Path
+		gotMethod = r.Method
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decodificar body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(HomeMaintenance{
+			ID: 12, HomeID: 3, PerformedAt: "2026-03-12", Kind: "corrective", Area: "paint",
+			Description: "Reparación demo de pintura",
+		})
+	}))
+	defer server.Close()
+
+	client, err := New(config.Config{BaseURL: server.URL, APIKey: "demo-token", Timeout: 5 * time.Second})
+	if err != nil {
+		t.Fatalf("cliente: %v", err)
+	}
+	institutionID := int64(7)
+	updated, err := client.UpdateHomeMaintenance(context.Background(), 3, 12, HomeMaintenanceUpdateRequest{
+		PerformedAt:   "2026-03-12",
+		Kind:          "corrective",
+		Area:          "paint",
+		InstitutionID: &institutionID,
+		Description:   "Reparación demo de pintura",
+	})
+	if err != nil {
+		t.Fatalf("actualizar: %v", err)
+	}
+	if gotSource != "mcp" || gotMethod != "PUT" || gotPath != "/api/homes/3/maintenances/12" {
+		t.Fatalf("request inesperado: source=%q method=%q path=%q", gotSource, gotMethod, gotPath)
+	}
+	if gotBody.PerformedAt != "2026-03-12" || gotBody.Kind != "corrective" || gotBody.Area != "paint" ||
+		gotBody.InstitutionID == nil || *gotBody.InstitutionID != 7 || gotBody.Description != "Reparación demo de pintura" {
+		t.Fatalf("body inesperado: %+v", gotBody)
+	}
+	if updated.ID != 12 || updated.Area != "paint" {
+		t.Fatalf("respuesta inesperada: %+v", updated)
+	}
+}
+
+func TestHomeMaintenanceClientUpdateItemSendsFullItemAndSource(t *testing.T) {
+	var gotSource, gotPath, gotMethod string
+	var gotBody HomeMaintenanceItemRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotSource = r.Header.Get("X-P40LA-Source")
+		gotPath = r.URL.Path
+		gotMethod = r.Method
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decodificar body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(HomeMaintenanceItem{
+			ID: 101, MaintenanceID: 12, ItemType: "labor", Description: "Mano de obra demo",
+			Quantity: 1, Unit: "unit", Amount: 650, CurrencyID: 2, CurrencyCode: "USD",
+		})
+	}))
+	defer server.Close()
+
+	client, err := New(config.Config{BaseURL: server.URL, APIKey: "demo-token", Timeout: 5 * time.Second})
+	if err != nil {
+		t.Fatalf("cliente: %v", err)
+	}
+	institutionID := int64(7)
+	updated, err := client.UpdateHomeMaintenanceItem(context.Background(), 3, 12, 101, HomeMaintenanceItemRequest{
+		ItemType:      "labor",
+		Description:   "Mano de obra demo",
+		Quantity:      1,
+		Unit:          "unit",
+		Amount:        650,
+		CurrencyID:    2,
+		InstitutionID: &institutionID,
+	})
+	if err != nil {
+		t.Fatalf("actualizar línea: %v", err)
+	}
+	if gotSource != "mcp" || gotMethod != "PUT" || gotPath != "/api/homes/3/maintenances/12/items/101" {
+		t.Fatalf("request inesperado: source=%q method=%q path=%q", gotSource, gotMethod, gotPath)
+	}
+	if gotBody.ItemType != "labor" || gotBody.Description != "Mano de obra demo" || gotBody.Quantity != 1 ||
+		gotBody.Unit != "unit" || gotBody.Amount != 650 || gotBody.CurrencyID != 2 ||
+		gotBody.InstitutionID == nil || *gotBody.InstitutionID != 7 {
+		t.Fatalf("body inesperado: %+v", gotBody)
+	}
+	if updated.ID != 101 || updated.Amount != 650 || updated.CurrencyCode != "USD" {
+		t.Fatalf("respuesta inesperada: %+v", updated)
+	}
+}
+
+func TestHomeMaintenanceClientDeleteItemSendsSourceAndHandlesNoContent(t *testing.T) {
+	var gotSource, gotPath, gotMethod string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotSource = r.Header.Get("X-P40LA-Source")
+		gotPath = r.URL.Path
+		gotMethod = r.Method
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	client, err := New(config.Config{BaseURL: server.URL, APIKey: "demo-token", Timeout: 5 * time.Second})
+	if err != nil {
+		t.Fatalf("cliente: %v", err)
+	}
+	if err := client.DeleteHomeMaintenanceItem(context.Background(), 3, 12, 101); err != nil {
+		t.Fatalf("borrar línea: %v", err)
+	}
+	if gotSource != "mcp" || gotMethod != "DELETE" || gotPath != "/api/homes/3/maintenances/12/items/101" {
+		t.Fatalf("request inesperado: source=%q method=%q path=%q", gotSource, gotMethod, gotPath)
+	}
+}

@@ -3,6 +3,7 @@ package homemaint
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -17,24 +18,41 @@ type fakeAPI struct {
 	list    *api.HomeMaintenanceList
 	listErr error
 
-	maintenances map[int64]*api.HomeMaintenance
-	getErr       error
+	maintenances     map[int64]*api.HomeMaintenance
+	getErr           error
+	getErrAfterCalls int
+	getErrAfter      error
 
 	createMaintenanceResult *api.HomeMaintenance
 	createMaintenanceErr    error
 	createItemResult        *api.HomeMaintenanceItem
 	createItemErr           error
+	updateMaintenanceResult *api.HomeMaintenance
+	updateMaintenanceErr    error
+	updateItemResult        *api.HomeMaintenanceItem
+	updateItemErr           error
+	deleteItemErr           error
 	moveResult              *api.HomeMaintenanceMoveResult
 	moveErr                 error
+
+	getSequence []*api.HomeMaintenance
+	getIndex    int
 
 	listCalls              int
 	getCalls               int
 	createMaintenanceCalls int
 	createItemCalls        int
+	updateMaintenanceCalls int
+	updateItemCalls        int
+	deleteItemCalls        int
 	moveCalls              int
 	lastFilter             api.HomeMaintenanceFilter
 	lastCreateMaintenance  api.HomeMaintenanceRequest
 	lastCreateItem         api.HomeMaintenanceItemRequest
+	lastUpdateMaintenance  api.HomeMaintenanceUpdateRequest
+	lastUpdateItem         api.HomeMaintenanceItemRequest
+	lastDeleteMaintenance  int64
+	lastDeleteItem         int64
 	lastMove               api.HomeMaintenanceMoveRequest
 	lastMoveSource         int64
 }
@@ -53,8 +71,19 @@ func (f *fakeAPI) ListHomeMaintenances(_ context.Context, _ int64, filter api.Ho
 
 func (f *fakeAPI) GetHomeMaintenance(_ context.Context, _, maintenanceID int64) (*api.HomeMaintenance, error) {
 	f.getCalls++
+	if f.getErrAfterCalls > 0 && f.getCalls > f.getErrAfterCalls && f.getErrAfter != nil {
+		return nil, f.getErrAfter
+	}
 	if f.getErr != nil {
 		return nil, f.getErr
+	}
+	if len(f.getSequence) > 0 {
+		index := f.getIndex
+		if index >= len(f.getSequence) {
+			index = len(f.getSequence) - 1
+		}
+		f.getIndex++
+		return f.getSequence[index], nil
 	}
 	if maintenance, ok := f.maintenances[maintenanceID]; ok {
 		return maintenance, nil
@@ -84,6 +113,37 @@ func (f *fakeAPI) CreateHomeMaintenanceItem(_ context.Context, _, maintenanceID 
 		return f.createItemResult, nil
 	}
 	return &api.HomeMaintenanceItem{ID: 99, MaintenanceID: maintenanceID, ItemType: req.ItemType, Description: req.Description, Amount: req.Amount, CurrencyID: req.CurrencyID, Quantity: req.Quantity, Unit: req.Unit}, nil
+}
+
+func (f *fakeAPI) UpdateHomeMaintenance(_ context.Context, _, maintenanceID int64, req api.HomeMaintenanceUpdateRequest) (*api.HomeMaintenance, error) {
+	f.updateMaintenanceCalls++
+	f.lastUpdateMaintenance = req
+	if f.updateMaintenanceErr != nil {
+		return nil, f.updateMaintenanceErr
+	}
+	if f.updateMaintenanceResult != nil {
+		return f.updateMaintenanceResult, nil
+	}
+	return &api.HomeMaintenance{ID: maintenanceID, PerformedAt: req.PerformedAt, Kind: req.Kind, Area: req.Area, InstitutionID: req.InstitutionID, Description: req.Description}, nil
+}
+
+func (f *fakeAPI) UpdateHomeMaintenanceItem(_ context.Context, _, maintenanceID, itemID int64, req api.HomeMaintenanceItemRequest) (*api.HomeMaintenanceItem, error) {
+	f.updateItemCalls++
+	f.lastUpdateItem = req
+	if f.updateItemErr != nil {
+		return nil, f.updateItemErr
+	}
+	if f.updateItemResult != nil {
+		return f.updateItemResult, nil
+	}
+	return &api.HomeMaintenanceItem{ID: itemID, MaintenanceID: maintenanceID, ItemType: req.ItemType, Description: req.Description, Quantity: req.Quantity, Unit: req.Unit, Amount: req.Amount, CurrencyID: req.CurrencyID, InstitutionID: req.InstitutionID}, nil
+}
+
+func (f *fakeAPI) DeleteHomeMaintenanceItem(_ context.Context, _, maintenanceID, itemID int64) error {
+	f.deleteItemCalls++
+	f.lastDeleteMaintenance = maintenanceID
+	f.lastDeleteItem = itemID
+	return f.deleteItemErr
 }
 
 func (f *fakeAPI) MoveHomeMaintenanceItems(_ context.Context, _, sourceID int64, req api.HomeMaintenanceMoveRequest) (*api.HomeMaintenanceMoveResult, error) {
@@ -165,9 +225,13 @@ func TestHomeMaintenanceToolsRegistered(t *testing.T) {
 	names := toolkitest.ToolNames(t, session)
 	for _, name := range []string{
 		"home_maintenance_list",
+		"home_maintenance_get",
 		"home_maintenance_create",
 		"home_maintenance_labor_register",
 		"home_maintenance_supplies_register",
+		"home_maintenance_update",
+		"home_maintenance_item_update",
+		"home_maintenance_item_delete",
 		"home_maintenance_item_move",
 	} {
 		if !names[name] {
@@ -642,5 +706,365 @@ func TestHomeMaintenanceMoveWritesDisabled(t *testing.T) {
 	})
 	if out["error"] != "writes_disabled" {
 		t.Fatalf("esperaba writes_disabled: %v", out)
+	}
+}
+
+func ptrInt64(value int64) *int64 { return &value }
+
+func demoRepair() *api.HomeMaintenance {
+	labor := demoItem(101, 12, "labor", "Mano de obra demo", 500, 1, "unit")
+	labor.InstitutionID = ptrInt64(7)
+	supplies := demoItem(102, 12, "supplies", "Insumo demo", 300, 2, "unit")
+	supplies.InstitutionID = ptrInt64(7)
+	repair := demoMaintenance(12, "other", "2026-03-12", labor, supplies)
+	repair.InstitutionID = ptrInt64(7)
+	repair.TotalsByCurrency = []api.HomeMaintenanceCurrencyTotal{
+		{CurrencyID: 1, CurrencyCode: "NIO", LaborCost: 500, SuppliesCost: 300, Total: 800},
+	}
+	return &repair
+}
+
+func TestHomeMaintenanceGetDetail(t *testing.T) {
+	session := newServer(t, &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}}, config.Config{})
+	out := callJSON(t, session, "home_maintenance_get", map[string]any{"home_id": 3, "maintenance_id": 12})
+	if out["item_count"] != float64(2) {
+		t.Fatalf("item_count inesperado: %v", out)
+	}
+	maintenance, ok := out["maintenance"].(map[string]any)
+	if !ok || maintenance["id"] != float64(12) {
+		t.Fatalf("mantenimiento inesperado: %v", out["maintenance"])
+	}
+	if maintenance["description"] != "Reparación demo" {
+		t.Fatalf("descripción inesperada: %v", maintenance["description"])
+	}
+}
+
+func TestHomeMaintenanceGetRejectsInvalidIDs(t *testing.T) {
+	session := newServer(t, &fakeAPI{}, config.Config{})
+	out := callJSON(t, session, "home_maintenance_get", map[string]any{"home_id": 0, "maintenance_id": 12})
+	if out["error"] != "invalid_request" {
+		t.Fatalf("esperaba invalid_request por home_id: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_get", map[string]any{"home_id": 3, "maintenance_id": 0})
+	if out["error"] != "invalid_request" {
+		t.Fatalf("esperaba invalid_request por maintenance_id: %v", out)
+	}
+}
+
+func TestHomeMaintenanceUpdateDryRunMerges(t *testing.T) {
+	fake := &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "area": "paint",
+	})
+	if out["status"] != "planned" || out["dry_run"] != true {
+		t.Fatalf("esperaba planned: %v", out)
+	}
+	changed, ok := out["changed_fields"].([]any)
+	if !ok || len(changed) != 1 || changed[0] != "area" {
+		t.Fatalf("changed_fields inesperado: %v", out["changed_fields"])
+	}
+	proposed, ok := out["proposed"].(map[string]any)
+	if !ok {
+		t.Fatalf("falta proposed: %v", out)
+	}
+	if proposed["performed_at"] != "2026-03-12" || proposed["kind"] != "corrective" ||
+		proposed["institution_id"] != float64(7) || proposed["description"] != "Reparación demo" {
+		t.Fatalf("el merge perdió campos actuales: %v", proposed)
+	}
+	if fake.updateMaintenanceCalls != 0 {
+		t.Fatalf("dry_run no debía escribir")
+	}
+}
+
+func TestHomeMaintenanceUpdateWritesMergedHeader(t *testing.T) {
+	updated := demoRepair()
+	updated.Area = "paint"
+	updated.Description = "Reparación demo de pintura"
+	fake := &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}, updateMaintenanceResult: updated}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "area": "paint",
+		"description": "Reparación demo de pintura", "dry_run": false,
+	})
+	if out["status"] != "updated" {
+		t.Fatalf("esperaba updated: %v", out)
+	}
+	if fake.updateMaintenanceCalls != 1 {
+		t.Fatalf("esperaba un PUT: %d", fake.updateMaintenanceCalls)
+	}
+	request := fake.lastUpdateMaintenance
+	if request.PerformedAt != "2026-03-12" || request.Kind != "corrective" || request.Area != "paint" ||
+		request.InstitutionID == nil || *request.InstitutionID != 7 || request.Description != "Reparación demo de pintura" {
+		t.Fatalf("PUT incompleto: %+v", request)
+	}
+}
+
+func TestHomeMaintenanceUpdateNoChanges(t *testing.T) {
+	fake := &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "area": "other",
+	})
+	if out["status"] != "unchanged" {
+		t.Fatalf("esperaba unchanged: %v", out)
+	}
+	if fake.updateMaintenanceCalls != 0 {
+		t.Fatalf("no debía escribir")
+	}
+}
+
+func TestHomeMaintenanceUpdateClearsInstitutionAndDescription(t *testing.T) {
+	updated := demoRepair()
+	updated.InstitutionID = nil
+	updated.Description = ""
+	fake := &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}, updateMaintenanceResult: updated}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "institution_id": 0, "description": "", "dry_run": false,
+	})
+	if out["status"] != "updated" {
+		t.Fatalf("esperaba updated: %v", out)
+	}
+	changed, _ := out["changed_fields"].([]any)
+	if len(changed) != 2 {
+		t.Fatalf("esperaba dos cambios: %v", out["changed_fields"])
+	}
+	if fake.lastUpdateMaintenance.InstitutionID != nil || fake.lastUpdateMaintenance.Description != "" {
+		t.Fatalf("no limpió institución/descripción: %+v", fake.lastUpdateMaintenance)
+	}
+}
+
+func TestHomeMaintenanceUpdateWritesDisabledAndValidation(t *testing.T) {
+	session := newServer(t, &fakeAPI{}, config.Config{})
+	out := callJSON(t, session, "home_maintenance_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "area": "paint", "dry_run": false,
+	})
+	if out["error"] != "writes_disabled" {
+		t.Fatalf("esperaba writes_disabled: %v", out)
+	}
+
+	session = newServer(t, &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}}, config.Config{AllowWrites: true})
+	out = callJSON(t, session, "home_maintenance_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "kind": "otro",
+	})
+	if out["error"] != "invalid_kind" {
+		t.Fatalf("esperaba invalid_kind: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "area": "otra",
+	})
+	if out["error"] != "invalid_area" {
+		t.Fatalf("esperaba invalid_area: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "performed_at": "2999-01-01",
+	})
+	if out["error"] != "invalid_date" {
+		t.Fatalf("esperaba invalid_date: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "institution_id": -1,
+	})
+	if out["error"] != "invalid_request" {
+		t.Fatalf("esperaba invalid_request por institución: %v", out)
+	}
+}
+
+func TestHomeMaintenanceItemUpdateDryRunMerges(t *testing.T) {
+	fake := &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_item_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 101, "amount": 650, "currency_id": 2,
+	})
+	if out["status"] != "planned" || out["dry_run"] != true {
+		t.Fatalf("esperaba planned: %v", out)
+	}
+	changed, _ := out["changed_fields"].([]any)
+	if len(changed) != 2 || changed[0] != "amount" || changed[1] != "currency_id" {
+		t.Fatalf("changed_fields inesperado: %v", out["changed_fields"])
+	}
+	proposed, _ := out["proposed"].(map[string]any)
+	if proposed["item_type"] != "labor" || proposed["description"] != "Mano de obra demo" ||
+		proposed["quantity"] != float64(1) || proposed["unit"] != "unit" ||
+		proposed["institution_id"] != float64(7) {
+		t.Fatalf("el merge perdió campos: %v", proposed)
+	}
+	if fake.updateItemCalls != 0 {
+		t.Fatalf("dry_run no debía escribir")
+	}
+}
+
+func TestHomeMaintenanceItemUpdateWritesAndReturnsTotals(t *testing.T) {
+	after := demoRepair()
+	after.Items[0].Amount = 650
+	after.Items[0].CurrencyID = 2
+	after.Items[0].CurrencyCode = "USD"
+	after.TotalsByCurrency = []api.HomeMaintenanceCurrencyTotal{
+		{CurrencyID: 2, CurrencyCode: "USD", LaborCost: 650, SuppliesCost: 0, Total: 650},
+	}
+	fake := &fakeAPI{
+		getSequence:      []*api.HomeMaintenance{demoRepair(), after},
+		updateItemResult: &after.Items[0],
+	}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_item_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 101,
+		"amount": 650, "currency_id": 2, "dry_run": false,
+	})
+	if out["status"] != "updated" {
+		t.Fatalf("esperaba updated: %v", out)
+	}
+	if fake.updateItemCalls != 1 {
+		t.Fatalf("esperaba un PUT de línea: %d", fake.updateItemCalls)
+	}
+	request := fake.lastUpdateItem
+	if request.ItemType != "labor" || request.Description != "Mano de obra demo" ||
+		request.Quantity != 1 || request.Unit != "unit" || request.Amount != 650 ||
+		request.CurrencyID != 2 || request.InstitutionID == nil || *request.InstitutionID != 7 {
+		t.Fatalf("PUT de línea incompleto: %+v", request)
+	}
+	totals, ok := out["totals_by_currency"].([]any)
+	if !ok || len(totals) != 1 || totals[0].(map[string]any)["total"] != float64(650) {
+		t.Fatalf("totales inesperados: %v", out["totals_by_currency"])
+	}
+}
+
+func TestHomeMaintenanceItemUpdateRejectsInvalidValues(t *testing.T) {
+	session := newServer(t, &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}}, config.Config{AllowWrites: true})
+	cases := []struct {
+		args map[string]any
+		code string
+	}{
+		{map[string]any{"home_id": 3, "maintenance_id": 12, "item_id": 101, "amount": -1}, "invalid_amount"},
+		{map[string]any{"home_id": 3, "maintenance_id": 12, "item_id": 101, "description": ""}, "item_description_required"},
+		{map[string]any{"home_id": 3, "maintenance_id": 12, "item_id": 101, "unit": "xx"}, "invalid_unit"},
+		{map[string]any{"home_id": 3, "maintenance_id": 12, "item_id": 101, "quantity": 0}, "invalid_quantity"},
+	}
+	for _, tc := range cases {
+		out := callJSON(t, session, "home_maintenance_item_update", tc.args)
+		if out["error"] != tc.code {
+			t.Fatalf("esperaba %s para %v: %v", tc.code, tc.args, out)
+		}
+	}
+	out := callJSON(t, session, "home_maintenance_item_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 999, "amount": 10,
+	})
+	if out["error"] != "item_not_found" {
+		t.Fatalf("esperaba item_not_found: %v", out)
+	}
+}
+
+func TestHomeMaintenanceItemUpdateWritesDisabled(t *testing.T) {
+	session := newServer(t, &fakeAPI{}, config.Config{})
+	out := callJSON(t, session, "home_maintenance_item_update", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 101, "amount": 650, "dry_run": false,
+	})
+	if out["error"] != "writes_disabled" {
+		t.Fatalf("esperaba writes_disabled: %v", out)
+	}
+}
+
+func TestHomeMaintenanceItemDeleteDryRun(t *testing.T) {
+	fake := &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_item_delete", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 101,
+	})
+	if out["status"] != "planned" || out["dry_run"] != true {
+		t.Fatalf("esperaba planned: %v", out)
+	}
+	if out["remaining_item_count"] != float64(1) || out["maintenance_empty"] != false {
+		t.Fatalf("conteo inesperado: %v", out)
+	}
+	wouldDelete, _ := out["would_delete"].(map[string]any)
+	if wouldDelete["id"] != float64(101) {
+		t.Fatalf("would_delete inesperado: %v", out["would_delete"])
+	}
+	if fake.deleteItemCalls != 0 {
+		t.Fatalf("dry_run no debía borrar")
+	}
+}
+
+func TestHomeMaintenanceItemDeleteWritesLastLine(t *testing.T) {
+	single := demoRepair()
+	single.Items = []api.HomeMaintenanceItem{single.Items[0]}
+	empty := demoRepair()
+	empty.Items = []api.HomeMaintenanceItem{}
+	empty.TotalsByCurrency = []api.HomeMaintenanceCurrencyTotal{}
+	fake := &fakeAPI{getSequence: []*api.HomeMaintenance{single, empty}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_item_delete", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 101, "dry_run": false,
+	})
+	if out["status"] != "deleted" || out["maintenance_empty"] != true || out["remaining_item_count"] != float64(0) {
+		t.Fatalf("esperaba deleted sin líneas: %v", out)
+	}
+	warnings, _ := out["warnings"].([]any)
+	if len(warnings) != 1 {
+		t.Fatalf("esperaba warning de cabecera: %v", out["warnings"])
+	}
+	if fake.deleteItemCalls != 1 || fake.lastDeleteItem != 101 || fake.lastDeleteMaintenance != 12 {
+		t.Fatalf("borrado inesperado: %+v", fake)
+	}
+	totals, _ := out["totals_by_currency"].([]any)
+	if len(totals) != 0 {
+		t.Fatalf("totales inesperados: %v", totals)
+	}
+}
+
+func TestHomeMaintenanceItemDeleteWritesRemaining(t *testing.T) {
+	after := demoRepair()
+	after.Items = []api.HomeMaintenanceItem{after.Items[1]}
+	after.TotalsByCurrency = []api.HomeMaintenanceCurrencyTotal{
+		{CurrencyID: 1, CurrencyCode: "NIO", LaborCost: 0, SuppliesCost: 300, Total: 300},
+	}
+	fake := &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair(), after}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_item_delete", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 101, "dry_run": false,
+	})
+	if out["status"] != "deleted" || out["remaining_item_count"] != float64(1) || out["maintenance_empty"] != false {
+		t.Fatalf("esperaba una línea restante: %v", out)
+	}
+	totals, _ := out["totals_by_currency"].([]any)
+	if len(totals) != 1 || totals[0].(map[string]any)["total"] != float64(300) {
+		t.Fatalf("totales inesperados: %v", out["totals_by_currency"])
+	}
+}
+
+func TestHomeMaintenanceItemDeleteKeepsDeletedWhenTotalsFail(t *testing.T) {
+	fake := &fakeAPI{
+		getSequence:      []*api.HomeMaintenance{demoRepair(), demoRepair()},
+		getErrAfterCalls: 1,
+		getErrAfter:      errors.New("upstream caído"),
+	}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_item_delete", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 101, "dry_run": false,
+	})
+	if out["status"] != "deleted" {
+		t.Fatalf("el borrado exitoso no debía fallar: %v", out)
+	}
+	warnings, _ := out["warnings"].([]any)
+	if len(warnings) != 1 || !strings.Contains(warnings[0].(string), "no se pudieron recalcular") {
+		t.Fatalf("esperaba warning de totales: %v", out["warnings"])
+	}
+}
+
+func TestHomeMaintenanceItemDeleteWritesDisabledAndNotFound(t *testing.T) {
+	session := newServer(t, &fakeAPI{}, config.Config{})
+	out := callJSON(t, session, "home_maintenance_item_delete", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 101, "dry_run": false,
+	})
+	if out["error"] != "writes_disabled" {
+		t.Fatalf("esperaba writes_disabled: %v", out)
+	}
+	session = newServer(t, &fakeAPI{getSequence: []*api.HomeMaintenance{demoRepair()}}, config.Config{AllowWrites: true})
+	out = callJSON(t, session, "home_maintenance_item_delete", map[string]any{
+		"home_id": 3, "maintenance_id": 12, "item_id": 999,
+	})
+	if out["error"] != "item_not_found" {
+		t.Fatalf("esperaba item_not_found: %v", out)
 	}
 }

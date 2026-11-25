@@ -1,28 +1,32 @@
 ---
 title: "Tools de mantenimiento del hogar"
 sidebar_position: 10
-description: "Referencia de home_maintenance_list, home_maintenance_create, home_maintenance_labor_register, home_maintenance_supplies_register y home_maintenance_item_move"
+description: "Referencia de home_maintenance_list, home_maintenance_get, home_maintenance_create, home_maintenance_labor_register, home_maintenance_supplies_register, home_maintenance_update, home_maintenance_item_update, home_maintenance_item_delete y home_maintenance_item_move"
 ---
 
 # Tools de mantenimiento del hogar
 
-Las cinco tools —una de lectura y cuatro de escritura— operan sobre las **reparaciones y mantenimientos** registrados en una vivienda (`home.maintenance`): `home_maintenance_list` consulta el histórico, `home_maintenance_create` da de alta la reparación sin líneas, las dos de registro agregan líneas de **mano de obra** (`labor`) e **insumos** (`supplies`) y `home_maintenance_item_move` mueve líneas de una reparación a otra del mismo hogar. El `home_id` es el mismo de `/homes/{id}` en la UI.
+Las nueve tools —dos de lectura y siete de escritura— operan sobre las **reparaciones y mantenimientos** registrados en una vivienda (`home.maintenance`): `home_maintenance_list` consulta el histórico y `home_maintenance_get` devuelve el detalle de una reparación; `home_maintenance_create` da de alta la reparación sin líneas; las dos de registro agregan líneas de **mano de obra** (`labor`) e **insumos** (`supplies`); `home_maintenance_update` edita la cabecera e `home_maintenance_item_update` edita una línea; `home_maintenance_item_delete` borra una línea y `home_maintenance_item_move` mueve líneas de una reparación a otra del mismo hogar. El `home_id` es el mismo de `/homes/{id}` en la UI.
 
-Las cuatro tools de escritura respetan `dry_run` (`true` por defecto) y la compuerta `P40LA_MCP_ALLOW_WRITES` (`P40LA_MCP_REMOTE_WRITES` en HTTP). Las de registro resuelven el **mantenimiento del día** y deduplican antes de escribir; `home_maintenance_create` solo crea la cabecera, y `home_maintenance_item_move` crea el destino y mueve las líneas en una sola transacción. `home_maintenance_list` sigue siendo de **solo lectura**: no escribe, no depende de la compuerta y no requiere permisos adicionales.
+Las siete tools de escritura respetan `dry_run` (`true` por defecto) y la compuerta `P40LA_MCP_ALLOW_WRITES` (`P40LA_MCP_REMOTE_WRITES` en HTTP). Las de registro resuelven el **mantenimiento del día** y deduplican antes de escribir; `home_maintenance_create` solo crea la cabecera; `home_maintenance_update` e `home_maintenance_item_update` hacen edición **parcial** (leen el detalle y envían el cuerpo completo); `home_maintenance_item_delete` borra una línea pero **nunca** la cabecera; y `home_maintenance_item_move` crea el destino y mueve las líneas en una sola transacción. `home_maintenance_list` y `home_maintenance_get` son de **solo lectura**: no escriben, no dependen de la compuerta y no requieren permisos adicionales.
 
-El MCP no accede a SQLite: cada tool llama a la API HTTP existente (`/api/homes/{id}/maintenances` y `/api/homes/{id}/maintenances/{maintenance_id}/items/move`). Las tools validan la **forma** de la entrada; las **reglas de dominio** las valida el backend. Las escrituras se envían con origen `mcp` (`X-P40LA-Source`).
+El MCP no accede a SQLite: cada tool llama a la API HTTP existente (`/api/homes/{id}/maintenances`, `/api/homes/{id}/maintenances/{maintenance_id}`, `.../items/{item_id}` y `.../items/move`). Las tools validan la **forma** de la entrada; las **reglas de dominio** las valida el backend. Las escrituras se envían con origen `mcp` (`X-P40LA-Source`).
 
 ## Resumen
 
 | Tool | Tipo | Llamadas HTTP | Qué hace |
 |---|---|---|---|
 | `home_maintenance_list` | Lectura | 1 | Histórico de reparaciones de una vivienda, con filtros de fecha, tipo y texto, y totales por moneda |
+| `home_maintenance_get` | Lectura | 1 | Detalle de una reparación con sus líneas y totales por moneda, sin los topes del listado |
 | `home_maintenance_create` | Escritura | 1 | Crea la reparación vacía: 0 insumos y 0 mano de obra |
+| `home_maintenance_update` | Escritura | 1–2 | Edita la cabecera con merge parcial; no toca las líneas |
 | `home_maintenance_labor_register` | Escritura | 1–2 | Registra una línea de mano de obra; reutiliza o crea el mantenimiento del día |
 | `home_maintenance_supplies_register` | Escritura | 1–2 | Registra una línea de insumos con cantidad y unidad; reutiliza o crea el mantenimiento del día |
+| `home_maintenance_item_update` | Escritura | 1–3 | Edita una línea con merge parcial y devuelve los totales recalculados |
+| `home_maintenance_item_delete` | Escritura | 1–3 | Borra una línea; no borra la cabecera y avisa si la reparación queda vacía |
 | `home_maintenance_item_move` | Escritura | 2–3 | Mueve líneas entre reparaciones del mismo hogar; el destino puede existir o crearse en la misma llamada |
 
-`home_maintenance_item_move` hace `GET` del origen, `GET` del destino si ya existe y `POST .../items/move`; el `POST` crea el destino en la misma transacción cuando se envía `target`. `home_maintenance_create` en `dry_run` no hace llamadas HTTP.
+`home_maintenance_item_move` hace `GET` del origen, `GET` del destino si ya existe y `POST .../items/move`; el `POST` crea el destino en la misma transacción cuando se envía `target`. `home_maintenance_create` en `dry_run` no hace llamadas HTTP. `home_maintenance_update`, `home_maintenance_item_update` y `home_maintenance_item_delete` hacen siempre un `GET` previo para leer el estado y comparar; la escritura agrega el `PUT`/`DELETE` y, en las líneas, un `GET` final para recalcular `totals_by_currency`.
 
 ## `home_maintenance_list`
 
@@ -712,9 +716,558 @@ Con `target_maintenance_id`, `target.action` es `use_existing` y el objeto trae 
 
 El movimiento no crea ni edita montos: las líneas conservan su moneda y su proveedor, por eso `currency_not_found` no aplica a esta tool.
 
+## `home_maintenance_get`
+
+Devuelve una reparación con **todas** sus líneas de mano de obra e insumos y los totales por moneda. Es el detalle completo de una sola reparación y no aplica los topes de 100 reparaciones y 1.000 líneas de `home_maintenance_list`. Solo lectura.
+
+### Entrada
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `home_id` | integer | Sí | ID de la vivienda; debe ser mayor que `0` |
+| `maintenance_id` | integer | Sí | ID de la reparación; debe ser mayor que `0` |
+
+### Ejemplo
+
+```json
+{
+  "home_id": 3,
+  "maintenance_id": 12
+}
+```
+
+### Salida
+
+```json
+{
+  "home_id": 3,
+  "item_count": 2,
+  "maintenance": {
+    "id": 12,
+    "home_id": 3,
+    "performed_at": "2026-03-12",
+    "kind": "corrective",
+    "area": "paint",
+    "institution_id": 7,
+    "institution_name": "Proveedor Demo",
+    "description": "Reparación demo de pintura",
+    "totals_by_currency": [
+      {
+        "currency_id": 1,
+        "currency_code": "NIO",
+        "labor_cost": 500.00,
+        "supplies_cost": 600.00,
+        "total": 1100.00
+      }
+    ],
+    "items": [
+      {
+        "id": 101,
+        "maintenance_id": 12,
+        "item_type": "labor",
+        "description": "Mano de obra demo",
+        "quantity": 1,
+        "unit": "unit",
+        "amount": 500.00,
+        "currency_id": 1,
+        "currency_code": "NIO",
+        "institution_id": 7,
+        "institution_name": "Proveedor Demo",
+        "created_at": "2026-03-12T09:00:00Z",
+        "updated_at": "2026-03-12T09:00:00Z"
+      },
+      {
+        "id": 102,
+        "maintenance_id": 12,
+        "item_type": "supplies",
+        "description": "Insumos demo",
+        "quantity": 2,
+        "unit": "unit",
+        "amount": 600.00,
+        "currency_id": 1,
+        "currency_code": "NIO",
+        "institution_id": 7,
+        "institution_name": "Proveedor Demo",
+        "created_at": "2026-03-12T09:10:00Z",
+        "updated_at": "2026-03-12T09:10:00Z"
+      }
+    ],
+    "created_at": "2026-03-12T09:00:00Z",
+    "updated_at": "2026-03-12T09:10:00Z"
+  }
+}
+```
+
+### Reglas
+
+- **Solo lectura**: no depende de la compuerta ni de `dry_run`; funciona siempre, con o sin `P40LA_MCP_ALLOW_WRITES`.
+- **Sin topes de listado**: devuelve la reparación completa. `home_maintenance_list` acota a 100 reparaciones y 1.000 líneas y marca `truncated=true`; este detalle no trunca.
+- **`item_count`** es la cantidad de líneas devueltas. Una reparación sin líneas devuelve `item_count: 0`, `items: []` y `totals_by_currency: []`.
+- **Sin allowlist**: el objeto `maintenance` se devuelve tal como lo entrega la API; no se agregan ni se ocultan campos.
+- **Pertenencia**: una reparación de otra vivienda devuelve `maintenance_not_found`.
+- `totals_by_currency` se deriva de las líneas y nunca suma monedas distintas: la moneda vive en cada línea.
+- Es la vía recomendada para obtener los `item_ids` antes de `home_maintenance_item_update`, `home_maintenance_item_delete` o `home_maintenance_item_move`.
+
+### Errores
+
+| Código | Cuándo |
+|---|---|
+| `invalid_request` | `home_id` o `maintenance_id` no positivos; no llama a la API |
+| `home_not_found` | La vivienda no existe |
+| `maintenance_not_found` | La reparación no existe o no pertenece al `home_id` |
+| `auth_failed` | API key inválida, revocada o rotada |
+| `upstream_error` | Error de red, timeout o respuesta con un sobre distinto al esperado |
+
+## `home_maintenance_update`
+
+Edita la **cabecera** de una reparación con merge parcial: solo cambian los campos enviados y lo omitido conserva su valor. No toca las líneas. El backend usa semántica de **reemplazo**, así que la tool lee el detalle actual y envía un `PUT` con los cinco campos completos.
+
+### Entrada
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `home_id` | integer | Sí | ID de la vivienda; debe ser mayor que `0` |
+| `maintenance_id` | integer | Sí | ID de la reparación; debe ser mayor que `0` |
+| `performed_at` | string `YYYY-MM-DD` | No | Fecha de la reparación; no puede ser futura. Omitir conserva |
+| `kind` | string | No | `corrective` (correctivo) o `preventive` (preventivo). Omitir conserva |
+| `area` | string | No | Sector de la vivienda. Omitir conserva |
+| `institution_id` | integer | No | Proveedor o contratista; `0` limpia la institución. Omitir conserva |
+| `description` | string | No | Descripción libre hasta 500 caracteres; vacío limpia. Omitir conserva |
+| `dry_run` | boolean | No | `true` por defecto: previsualiza sin escribir |
+
+Debe venir **al menos un campo editable**; si no, `invalid_request`. `dry_run` no cuenta como campo editable.
+
+### Ejemplo
+
+```json
+{
+  "home_id": 3,
+  "maintenance_id": 12,
+  "area": "paint",
+  "description": "Reparación demo de pintura",
+  "dry_run": true
+}
+```
+
+### Salida con `dry_run`
+
+`dry_run=true` (default) hace solo el `GET` del detalle y devuelve los campos que cambiarían, el estado actual y el propuesto.
+
+```json
+{
+  "status": "planned",
+  "dry_run": true,
+  "maintenance_id": 12,
+  "changed_fields": ["area", "description"],
+  "current": {
+    "performed_at": "2026-03-12",
+    "kind": "corrective",
+    "area": "other",
+    "institution_id": 7,
+    "description": "Reparación demo"
+  },
+  "proposed": {
+    "performed_at": "2026-03-12",
+    "kind": "corrective",
+    "area": "paint",
+    "institution_id": 7,
+    "description": "Reparación demo de pintura"
+  }
+}
+```
+
+### Salida con escritura
+
+```json
+{
+  "status": "updated",
+  "dry_run": false,
+  "maintenance_id": 12,
+  "changed_fields": ["area", "description"],
+  "maintenance": {
+    "id": 12,
+    "home_id": 3,
+    "performed_at": "2026-03-12",
+    "kind": "corrective",
+    "area": "paint",
+    "institution_id": 7,
+    "institution_name": "Proveedor Demo",
+    "description": "Reparación demo de pintura",
+    "totals_by_currency": [
+      {
+        "currency_id": 1,
+        "currency_code": "NIO",
+        "labor_cost": 500.00,
+        "supplies_cost": 0,
+        "total": 500.00
+      }
+    ],
+    "items": [
+      {
+        "id": 101,
+        "maintenance_id": 12,
+        "item_type": "labor",
+        "description": "Mano de obra demo",
+        "quantity": 1,
+        "unit": "unit",
+        "amount": 500.00,
+        "currency_id": 1,
+        "currency_code": "NIO",
+        "institution_id": 7,
+        "institution_name": "Proveedor Demo",
+        "created_at": "2026-03-12T09:00:00Z",
+        "updated_at": "2026-03-12T09:00:00Z"
+      }
+    ],
+    "created_at": "2026-03-12T09:00:00Z",
+    "updated_at": "2026-03-12T10:30:00Z"
+  }
+}
+```
+
+### Salida sin cambios
+
+```json
+{
+  "status": "unchanged",
+  "dry_run": false,
+  "maintenance_id": 12,
+  "changed_fields": [],
+  "maintenance": {
+    "id": 12,
+    "home_id": 3,
+    "performed_at": "2026-03-12",
+    "kind": "corrective",
+    "area": "paint",
+    "institution_id": 7,
+    "institution_name": "Proveedor Demo",
+    "description": "Reparación demo de pintura",
+    "totals_by_currency": [
+      {
+        "currency_id": 1,
+        "currency_code": "NIO",
+        "labor_cost": 500.00,
+        "supplies_cost": 0,
+        "total": 500.00
+      }
+    ],
+    "items": [
+      {
+        "id": 101,
+        "maintenance_id": 12,
+        "item_type": "labor",
+        "description": "Mano de obra demo",
+        "quantity": 1,
+        "unit": "unit",
+        "amount": 500.00,
+        "currency_id": 1,
+        "currency_code": "NIO",
+        "institution_id": 7,
+        "institution_name": "Proveedor Demo",
+        "created_at": "2026-03-12T09:00:00Z",
+        "updated_at": "2026-03-12T09:00:00Z"
+      }
+    ],
+    "created_at": "2026-03-12T09:00:00Z",
+    "updated_at": "2026-03-12T10:30:00Z"
+  }
+}
+```
+
+`status=unchanged` **no es un error**: la tool responde con `isError=false`, el detalle actual y `changed_fields: []`, y **no ejecuta el `PUT`**, ni siquiera con `dry_run=false`.
+
+### Reglas
+
+- **Merge parcial**: se compara el valor efectivo campo por campo. `changed_fields` lista solo los que difieren, en el orden `performed_at`, `kind`, `area`, `institution_id`, `description`.
+- **Cuerpo completo**: el `PUT` siempre lleva los cinco campos, porque el backend reemplaza la cabecera. Los omitidos salen con el valor que ya tenían.
+- **`institution_id`**: `0` limpia la institución; un valor negativo devuelve `invalid_request`; si no se envía, conserva la actual. Un proveedor inexistente devuelve `institution_not_found` al escribir.
+- **`description`**: se recorta con `TrimSpace`; vacía limpia la descripción; más de 500 caracteres devuelve `invalid_request`.
+- **`performed_at`**: formato `YYYY-MM-DD` y no futura según `P40LA_TIMEZONE`. Una fecha mal formada o futura devuelve `invalid_date` sin llamar al `PUT`.
+- **`kind` y `area`**: mismos valores del dominio (`corrective`/`preventive`; `plumbing`, `electrical`, `roof`, `paint`, `carpentry`, `appliances`, `garden`, `cleaning`, `other`). Un valor inválido devuelve `invalid_request`.
+- **No toca las líneas**: montos, monedas y proveedores de las líneas quedan intactos y `totals_by_currency` no cambia. Para editar una línea usá `home_maintenance_item_update`.
+- **`dry_run`**: `true` por defecto. No escribe: hace solo el `GET` y devuelve `planned` con `current` y `proposed`. La compuerta se evalúa antes de leer cuando `dry_run=false`.
+- **Idempotente**: repetir la misma edición devuelve `status=unchanged` sin `PUT`; el `updated_at` solo cambia cuando hay una escritura real.
+- **Llamadas HTTP**: `GET` siempre; `PUT` solo si hay cambios y `dry_run=false`.
+
+### Errores
+
+| Código | Cuándo |
+|---|---|
+| `invalid_request` | `home_id` o `maintenance_id` no positivos; ningún campo editable; `kind` fuera de `corrective`/`preventive`; `area` inválida; `institution_id` negativo; `description` de más de 500 caracteres |
+| `invalid_date` | `performed_at` sin formato `YYYY-MM-DD` o futura |
+| `writes_disabled` | `dry_run=false` sin la compuerta de escritura; no lee ni escribe |
+| `home_not_found` | La vivienda no existe |
+| `maintenance_not_found` | La reparación no existe o no pertenece al `home_id` |
+| `institution_not_found` | La institución no existe |
+| `auth_failed` | API key inválida, revocada o rotada |
+| `upstream_error` | Error de red, timeout o respuesta con un sobre distinto al esperado |
+
+El backend también devuelve códigos granulares (`invalid_kind`, `invalid_area`, `future_date`, `invalid_date`); la tool los valida en el preflight y, si llegan por un cambio de estado entre la lectura y la escritura, se devuelven tal cual.
+
+## `home_maintenance_item_update`
+
+Edita una **línea** de mano de obra o insumos con merge parcial sobre el detalle de la reparación. El `PUT` envía los siete campos completos de la línea y, al escribir, devuelve la línea actualizada y los `totals_by_currency` recalculados.
+
+### Entrada
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `home_id` | integer | Sí | ID de la vivienda; debe ser mayor que `0` |
+| `maintenance_id` | integer | Sí | ID de la reparación que contiene la línea; debe ser mayor que `0` |
+| `item_id` | integer | Sí | ID de la línea a editar; debe ser mayor que `0` |
+| `item_type` | string | No | `labor` o `supplies`. Omitir conserva |
+| `description` | string | No | Descripción de la línea hasta 200 caracteres; vacía es inválida. Omitir conserva |
+| `quantity` | number | No | Cantidad de insumos, mayor que `0`; en `labor` se fuerza `1`. Omitir conserva |
+| `unit` | string | No | Unidad de insumos; en `labor` se fuerza `unit`. Omitir conserva |
+| `amount` | number | No | Monto mayor o igual a `0`. Omitir conserva |
+| `currency_id` | integer | No | Moneda de la línea; debe existir. Omitir conserva |
+| `institution_id` | integer | No | Proveedor o contratista; `0` limpia. Omitir conserva |
+| `dry_run` | boolean | No | `true` por defecto: previsualiza sin escribir |
+
+Debe venir **al menos un campo editable**; si no, `invalid_request`. `dry_run` no cuenta como campo editable.
+
+### Ejemplo
+
+```json
+{
+  "home_id": 3,
+  "maintenance_id": 12,
+  "item_id": 101,
+  "amount": 650.00,
+  "currency_id": 2,
+  "dry_run": true
+}
+```
+
+### Salida con `dry_run`
+
+```json
+{
+  "status": "planned",
+  "dry_run": true,
+  "maintenance_id": 12,
+  "item_id": 101,
+  "changed_fields": ["amount", "currency_id"],
+  "current": {
+    "item_type": "labor",
+    "description": "Mano de obra demo",
+    "quantity": 1,
+    "unit": "unit",
+    "amount": 500.00,
+    "currency_id": 1,
+    "institution_id": 7
+  },
+  "proposed": {
+    "item_type": "labor",
+    "description": "Mano de obra demo",
+    "quantity": 1,
+    "unit": "unit",
+    "amount": 650.00,
+    "currency_id": 2,
+    "institution_id": 7
+  }
+}
+```
+
+### Salida con escritura
+
+```json
+{
+  "status": "updated",
+  "dry_run": false,
+  "maintenance_id": 12,
+  "item_id": 101,
+  "changed_fields": ["amount", "currency_id"],
+  "item": {
+    "id": 101,
+    "maintenance_id": 12,
+    "item_type": "labor",
+    "description": "Mano de obra demo",
+    "quantity": 1,
+    "unit": "unit",
+    "amount": 650.00,
+    "currency_id": 2,
+    "currency_code": "USD",
+    "institution_id": 7,
+    "institution_name": "Proveedor Demo",
+    "created_at": "2026-03-12T09:00:00Z",
+    "updated_at": "2026-03-12T10:30:00Z"
+  },
+  "totals_by_currency": [
+    {
+      "currency_id": 2,
+      "currency_code": "USD",
+      "labor_cost": 650.00,
+      "supplies_cost": 0,
+      "total": 650.00
+    }
+  ]
+}
+```
+
+### Salida sin cambios
+
+```json
+{
+  "status": "unchanged",
+  "dry_run": false,
+  "maintenance_id": 12,
+  "item_id": 101,
+  "changed_fields": [],
+  "item": {
+    "id": 101,
+    "maintenance_id": 12,
+    "item_type": "labor",
+    "description": "Mano de obra demo",
+    "quantity": 1,
+    "unit": "unit",
+    "amount": 650.00,
+    "currency_id": 2,
+    "currency_code": "USD",
+    "institution_id": 7,
+    "institution_name": "Proveedor Demo",
+    "created_at": "2026-03-12T09:00:00Z",
+    "updated_at": "2026-03-12T10:30:00Z"
+  }
+}
+```
+
+Con `changed_fields: []` la tool **no ejecuta el `PUT`**, ni siquiera con `dry_run=false`.
+
+### Reglas
+
+- **Merge parcial**: la tool lee el detalle, busca la línea por `item_id` y compara campo por campo en el orden `item_type`, `description`, `quantity`, `unit`, `amount`, `currency_id`, `institution_id`.
+- **Pertenencia**: si la línea no existe en esa reparación devuelve `item_not_found` con un hint para obtener los IDs con `home_maintenance_get` o `home_maintenance_list` con `include_items=true`.
+- **Mano de obra**: si el `item_type` efectivo es `labor`, la tool fuerza `quantity=1` y `unit=unit` aunque se envíen otros valores. `supplies → labor` descarta cantidad y unidad; `labor → supplies` conserva `quantity=1` y `unit=unit` del merge y permite ajustarlos.
+- **Insumos**: `quantity` debe ser mayor que `0` y `unit` debe ser `unit`, `m`, `m2`, `kg`, `lb`, `l`, `gal`, `sack` o `box`.
+- **`description`**: obligatoria en la línea; vacía devuelve `invalid_request` y más de 200 caracteres también. A diferencia de la cabecera, **no** se puede limpiar.
+- **`amount`**: finito y mayor o igual a `0`; se redondea a dos decimales. La precisión final la define la moneda en el backend.
+- **`currency_id`**: debe ser mayor que `0`; el backend valida que exista y devuelve `currency_not_found`.
+- **`institution_id`**: `0` limpia el proveedor; un valor negativo devuelve `invalid_request`.
+- **Totales recalculados**: al escribir, la tool hace un `GET` final y devuelve `totals_by_currency` de la reparación. Si ese `GET` falla, la línea ya quedó actualizada: la respuesta trae `warnings` y **no** incluye `totals_by_currency`.
+- **`dry_run`**: `true` por defecto. Hace solo el `GET` y devuelve `planned` con `current` y `proposed`; la compuerta se evalúa antes de leer cuando `dry_run=false`.
+- **Idempotente**: repetir la misma edición devuelve `status=unchanged` sin `PUT`.
+- **Llamadas HTTP**: `GET` inicial siempre; `PUT` si hay cambios y `dry_run=false`; `GET` final de totales solo después de escribir.
+
+### Errores
+
+| Código | Cuándo |
+|---|---|
+| `invalid_request` | `home_id`, `maintenance_id` o `item_id` no positivos; ningún campo editable; `item_type` fuera de `labor`/`supplies`; `description` vacía o de más de 200 caracteres; `amount` no finito o negativo; `currency_id` no positivo; `quantity` no positiva; `unit` fuera de la lista; `institution_id` negativo |
+| `writes_disabled` | `dry_run=false` sin la compuerta de escritura; no lee ni escribe |
+| `home_not_found` | La vivienda no existe |
+| `maintenance_not_found` | La reparación no existe o no pertenece al `home_id` |
+| `item_not_found` | La línea no existe o no pertenece a la reparación indicada; incluye el hint con `home_maintenance_get` |
+| `currency_not_found` | La moneda no existe |
+| `institution_not_found` | La institución no existe |
+| `auth_failed` | API key inválida, revocada o rotada |
+| `upstream_error` | Error de red, timeout o respuesta con un sobre distinto al esperado |
+
+El backend también devuelve códigos granulares (`invalid_item_type`, `item_description_required`, `item_description_too_long`, `invalid_amount`, `currency_required`, `invalid_quantity`, `invalid_unit`); la tool los valida en el preflight y, si llegan por un cambio de estado, se devuelven tal cual.
+
+## `home_maintenance_item_delete`
+
+Borra **una línea** de mano de obra o insumos de una reparación. No borra la cabecera: si era la última línea, la reparación queda vacía y la respuesta lo informa con `maintenance_empty=true` y un warning.
+
+### Entrada
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `home_id` | integer | Sí | ID de la vivienda; debe ser mayor que `0` |
+| `maintenance_id` | integer | Sí | ID de la reparación que contiene la línea; debe ser mayor que `0` |
+| `item_id` | integer | Sí | ID de la línea a borrar; debe ser mayor que `0` |
+| `dry_run` | boolean | No | `true` por defecto: previsualiza sin escribir |
+
+### Ejemplo
+
+```json
+{
+  "home_id": 3,
+  "maintenance_id": 12,
+  "item_id": 101,
+  "dry_run": true
+}
+```
+
+### Salida con `dry_run`
+
+```json
+{
+  "status": "planned",
+  "dry_run": true,
+  "maintenance_id": 12,
+  "item_id": 101,
+  "would_delete": {
+    "id": 101,
+    "item_type": "labor",
+    "description": "Mano de obra demo",
+    "quantity": 1,
+    "unit": "unit",
+    "amount": 650.00,
+    "currency_id": 2,
+    "currency_code": "USD"
+  },
+  "remaining_item_count": 0,
+  "maintenance_empty": true,
+  "totals_by_currency": [
+    {
+      "currency_id": 2,
+      "currency_code": "USD",
+      "labor_cost": 650.00,
+      "supplies_cost": 0,
+      "total": 650.00
+    }
+  ],
+  "warnings": [
+    "La reparación quedará sin líneas. home_maintenance_item_delete no borra la cabecera."
+  ]
+}
+```
+
+`totals_by_currency` en `dry_run` son los **actuales** de la reparación, no los proyectados: la tool no recalcula antes de borrar. `remaining_item_count` es el conteo que quedaría (`items` actuales − 1) y `maintenance_empty` avisa si el borrado deja la reparación sin líneas. Si quedan líneas, `warnings` viene vacío y `maintenance_empty=false`.
+
+### Salida con escritura
+
+```json
+{
+  "status": "deleted",
+  "dry_run": false,
+  "maintenance_id": 12,
+  "item_id": 101,
+  "remaining_item_count": 0,
+  "maintenance_empty": true,
+  "totals_by_currency": [],
+  "warnings": [
+    "La reparación quedó sin líneas. home_maintenance_item_delete no borra la cabecera; usá home_maintenance_create o mové líneas si querés conservarla."
+  ]
+}
+```
+
+### Reglas
+
+- **No borra la cabecera**: la reparación sigue existiendo aunque quede con 0 líneas. Con `maintenance_empty=true` la respuesta agrega un warning; en `dry_run` avisa que «quedará sin líneas» y al escribir, que «quedó sin líneas».
+- **Reparación vacía visible**: `home_maintenance_list` la devuelve con `items: []` y `totals_by_currency: []`. Se puede completar con las tools de registro o usar como destino de un movimiento.
+- **Pertenencia**: si la línea no existe en esa reparación devuelve `item_not_found` con un hint para obtener los IDs con `home_maintenance_get` o `home_maintenance_list` con `include_items=true`. Nunca borra líneas de otra reparación ni de otra vivienda.
+- **Totales recalculados**: al escribir, la tool hace un `GET` final y devuelve `totals_by_currency` y los conteos reales. Si ese `GET` falla, la línea ya quedó borrada: la respuesta trae `warnings`, `totals_by_currency: []` y los conteos estimados de la lectura previa.
+- **`dry_run`**: `true` por defecto. Hace solo el `GET` y devuelve `would_delete` con la línea y el estado proyectado; la compuerta se evalúa antes de leer cuando `dry_run=false`.
+- **Repetición**: la tool declara `idempotentHint=true` porque el estado final no cambia, pero un segundo intento sobre la misma línea devuelve `item_not_found` y no modifica nada.
+- **Llamadas HTTP**: `GET` inicial siempre; `DELETE` si `dry_run=false`; `GET` final de totales solo después de borrar.
+
+### Errores
+
+| Código | Cuándo |
+|---|---|
+| `invalid_request` | `home_id`, `maintenance_id` o `item_id` no positivos; no llama a la API |
+| `writes_disabled` | `dry_run=false` sin la compuerta de escritura; no lee ni llama a la API |
+| `home_not_found` | La vivienda no existe |
+| `maintenance_not_found` | La reparación no existe o no pertenece al `home_id` |
+| `item_not_found` | La línea no existe o no pertenece a la reparación indicada; incluye el hint con `home_maintenance_get` |
+| `auth_failed` | API key inválida, revocada o rotada |
+| `upstream_error` | Error de red, timeout o respuesta con un sobre distinto al esperado |
+
 ## Compuerta de escritura
 
-Las cuatro tools de escritura del dominio (`home_maintenance_create`, `home_maintenance_labor_register`, `home_maintenance_supplies_register` y `home_maintenance_item_move`) comparten la misma compuerta. `dry_run` viene activado por defecto y no requiere permisos de escritura; `home_maintenance_list` es de lectura y funciona siempre.
+Las siete tools de escritura del dominio (`home_maintenance_create`, `home_maintenance_update`, `home_maintenance_labor_register`, `home_maintenance_supplies_register`, `home_maintenance_item_update`, `home_maintenance_item_delete` y `home_maintenance_item_move`) comparten la misma compuerta. `dry_run` viene activado por defecto y no requiere permisos de escritura; `home_maintenance_list` y `home_maintenance_get` son de lectura y funcionan siempre.
 
 | Transporte | Lectura y `dry_run=true` | `dry_run=false` |
 |---|---|---|
@@ -739,14 +1292,14 @@ Los errores de negocio devuelven `isError=true` y un objeto `{error, message, hi
 
 | Código | Cuándo |
 |---|---|
-| `invalid_request` | Campos faltantes o inconsistentes: `home_id` no positivo, `description` de línea vacía o de más de 200 caracteres, `description` de reparación de más de 500, `amount` negativo, `quantity` no positiva, `unit` fuera de la lista, `area` o `kind` inválidos, `item_ids` vacío, con más de 100, repetido o con IDs no positivos, `item_type` fuera de `labor`/`supplies`, línea de otro tipo cuando se envía `item_type`, `performed_at` ausente en el alta, `target.performed_at` ausente, `performed_at` que no coincide con la fecha del `maintenance_id` o `date` junto con `year` en el listado |
+| `invalid_request` | Campos faltantes o inconsistentes: `home_id`, `maintenance_id` o `item_id` no positivos, ningún campo editable en una edición, `description` de línea vacía o de más de 200 caracteres, `description` de reparación de más de 500, `amount` negativo, `quantity` no positiva, `unit` fuera de la lista, `area` o `kind` inválidos, `institution_id` negativo, `currency_id` no positivo, `item_ids` vacío, con más de 100, repetido o con IDs no positivos, `item_type` fuera de `labor`/`supplies`, línea de otro tipo cuando se envía `item_type`, `performed_at` ausente en el alta, `target.performed_at` ausente, `performed_at` que no coincide con la fecha del `maintenance_id` o `date` junto con `year` en el listado |
 | `invalid_date` | `performed_at` (o `target.performed_at`) no tiene formato `YYYY-MM-DD`, o la fecha es futura |
 | `writes_disabled` | `dry_run=false` sin la compuerta de escritura; no llama a la API |
 | `home_not_found` | El `home_id` no existe |
-| `maintenance_not_found` | El `maintenance_id` no existe o no pertenece al `home_id`; incluye el origen o el destino de un movimiento |
-| `item_not_found` | Una línea de `item_ids` no existe o no pertenece al origen del movimiento |
-| `currency_not_found` | La moneda no existe (registro de líneas) |
-| `institution_not_found` | La institución no existe (alta, registro o destino del movimiento) |
+| `maintenance_not_found` | El `maintenance_id` no existe o no pertenece al `home_id`; incluye el detalle, la edición y el borrado de líneas, y el origen o el destino de un movimiento |
+| `item_not_found` | Una línea no existe o no pertenece a la reparación indicada: en `item_update`, `item_delete` y en el origen de un movimiento; incluye un hint con `home_maintenance_get` |
+| `currency_not_found` | La moneda no existe (registro de líneas y edición de una línea) |
+| `institution_not_found` | La institución no existe (alta, edición de la cabecera, registro, edición de una línea o destino del movimiento) |
 | `target_required` | El movimiento no recibió `target_maintenance_id` ni `target` |
 | `target_conflict` | El movimiento recibió `target_maintenance_id` y `target` a la vez |
 | `same_maintenance` | El destino del movimiento es la misma reparación de origen |
@@ -762,6 +1315,8 @@ El backend también devuelve códigos de validación granular (`invalid_kind`, `
 
 `status=duplicate` y `status=ambiguous_maintenance` llegan con `isError=false` y datos: no son fallas de red ni del servidor, y no hay que reintentar la misma llamada. Para resolverlos, usá `allow_duplicate=true` o elegí un `maintenance_id` de los candidatos.
 
+`status=unchanged` de `home_maintenance_update` y `home_maintenance_item_update` tampoco es un error: la tool responde con `isError=false`, `changed_fields: []` y el registro actual, y no ejecuta el `PUT`.
+
 ## Privacidad y datos ocultos
 
 Las tools devuelven el registro tal como lo entrega la API; no aplican allowlist ni agregan campos. Los campos con datos financieros (`institution_name`, importes) y las descripciones libres deben reportarse solo en lo necesario: no los incluyas en logs, issues ni capturas. No agregues nombres, teléfonos, emails ni números de cuenta al campo `description`; usá datos sintéticos en ejemplos y pruebas (`Casa Demo`, `Taller Demo`, `2026-03-10`).
@@ -769,10 +1324,12 @@ Las tools devuelven el registro tal como lo entrega la API; no aplican allowlist
 ## Flujo recomendado para un agente
 
 1. Resolver el `home_id` con `entities_search` (el mismo de `/homes/{id}` en la UI).
-2. Llamar `home_maintenance_list` con `date`, `query` o `include_items=true` para encontrar la reparación y los `item_ids` de sus líneas.
-3. Si falta el destino, llamar `home_maintenance_create` con `dry_run` (default) para dejarlo vacío, o enviar `target` directamente en el movimiento.
-4. Para consolidar o corregir líneas, llamar `home_maintenance_item_move` con `dry_run` y mostrar qué líneas se mueven, cuáles quedan y si el origen se borraría.
-5. Para un hecho nuevo, llamar `home_maintenance_labor_register` o `home_maintenance_supplies_register` con `dry_run` y mostrar el plan y `existing_today`.
-6. Pedir confirmación explícita al usuario.
-7. Repetir con `dry_run=false` y la compuerta activa. Si la respuesta es `duplicate` o `ambiguous_maintenance`, **no** reintentar a ciegas: mostrar el registro existente o los candidatos y preguntar.
-8. Verificar con `home_maintenance_list?date=<fecha>&include_items=true`; revisar `truncated` si la respuesta es grande.
+2. Consultar: `home_maintenance_list` con `date`, `query` o `include_items=true` para encontrar la reparación y sus `item_ids`; `home_maintenance_get` para el detalle completo de una reparación concreta.
+3. Para corregir la cabecera (fecha, tipo, área, institución o descripción), llamar `home_maintenance_update` con `dry_run` y mostrar `changed_fields` con `current` y `proposed`.
+4. Para corregir una línea, llamar `home_maintenance_item_update` con `dry_run` y mostrar `changed_fields`; para quitarla, `home_maintenance_item_delete` con `dry_run` y mostrar `would_delete`, `remaining_item_count` y si la reparación queda vacía.
+5. Si falta el destino de un movimiento, llamar `home_maintenance_create` con `dry_run` (default) para dejarlo vacío, o enviar `target` directamente en el movimiento.
+6. Para consolidar líneas, llamar `home_maintenance_item_move` con `dry_run` y mostrar qué líneas se mueven, cuáles quedan y si el origen se borraría.
+7. Para un hecho nuevo, llamar `home_maintenance_labor_register` o `home_maintenance_supplies_register` con `dry_run` y mostrar el plan y `existing_today`.
+8. Pedir confirmación explícita al usuario.
+9. Repetir con `dry_run=false` y la compuerta activa. Si la respuesta es `duplicate`, `ambiguous_maintenance` o `unchanged`, **no** reintentar a ciegas: mostrar el registro existente, los candidatos o el estado actual y preguntar.
+10. Verificar con `home_maintenance_get` o con `home_maintenance_list?date=<fecha>&include_items=true`; revisar `truncated` si la respuesta es grande.

@@ -39,9 +39,13 @@ func Register(server *mcp.Server, client api.HomeMaintenanceAPI, cfg config.Conf
 // Register monta las tools del Toolset.
 func (t *Toolset) Register(server *mcp.Server) {
 	t.registerList(server)
+	t.registerGet(server)
 	t.registerCreate(server)
 	t.registerLabor(server)
 	t.registerSupplies(server)
+	t.registerUpdate(server)
+	t.registerItemUpdate(server)
+	t.registerItemDelete(server)
 	t.registerMove(server)
 }
 
