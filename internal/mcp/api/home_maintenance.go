@@ -14,6 +14,7 @@ type HomeMaintenanceAPI interface {
 	GetHomeMaintenance(ctx context.Context, homeID, maintenanceID int64) (*HomeMaintenance, error)
 	CreateHomeMaintenance(ctx context.Context, homeID int64, req HomeMaintenanceRequest) (*HomeMaintenance, error)
 	CreateHomeMaintenanceItem(ctx context.Context, homeID, maintenanceID int64, req HomeMaintenanceItemRequest) (*HomeMaintenanceItem, error)
+	MoveHomeMaintenanceItems(ctx context.Context, homeID, maintenanceID int64, req HomeMaintenanceMoveRequest) (*HomeMaintenanceMoveResult, error)
 }
 
 // HomeMaintenanceFilter acota el histórico de una vivienda.
@@ -99,6 +100,37 @@ type HomeMaintenanceItemRequest struct {
 	InstitutionID *int64  `json:"institution_id,omitempty"`
 }
 
+// HomeMaintenanceTargetRequest es el destino nuevo de un movimiento.
+type HomeMaintenanceTargetRequest struct {
+	PerformedAt   string `json:"performed_at"`
+	Kind          string `json:"kind,omitempty"`
+	Area          string `json:"area,omitempty"`
+	InstitutionID *int64 `json:"institution_id,omitempty"`
+	Description   string `json:"description"`
+}
+
+// HomeMaintenanceMoveRequest es el cuerpo de POST .../items/move. Exactamente
+// uno de TargetMaintenanceID o Target debe venir informado.
+type HomeMaintenanceMoveRequest struct {
+	ItemIDs             []int64                       `json:"item_ids"`
+	ItemType            string                        `json:"item_type,omitempty"`
+	TargetMaintenanceID *int64                        `json:"target_maintenance_id,omitempty"`
+	Target              *HomeMaintenanceTargetRequest `json:"target,omitempty"`
+	DeleteSourceIfEmpty bool                          `json:"delete_source_if_empty,omitempty"`
+}
+
+// HomeMaintenanceMoveResult describe el movimiento de líneas.
+type HomeMaintenanceMoveResult struct {
+	SourceMaintenanceID int64                 `json:"source_maintenance_id"`
+	TargetMaintenanceID int64                 `json:"target_maintenance_id"`
+	TargetCreated       bool                  `json:"target_created"`
+	Target              *HomeMaintenance      `json:"target"`
+	MovedCount          int                   `json:"moved_count"`
+	MovedItems          []HomeMaintenanceItem `json:"moved_items"`
+	SourceItemCount     int                   `json:"source_item_count"`
+	SourceDeleted       bool                  `json:"source_deleted"`
+}
+
 // ListHomeMaintenances devuelve el histórico de una vivienda con filtros.
 func (c *Client) ListHomeMaintenances(ctx context.Context, homeID int64, filter HomeMaintenanceFilter) (*HomeMaintenanceList, error) {
 	query := url.Values{}
@@ -160,4 +192,15 @@ func (c *Client) CreateHomeMaintenanceItem(ctx context.Context, homeID, maintena
 		return nil, err
 	}
 	return &item, nil
+}
+
+// MoveHomeMaintenanceItems mueve líneas a otra reparación del mismo hogar,
+// creando el destino si req.Target viene informado.
+func (c *Client) MoveHomeMaintenanceItems(ctx context.Context, homeID, maintenanceID int64, req HomeMaintenanceMoveRequest) (*HomeMaintenanceMoveResult, error) {
+	var result HomeMaintenanceMoveResult
+	path := fmt.Sprintf("/api/homes/%d/maintenances/%d/items/move", homeID, maintenanceID)
+	if err := c.doJSON(ctx, "POST", path, req, &result, sourceHeaders()); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }

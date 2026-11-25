@@ -81,7 +81,7 @@ El analizador descubre las tools registradas con `go/parser`: solo reconoce `mcp
 }
 ```
 
-Es un extracto: el manifiesto real declara las **42 tools** del catálogo (24 de lectura y 18 de escritura) y todas las rutas compartidas. `--check-map` falla si una tool registrada falta en el manifiesto, si el manifiesto declara una tool que el código no registra o si un archivo o patrón declarado no existe.
+Es un extracto: el manifiesto real declara las **44 tools** del catálogo (24 de lectura y 20 de escritura) y todas las rutas compartidas. `--check-map` falla si una tool registrada falta en el manifiesto, si el manifiesto declara una tool que el código no registra o si un archivo o patrón declarado no existe.
 
 ### Cómo se calcula el impacto
 
@@ -142,7 +142,7 @@ El entrypoint es `./scripts/check-mcp-impact.sh`, que ejecuta `go run ./scripts/
 ```
 
 ```text
-[mcp-impact] ✓ manifiesto válido: 42 tools registradas y todas sus rutas existen
+[mcp-impact] ✓ manifiesto válido: 44 tools registradas y todas sus rutas existen
 ```
 
 ### Consultar archivos antes de escribir código

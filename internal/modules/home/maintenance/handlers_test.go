@@ -159,3 +159,141 @@ func TestHandlersCreateRejectsFutureDate(t *testing.T) {
 		t.Fatalf("status = %d (%s)", resp.StatusCode, payload)
 	}
 }
+
+func TestHandlersMoveItems(t *testing.T) {
+	server, service, homeID, _, usd := newTestServer(t)
+	ctx := context.Background()
+
+	source, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo origen",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	labor, err := service.CreateItem(ctx, homeID, source.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 500, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	target, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-11", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo destino",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body := fmt.Sprintf(`{"item_ids":[%d],"target_maintenance_id":%d}`, labor.ID, target.ID)
+	resp, err := http.Post(
+		fmt.Sprintf("%s/api/homes/%d/maintenances/%d/items/move", server.URL, homeID, source.ID),
+		"application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("POST move: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		payload, _ := io.ReadAll(resp.Body)
+		t.Fatalf("status = %d (%s)", resp.StatusCode, payload)
+	}
+	var moved MoveResult
+	if err := json.NewDecoder(resp.Body).Decode(&moved); err != nil {
+		t.Fatalf("decodificar movimiento: %v", err)
+	}
+	if moved.MovedCount != 1 || moved.TargetMaintenanceID != target.ID || moved.SourceItemCount != 0 {
+		t.Fatalf("movimiento inesperado: %+v", moved)
+	}
+	if len(moved.MovedItems) != 1 || moved.MovedItems[0].MaintenanceID != target.ID {
+		t.Fatalf("líneas movidas inesperadas: %+v", moved.MovedItems)
+	}
+	if moved.Target == nil || moved.Target.ID != target.ID {
+		t.Fatalf("destino inesperado: %+v", moved.Target)
+	}
+
+	second, err := service.CreateItem(ctx, homeID, source.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Insumo demo", Quantity: 1, Unit: UnitUnit, Amount: 20, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	createTarget := fmt.Sprintf(`{
+		"item_ids": [%d],
+		"target": {
+			"performed_at": "2026-03-12",
+			"kind": "preventive",
+			"area": "roof",
+			"description": "Reparación demo creada al mover"
+		},
+		"delete_source_if_empty": true
+	}`, second.ID)
+	resp, err = http.Post(
+		fmt.Sprintf("%s/api/homes/%d/maintenances/%d/items/move", server.URL, homeID, source.ID),
+		"application/json", strings.NewReader(createTarget))
+	if err != nil {
+		t.Fatalf("POST move create target: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		payload, _ := io.ReadAll(resp.Body)
+		t.Fatalf("status = %d (%s)", resp.StatusCode, payload)
+	}
+	var created MoveResult
+	if err := json.NewDecoder(resp.Body).Decode(&created); err != nil {
+		t.Fatalf("decodificar movimiento con destino nuevo: %v", err)
+	}
+	if !created.TargetCreated || !created.SourceDeleted || created.Target == nil || created.Target.PerformedAt != "2026-03-12" {
+		t.Fatalf("movimiento con destino nuevo inesperado: %+v", created)
+	}
+
+	resp, err = http.Post(
+		fmt.Sprintf("%s/api/homes/%d/maintenances/%d/items/move", server.URL, homeID, created.TargetMaintenanceID),
+		"application/json", strings.NewReader(fmt.Sprintf(`{"item_ids":[%d],"target_maintenance_id":%d}`, labor.ID, created.TargetMaintenanceID)))
+	if err != nil {
+		t.Fatalf("POST same maintenance: %v", err)
+	}
+	payload, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest || !strings.Contains(string(payload), "same_maintenance") {
+		t.Fatalf("esperaba same_maintenance: %d (%s)", resp.StatusCode, payload)
+	}
+
+	current, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo actual",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	foreign, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo ajena",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	foreignItem, err := service.CreateItem(ctx, homeID, foreign.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra ajena", Amount: 10, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err = http.Post(
+		fmt.Sprintf("%s/api/homes/%d/maintenances/%d/items/move", server.URL, homeID, current.ID),
+		"application/json", strings.NewReader(fmt.Sprintf(`{"item_ids":[%d],"target_maintenance_id":%d}`, foreignItem.ID, target.ID)))
+	if err != nil {
+		t.Fatalf("POST foreign item: %v", err)
+	}
+	payload, _ = io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest || !strings.Contains(string(payload), "item_not_in_source") {
+		t.Fatalf("esperaba item_not_in_source: %d (%s)", resp.StatusCode, payload)
+	}
+}
+
+func TestRespondModuleErrorMapsMoveConflict(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	respondModuleError(recorder, fmt.Errorf("mover líneas: %w", ErrMoveConflict))
+	if recorder.Code != http.StatusConflict {
+		t.Fatalf("status = %d, quiero 409", recorder.Code)
+	}
+	if body := recorder.Body.String(); !strings.Contains(body, "move_conflict") {
+		t.Fatalf("cuerpo inesperado: %s", body)
+	}
+}

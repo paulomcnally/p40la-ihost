@@ -2,6 +2,7 @@ package maintenance
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ const (
 	maxQueryLen              = 100
 	maxMaintenancesWithItems = 100
 	maxItemsPerList          = 1000
+	maxMoveItems             = 100
 	dateLayout               = "2006-01-02"
 	defaultArea              = AreaOther
 	defaultKind              = KindCorrective
@@ -236,6 +238,112 @@ func (s *Service) DeleteItem(ctx context.Context, homeID, maintenanceID, itemID 
 		return ErrItemNotFound
 	}
 	return nil
+}
+
+// MoveItems mueve líneas de una reparación a otra del mismo hogar. Si el
+// destino no existe, lo crea en la misma transacción.
+func (s *Service) MoveItems(ctx context.Context, homeID, sourceID int64, input MoveInput) (*MoveResult, error) {
+	if err := s.requireMaintenance(ctx, homeID, sourceID); err != nil {
+		return nil, err
+	}
+	if len(input.ItemIDs) == 0 || len(input.ItemIDs) > maxMoveItems {
+		return nil, invalid("invalid_item_ids", "item_ids debe tener entre 1 y 100 líneas")
+	}
+	seen := make(map[int64]struct{}, len(input.ItemIDs))
+	for _, id := range input.ItemIDs {
+		if id <= 0 {
+			return nil, invalid("invalid_item_ids", "item_ids solo acepta IDs positivos")
+		}
+		if _, ok := seen[id]; ok {
+			return nil, invalid("invalid_item_ids", "item_ids no admite líneas repetidas")
+		}
+		seen[id] = struct{}{}
+	}
+	input.ItemType = strings.TrimSpace(input.ItemType)
+	if input.ItemType != "" && !contains(ItemTypes, input.ItemType) {
+		return nil, invalid("invalid_item_type", "El tipo de línea debe ser mano de obra o insumos")
+	}
+
+	targets := 0
+	if input.TargetMaintenanceID != nil {
+		targets++
+	}
+	if input.Target != nil {
+		targets++
+	}
+	if targets == 0 {
+		return nil, invalid("target_required", "Indicá target_maintenance_id o target")
+	}
+	if targets > 1 {
+		return nil, invalid("target_conflict", "target_maintenance_id y target son excluyentes")
+	}
+
+	targetID := int64(0)
+	var newTarget *Input
+	if input.TargetMaintenanceID != nil {
+		if *input.TargetMaintenanceID <= 0 {
+			return nil, invalid("invalid_request", "target_maintenance_id debe ser mayor que cero")
+		}
+		if *input.TargetMaintenanceID == sourceID {
+			return nil, invalid("same_maintenance", "El destino no puede ser la misma reparación de origen")
+		}
+		if err := s.requireMaintenance(ctx, homeID, *input.TargetMaintenanceID); err != nil {
+			return nil, err
+		}
+		targetID = *input.TargetMaintenanceID
+	} else {
+		candidate := *input.Target
+		if err := s.prepare(ctx, &candidate); err != nil {
+			return nil, err
+		}
+		newTarget = &candidate
+	}
+
+	items, err := s.storage.ListItemsByIDs(ctx, input.ItemIDs)
+	if err != nil {
+		return nil, err
+	}
+	if len(items) != len(input.ItemIDs) {
+		return nil, ErrItemNotFound
+	}
+	for _, item := range items {
+		if item.MaintenanceID != sourceID {
+			return nil, invalid("item_not_in_source",
+				fmt.Sprintf("La línea %d no pertenece a la reparación %d", item.ID, sourceID))
+		}
+		if input.ItemType != "" && item.ItemType != input.ItemType {
+			return nil, invalid("item_type_mismatch",
+				fmt.Sprintf("La línea %d no es de tipo %s", item.ID, input.ItemType))
+		}
+	}
+
+	targetID, remaining, deleted, err := s.storage.MoveItems(
+		ctx, homeID, sourceID, targetID, newTarget, input.ItemIDs, input.DeleteSourceIfEmpty)
+	if err != nil {
+		return nil, err
+	}
+
+	moved, err := s.storage.ListItemsByIDs(ctx, input.ItemIDs)
+	if err != nil {
+		return nil, err
+	}
+	target, err := s.storage.Get(ctx, homeID, targetID)
+	if err != nil {
+		return nil, err
+	}
+	if target == nil {
+		return nil, ErrMaintenanceNotFound
+	}
+	return &MoveResult{
+		SourceMaintenanceID: sourceID,
+		TargetMaintenanceID: targetID,
+		TargetCreated:       newTarget != nil,
+		Target:              target,
+		MovedCount:          len(moved),
+		MovedItems:          moved,
+		SourceItemCount:     remaining,
+		SourceDeleted:       deleted,
+	}, nil
 }
 
 func (s *Service) prepare(ctx context.Context, input *Input) error {

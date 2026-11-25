@@ -20,6 +20,7 @@ func (h *handlers) register(mux *http.ServeMux, auth func(http.Handler) http.Han
 	mux.Handle("PUT /api/homes/{id}/maintenances/{maintenance_id}", auth(http.HandlerFunc(h.update)))
 	mux.Handle("DELETE /api/homes/{id}/maintenances/{maintenance_id}", auth(http.HandlerFunc(h.delete)))
 	mux.Handle("POST /api/homes/{id}/maintenances/{maintenance_id}/items", auth(http.HandlerFunc(h.createItem)))
+	mux.Handle("POST /api/homes/{id}/maintenances/{maintenance_id}/items/move", auth(http.HandlerFunc(h.moveItems)))
 	mux.Handle("PUT /api/homes/{id}/maintenances/{maintenance_id}/items/{item_id}", auth(http.HandlerFunc(h.updateItem)))
 	mux.Handle("DELETE /api/homes/{id}/maintenances/{maintenance_id}/items/{item_id}", auth(http.HandlerFunc(h.deleteItem)))
 }
@@ -140,6 +141,24 @@ func (h *handlers) createItem(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusCreated, item)
 }
 
+func (h *handlers) moveItems(w http.ResponseWriter, r *http.Request) {
+	homeID, maintenanceID, ok := h.ids(w, r)
+	if !ok {
+		return
+	}
+	var req MoveInput
+	if err := decodeJSON(r, &req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request", "Cuerpo JSON inválido")
+		return
+	}
+	result, err := h.service.MoveItems(r.Context(), homeID, maintenanceID, req)
+	if err != nil {
+		respondModuleError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, result)
+}
+
 func (h *handlers) updateItem(w http.ResponseWriter, r *http.Request) {
 	homeID, maintenanceID, ok := h.ids(w, r)
 	if !ok {
@@ -235,6 +254,8 @@ func respondModuleError(w http.ResponseWriter, err error) {
 		respondError(w, http.StatusNotFound, "currency_not_found", "Moneda no encontrada")
 	case errors.Is(err, ErrInstitutionNotFound):
 		respondError(w, http.StatusNotFound, "institution_not_found", "Institución no encontrada")
+	case errors.Is(err, ErrMoveConflict):
+		respondError(w, http.StatusConflict, "move_conflict", "Las líneas cambiaron durante el movimiento; reintentá")
 	default:
 		respondError(w, http.StatusInternalServerError, "internal_error", "Error interno")
 	}
