@@ -46,7 +46,7 @@ readonly MCP_PATHS=(
 # -----------------------------------------------------------------------------
 
 log() {
-  printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+  printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >&2
 }
 
 error() {
@@ -204,7 +204,7 @@ wait_for_workflow_conclusion() {
   local label="$2"
   local run_id
   local attempt=0
-  local max_attempts=40
+  local max_attempts=80
   local status=""
   local conclusion=""
 
@@ -216,8 +216,8 @@ wait_for_workflow_conclusion() {
 
   while [[ "${attempt}" -lt "${max_attempts}" ]]; do
     attempt=$((attempt + 1))
-    status=$(gh run view "${run_id}" --json status --jq -r '.status' 2>/dev/null || true)
-    conclusion=$(gh run view "${run_id}" --json conclusion --jq -r '.conclusion' 2>/dev/null || true)
+    status=$(gh run view "${run_id}" --json status --jq '.status' 2>/dev/null || true)
+    conclusion=$(gh run view "${run_id}" --json conclusion --jq '.conclusion' 2>/dev/null || true)
 
     if [[ "${status}" == "completed" ]]; then
       if [[ "${conclusion}" == "success" ]]; then
