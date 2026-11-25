@@ -146,10 +146,13 @@ Invalida todos los access tokens, refresh tokens y códigos pendientes; los clie
 
 ## Docker
 
-`Dockerfile.mcp` construye una imagen independiente del add-on web, con usuario `nonroot` (UID/GID 65532) y estado en `/data`:
+`Dockerfile.mcp` construye una imagen independiente del add-on web, con usuario `nonroot` (UID/GID 65532) y estado en `/data`.
+
+El release oficial se hace con `./scripts/release.sh` (ver [operations.md](operations.md)); la imagen se publica multi-arch por el workflow `Build & Push MCP Image`.
 
 ```bash
-GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
+./scripts/release.sh --check
+./scripts/release.sh 0.5.20 0.6.0
 # Imagen multi-arch: linux/amd64, linux/arm/v7, linux/arm64
 ```
 

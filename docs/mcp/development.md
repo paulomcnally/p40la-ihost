@@ -252,11 +252,11 @@ Todo cambio en el código del MCP se documenta **en el mismo commit**. La superf
 | Dominio MCP | `internal/mcp/` (código no-test) |
 | Servidor HTTP y OAuth | `internal/mcp/server/` (incluye `oauth/` y `limiter/`) |
 | Auditoría | `internal/mcp/audit/` |
-| Imagen y publicación | `Dockerfile.mcp`, `scripts/build-mcp-image.sh`, `deploy/tailscale/` |
+| Imagen y publicación | `Dockerfile.mcp`, `scripts/release.sh`, `.github/workflows/mcp-publish.yml`, `deploy/mcp/tailscale/` |
 | API keys | `scripts/create-api-key.sh`, `internal/services/api_key.go`, `internal/api/api_key_handlers.go` |
 | Generación y pago masivo | `internal/services/bill_bulk.go`, `internal/api/bill_bulk_handlers.go` |
 
-`scripts/check-mcp-docs.sh` cubre `cmd/mcp-server/`, `internal/mcp/` y los archivos de API key/bills; la imagen y `deploy/tailscale/` no disparan el hook por sí solos, pero también exigen actualizar `docs/mcp/` (regla `DELIV-MCP-DOCS`).
+`scripts/check-mcp-docs.sh` cubre `cmd/mcp-server/`, `internal/mcp/` y los archivos de API key/bills; la imagen y `deploy/mcp/tailscale/` no disparan el hook por sí solos, pero también exigen actualizar `docs/mcp/` (regla `DELIV-MCP-DOCS`).
 
 **`DELIV-MCP-DOCS`** — agregar o cambiar una tool, un contrato HTTP, una variable de entorno o un flujo operativo exige actualizar `docs/mcp/` en el **mismo commit** que el código. Según el cambio:
 

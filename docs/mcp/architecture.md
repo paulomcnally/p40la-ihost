@@ -103,10 +103,10 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 | OAuth 2.1 | `internal/mcp/server/oauth` | Discovery, DCR, authorize con PKCE, token, refresh y revocación |
 | Rate limit | `internal/mcp/server/limiter` | Ventana fija en memoria por token o IP |
 | Auditoría | `internal/mcp/audit` | JSONL con rotación por tamaño |
-| Imagen del MCP | `Dockerfile.mcp`, `scripts/build-mcp-image.sh` | Imagen multi-arch independiente del add-on web |
+| Imagen del MCP | `Dockerfile.mcp`, `scripts/release.sh`, `.github/workflows/mcp-publish.yml` | El release crea el tag `mcp-vX.Y.Z`; CI publica la imagen multi-arch independiente del add-on web |
 | Imagen del nodo Tailscale | `deploy/mcp/tailscale/Dockerfile` | Wrapper de `tailscale/tailscale` con `serve.json` para Funnel 443 → MCP |
 | Despliegue en el iHost | `deploy/mcp/` | Compose de referencia, env example y runbook del nodo dedicado |
-| Funnel | `deploy/tailscale/serve-funnel.example.json` | Ejemplo declarativo de publicación en 443 |
+| Funnel | `deploy/mcp/tailscale/serve-funnel.example.json` | Ejemplo declarativo de publicación en 443 |
 | Backend masivo | `internal/services/bill_bulk.go` | Reglas de generación y pago por rango |
 | Handlers HTTP | `internal/api/bill_bulk_handlers.go` | Parseo, códigos de estado y respuesta |
 | API key global | `internal/services/api_key.go` | Generación, hash, validación, rotación y revocación |

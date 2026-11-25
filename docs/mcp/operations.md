@@ -24,21 +24,23 @@ GOOS=darwin GOARCH=arm64 go build -o bin/p40la-mcp-darwin-arm64 ./cmd/mcp-server
 
 `Dockerfile.mcp` es independiente de la imagen del add-on web. La imagen final es distroless `nonroot` (UID/GID 65532), expone 8090 y 8091, y guarda el estado en `/data`.
 
-```bash
-GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
-
-# Personalizar imagen y tag
-IMAGE="paulomcnally/p40la-mcp" TAG="0.4.0" \
-GH_TOKEN="github_pat_demo" ./scripts/build-mcp-image.sh
-```
-
-El script construye y publica las tres plataformas obligatorias (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) con `docker buildx`. Verificá los manifests:
+El release oficial de la imagen se hace junto con la app:
 
 ```bash
-docker buildx imagetools inspect paulomcnally/p40la-mcp:0.5.0
+./scripts/release.sh                       # app + MCP si hay cambios
+./scripts/release.sh 0.5.20 0.6.0          # versiones explícitas
+./scripts/release.sh --check               # plan sin escrituras
 ```
 
-El token de GitHub se pasa como secreto de BuildKit (`id=gh_token`) porque el módulo de plugins es privado; no queda en la imagen.
+`release.sh` detecta si hay cambios que afectan al binario MCP desde el último tag `mcp-v*` y crea/pushea `mcp-vX.Y.Z`. El workflow `Build & Push MCP Image` construye y publica las tres plataformas obligatorias (`linux/amd64`, `linux/arm/v7`, `linux/arm64`) y el manifest multi-arch. Para una publicación manual sin release de la app, usá `workflow_dispatch` con la versión.
+
+Verificá los manifests:
+
+```bash
+docker buildx imagetools inspect paulomcnally/p40la-mcp:latest
+```
+
+El token de GitHub se pasa como secreto de BuildKit (`id=gh_token`) en CI, porque el módulo de plugins es privado; no queda en la imagen.
 
 El binario MCP **no** se incluye en la imagen Docker del servidor web ni se inicia con el add-on principal. Puede correr en la máquina del cliente (stdio), como contenedor aparte con OAuth (HTTP) o en el iHost con red host. Esto evita sumar procesos al add-on web y mantiene separadas las credenciales.
 
