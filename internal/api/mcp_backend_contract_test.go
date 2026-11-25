@@ -320,6 +320,75 @@ func TestMCPBackendContract(t *testing.T) {
 		t.Fatalf("esperaba future_date: %v", err)
 	}
 
+	editDemo, err := client.CreateHomeMaintenance(requestCtx, 1, mcpapi.HomeMaintenanceRequest{
+		PerformedAt: "2026-03-14", Kind: "corrective", Area: "other", Description: "Reparación demo para editar",
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeMaintenance para editar: %v", err)
+	}
+	updatedDemo, err := client.UpdateHomeMaintenance(requestCtx, 1, editDemo.ID, mcpapi.HomeMaintenanceUpdateRequest{
+		PerformedAt: "2026-03-14",
+		Kind:        "corrective",
+		Area:        "paint",
+		Description: "Reparación demo de pintura",
+	})
+	if err != nil {
+		t.Fatalf("UpdateHomeMaintenance: %v", err)
+	}
+	if updatedDemo.Area != "paint" || updatedDemo.Description != "Reparación demo de pintura" {
+		t.Fatalf("cabecera editada inesperada: %+v", updatedDemo)
+	}
+
+	editLabor, err := client.CreateHomeMaintenanceItem(requestCtx, 1, editDemo.ID, mcpapi.HomeMaintenanceItemRequest{
+		ItemType: "labor", Description: "Mano de obra demo", Amount: 50, CurrencyID: 1,
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeMaintenanceItem labor para editar: %v", err)
+	}
+	editSupplies, err := client.CreateHomeMaintenanceItem(requestCtx, 1, editDemo.ID, mcpapi.HomeMaintenanceItemRequest{
+		ItemType: "supplies", Description: "Insumo demo", Quantity: 1, Unit: "unit", Amount: 30, CurrencyID: 1,
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeMaintenanceItem supplies para editar: %v", err)
+	}
+	updatedLabor, err := client.UpdateHomeMaintenanceItem(requestCtx, 1, editDemo.ID, editLabor.ID, mcpapi.HomeMaintenanceItemRequest{
+		ItemType: "labor", Description: "Mano de obra demo", Quantity: 1, Unit: "unit", Amount: 75, CurrencyID: 1,
+	})
+	if err != nil {
+		t.Fatalf("UpdateHomeMaintenanceItem: %v", err)
+	}
+	if updatedLabor.Amount != 75 || updatedLabor.Quantity != 1 || updatedLabor.Unit != "unit" {
+		t.Fatalf("línea editada inesperada: %+v", updatedLabor)
+	}
+	editDetail, err := client.GetHomeMaintenance(requestCtx, 1, editDemo.ID)
+	if err != nil {
+		t.Fatalf("GetHomeMaintenance para editar: %v", err)
+	}
+	if len(editDetail.TotalsByCurrency) != 1 ||
+		editDetail.TotalsByCurrency[0].LaborCost != 75 ||
+		editDetail.TotalsByCurrency[0].SuppliesCost != 30 ||
+		editDetail.TotalsByCurrency[0].Total != 105 {
+		t.Fatalf("totales tras editar inesperados: %+v", editDetail.TotalsByCurrency)
+	}
+
+	if err := client.DeleteHomeMaintenanceItem(requestCtx, 1, editDemo.ID, editSupplies.ID); err != nil {
+		t.Fatalf("DeleteHomeMaintenanceItem: %v", err)
+	}
+	editDetail, err = client.GetHomeMaintenance(requestCtx, 1, editDemo.ID)
+	if err != nil {
+		t.Fatalf("GetHomeMaintenance tras borrar: %v", err)
+	}
+	if len(editDetail.Items) != 1 || len(editDetail.TotalsByCurrency) != 1 || editDetail.TotalsByCurrency[0].Total != 75 {
+		t.Fatalf("detalle tras borrar inesperado: %+v", editDetail)
+	}
+
+	_, err = client.UpdateHomeMaintenanceItem(requestCtx, 1, editDemo.ID, editLabor.ID, mcpapi.HomeMaintenanceItemRequest{
+		ItemType: "labor", Description: "Mano de obra demo", Quantity: 1, Unit: "unit", Amount: -1, CurrencyID: 1,
+	})
+	if !errors.As(err, &apiErr) || apiErr.Code != "invalid_amount" {
+		t.Fatalf("esperaba invalid_amount: %v", err)
+	}
+
 	var source string
 	if err := database.QueryRowContext(ctx,
 		"SELECT source FROM bill_history WHERE action = 'created' ORDER BY id DESC LIMIT 1",

@@ -113,7 +113,7 @@ Reglas aplicables según `docs/rules/00-index.md`. La spec toca backend, MCP y S
 4. **REQ-018**: `home_maintenance_item_delete` devuelve `maintenance_empty=true` y un warning cuando se borra la última línea: la reparación vacía queda visible en `home_maintenance_list` y se puede completar después o mover a otra.
 5. **REQ-019**: Si el `GET` posterior a un borrado falla, devolver `status=deleted` con un warning y sin totales; no convertir un borrado exitoso en error.
 6. **REQ-020**: `home_maintenance_get` devuelve `item_count` además del detalle, para que el agente sepa si la reparación está vacía sin recorrer el array.
-7. **REQ-021**: Errores estables y accionables: `invalid_request`, `invalid_date`, `future_date`, `invalid_kind`, `invalid_area`, `invalid_item_type`, `item_description_required`, `invalid_amount`, `currency_required`, `invalid_quantity`, `invalid_unit`, `writes_disabled` (400); `home_not_found`, `maintenance_not_found`, `item_not_found`, `currency_not_found`, `institution_not_found` (404); `upstream_error`.
+7. **REQ-021**: Errores estables y accionables: `invalid_request`, `invalid_date`, `future_date`, `invalid_kind`, `invalid_area`, `description_too_long`, `invalid_item_type`, `item_description_required`, `item_description_too_long`, `invalid_amount`, `currency_required`, `invalid_quantity`, `invalid_unit`, `writes_disabled` (400); `home_not_found`, `maintenance_not_found`, `item_not_found`, `currency_not_found`, `institution_not_found` (404); `upstream_error`.
 8. **REQ-022**: Para `item_not_found`, incluir un hint que indique usar `home_maintenance_get` o `home_maintenance_list` con `include_items=true` para obtener los IDs correctos.
 
 ### 3.3 Requerimientos Funcionales (P2 - Deseables)
@@ -375,7 +375,7 @@ Debe venir al menos un campo editable; si no, `invalid_request`.
 Si no hay cambios efectivos: `{"status":"unchanged","dry_run":false,"maintenance_id":12,"changed_fields":[]}` y no se ejecuta `PUT`.
 
 **Anotaciones**: `destructiveHint=true` (la edición reemplaza los cinco campos de la cabecera), `idempotentHint=true`, `openWorldHint=false`.
-**Errores**: `invalid_request`, `invalid_date`, `future_date`, `invalid_kind`, `invalid_area`, `home_not_found`, `maintenance_not_found`, `institution_not_found`, `writes_disabled`, `upstream_error`.
+**Errores**: `invalid_request`, `invalid_date`, `future_date`, `invalid_kind`, `invalid_area`, `description_too_long`, `home_not_found`, `maintenance_not_found`, `institution_not_found`, `writes_disabled`, `upstream_error`.
 
 #### Tool `home_maintenance_item_update`
 
@@ -719,3 +719,4 @@ Tests:
 |---|---|---|
 | 2026-11-24 | opencode | Creación inicial: get, update, item_update e item_delete para reparaciones del hogar |
 | 2026-11-24 | opencode | Spec lista para implementar; issue #162 y veredicto de impacto MCP integrado |
+| 2026-11-25 | opencode | Implementación: 4 tools, cliente MCP, merge parcial, totales recalculados, tests, manifiesto y contrato 44 → 48 |

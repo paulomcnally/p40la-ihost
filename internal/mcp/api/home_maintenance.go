@@ -13,7 +13,10 @@ type HomeMaintenanceAPI interface {
 	ListHomeMaintenances(ctx context.Context, homeID int64, filter HomeMaintenanceFilter) (*HomeMaintenanceList, error)
 	GetHomeMaintenance(ctx context.Context, homeID, maintenanceID int64) (*HomeMaintenance, error)
 	CreateHomeMaintenance(ctx context.Context, homeID int64, req HomeMaintenanceRequest) (*HomeMaintenance, error)
+	UpdateHomeMaintenance(ctx context.Context, homeID, maintenanceID int64, req HomeMaintenanceUpdateRequest) (*HomeMaintenance, error)
 	CreateHomeMaintenanceItem(ctx context.Context, homeID, maintenanceID int64, req HomeMaintenanceItemRequest) (*HomeMaintenanceItem, error)
+	UpdateHomeMaintenanceItem(ctx context.Context, homeID, maintenanceID, itemID int64, req HomeMaintenanceItemRequest) (*HomeMaintenanceItem, error)
+	DeleteHomeMaintenanceItem(ctx context.Context, homeID, maintenanceID, itemID int64) error
 	MoveHomeMaintenanceItems(ctx context.Context, homeID, maintenanceID int64, req HomeMaintenanceMoveRequest) (*HomeMaintenanceMoveResult, error)
 }
 
@@ -86,6 +89,16 @@ type HomeMaintenanceRequest struct {
 	InstitutionID *int64                      `json:"institution_id,omitempty"`
 	Description   string                      `json:"description"`
 	Item          *HomeMaintenanceItemRequest `json:"item,omitempty"`
+}
+
+// HomeMaintenanceUpdateRequest es el cuerpo de PUT /api/homes/{id}/maintenances/{mid}.
+// El backend reemplaza la cabecera completa: la tool debe enviar los cinco campos.
+type HomeMaintenanceUpdateRequest struct {
+	PerformedAt   string `json:"performed_at"`
+	Kind          string `json:"kind"`
+	Area          string `json:"area"`
+	InstitutionID *int64 `json:"institution_id"`
+	Description   string `json:"description"`
 }
 
 // HomeMaintenanceItemRequest es el cuerpo de POST .../items y la línea
@@ -184,6 +197,16 @@ func (c *Client) CreateHomeMaintenance(ctx context.Context, homeID int64, req Ho
 	return &maintenance, nil
 }
 
+// UpdateHomeMaintenance reemplaza la cabecera de una reparación existente.
+func (c *Client) UpdateHomeMaintenance(ctx context.Context, homeID, maintenanceID int64, req HomeMaintenanceUpdateRequest) (*HomeMaintenance, error) {
+	var maintenance HomeMaintenance
+	path := fmt.Sprintf("/api/homes/%d/maintenances/%d", homeID, maintenanceID)
+	if err := c.doJSON(ctx, "PUT", path, req, &maintenance, sourceHeaders()); err != nil {
+		return nil, err
+	}
+	return &maintenance, nil
+}
+
 // CreateHomeMaintenanceItem agrega una línea a una reparación existente.
 func (c *Client) CreateHomeMaintenanceItem(ctx context.Context, homeID, maintenanceID int64, req HomeMaintenanceItemRequest) (*HomeMaintenanceItem, error) {
 	var item HomeMaintenanceItem
@@ -192,6 +215,22 @@ func (c *Client) CreateHomeMaintenanceItem(ctx context.Context, homeID, maintena
 		return nil, err
 	}
 	return &item, nil
+}
+
+// UpdateHomeMaintenanceItem reemplaza una línea de una reparación existente.
+func (c *Client) UpdateHomeMaintenanceItem(ctx context.Context, homeID, maintenanceID, itemID int64, req HomeMaintenanceItemRequest) (*HomeMaintenanceItem, error) {
+	var item HomeMaintenanceItem
+	path := fmt.Sprintf("/api/homes/%d/maintenances/%d/items/%d", homeID, maintenanceID, itemID)
+	if err := c.doJSON(ctx, "PUT", path, req, &item, sourceHeaders()); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// DeleteHomeMaintenanceItem borra una línea; el backend responde 204.
+func (c *Client) DeleteHomeMaintenanceItem(ctx context.Context, homeID, maintenanceID, itemID int64) error {
+	path := fmt.Sprintf("/api/homes/%d/maintenances/%d/items/%d", homeID, maintenanceID, itemID)
+	return c.doJSON(ctx, "DELETE", path, nil, nil, sourceHeaders())
 }
 
 // MoveHomeMaintenanceItems mueve líneas a otra reparación del mismo hogar,

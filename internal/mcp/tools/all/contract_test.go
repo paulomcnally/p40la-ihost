@@ -180,8 +180,20 @@ func (contractAPI) CreateHomeMaintenance(context.Context, int64, api.HomeMainten
 	return &api.HomeMaintenance{}, nil
 }
 
+func (contractAPI) UpdateHomeMaintenance(context.Context, int64, int64, api.HomeMaintenanceUpdateRequest) (*api.HomeMaintenance, error) {
+	return &api.HomeMaintenance{}, nil
+}
+
 func (contractAPI) CreateHomeMaintenanceItem(context.Context, int64, int64, api.HomeMaintenanceItemRequest) (*api.HomeMaintenanceItem, error) {
 	return &api.HomeMaintenanceItem{}, nil
+}
+
+func (contractAPI) UpdateHomeMaintenanceItem(context.Context, int64, int64, int64, api.HomeMaintenanceItemRequest) (*api.HomeMaintenanceItem, error) {
+	return &api.HomeMaintenanceItem{}, nil
+}
+
+func (contractAPI) DeleteHomeMaintenanceItem(context.Context, int64, int64, int64) error {
+	return nil
 }
 
 func (contractAPI) MoveHomeMaintenanceItems(context.Context, int64, int64, api.HomeMaintenanceMoveRequest) (*api.HomeMaintenanceMoveResult, error) {
