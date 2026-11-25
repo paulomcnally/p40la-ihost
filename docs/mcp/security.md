@@ -65,14 +65,14 @@ La administración de la key es **solo por sesión**: una key no puede crear ni 
 
 ## Compuerta de escritura
 
-`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que **cualquier** tool de escritura ejecute cambios: `bills_generate` y `bills_pay`, las `autos_*` que escriben y `home_maintenance_labor_register`/`home_maintenance_supplies_register` (con `dry_run=false`), `bank_accounts_create`/`bank_accounts_update`, `credit_cards_create`/`credit_cards_update` y las `*_create` de entidades (directas). En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
+`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que **cualquier** tool de escritura ejecute cambios: `bills_generate` y `bills_pay`, las `autos_*` que escriben, las cuatro tools de reparaciones del hogar (`home_maintenance_create`, `home_maintenance_labor_register`, `home_maintenance_supplies_register` y `home_maintenance_item_move`, con `dry_run=false`), `bank_accounts_create`/`bank_accounts_update`, `credit_cards_create`/`credit_cards_update` y las `*_create` de entidades (directas). En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
 
 | Modo | Escritura con compuertas apagadas | Escritura con compuertas encendidas |
 |---|---|---|
 | stdio | `writes_disabled`; no llama a la API | Ejecuta con origen `mcp` |
 | HTTP | `writes_disabled` si falta cualquiera de las dos | Ejecuta con origen `mcp` y auditoría local |
 
-En facturas, autos y reparaciones del hogar, “escritura” significa `dry_run=false`; `home_maintenance_list` es de lectura y no depende de la compuerta. En banca no hay `dry_run`: si la compuerta está activa, la tool escribe directamente y verifica duplicados antes de llamar a la API; si está apagada, devuelve `writes_disabled` sin llamar a la API. Las lecturas (`bills_list`, `bank_accounts_search`, `credit_cards_search`, `home_maintenance_list`) funcionan siempre, con o sin compuerta.
+En facturas, autos y reparaciones del hogar, “escritura” significa `dry_run=false`; `home_maintenance_list` es de lectura y no depende de la compuerta. En reparaciones, `home_maintenance_create` solo crea la cabecera y `home_maintenance_item_move` con `delete_source_if_empty=true` puede borrar la reparación de origen vacía, por eso declara `destructiveHint=true`. En banca no hay `dry_run`: si la compuerta está activa, la tool escribe directamente y verifica duplicados antes de llamar a la API; si está apagada, devuelve `writes_disabled` sin llamar a la API. Las lecturas (`bills_list`, `bank_accounts_search`, `credit_cards_search`, `home_maintenance_list`) funcionan siempre, con o sin compuerta.
 
 La compuerta se valida en el MCP **y** el backend valida el origen. No protege contra un usuario que ya tiene la API key: es una defensa contra escrituras accidentales del agente y contra un conector remoto mal configurado.
 
@@ -82,7 +82,7 @@ Recomendación: dejar `P40LA_MCP_REMOTE_WRITES=false` de forma permanente si cla
 
 Cuando se usa un conector remoto, las llamadas a tools y sus resultados se procesan en la infraestructura de Anthropic:
 
-- Viajan el nombre de la tool, sus argumentos (IDs, períodos, referencias de banco y moneda, alias, montos, fechas y `dry_run` cuando aplica; en autos, marca, modelo, placa, VIN y póliza; en reparaciones, área, descripción y montos de mano de obra e insumos) y el resultado (facturas, cuentas, tarjetas, estados, montos, registros de autos o líneas de reparaciones).
+- Viajan el nombre de la tool, sus argumentos (IDs, períodos, referencias de banco y moneda, alias, montos, fechas y `dry_run` cuando aplica; en autos, marca, modelo, placa, VIN y póliza; en reparaciones, área, descripción y montos de mano de obra e insumos y, en un movimiento, los IDs de la reparación de origen, del destino y de las líneas) y el resultado (facturas, cuentas, tarjetas, estados, montos, registros de autos o líneas de reparaciones).
 - El canal es HTTPS 443; el contenido lo procesa Anthropic para generar la respuesta del modelo.
 - El binario no envía datos a ningún otro destino: solo llama a `P40LA_BASE_URL`.
 - La auditoría local no guarda argumentos ni resultados; el proveedor del modelo sí los ve para razonar.

@@ -208,6 +208,82 @@ func TestMCPBackendContract(t *testing.T) {
 		t.Fatalf("totales con insumos inesperados: %+v", list.TotalsByCurrency)
 	}
 
+	empty, err := client.CreateHomeMaintenance(requestCtx, 1, mcpapi.HomeMaintenanceRequest{
+		PerformedAt: "2026-03-12", Kind: "preventive", Area: "roof", Description: "Revisión demo de techo",
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeMaintenance sin líneas: %v", err)
+	}
+	if empty.ID == 0 || len(empty.Items) != 0 {
+		t.Fatalf("reparación vacía inesperada: %+v", empty)
+	}
+
+	target, err := client.CreateHomeMaintenance(requestCtx, 1, mcpapi.HomeMaintenanceRequest{
+		PerformedAt: "2026-03-11", Kind: "corrective", Area: "plumbing", Description: "Reparación demo destino",
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeMaintenance destino: %v", err)
+	}
+	moved, err := client.MoveHomeMaintenanceItems(requestCtx, 1, maintenance.ID, mcpapi.HomeMaintenanceMoveRequest{
+		ItemIDs:             []int64{createdItem.ID, supplies.ID},
+		TargetMaintenanceID: &target.ID,
+	})
+	if err != nil {
+		t.Fatalf("MoveHomeMaintenanceItems: %v", err)
+	}
+	if moved.MovedCount != 2 || moved.SourceMaintenanceID != maintenance.ID || moved.TargetMaintenanceID != target.ID {
+		t.Fatalf("movimiento inesperado: %+v", moved)
+	}
+	if moved.SourceItemCount != 0 || moved.SourceDeleted || moved.TargetCreated {
+		t.Fatalf("estado del movimiento inesperado: %+v", moved)
+	}
+	if len(moved.MovedItems) != 2 {
+		t.Fatalf("líneas movidas = %d, quiero 2", len(moved.MovedItems))
+	}
+	for _, item := range moved.MovedItems {
+		if item.MaintenanceID != target.ID {
+			t.Fatalf("línea no movida: %+v", item)
+		}
+	}
+
+	sourceDetail, err := client.GetHomeMaintenance(requestCtx, 1, maintenance.ID)
+	if err != nil {
+		t.Fatalf("GetHomeMaintenance origen: %v", err)
+	}
+	if len(sourceDetail.Items) != 0 {
+		t.Fatalf("el origen conserva líneas: %+v", sourceDetail.Items)
+	}
+	targetDetail, err := client.GetHomeMaintenance(requestCtx, 1, target.ID)
+	if err != nil {
+		t.Fatalf("GetHomeMaintenance destino: %v", err)
+	}
+	if len(targetDetail.Items) != 2 {
+		t.Fatalf("el destino tiene %d líneas, quiero 2", len(targetDetail.Items))
+	}
+	if len(targetDetail.TotalsByCurrency) != 1 || targetDetail.TotalsByCurrency[0].Total != 80 {
+		t.Fatalf("totales del destino inesperados: %+v", targetDetail.TotalsByCurrency)
+	}
+
+	emptyItem, err := client.CreateHomeMaintenanceItem(requestCtx, 1, empty.ID, mcpapi.HomeMaintenanceItemRequest{
+		ItemType: "labor", Description: "Mano de obra demo", Amount: 10, CurrencyID: 1,
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeMaintenanceItem en reparación vacía: %v", err)
+	}
+	createdTarget, err := client.MoveHomeMaintenanceItems(requestCtx, 1, empty.ID, mcpapi.HomeMaintenanceMoveRequest{
+		ItemIDs: []int64{emptyItem.ID},
+		Target: &mcpapi.HomeMaintenanceTargetRequest{
+			PerformedAt: "2026-03-13", Kind: "corrective", Area: "other", Description: "Reparación demo creada al mover",
+		},
+		DeleteSourceIfEmpty: true,
+	})
+	if err != nil {
+		t.Fatalf("MoveHomeMaintenanceItems con destino nuevo: %v", err)
+	}
+	if !createdTarget.TargetCreated || !createdTarget.SourceDeleted || createdTarget.Target == nil {
+		t.Fatalf("destino nuevo inesperado: %+v", createdTarget)
+	}
+
 	_, err = client.CreateHomeMaintenance(requestCtx, 1, mcpapi.HomeMaintenanceRequest{
 		PerformedAt: "2026-03-11", Kind: "corrective", Area: "other", Description: "Reparación demo",
 		Item: &mcpapi.HomeMaintenanceItemRequest{

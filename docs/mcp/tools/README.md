@@ -10,11 +10,11 @@ description: "Convenciones y listado de tools MCP disponibles"
 
 - `snake_case`, con el dominio primero: `bills_list`, `entities_search`, `autos_maintenance_register`, `bank_accounts_search`.
 - Verbo al final: `list`/`search` (lectura), `create` (alta), `update` (edición), `generate` (alta masiva), `pay` (acción), `register` (registro de un hecho).
-- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas, autos y reparaciones del hogar declaran `dry_run`; las altas de entidades y las de banca no tienen previsualización y verifican duplicados antes del POST. Las de banca resuelven banco y moneda por nombre/código; las de reparaciones resuelven o crean el mantenimiento del día y deduplican por línea. Las **24 tools de lectura** no dependen de la compuerta: búsquedas (`entities_search`, `bank_accounts_search`, `credit_cards_search`, `autos_list`) y las vistas y detalles agregados en SPEC-154 (pensión, alquileres, deudas, estados de cuenta, reparaciones, facturas por mes, alertas y configuración).
+- Las tools de escritura respetan `P40LA_MCP_ALLOW_WRITES`. Las de facturas, autos y las cuatro de reparaciones del hogar declaran `dry_run`; las altas de entidades y las de banca no tienen previsualización y verifican duplicados antes del POST. Las de banca resuelven banco y moneda por nombre/código; las de reparaciones incluyen el alta de la reparación vacía, el registro de líneas —que resuelve o crea el mantenimiento del día y deduplica por línea— y el movimiento de líneas entre reparaciones del mismo hogar. Las **24 tools de lectura** no dependen de la compuerta: búsquedas (`entities_search`, `bank_accounts_search`, `credit_cards_search`, `autos_list`) y las vistas y detalles agregados en SPEC-154 (pensión, alquileres, deudas, estados de cuenta, reparaciones, facturas por mes, alertas y configuración).
 
 ## Tools actuales
 
-El catálogo tiene **41 tools**: 24 de lectura y 17 de escritura.
+El catálogo tiene **43 tools**: 24 de lectura y 19 de escritura.
 
 | Tool | Dominio | Tipo | Documentación |
 |---|---|---|---|
@@ -49,8 +49,10 @@ El catálogo tiene **41 tools**: 24 de lectura y 17 de escritura.
 | `autos_maintenance_register` | Autos | Escritura | [autos.md](autos.md) |
 | `autos_inspection_register` | Autos | Escritura | [autos.md](autos.md) |
 | `autos_insurance_register` | Autos | Escritura | [autos.md](autos.md) |
+| `home_maintenance_create` | Reparaciones | Escritura | [home-maintenance.md](home-maintenance.md) |
 | `home_maintenance_labor_register` | Reparaciones | Escritura | [home-maintenance.md](home-maintenance.md) |
 | `home_maintenance_supplies_register` | Reparaciones | Escritura | [home-maintenance.md](home-maintenance.md) |
+| `home_maintenance_item_move` | Reparaciones | Escritura | [home-maintenance.md](home-maintenance.md) |
 | `homes_create` | Hogares | Escritura | [entities.md](entities.md) |
 | `institutions_create` | Instituciones | Escritura | [entities.md](entities.md) |
 | `banks_create` | Bancos | Escritura | [entities.md](entities.md) |
@@ -62,7 +64,7 @@ El catálogo tiene **41 tools**: 24 de lectura y 17 de escritura.
 
 Las **19 tools de la Ola 1 de SPEC-154** son de solo lectura, reutilizan endpoints existentes y no agregan la compuerta de escritura. Las que pueden devolver datos personales o secretos aplican una lista de omisión o una allowlist: `alerts_list` omite `speech`, `settings_status` expone solo una allowlist (sin secretos, emails ni chat IDs), `automation_accounts_list` y `automation_runs_list` omiten `identifier`, `webhook_url` y payloads, y las `rental_*` omiten emails y teléfonos de primer nivel.
 
-Las **2 tools de registro de reparaciones del hogar de SPEC-155** (`home_maintenance_labor_register` y `home_maintenance_supplies_register`) son las únicas de escritura de ese dominio: resuelven o crean el mantenimiento del día, deduplican por línea y respetan `dry_run`. `home_maintenance_list` sigue siendo de lectura.
+Las **4 tools de escritura de reparaciones del hogar** respetan `dry_run` y la compuerta: `home_maintenance_create` (SPEC-157) da de alta la reparación vacía, `home_maintenance_labor_register` y `home_maintenance_supplies_register` (SPEC-155) resuelven o crean el mantenimiento del día y deduplican por línea, y `home_maintenance_item_move` (SPEC-157) mueve líneas a otra reparación del mismo hogar, con destino existente o creado en la misma transacción. `home_maintenance_list` sigue siendo de lectura.
 
 ## Contrato congelado y manifiesto de impacto
 
@@ -130,7 +132,7 @@ Las tools devuelven contenido de texto JSON y `structuredContent` con el mismo o
 - Lectura: las **24 tools de solo lectura** (`bills_list`, `entities_search`, `services_get`, `autos_list`, `autos_inspection_alerts`, `bank_accounts_search`, `credit_cards_search`, las vistas de facturas y las de pensión, alquileres, deudas, estados de cuenta, reparaciones, automatizaciones, alertas y configuración) usan `readOnlyHint=true` y `openWorldHint=false`. Ninguna declara `destructiveHint` ni modifica datos.
 - Escritura idempotente de facturas y autos: `bills_generate`, `bills_pay` y `autos_update` usan `destructiveHint=false`, `idempotentHint=true`, `openWorldHint=false`.
 - Altas de autos: `autos_create`, `autos_maintenance_register`, `autos_inspection_register` y `autos_insurance_register` usan `destructiveHint=false`, `idempotentHint=false`, `openWorldHint=false`.
-- Altas de reparaciones del hogar: `home_maintenance_labor_register` y `home_maintenance_supplies_register` son aditivas y no garantizan idempotencia: deduplican por día antes de escribir, pero dos llamadas concurrentes podrían crear líneas distintas. Sus anotaciones quedan congeladas en `contracts.json`.
+- Reparaciones del hogar: `home_maintenance_create`, `home_maintenance_labor_register` y `home_maintenance_supplies_register` son aditivas y declaran `destructiveHint=false`, `idempotentHint=false`, `openWorldHint=false`; el alta no deduplica y las de registro deduplican por día antes de escribir, pero dos llamadas concurrentes podrían crear líneas distintas. `home_maintenance_item_move` declara `destructiveHint=true` (con `delete_source_if_empty=true` puede borrar la reparación de origen), `idempotentHint=false` y `openWorldHint=false`. Sus anotaciones quedan congeladas en `contracts.json`.
 - Altas de entidades: `homes_create`, `institutions_create`, `banks_create` y `services_create` usan `destructiveHint=true`, `openWorldHint=false`. No declaran `idempotentHint`.
 - Escritura de banca: las altas y ediciones usan `destructiveHint=true` y `openWorldHint=false`. Las ediciones (`*_update`) usan `idempotentHint=true`; las altas (`*_create`) usan `idempotentHint=false`.
 

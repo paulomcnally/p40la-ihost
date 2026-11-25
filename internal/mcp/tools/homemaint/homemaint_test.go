@@ -24,14 +24,19 @@ type fakeAPI struct {
 	createMaintenanceErr    error
 	createItemResult        *api.HomeMaintenanceItem
 	createItemErr           error
+	moveResult              *api.HomeMaintenanceMoveResult
+	moveErr                 error
 
 	listCalls              int
 	getCalls               int
 	createMaintenanceCalls int
 	createItemCalls        int
+	moveCalls              int
 	lastFilter             api.HomeMaintenanceFilter
 	lastCreateMaintenance  api.HomeMaintenanceRequest
 	lastCreateItem         api.HomeMaintenanceItemRequest
+	lastMove               api.HomeMaintenanceMoveRequest
+	lastMoveSource         int64
 }
 
 func (f *fakeAPI) ListHomeMaintenances(_ context.Context, _ int64, filter api.HomeMaintenanceFilter) (*api.HomeMaintenanceList, error) {
@@ -79,6 +84,34 @@ func (f *fakeAPI) CreateHomeMaintenanceItem(_ context.Context, _, maintenanceID 
 		return f.createItemResult, nil
 	}
 	return &api.HomeMaintenanceItem{ID: 99, MaintenanceID: maintenanceID, ItemType: req.ItemType, Description: req.Description, Amount: req.Amount, CurrencyID: req.CurrencyID, Quantity: req.Quantity, Unit: req.Unit}, nil
+}
+
+func (f *fakeAPI) MoveHomeMaintenanceItems(_ context.Context, _, sourceID int64, req api.HomeMaintenanceMoveRequest) (*api.HomeMaintenanceMoveResult, error) {
+	f.moveCalls++
+	f.lastMove = req
+	f.lastMoveSource = sourceID
+	if f.moveErr != nil {
+		return nil, f.moveErr
+	}
+	if f.moveResult != nil {
+		return f.moveResult, nil
+	}
+	targetID := int64(11)
+	if req.TargetMaintenanceID != nil {
+		targetID = *req.TargetMaintenanceID
+	}
+	moved := make([]api.HomeMaintenanceItem, 0, len(req.ItemIDs))
+	for _, id := range req.ItemIDs {
+		moved = append(moved, api.HomeMaintenanceItem{ID: id, MaintenanceID: targetID, ItemType: req.ItemType})
+	}
+	return &api.HomeMaintenanceMoveResult{
+		SourceMaintenanceID: sourceID,
+		TargetMaintenanceID: targetID,
+		TargetCreated:       req.Target != nil,
+		MovedCount:          len(moved),
+		MovedItems:          moved,
+		SourceItemCount:     0,
+	}, nil
 }
 
 func newServer(t *testing.T, fake *fakeAPI, cfg config.Config) *mcp.ClientSession {
@@ -130,7 +163,13 @@ func demoItem(id, maintenanceID int64, itemType, description string, amount floa
 func TestHomeMaintenanceToolsRegistered(t *testing.T) {
 	session := newServer(t, &fakeAPI{}, config.Config{})
 	names := toolkitest.ToolNames(t, session)
-	for _, name := range []string{"home_maintenance_list", "home_maintenance_labor_register", "home_maintenance_supplies_register"} {
+	for _, name := range []string{
+		"home_maintenance_list",
+		"home_maintenance_create",
+		"home_maintenance_labor_register",
+		"home_maintenance_supplies_register",
+		"home_maintenance_item_move",
+	} {
 		if !names[name] {
 			t.Fatalf("falta la tool %s", name)
 		}
@@ -412,5 +451,196 @@ func TestLaborRegisterAPIError(t *testing.T) {
 	})
 	if out["error"] != "home_not_found" {
 		t.Fatalf("esperaba home_not_found: %v", out)
+	}
+}
+
+func TestHomeMaintenanceCreateDryRunAndWrite(t *testing.T) {
+	fake := &fakeAPI{createMaintenanceResult: &api.HomeMaintenance{
+		ID: 12, HomeID: 3, PerformedAt: "2026-03-12", Kind: "preventive", Area: "roof",
+		Description: "Revisión demo de techo", Items: []api.HomeMaintenanceItem{},
+	}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+
+	out := callJSON(t, session, "home_maintenance_create", map[string]any{
+		"home_id": 3, "performed_at": "2026-03-12", "kind": "preventive", "area": "roof", "description": "Revisión demo de techo",
+	})
+	if out["status"] != "planned" || out["dry_run"] != true {
+		t.Fatalf("esperaba planned: %v", out)
+	}
+	if fake.createMaintenanceCalls != 0 {
+		t.Fatalf("dry_run no debía escribir")
+	}
+
+	out = callJSON(t, session, "home_maintenance_create", map[string]any{
+		"home_id": 3, "performed_at": "2026-03-12", "kind": "preventive", "area": "roof", "description": "Revisión demo de techo", "dry_run": false,
+	})
+	if out["status"] != "created" || out["item_count"] != float64(0) {
+		t.Fatalf("esperaba created con 0 líneas: %v", out)
+	}
+	if fake.createMaintenanceCalls != 1 || fake.lastCreateMaintenance.Item != nil {
+		t.Fatalf("alta inesperada: %+v", fake.lastCreateMaintenance)
+	}
+}
+
+func TestHomeMaintenanceCreateWritesDisabledAndInvalidDate(t *testing.T) {
+	session := newServer(t, &fakeAPI{}, config.Config{})
+	out := callJSON(t, session, "home_maintenance_create", map[string]any{
+		"home_id": 3, "performed_at": "2026-03-12", "dry_run": false,
+	})
+	if out["error"] != "writes_disabled" {
+		t.Fatalf("esperaba writes_disabled: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_create", map[string]any{
+		"home_id": 3, "performed_at": "2999-01-01",
+	})
+	if out["error"] != "invalid_date" {
+		t.Fatalf("esperaba invalid_date: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_create", map[string]any{
+		"home_id": 3, "performed_at": "2026-03-12", "area": "otra",
+	})
+	if out["error"] != "invalid_request" {
+		t.Fatalf("esperaba invalid_request por área: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_create", map[string]any{
+		"home_id": 3, "performed_at": "2026-03-12", "description": strings.Repeat("x", 501),
+	})
+	if out["error"] != "invalid_request" {
+		t.Fatalf("esperaba invalid_request por descripción: %v", out)
+	}
+}
+
+func demoMaintenancePtr(id int64, area, date string, items ...api.HomeMaintenanceItem) *api.HomeMaintenance {
+	m := demoMaintenance(id, area, date, items...)
+	return &m
+}
+
+func TestHomeMaintenanceMoveDryRun(t *testing.T) {
+	fake := &fakeAPI{maintenances: map[int64]*api.HomeMaintenance{
+		10: demoMaintenancePtr(10, "plumbing", "2026-03-10",
+			demoItem(101, 10, "labor", "Mano de obra demo", 500, 1, "unit"),
+			demoItem(102, 10, "supplies", "Insumos demo", 300, 2, "unit")),
+		11: demoMaintenancePtr(11, "plumbing", "2026-03-11"),
+	}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_item_move", map[string]any{
+		"home_id": 3, "source_maintenance_id": 10, "item_ids": []any{101},
+		"target_maintenance_id": 11, "delete_source_if_empty": true,
+	})
+	if out["status"] != "planned" || out["dry_run"] != true {
+		t.Fatalf("esperaba planned: %v", out)
+	}
+	if fake.moveCalls != 0 {
+		t.Fatalf("dry_run no debía mover")
+	}
+	moved, ok := out["moved_items"].([]any)
+	if !ok || len(moved) != 1 {
+		t.Fatalf("moved_items inesperados: %v", out["moved_items"])
+	}
+	remaining, ok := out["remaining_items"].([]any)
+	if !ok || len(remaining) != 1 {
+		t.Fatalf("remaining_items inesperados: %v", out["remaining_items"])
+	}
+	if out["source_item_count_after"] != float64(1) || out["would_delete_source"] != false {
+		t.Fatalf("estado del origen inesperado: %v", out)
+	}
+	if warnings, ok := out["warnings"].([]any); !ok || len(warnings) != 1 {
+		t.Fatalf("faltan warnings: %v", out)
+	}
+}
+
+func TestHomeMaintenanceMoveWritesToExistingTarget(t *testing.T) {
+	fake := &fakeAPI{maintenances: map[int64]*api.HomeMaintenance{
+		10: demoMaintenancePtr(10, "plumbing", "2026-03-10",
+			demoItem(101, 10, "labor", "Mano de obra demo", 500, 1, "unit"),
+			demoItem(102, 10, "supplies", "Insumos demo", 300, 2, "unit")),
+		11: demoMaintenancePtr(11, "plumbing", "2026-03-11"),
+	}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_item_move", map[string]any{
+		"home_id": 3, "source_maintenance_id": 10, "item_ids": []any{101, 102},
+		"target_maintenance_id": 11, "dry_run": false,
+	})
+	if out["status"] != "moved" || out["moved_count"] != float64(2) {
+		t.Fatalf("esperaba moved: %v", out)
+	}
+	if fake.moveCalls != 1 || fake.lastMoveSource != 10 {
+		t.Fatalf("movimiento no ejecutado: %+v", fake.lastMove)
+	}
+	if fake.lastMove.TargetMaintenanceID == nil || *fake.lastMove.TargetMaintenanceID != 11 {
+		t.Fatalf("destino inesperado: %+v", fake.lastMove)
+	}
+}
+
+func TestHomeMaintenanceMoveCreatesTarget(t *testing.T) {
+	fake := &fakeAPI{maintenances: map[int64]*api.HomeMaintenance{
+		10: demoMaintenancePtr(10, "plumbing", "2026-03-10",
+			demoItem(101, 10, "labor", "Mano de obra demo", 500, 1, "unit")),
+	}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+	out := callJSON(t, session, "home_maintenance_item_move", map[string]any{
+		"home_id": 3, "source_maintenance_id": 10, "item_ids": []any{101},
+		"target":  map[string]any{"performed_at": "2026-03-11", "area": "plumbing", "description": "Reparación demo destino"},
+		"dry_run": false,
+	})
+	if out["status"] != "moved" || out["target_created"] != true {
+		t.Fatalf("esperaba destino creado: %v", out)
+	}
+	if fake.lastMove.Target == nil || fake.lastMove.Target.PerformedAt != "2026-03-11" || fake.lastMove.Target.Area != "plumbing" {
+		t.Fatalf("target inesperado: %+v", fake.lastMove.Target)
+	}
+}
+
+func TestHomeMaintenanceMoveRejectsInvalidSelection(t *testing.T) {
+	fake := &fakeAPI{maintenances: map[int64]*api.HomeMaintenance{
+		10: demoMaintenancePtr(10, "plumbing", "2026-03-10",
+			demoItem(101, 10, "labor", "Mano de obra demo", 500, 1, "unit")),
+		11: demoMaintenancePtr(11, "plumbing", "2026-03-11"),
+	}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+
+	out := callJSON(t, session, "home_maintenance_item_move", map[string]any{
+		"home_id": 3, "source_maintenance_id": 10, "item_ids": []any{999}, "target_maintenance_id": 11, "dry_run": false,
+	})
+	if out["error"] != "item_not_found" {
+		t.Fatalf("esperaba item_not_found: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_item_move", map[string]any{
+		"home_id": 3, "source_maintenance_id": 10, "item_ids": []any{101}, "item_type": "supplies", "target_maintenance_id": 11, "dry_run": false,
+	})
+	if out["error"] != "invalid_request" {
+		t.Fatalf("esperaba invalid_request por tipo: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_item_move", map[string]any{
+		"home_id": 3, "source_maintenance_id": 10, "item_ids": []any{101}, "dry_run": false,
+	})
+	if out["error"] != "target_required" {
+		t.Fatalf("esperaba target_required: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_item_move", map[string]any{
+		"home_id": 3, "source_maintenance_id": 10, "item_ids": []any{101},
+		"target_maintenance_id": 11, "target": map[string]any{"performed_at": "2026-03-11"}, "dry_run": false,
+	})
+	if out["error"] != "target_conflict" {
+		t.Fatalf("esperaba target_conflict: %v", out)
+	}
+	out = callJSON(t, session, "home_maintenance_item_move", map[string]any{
+		"home_id": 3, "source_maintenance_id": 10, "item_ids": []any{101}, "target_maintenance_id": 10, "dry_run": false,
+	})
+	if out["error"] != "same_maintenance" {
+		t.Fatalf("esperaba same_maintenance: %v", out)
+	}
+	if fake.moveCalls != 0 {
+		t.Fatalf("no debía mover: %d", fake.moveCalls)
+	}
+}
+
+func TestHomeMaintenanceMoveWritesDisabled(t *testing.T) {
+	session := newServer(t, &fakeAPI{}, config.Config{})
+	out := callJSON(t, session, "home_maintenance_item_move", map[string]any{
+		"home_id": 3, "source_maintenance_id": 10, "item_ids": []any{101}, "target_maintenance_id": 11, "dry_run": false,
+	})
+	if out["error"] != "writes_disabled" {
+		t.Fatalf("esperaba writes_disabled: %v", out)
 	}
 }

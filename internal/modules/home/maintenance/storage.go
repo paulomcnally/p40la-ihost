@@ -262,6 +262,89 @@ func (s *Storage) CreateWithItem(ctx context.Context, homeID int64, input Input,
 	return id, nil
 }
 
+// MoveItems crea el mantenimiento destino si target no es nil y mueve las
+// líneas en una sola transacción. Si el UPDATE no afecta exactamente las
+// líneas pedidas, revierte todo. Devuelve el ID del destino, cuántas líneas
+// quedaron en el origen y si el origen se borró.
+func (s *Storage) MoveItems(ctx context.Context, homeID, sourceID, targetID int64, target *Input, itemIDs []int64, deleteSourceIfEmpty bool) (int64, int, bool, error) {
+	if len(itemIDs) == 0 {
+		return 0, 0, false, fmt.Errorf("mover líneas: %w", ErrMoveConflict)
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, 0, false, fmt.Errorf("iniciar movimiento de líneas: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if target != nil {
+		res, err := tx.ExecContext(ctx, `
+			INSERT INTO home_maintenances
+				(home_id, performed_at, kind, area, institution_id, description)
+			VALUES (?, ?, ?, ?, ?, ?)
+		`,
+			homeID, target.PerformedAt, target.Kind, target.Area,
+			nullableID(target.InstitutionID), target.Description,
+		)
+		if err != nil {
+			return 0, 0, false, fmt.Errorf("crear mantenimiento destino: %w", err)
+		}
+		createdID, err := res.LastInsertId()
+		if err != nil {
+			return 0, 0, false, fmt.Errorf("id del mantenimiento destino: %w", err)
+		}
+		targetID = createdID
+	}
+
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(itemIDs)), ",")
+	args := make([]any, 0, len(itemIDs)+2)
+	args = append(args, targetID)
+	for _, id := range itemIDs {
+		args = append(args, id)
+	}
+	args = append(args, sourceID)
+	res, err := tx.ExecContext(ctx, `
+		UPDATE home_maintenance_items
+		SET maintenance_id = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id IN (`+placeholders+`) AND maintenance_id = ?
+	`, args...)
+	if err != nil {
+		return 0, 0, false, fmt.Errorf("mover líneas: %w", err)
+	}
+	moved, err := res.RowsAffected()
+	if err != nil {
+		return 0, 0, false, fmt.Errorf("contar líneas movidas: %w", err)
+	}
+	if int(moved) != len(itemIDs) {
+		return 0, 0, false, fmt.Errorf("mover líneas: %w", ErrMoveConflict)
+	}
+
+	var remaining int
+	if err := tx.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM home_maintenance_items WHERE maintenance_id = ?`, sourceID,
+	).Scan(&remaining); err != nil {
+		return 0, 0, false, fmt.Errorf("contar líneas del origen: %w", err)
+	}
+
+	deleted := false
+	if deleteSourceIfEmpty && remaining == 0 {
+		res, err := tx.ExecContext(ctx,
+			`DELETE FROM home_maintenances WHERE id = ? AND home_id = ?`, sourceID, homeID)
+		if err != nil {
+			return 0, 0, false, fmt.Errorf("eliminar mantenimiento origen: %w", err)
+		}
+		affected, err := res.RowsAffected()
+		if err != nil {
+			return 0, 0, false, fmt.Errorf("contar origen eliminado: %w", err)
+		}
+		deleted = affected > 0
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, 0, false, fmt.Errorf("confirmar movimiento: %w", err)
+	}
+	return targetID, remaining, deleted, nil
+}
+
 // Update actualiza un mantenimiento de la vivienda.
 func (s *Storage) Update(ctx context.Context, homeID, id int64, input Input) (bool, error) {
 	res, err := s.db.ExecContext(ctx, `
@@ -401,6 +484,43 @@ func (s *Storage) ListItemsByMaintenanceIDs(ctx context.Context, maintenanceIDs 
 		return nil, false, fmt.Errorf("recorrer líneas por mantenimiento: %w", err)
 	}
 	return grouped, truncated, nil
+}
+
+// ListItemsByIDs devuelve las líneas indicadas, sin importar su mantenimiento.
+// El llamador valida a qué mantenimiento pertenecen.
+func (s *Storage) ListItemsByIDs(ctx context.Context, itemIDs []int64) ([]Item, error) {
+	if len(itemIDs) == 0 {
+		return []Item{}, nil
+	}
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(itemIDs)), ",")
+	args := make([]any, 0, len(itemIDs))
+	for _, id := range itemIDs {
+		args = append(args, id)
+	}
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT `+itemColumns+itemFrom+`
+		WHERE it.id IN (`+placeholders+`)
+		ORDER BY it.id
+	`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("listar líneas por id: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]Item, 0, len(itemIDs))
+	for rows.Next() {
+		item, err := scanItem(rows)
+		if err != nil {
+			return nil, err
+		}
+		if item != nil {
+			items = append(items, *item)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("recorrer líneas por id: %w", err)
+	}
+	return items, nil
 }
 
 // GetItem devuelve una línea del mantenimiento o nil si no existe.

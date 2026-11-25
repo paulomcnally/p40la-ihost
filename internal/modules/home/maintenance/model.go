@@ -8,7 +8,7 @@ import (
 // ModuleID es el identificador canónico del módulo (ARCH-MODULES).
 const (
 	ModuleID      = "home.maintenance"
-	ModuleVersion = "1.0.0"
+	ModuleVersion = "1.1.0"
 )
 
 // Tipos de mantenimiento.
@@ -74,6 +74,7 @@ var (
 	ErrItemNotFound        = errors.New("línea de mantenimiento no encontrada")
 	ErrCurrencyNotFound    = errors.New("moneda no encontrada")
 	ErrInstitutionNotFound = errors.New("institución no encontrada")
+	ErrMoveConflict        = errors.New("el movimiento no afectó todas las líneas")
 )
 
 // ValidationError describe un error de validación con código estable.
@@ -147,6 +148,28 @@ type ItemInput struct {
 	Amount        float64 `json:"amount"`
 	CurrencyID    int64   `json:"currency_id"`
 	InstitutionID *int64  `json:"institution_id"`
+}
+
+// MoveInput es el cuerpo de POST .../items/move. Exactamente uno de
+// TargetMaintenanceID o Target debe venir informado.
+type MoveInput struct {
+	ItemIDs             []int64 `json:"item_ids"`
+	ItemType            string  `json:"item_type,omitempty"`
+	TargetMaintenanceID *int64  `json:"target_maintenance_id,omitempty"`
+	Target              *Input  `json:"target,omitempty"`
+	DeleteSourceIfEmpty bool    `json:"delete_source_if_empty,omitempty"`
+}
+
+// MoveResult describe el resultado de mover líneas entre mantenimientos.
+type MoveResult struct {
+	SourceMaintenanceID int64        `json:"source_maintenance_id"`
+	TargetMaintenanceID int64        `json:"target_maintenance_id"`
+	TargetCreated       bool         `json:"target_created"`
+	Target              *Maintenance `json:"target"`
+	MovedCount          int          `json:"moved_count"`
+	MovedItems          []Item       `json:"moved_items"`
+	SourceItemCount     int          `json:"source_item_count"`
+	SourceDeleted       bool         `json:"source_deleted"`
 }
 
 // CurrencyTotal es el total de una moneda, con desglose por tipo de gasto.

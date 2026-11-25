@@ -705,3 +705,325 @@ func TestQueryEscapesLikeWildcards(t *testing.T) {
 		t.Fatalf("query con _ devolvió %+v", byUnderscore.Items)
 	}
 }
+
+func TestMoveItemsToExistingMaintenance(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	source, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaPlumbing, Description: "Reparación demo origen",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	labor, err := service.CreateItem(ctx, homeID, source.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 500, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	supplies, err := service.CreateItem(ctx, homeID, source.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Insumos demo", Quantity: 2, Unit: UnitUnit, Amount: 300, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	target, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-11", Kind: KindCorrective, Area: AreaPlumbing, Description: "Reparación demo destino",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := service.MoveItems(ctx, homeID, source.ID, MoveInput{
+		ItemIDs:             []int64{labor.ID, supplies.ID},
+		TargetMaintenanceID: &target.ID,
+	})
+	if err != nil {
+		t.Fatalf("mover líneas: %v", err)
+	}
+	if result.MovedCount != 2 || result.TargetCreated || result.SourceDeleted {
+		t.Fatalf("resultado inesperado: %+v", result)
+	}
+	if result.SourceItemCount != 0 || len(result.MovedItems) != 2 {
+		t.Fatalf("líneas del resultado: %+v", result)
+	}
+	if result.Target == nil || result.Target.ID != target.ID {
+		t.Fatalf("destino inesperado: %+v", result.Target)
+	}
+
+	detalle, err := service.Get(ctx, homeID, target.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(detalle.Items) != 2 {
+		t.Fatalf("líneas en el destino = %d, quería 2", len(detalle.Items))
+	}
+	usdTotal, ok := totalFor(detalle.TotalsByCurrency, "USD")
+	if !ok || usdTotal.LaborCost != 500 || usdTotal.SuppliesCost != 300 {
+		t.Fatalf("totales del destino = %+v", detalle.TotalsByCurrency)
+	}
+	origen, err := service.Get(ctx, homeID, source.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(origen.Items) != 0 {
+		t.Fatalf("el origen conserva líneas: %+v", origen.Items)
+	}
+}
+
+func TestMoveItemsCreatesTargetAndDeletesEmptySource(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	source, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo origen",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	item, err := service.CreateItem(ctx, homeID, source.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 100, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := service.MoveItems(ctx, homeID, source.ID, MoveInput{
+		ItemIDs: []int64{item.ID},
+		Target: &Input{
+			PerformedAt: "2026-03-11", Kind: KindPreventive, Area: AreaRoof, Description: "Reparación demo destino",
+		},
+		DeleteSourceIfEmpty: true,
+	})
+	if err != nil {
+		t.Fatalf("mover y crear destino: %v", err)
+	}
+	if !result.TargetCreated || !result.SourceDeleted || result.SourceItemCount != 0 {
+		t.Fatalf("resultado inesperado: %+v", result)
+	}
+	if result.Target == nil || result.Target.ID == source.ID || result.Target.PerformedAt != "2026-03-11" {
+		t.Fatalf("destino inesperado: %+v", result.Target)
+	}
+	if _, err := service.Get(ctx, homeID, source.ID); !errors.Is(err, ErrMaintenanceNotFound) {
+		t.Fatalf("el origen debía estar borrado: %v", err)
+	}
+	destino, err := service.Get(ctx, homeID, result.TargetMaintenanceID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(destino.Items) != 1 || destino.Items[0].MaintenanceID != result.TargetMaintenanceID {
+		t.Fatalf("destino inesperado: %+v", destino)
+	}
+}
+
+func TestMoveItemsKeepsSourceWhenNotEmpty(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	source, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo origen",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := service.CreateItem(ctx, homeID, source.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 100, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateItem(ctx, homeID, source.ID, ItemInput{
+		ItemType: ItemSupplies, Description: "Insumo demo", Quantity: 1, Unit: UnitUnit, Amount: 50, CurrencyID: usd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	target, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-11", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo destino",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := service.MoveItems(ctx, homeID, source.ID, MoveInput{
+		ItemIDs:             []int64{first.ID},
+		TargetMaintenanceID: &target.ID,
+		DeleteSourceIfEmpty: true,
+	})
+	if err != nil {
+		t.Fatalf("mover una línea: %v", err)
+	}
+	if result.SourceDeleted || result.SourceItemCount != 1 {
+		t.Fatalf("el origen no debía borrarse: %+v", result)
+	}
+	if _, err := service.Get(ctx, homeID, source.ID); err != nil {
+		t.Fatalf("el origen debía seguir existiendo: %v", err)
+	}
+}
+
+func TestMoveItemsRejectsForeignItemAndSameTarget(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	source, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo origen",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo ajena",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	foreign, err := service.CreateItem(ctx, homeID, other.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra ajena", Amount: 10, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = service.MoveItems(ctx, homeID, source.ID, MoveInput{
+		ItemIDs:             []int64{foreign.ID},
+		TargetMaintenanceID: &other.ID,
+	})
+	var validation *ValidationError
+	if !errors.As(err, &validation) || validation.Code != "item_not_in_source" {
+		t.Fatalf("esperaba item_not_in_source: %v", err)
+	}
+	if got, err := service.Get(ctx, homeID, other.ID); err != nil || len(got.Items) != 1 {
+		t.Fatalf("no debía mover nada: %+v (%v)", got, err)
+	}
+
+	_, err = service.MoveItems(ctx, homeID, source.ID, MoveInput{
+		ItemIDs:             []int64{foreign.ID},
+		TargetMaintenanceID: &source.ID,
+	})
+	if !errors.As(err, &validation) || validation.Code != "same_maintenance" {
+		t.Fatalf("esperaba same_maintenance: %v", err)
+	}
+
+	_, err = service.MoveItems(ctx, homeID, source.ID, MoveInput{
+		ItemIDs:             []int64{999999},
+		TargetMaintenanceID: &other.ID,
+	})
+	if !errors.Is(err, ErrItemNotFound) {
+		t.Fatalf("esperaba ErrItemNotFound: %v", err)
+	}
+}
+
+func TestMoveItemsValidatesTargetAndItemIDs(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	source, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	item, err := service.CreateItem(ctx, homeID, source.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 10, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	target, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-11", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo destino",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name  string
+		input MoveInput
+		code  string
+	}{
+		{"sin destino", MoveInput{ItemIDs: []int64{item.ID}}, "target_required"},
+		{"destino doble", MoveInput{ItemIDs: []int64{item.ID}, TargetMaintenanceID: &target.ID, Target: &Input{PerformedAt: "2026-03-11"}}, "target_conflict"},
+		{"ids vacíos", MoveInput{TargetMaintenanceID: &target.ID}, "invalid_item_ids"},
+		{"ids repetidos", MoveInput{ItemIDs: []int64{item.ID, item.ID}, TargetMaintenanceID: &target.ID}, "invalid_item_ids"},
+		{"id inválido", MoveInput{ItemIDs: []int64{0}, TargetMaintenanceID: &target.ID}, "invalid_item_ids"},
+		{"tipo inválido", MoveInput{ItemIDs: []int64{item.ID}, ItemType: "otro", TargetMaintenanceID: &target.ID}, "invalid_item_type"},
+		{"tipo distinto", MoveInput{ItemIDs: []int64{item.ID}, ItemType: ItemSupplies, TargetMaintenanceID: &target.ID}, "item_type_mismatch"},
+	}
+	for _, testCase := range cases {
+		_, err := service.MoveItems(ctx, homeID, source.ID, testCase.input)
+		var validation *ValidationError
+		if !errors.As(err, &validation) || validation.Code != testCase.code {
+			t.Fatalf("%s: esperaba %s, obtuve %v", testCase.name, testCase.code, err)
+		}
+	}
+
+	tooMany := make([]int64, maxMoveItems+1)
+	for index := range tooMany {
+		tooMany[index] = int64(index + 1)
+	}
+	_, err = service.MoveItems(ctx, homeID, source.ID, MoveInput{
+		ItemIDs:             tooMany,
+		TargetMaintenanceID: &target.ID,
+	})
+	var validation *ValidationError
+	if !errors.As(err, &validation) || validation.Code != "invalid_item_ids" {
+		t.Fatalf("esperaba invalid_item_ids por tope: %v", err)
+	}
+}
+
+func TestStorageMoveItemsRollsBackOnConflict(t *testing.T) {
+	ctx := context.Background()
+	service, database, homeID, _ := newTestService(t)
+	usd := currencyID(t, database, "USD")
+
+	source, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-10", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo origen",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	item, err := service.CreateItem(ctx, homeID, source.ID, ItemInput{
+		ItemType: ItemLabor, Description: "Mano de obra demo", Amount: 10, CurrencyID: usd,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	target, err := service.Create(ctx, homeID, Input{
+		PerformedAt: "2026-03-11", Kind: KindCorrective, Area: AreaOther, Description: "Reparación demo destino",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var before int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM home_maintenances`).Scan(&before); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, _, err = service.storage.MoveItems(ctx, homeID, source.ID, target.ID, nil, []int64{item.ID, 999999}, false)
+	if !errors.Is(err, ErrMoveConflict) {
+		t.Fatalf("esperaba ErrMoveConflict: %v", err)
+	}
+	detail, err := service.Get(ctx, homeID, source.ID)
+	if err != nil || len(detail.Items) != 1 {
+		t.Fatalf("el rollback debía conservar la línea: %+v (%v)", detail, err)
+	}
+
+	_, _, _, err = service.storage.MoveItems(ctx, homeID, source.ID, 0, &Input{
+		PerformedAt: "2026-03-12", Kind: KindCorrective, Area: AreaOther, Description: "Destino demo",
+	}, []int64{item.ID, 999999}, false)
+	if !errors.Is(err, ErrMoveConflict) {
+		t.Fatalf("esperaba ErrMoveConflict con destino nuevo: %v", err)
+	}
+	var after int
+	if err := database.QueryRow(`SELECT COUNT(*) FROM home_maintenances`).Scan(&after); err != nil {
+		t.Fatal(err)
+	}
+	if after != before {
+		t.Fatalf("el destino no debía persistir: antes %d, después %d", before, after)
+	}
+}

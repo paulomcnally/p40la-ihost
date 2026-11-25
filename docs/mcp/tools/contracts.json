@@ -1593,6 +1593,183 @@
       }
     },
     {
+      "name": "home_maintenance_create",
+      "description": "Crea una reparación o mantenimiento del hogar SIN líneas: 0 insumos y 0 mano de obra. Las líneas se agregan después con home_maintenance_labor_register o home_maintenance_supplies_register. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "area": {
+            "description": "Área: plumbing, electrical, roof, paint, carpentry, appliances, garden, cleaning u other",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "description": {
+            "description": "Descripción libre; máximo 500 caracteres",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "institution_id": {
+            "description": "ID del proveedor o contratista (opcional)",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "kind": {
+            "description": "Tipo: corrective o preventive; por defecto corrective",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "performed_at": {
+            "description": "Fecha YYYY-MM-DD, no futura (obligatoria)",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "home_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "home_maintenance_item_move",
+      "description": "Mueve líneas de mano de obra y/o insumos de una reparación a otra del mismo hogar. El destino puede existir (target_maintenance_id) o crearse en la misma llamada (target). Valida que las líneas pertenezcan al origen y no permite mover al mismo mantenimiento. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "delete_source_if_empty": {
+            "description": "Borra el origen si queda sin líneas; por defecto false",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "item_ids": {
+            "description": "IDs de las líneas a mover (1 a 100)",
+            "items": {
+              "type": "integer"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "item_type": {
+            "description": "Salvaguarda opcional: labor o supplies",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source_maintenance_id": {
+            "description": "ID de la reparación que contiene las líneas (obligatorio)",
+            "type": "integer"
+          },
+          "target": {
+            "additionalProperties": false,
+            "description": "Datos para crear la reparación destino; excluyente con target_maintenance_id",
+            "properties": {
+              "area": {
+                "description": "Área del destino; por defecto other",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "description": {
+                "description": "Descripción del destino; máximo 500 caracteres",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "institution_id": {
+                "description": "ID del proveedor o contratista del destino (opcional)",
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              "kind": {
+                "description": "Tipo del destino: corrective o preventive; por defecto corrective",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "performed_at": {
+                "description": "Fecha YYYY-MM-DD del destino nuevo (obligatoria si no hay target_maintenance_id)",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "target_maintenance_id": {
+            "description": "ID de la reparación destino existente; excluyente con target",
+            "type": [
+              "null",
+              "integer"
+            ]
+          }
+        },
+        "required": [
+          "home_id",
+          "source_maintenance_id",
+          "item_ids"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
       "name": "home_maintenance_labor_register",
       "description": "Registra una línea de mano de obra en una reparación del hogar. Busca las líneas del mismo día y devuelve status=duplicate si ya existe una equivalente; usá allow_duplicate=true solo para un registro distinto. Si no hay maintenance_id, reutiliza la reparación del día o la crea con la línea en una transacción. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
       "input_schema": {

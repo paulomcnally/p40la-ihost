@@ -90,3 +90,56 @@ func TestHomeMaintenanceClientCreateSendsSourceAndItem(t *testing.T) {
 		t.Fatalf("respuesta inesperada: %+v", created)
 	}
 }
+
+func TestHomeMaintenanceClientMoveSendsSourceAndTarget(t *testing.T) {
+	var gotSource, gotPath string
+	var gotBody HomeMaintenanceMoveRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotSource = r.Header.Get("X-P40LA-Source")
+		gotPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decodificar body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(HomeMaintenanceMoveResult{
+			SourceMaintenanceID: 10,
+			TargetMaintenanceID: 11,
+			MovedCount:          1,
+			MovedItems: []HomeMaintenanceItem{
+				{ID: 101, MaintenanceID: 11, ItemType: "labor", Description: "Mano de obra demo", Amount: 500, CurrencyID: 1},
+			},
+			SourceItemCount: 0,
+		})
+	}))
+	defer server.Close()
+
+	client, err := New(config.Config{BaseURL: server.URL, APIKey: "demo-token", Timeout: 5 * time.Second})
+	if err != nil {
+		t.Fatalf("cliente: %v", err)
+	}
+	target := int64(11)
+	result, err := client.MoveHomeMaintenanceItems(context.Background(), 3, 10, HomeMaintenanceMoveRequest{
+		ItemIDs:             []int64{101},
+		ItemType:            "labor",
+		TargetMaintenanceID: &target,
+		DeleteSourceIfEmpty: true,
+	})
+	if err != nil {
+		t.Fatalf("mover: %v", err)
+	}
+	if gotSource != "mcp" {
+		t.Fatalf("source = %q", gotSource)
+	}
+	if gotPath != "/api/homes/3/maintenances/10/items/move" {
+		t.Fatalf("path = %q", gotPath)
+	}
+	if len(gotBody.ItemIDs) != 1 || gotBody.ItemIDs[0] != 101 || gotBody.ItemType != "labor" {
+		t.Fatalf("body inesperado: %+v", gotBody)
+	}
+	if gotBody.TargetMaintenanceID == nil || *gotBody.TargetMaintenanceID != 11 || !gotBody.DeleteSourceIfEmpty {
+		t.Fatalf("destino inesperado: %+v", gotBody)
+	}
+	if result.MovedCount != 1 || result.TargetMaintenanceID != 11 || len(result.MovedItems) != 1 {
+		t.Fatalf("respuesta inesperada: %+v", result)
+	}
+}

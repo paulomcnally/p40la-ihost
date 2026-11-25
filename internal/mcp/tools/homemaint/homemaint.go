@@ -1,5 +1,6 @@
 // Package homemaint implementa las tools MCP de reparaciones y mantenimientos
-// del hogar: listado de lectura y registro de mano de obra e insumos.
+// del hogar: listado de lectura, alta de la reparación, registro de mano de
+// obra e insumos y movimiento de líneas entre reparaciones.
 package homemaint
 
 import (
@@ -38,8 +39,10 @@ func Register(server *mcp.Server, client api.HomeMaintenanceAPI, cfg config.Conf
 // Register monta las tools del Toolset.
 func (t *Toolset) Register(server *mcp.Server) {
 	t.registerList(server)
+	t.registerCreate(server)
 	t.registerLabor(server)
 	t.registerSupplies(server)
+	t.registerMove(server)
 }
 
 func (t *Toolset) today() string {

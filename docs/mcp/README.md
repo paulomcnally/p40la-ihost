@@ -17,7 +17,7 @@ El binario tiene dos transportes con el mismo catálogo de tools:
 
 El modo remoto está pensado para conectores que Anthropic ejecuta desde su infraestructura: exige HTTPS público, OAuth 2.1 y una contraseña de administración. El modo local no necesita nada de eso. Ver [http.md](http.md), [oauth.md](oauth.md) y [funnel.md](funnel.md).
 
-El catálogo tiene **41 tools**: 24 de lectura y 17 de escritura. Cubre facturas de servicios, autos, entidades base, banca y, desde SPEC-154, pensión, alquileres, deudas, estados de cuenta, reparaciones del hogar, automatizaciones, alertas y configuración; SPEC-155 suma el registro de mano de obra e insumos de esas reparaciones. Las **20 tools originales** son:
+El catálogo tiene **43 tools**: 24 de lectura y 19 de escritura. Cubre facturas de servicios, autos, entidades base, banca y, desde SPEC-154, pensión, alquileres, deudas, estados de cuenta, reparaciones del hogar, automatizaciones, alertas y configuración; SPEC-155 suma el registro de mano de obra e insumos de esas reparaciones y SPEC-157 el alta de la reparación vacía y el movimiento de líneas entre reparaciones. Las **20 tools originales** son:
 
 | Tool | Tipo | Qué hace |
 |---|---|---|
@@ -72,6 +72,17 @@ SPEC-155 agrega dos tools de **escritura** sobre el módulo `home.maintenance`. 
 | `home_maintenance_supplies_register` | Una línea de insumos (`item_type=supplies`) con cantidad y unidad | [tools/home-maintenance.md](tools/home-maintenance.md) |
 
 `home_maintenance_list` sigue siendo de lectura: gana los filtros `date`, `item_type`, `query` e `include_items` y el campo `truncated` para revisar lo existente antes de registrar.
+
+### Alta y movimiento de reparaciones del hogar (SPEC-157, 2 tools de escritura)
+
+SPEC-157 suma dos tools de **escritura** al módulo `home.maintenance`. `home_maintenance_create` da de alta la reparación **vacía** (sin líneas) y `home_maintenance_item_move` mueve líneas entre reparaciones del mismo hogar, con destino existente o creado en la misma transacción. Ambas respetan `dry_run` y la compuerta:
+
+| Tool | Qué hace | Documentación |
+|---|---|---|
+| `home_maintenance_create` | Crea la reparación sin líneas; las líneas se agregan con las tools de registro o con un movimiento | [tools/home-maintenance.md](tools/home-maintenance.md) |
+| `home_maintenance_item_move` | Mueve 1–100 líneas `labor` y/o `supplies`; puede crear el destino y borrar el origen vacío con `delete_source_if_empty=true` | [tools/home-maintenance.md](tools/home-maintenance.md) |
+
+El backend crea el destino y mueve las líneas en una sola transacción: si el `UPDATE` no afecta todas las líneas devuelve `move_conflict` y revierte todo. `home_maintenance_create` no deduplica: repetir el alta crea otra reparación.
 
 ## Requisitos
 
@@ -151,12 +162,12 @@ El runbook completo —prerrequisitos, API key, hash OAuth, volúmenes, alta por
 
 ## Flujo seguro de escritura
 
-1. En facturas, autos y reparaciones del hogar, el agente llama la tool de escritura con `dry_run=true` (el valor por defecto) y muestra el resumen: períodos, montos, datos del registro, ítems omitidos y, en reparaciones, las líneas que ya existen ese día. En entidades y banca, que no tienen `dry_run`, muestra antes la entidad, el banco y la moneda resueltos, el cuerpo que se enviará y si ya existe un duplicado.
+1. En facturas, autos y reparaciones del hogar, el agente llama la tool de escritura con `dry_run=true` (el valor por defecto) y muestra el resumen: períodos, montos, datos del registro, ítems omitidos y, en reparaciones, las líneas que ya existen ese día y, en un movimiento, las líneas que se mueven, las que quedan y si el origen se borraría. En entidades y banca, que no tienen `dry_run`, muestra antes la entidad, el banco y la moneda resueltos, el cuerpo que se enviará y si ya existe un duplicado.
 2. El usuario confirma.
 3. El agente ejecuta: en facturas, autos y reparaciones repite con `dry_run=false`; las tools de entidades y banca se llaman directamente. La compuerta `P40LA_MCP_ALLOW_WRITES=true` debe estar activa; si el transporte es HTTP, también `P40LA_MCP_REMOTE_WRITES=true`.
 4. El agente reporta el resultado y verifica con una lectura.
 
-En facturas, las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`. En autos, solo `autos_update` es idempotente: repetir un alta de auto, mantenimiento o inspección crea otro registro, y repetir un seguro devuelve `already_exists`. En reparaciones del hogar, las tools de registro buscan líneas equivalentes del mismo día: repetir devuelve `duplicate` con el registro existente y no crea otra fila, salvo `allow_duplicate=true`; dos escrituras concurrentes podrían pasar el chequeo. En entidades y banca, las ediciones son idempotentes y las altas comprueban duplicados: repetir un alta devuelve `already_exists` con el `id` existente, sin crear otro registro.
+En facturas, las operaciones son idempotentes por período: repetir una generación no duplica facturas y pagar una factura ya pagada devuelve `skipped`. En autos, solo `autos_update` es idempotente: repetir un alta de auto, mantenimiento o inspección crea otro registro, y repetir un seguro devuelve `already_exists`. En reparaciones del hogar, las tools de registro buscan líneas equivalentes del mismo día: repetir devuelve `duplicate` con el registro existente y no crea otra fila, salvo `allow_duplicate=true`; dos escrituras concurrentes podrían pasar el chequeo. `home_maintenance_create` no deduplica: repetir crea otra reparación. `home_maintenance_item_move` no es idempotente: repetir el mismo movimiento devuelve `item_not_found` porque las líneas ya están en el destino. En entidades y banca, las ediciones son idempotentes y las altas comprueban duplicados: repetir un alta devuelve `already_exists` con el `id` existente, sin crear otro registro.
 
 Antes de un alta, `entities_search` permite verificar si la entidad ya existe y obtener su `id`; es de solo lectura y no requiere la compuerta.
 

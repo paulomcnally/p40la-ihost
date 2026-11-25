@@ -180,6 +180,10 @@ func (contractAPI) CreateHomeMaintenanceItem(context.Context, int64, int64, api.
 	return &api.HomeMaintenanceItem{}, nil
 }
 
+func (contractAPI) MoveHomeMaintenanceItems(context.Context, int64, int64, api.HomeMaintenanceMoveRequest) (*api.HomeMaintenanceMoveResult, error) {
+	return &api.HomeMaintenanceMoveResult{}, nil
+}
+
 // TestToolContracts congela el contrato visible de tools/list para todo el
 // catálogo: nombres, descripciones, esquemas y anotaciones. Un cambio
 // intencional se acepta con:
