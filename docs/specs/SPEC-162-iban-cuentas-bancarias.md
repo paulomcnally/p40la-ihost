@@ -1,20 +1,22 @@
 ---
 title: "Agregar IBAN a cuentas bancarias y tools de gestión"
 id: "SPEC-162"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-25"
 updated: "2026-11-25"
 github_issue: 164
+release: "2026-11-25; app v0.5.22 y MCP mcp-v0.6.3; commits 31975d64, e3583a53, 0a09f3d2 y bump 7b7bf96f; workflows 45760879750 y 45760882804; issue #164 cerrado"
 ---
 
 # Agregar IBAN a cuentas bancarias y tools de gestión
 
 **ID**: SPEC-162
-**Estado**: pending_release
+**Estado**: released
 **Autor**: opencode
 **Creado**: 2026-11-25
 **Actualizado**: 2026-11-25
+**Release**: 2026-11-25 — app [`v0.5.22`](https://github.com/paulomcnally/p40la-ihost/actions/runs/45760879750) y MCP [`mcp-v0.6.3`](https://github.com/paulomcnally/p40la-ihost/actions/runs/45760882804); commits `31975d64`/`e3583a53`/`0a09f3d2` + bump `7b7bf96f`; issue #164 cerrado; imagen publicada, iHost pendiente de actualizar.
 
 ---
 
@@ -383,3 +385,4 @@ Validación subagente: explore — sesión ses_debfd4218ffe8IKTtKnlWOHlBM — ve
 | 2026-11-25 | opencode | Implementación completa (migración 0061, backend, frontend, MCP y docs); pasa a `in_progress` |
 | 2026-11-25 | DevOps | QA y Security aprobados; preparada para release |
 | 2026-11-25 | DevOps | Corregida CA-003 (el PUT HTTP es reemplazo completo; la semántica parcial es solo del MCP) y verificadas las CA con smoke E2E sobre DB temporal |
+| 2026-11-25 | DevOps | Release `v0.5.22`/`mcp-v0.6.3`; workflows exitosos; issue #164 cerrado; worktree eliminado |

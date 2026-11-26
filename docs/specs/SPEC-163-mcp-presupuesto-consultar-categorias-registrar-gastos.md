@@ -1,20 +1,22 @@
 ---
 title: "MCP: consultar categorías del presupuesto y registrar gastos (transacciones)"
 id: "SPEC-163"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-25"
 updated: "2026-11-25"
 github_issue: 165
+release: "2026-11-25; app v0.5.22 y MCP mcp-v0.6.3; commits cc1c8d2a, e353968e, e06be193 y bump 7b7bf96f; workflows 45760879750 y 45760882804; issue #165 cerrado"
 ---
 
 # MCP: consultar categorías del presupuesto y registrar gastos (transacciones)
 
 **ID**: SPEC-163  
-**Estado**: pending_release
+**Estado**: released
 **Autor**: opencode  
 **Creado**: 2026-11-25  
 **Actualizado**: 2026-11-25
+**Release**: 2026-11-25 — app [`v0.5.22`](https://github.com/paulomcnally/p40la-ihost/actions/runs/45760879750) y MCP [`mcp-v0.6.3`](https://github.com/paulomcnally/p40la-ihost/actions/runs/45760882804); commits `cc1c8d2a`/`e353968e`/`e06be193` + bump `7b7bf96f`; issue #165 cerrado; imagen publicada, iHost pendiente de actualizar.
 
 ---
 
@@ -529,3 +531,4 @@ Validación subagente: explore — sesión `ses_debecb6d5ffeMS3Gjo78ljA1Lk` — 
 | 2026-11-25 | Developer | Estado pending_execution → in_progress; toolset `budget` implementado con tests, manifiesto, contrato y documentación MCP |
 | 2026-11-25 | DevOps | Estado in_progress → pending_release; QA y Security aprobaron |
 | 2026-11-25 | DevOps | CA verificadas con smoke E2E sobre DB temporal (planned/created/duplicate/writes_disabled/month view) y preparación de release |
+| 2026-11-25 | DevOps | Release `v0.5.22`/`mcp-v0.6.3`; workflows exitosos; issue #165 cerrado; worktree eliminado |
