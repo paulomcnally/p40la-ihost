@@ -1,20 +1,21 @@
 ---
 title: "MCP: reportes de problemas y mantenimiento en viviendas (ampliación: evidencia por MCP)"
 id: "SPEC-165"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-27"
 updated: "2026-11-27"
 github_issue: 167
 github_issue_amendment: 169
-release: "2026-11-27; app v0.5.24 (workflow 46101201103); MCP mcp-v0.6.4 multi-arch (workflow 46101203390); merge 66885698; implementación 6c4a1625; bump 336a8324; issue #167 cerrado"
+release: "original 2026-11-27: app v0.5.24 (workflow 46101201103), MCP mcp-v0.6.4 multi-arch (workflow 46101203390), merge 66885698, implementación 6c4a1625, bump 336a8324, issue #167 cerrado; ampliación 2026-11-27: app v0.5.25 (workflow 46107912600), MCP mcp-v0.6.5 multi-arch (workflow 46107915038), merge 333c7c60, implementación 64b8bd15, bump 24c12a0c, issue #169 cerrado"
 ---
 
 # MCP: reportes de problemas y mantenimiento en viviendas (ampliación: evidencia por MCP)
 
 **ID**: SPEC-165
-**Estado**: pending_release (ampliación de una spec released)
+**Estado**: released (ampliación de una spec released)
 **Release original**: 2026-11-27 — app v0.5.24 (workflow `46101201103`); MCP `mcp-v0.6.4` multi-arch (workflow `46101203390`); merge `66885698`
+**Release ampliación**: 2026-11-27 — app v0.5.25 (workflow `46107912600`); MCP `mcp-v0.6.5` multi-arch (workflow `46107915038`); merge `333c7c60`; bump `24c12a0c`; imágenes publicadas; contenedores del iHost pendientes de actualización
 **Ampliación**: 2026-11-27 — carga y administración de evidencia desde MCP
 **Autor**: opencode
 **Creado**: 2026-11-27
@@ -804,3 +805,4 @@ Listado de tools existentes: `bills_list`, `bills_generate`, `bills_pay`, `homes
 | 2026-11-27 | opencode | Ampliación (draft): evidencia por MCP con `attachment_list`, `upload_link`, `attachment_add` y `attachment_delete`; endpoint multipart con token HMAC de corta vida y cupo por token; idempotencia `client_request_id` y dedup `sha256`; migración `0063`; sin exposición pública nueva. Issue de ampliación #169. Investigación con subagentes `explore` y `general`; se corrigieron los supuestos sobre adjuntos del cliente MCP, sandbox y video |
 | 2026-11-27 | opencode | Implementación de la ampliación en `feature/SPEC-165`: migración `0063`, token HMAC y endpoint de carga, dedup `sha256`, idempotencia de alta, 4 tools MCP, contrato backend, manifiesto, `contracts.json` y documentación de `docs/mcp/`; verificación local con `go build`, `go test`, `check-server` y flujo E2E con `curl` |
 | 2026-11-27 | opencode | Preparación de release ordenada por el usuario: app `v0.5.25` + MCP `mcp-v0.6.5`; Tailscale sin cambios; se publican las imágenes y se deja el iHost para actualización de contenedores |
+| 2026-11-27 | opencode | Released ampliación: app `v0.5.25` (workflow `46107912600`) y MCP `mcp-v0.6.5` multi-arch (workflow `46107915038`); merge `333c7c60`; bump `24c12a0c`; issue #169 cerrado; iHost pendiente de recrear contenedores con las imágenes nuevas |

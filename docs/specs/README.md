@@ -184,11 +184,11 @@ Este directorio contiene todas las especificaciones técnicas del proyecto `p40l
 | SPEC-162 | Agregar IBAN a cuentas bancarias y tools de gestión | released | 2026-11-25 | opencode |
 | SPEC-163 | MCP: consultar categorías del presupuesto y registrar gastos (transacciones) | released | 2026-11-25 | opencode |
 | SPEC-164 | Reportes de problemas y mantenimiento en viviendas | released | 2026-11-27 | opencode |
-| SPEC-165 | MCP: reportes de problemas y mantenimiento en viviendas | released | 2026-11-27 | opencode |
+| SPEC-165 | MCP: reportes de problemas y mantenimiento en viviendas (ampliación: evidencia por MCP) | released | 2026-11-27 | opencode |
 
 ---
 
-Última actualización del tracker: 2026-11-27 — SPEC-165 released: tools MCP de reportes de vivienda (`home_work_request_list/get/create/update/convert/status`), catálogo 53 → 59, contrato/manifiesto y documentación actualizados; app `v0.5.24`; MCP `mcp-v0.6.4` multi-arch; merge `66885698`; workflows `46101201103` y `46101203390`; issue #167 cerrado.
+Última actualización del tracker: 2026-11-27 — SPEC-165 released (ampliación): evidencia por MCP con `home_work_request_attachment_list/upload_link/add/delete`, token HMAC de carga, idempotencia `client_request_id`, dedup `sha256` y migración `0063`; catálogo 59 → 63; app `v0.5.25`; MCP `mcp-v0.6.5` multi-arch; merge `333c7c60`; workflows `46107912600` y `46107915038`; issue #169 cerrado; contenedores del iHost pendientes de actualización.
 
 ## 🔄 Flujo de Estados
 
