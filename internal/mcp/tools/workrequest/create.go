@@ -12,13 +12,14 @@ import (
 
 // createInput es la entrada de home_work_request_create.
 type createInput struct {
-	HomeID      int64   `json:"home_id" jsonschema:"ID de la vivienda (obligatorio)"`
-	Title       string  `json:"title" jsonschema:"Título del reporte; obligatorio, máximo 200 caracteres"`
-	Description *string `json:"description,omitempty" jsonschema:"Detalle del problema o trabajo; máximo 2000 caracteres"`
-	Category    *string `json:"category,omitempty" jsonschema:"Categoría: repair, improvement, maintenance u other; por defecto repair"`
-	Priority    *string `json:"priority,omitempty" jsonschema:"Prioridad: low, normal o high; por defecto normal"`
-	ReportedAt  *string `json:"reported_at,omitempty" jsonschema:"Fecha YYYY-MM-DD, no futura; por defecto hoy"`
-	DryRun      *bool   `json:"dry_run,omitempty" jsonschema:"Si es true solo previsualiza; por defecto true"`
+	HomeID          int64   `json:"home_id" jsonschema:"ID de la vivienda (obligatorio)"`
+	Title           string  `json:"title" jsonschema:"Título del reporte; obligatorio, máximo 200 caracteres"`
+	Description     *string `json:"description,omitempty" jsonschema:"Detalle del problema o trabajo; máximo 2000 caracteres"`
+	Category        *string `json:"category,omitempty" jsonschema:"Categoría: repair, improvement, maintenance u other; por defecto repair"`
+	Priority        *string `json:"priority,omitempty" jsonschema:"Prioridad: low, normal o high; por defecto normal"`
+	ReportedAt      *string `json:"reported_at,omitempty" jsonschema:"Fecha YYYY-MM-DD, no futura; por defecto hoy"`
+	ClientRequestID *string `json:"client_request_id,omitempty" jsonschema:"Clave de idempotencia opcional de 1 a 64 caracteres [A-Za-z0-9._:-]; repetir el alta devuelve el reporte existente"`
+	DryRun          *bool   `json:"dry_run,omitempty" jsonschema:"Si es true solo previsualiza; por defecto true"`
 }
 
 func (t *Toolset) registerCreate(server *mcp.Server) {
@@ -28,7 +29,8 @@ func (t *Toolset) registerCreate(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "home_work_request_create",
 		Description: "Crea un reporte de problema o trabajo deseado en una vivienda. Nace en estado reported, " +
-			"sin insumos ni mano de obra, y la evidencia se adjunta después desde la web. " +
+			"sin insumos ni mano de obra; la evidencia se agrega después con attachment_add o attachment_upload_link. " +
+			"client_request_id permite reintentar sin duplicar: la segunda llamada devuelve status=existing. " +
 			"dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: &destructive, IdempotentHint: notIdempotent, OpenWorldHint: &openWorld},
 	}, t.create)
@@ -79,23 +81,40 @@ func (t *Toolset) create(ctx context.Context, _ *mcp.CallToolRequest, input crea
 		reportedAt = validated
 	}
 
+	var clientRequestID *string
+	if input.ClientRequestID != nil {
+		value := strings.TrimSpace(*input.ClientRequestID)
+		if value != "" {
+			if !validClientRequestID(value) {
+				return toolkit.ToolError("invalid_client_request_id",
+					"client_request_id debe tener entre 1 y 64 caracteres [A-Za-z0-9._:-]", "")
+			}
+			clientRequestID = &value
+		}
+	}
+
 	dryRun, disabled, output := t.writeMode(input.DryRun)
 	if disabled != nil {
 		return disabled, output, nil
 	}
 
 	request := api.HomeWorkRequestRequest{
-		Title:       title,
-		Description: description,
-		Category:    category,
-		Priority:    priority,
-		ReportedAt:  reportedAt,
+		Title:           title,
+		Description:     description,
+		Category:        category,
+		Priority:        priority,
+		ReportedAt:      reportedAt,
+		ClientRequestID: clientRequestID,
 	}
 	if dryRun {
+		planned := requestSnapshot(request)
+		if clientRequestID != nil {
+			planned["client_request_id"] = *clientRequestID
+		}
 		return toolkit.JSONResult(map[string]any{
 			"status":  "planned",
 			"dry_run": true,
-			"planned": requestSnapshot(request),
+			"planned": planned,
 		})
 	}
 
@@ -103,9 +122,14 @@ func (t *Toolset) create(ctx context.Context, _ *mcp.CallToolRequest, input crea
 	if err != nil {
 		return toolkit.APIError(err)
 	}
+	status := "created"
+	if created.Deduplicated {
+		status = "existing"
+	}
 	return toolkit.JSONResult(map[string]any{
-		"status":       "created",
+		"status":       status,
 		"dry_run":      false,
+		"deduplicated": created.Deduplicated,
 		"work_request": created,
 	})
 }

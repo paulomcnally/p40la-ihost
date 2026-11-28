@@ -2405,6 +2405,188 @@
       }
     },
     {
+      "name": "home_work_request_attachment_add",
+      "description": "Agrega una foto o video pequeño (hasta 256 KiB reales) a un reporte en estado reported. El contenido viaja en base64 y el backend valida la firma real; es idempotente por sha256, así que repetir el mismo archivo devuelve status=duplicate. Para archivos grandes o varios archivos, usá attachment_upload_link. dry_run viene activado por defecto.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "data_base64": {
+            "description": "Contenido real del archivo en base64; máximo 256 KiB decodificados",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "filename": {
+            "description": "Nombre del archivo con extensión, por ejemplo foto-demo.jpg",
+            "type": "string"
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "media_type": {
+            "description": "image o video; por defecto se deriva del MIME o se asume image",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mime": {
+            "description": "MIME declarado; el backend valida la firma real (image/jpeg, image/png, image/webp, image/heic, video/mp4, video/quicktime, video/webm)",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sha256": {
+            "description": "Hash SHA-256 hex opcional del contenido; si no coincide se rechaza",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "work_request_id": {
+            "description": "ID del reporte (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "work_request_id",
+          "filename",
+          "data_base64"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "home_work_request_attachment_delete",
+      "description": "Elimina un adjunto de un reporte y su archivo. dry_run viene activado por defecto. Se permite en reportes reported y dismissed; se rechaza en converted. Si el adjunto ya no existe devuelve status=unchanged sin error.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "attachment_id": {
+            "description": "ID del adjunto (obligatorio)",
+            "type": "integer"
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "work_request_id": {
+            "description": "ID del reporte (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "work_request_id",
+          "attachment_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "home_work_request_attachment_list",
+      "description": "Lista la evidencia (fotos y videos) de un reporte con sus metadatos, sin binarios. Devuelve el cupo usado, el máximo de 10 adjuntos, el tamaño máximo por archivo y el sha256 de cada uno. Es la vía canónica para verificar que una carga terminó. Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "work_request_id": {
+            "description": "ID del reporte (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "work_request_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "home_work_request_attachment_upload_link",
+      "description": "Emite un link HTTP de corta vida para subir de 1 a 10 fotos o videos a un reporte (JPEG/PNG/WebP/HEIC/MP4/QuickTime/WebM, hasta 25 MB por archivo). Devuelve upload_url, el token (para el header Authorization), report_url y la alcanzabilidad. El agente sube los archivos con curl y verifica con attachment_list. Solo reportes en estado reported. dry_run=true no emite token.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "description": "Cantidad de archivos que admitirá el link (1..10); por defecto 10 y se acota al cupo libre",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "ttl_minutes": {
+            "description": "Vigencia del link en minutos (1..30); por defecto 10",
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "work_request_id": {
+            "description": "ID del reporte (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "work_request_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      }
+    },
+    {
       "name": "home_work_request_convert",
       "description": "Convierte un reporte pendiente (status=reported) en una reparación vacía de home.maintenance, copia su título/descripción, enlaza maintenance_id y deja el reporte en status=converted. La evidencia permanece en el reporte. Una segunda conversión devuelve already_converted. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
       "input_schema": {
@@ -2455,12 +2637,19 @@
     },
     {
       "name": "home_work_request_create",
-      "description": "Crea un reporte de problema o trabajo deseado en una vivienda. Nace en estado reported, sin insumos ni mano de obra, y la evidencia se adjunta después desde la web. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "description": "Crea un reporte de problema o trabajo deseado en una vivienda. Nace en estado reported, sin insumos ni mano de obra; la evidencia se agrega después con attachment_add o attachment_upload_link. client_request_id permite reintentar sin duplicar: la segunda llamada devuelve status=existing. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
       "input_schema": {
         "additionalProperties": false,
         "properties": {
           "category": {
             "description": "Categoría: repair, improvement, maintenance u other; por defecto repair",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "client_request_id": {
+            "description": "Clave de idempotencia opcional de 1 a 64 caracteres [A-Za-z0-9._:-]; repetir el alta devuelve el reporte existente",
             "type": [
               "null",
               "string"

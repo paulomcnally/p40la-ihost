@@ -98,7 +98,7 @@ func TestCreateReportStartsReportedWithoutCosts(t *testing.T) {
 	ctx := context.Background()
 	service, _, homeID, _ := newTestService(t)
 
-	created, err := service.Create(ctx, homeID, validInput())
+	created, err := service.Create(ctx, homeID, CreateInput{Input: validInput()})
 	if err != nil {
 		t.Fatalf("crear reporte: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestCreateReportValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			input := validInput()
 			tc.edit(&input)
-			_, err := service.Create(ctx, homeID, input)
+			_, err := service.Create(ctx, homeID, CreateInput{Input: input})
 			var validation *ValidationError
 			if !errors.As(err, &validation) || validation.Code != tc.code {
 				t.Fatalf("error = %v, want code %s", err, tc.code)
@@ -159,7 +159,7 @@ func TestUpdateKeepsStatusAndListFilters(t *testing.T) {
 	ctx := context.Background()
 	service, _, homeID, _ := newTestService(t)
 
-	first, err := service.Create(ctx, homeID, validInput())
+	first, err := service.Create(ctx, homeID, CreateInput{Input: validInput()})
 	if err != nil {
 		t.Fatalf("crear: %v", err)
 	}
@@ -168,7 +168,7 @@ func TestUpdateKeepsStatusAndListFilters(t *testing.T) {
 	secondInput.Category = CategoryImprovement
 	secondInput.Priority = PriorityNormal
 	secondInput.ReportedAt = "2026-11-27"
-	second, err := service.Create(ctx, homeID, secondInput)
+	second, err := service.Create(ctx, homeID, CreateInput{Input: secondInput})
 	if err != nil {
 		t.Fatalf("crear segunda: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestDismissAndReactivate(t *testing.T) {
 	ctx := context.Background()
 	service, _, homeID, _ := newTestService(t)
 
-	item, err := service.Create(ctx, homeID, validInput())
+	item, err := service.Create(ctx, homeID, CreateInput{Input: validInput()})
 	if err != nil {
 		t.Fatalf("crear: %v", err)
 	}
@@ -235,7 +235,7 @@ func TestConvertCreatesMaintenanceAndLinks(t *testing.T) {
 	ctx := context.Background()
 	service, _, homeID, fake := newTestService(t)
 
-	item, err := service.Create(ctx, homeID, validInput())
+	item, err := service.Create(ctx, homeID, CreateInput{Input: validInput()})
 	if err != nil {
 		t.Fatalf("crear: %v", err)
 	}
@@ -275,7 +275,7 @@ func TestConvertRejectsInvalidKindAndDismissed(t *testing.T) {
 	ctx := context.Background()
 	service, _, homeID, _ := newTestService(t)
 
-	item, err := service.Create(ctx, homeID, validInput())
+	item, err := service.Create(ctx, homeID, CreateInput{Input: validInput()})
 	if err != nil {
 		t.Fatalf("crear: %v", err)
 	}
@@ -297,7 +297,7 @@ func TestAttachmentsLifecycle(t *testing.T) {
 	ctx := context.Background()
 	service, _, homeID, _ := newTestService(t)
 
-	item, err := service.Create(ctx, homeID, validInput())
+	item, err := service.Create(ctx, homeID, CreateInput{Input: validInput()})
 	if err != nil {
 		t.Fatalf("crear: %v", err)
 	}
@@ -344,7 +344,7 @@ func TestAttachmentValidationAndLimits(t *testing.T) {
 	ctx := context.Background()
 	service, _, homeID, _ := newTestService(t)
 
-	item, err := service.Create(ctx, homeID, validInput())
+	item, err := service.Create(ctx, homeID, CreateInput{Input: validInput()})
 	if err != nil {
 		t.Fatalf("crear: %v", err)
 	}
@@ -394,7 +394,7 @@ func TestDifferentHomesCannotAccessEvidence(t *testing.T) {
 	}
 	otherHomeID, _ := res.LastInsertId()
 
-	item, err := service.Create(ctx, homeID, validInput())
+	item, err := service.Create(ctx, homeID, CreateInput{Input: validInput()})
 	if err != nil {
 		t.Fatalf("crear: %v", err)
 	}
@@ -414,7 +414,7 @@ func TestDeleteReportCascadesEvidenceFiles(t *testing.T) {
 	ctx := context.Background()
 	service, database, homeID, _ := newTestService(t)
 
-	item, err := service.Create(ctx, homeID, validInput())
+	item, err := service.Create(ctx, homeID, CreateInput{Input: validInput()})
 	if err != nil {
 		t.Fatalf("crear: %v", err)
 	}

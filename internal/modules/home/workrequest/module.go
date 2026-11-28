@@ -3,6 +3,7 @@ package workrequest
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/paulomcnally/p40la-ihost/internal/modules"
 	homemaintenance "github.com/paulomcnally/p40la-ihost/internal/modules/home/maintenance"
@@ -13,10 +14,12 @@ type Module struct {
 	service *Service
 }
 
-// New construye el módulo con la DB, el contrato de reparaciones y el
-// directorio de datos para la evidencia.
-func New(db *sql.DB, maintenance *homemaintenance.Service, dataDir string) *Module {
-	return &Module{service: NewService(NewStorage(db), maintenance, dataDir)}
+// New construye el módulo con la DB, el contrato de reparaciones, el
+// directorio de datos para la evidencia y la configuración de links de carga.
+func New(db *sql.DB, maintenance *homemaintenance.Service, dataDir string, upload UploadConfig) *Module {
+	service := NewService(NewStorage(db), maintenance, dataDir)
+	service.SetUploadConfig(upload)
+	return &Module{service: service}
 }
 
 // Info devuelve los metadatos canónicos del módulo.
@@ -27,13 +30,13 @@ func (m *Module) Info() modules.Info {
 		Kind:        "core",
 		Name:        "Reportes de viviendas",
 		Description: "Problemas y trabajos deseados con evidencia y conversión a reparación",
-		Migrations:  []string{"0062_home_work_requests"},
+		Migrations:  []string{"0062_home_work_requests", "0063_work_request_evidence_idempotency"},
 	}
 }
 
 // RegisterRoutes monta los endpoints del módulo.
 func (m *Module) RegisterRoutes(mux *http.ServeMux, auth func(http.Handler) http.Handler) {
-	h := &handlers{service: m.service}
+	h := &handlers{service: m.service, limiter: newUploadRateLimiter(30, time.Minute)}
 	h.register(mux, auth)
 }
 

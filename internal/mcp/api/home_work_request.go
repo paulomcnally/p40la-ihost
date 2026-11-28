@@ -16,6 +16,10 @@ type HomeWorkRequestAPI interface {
 	UpdateHomeWorkRequest(ctx context.Context, homeID, workRequestID int64, req HomeWorkRequestRequest) (*HomeWorkRequest, error)
 	ConvertHomeWorkRequest(ctx context.Context, homeID, workRequestID int64, req HomeWorkRequestConvertRequest) (*HomeWorkRequestConvertResult, error)
 	SetHomeWorkRequestStatus(ctx context.Context, homeID, workRequestID int64, req HomeWorkRequestStatusRequest) (*HomeWorkRequest, error)
+
+	CreateHomeWorkRequestUploadLink(ctx context.Context, homeID, workRequestID int64, req HomeWorkRequestUploadLinkRequest) (*HomeWorkRequestUploadLink, error)
+	AddHomeWorkRequestEvidence(ctx context.Context, homeID, workRequestID int64, fileName string, data []byte) (*HomeWorkRequestEvidenceResult, error)
+	DeleteHomeWorkRequestAttachment(ctx context.Context, homeID, workRequestID, attachmentID int64) error
 }
 
 // HomeWorkRequestFilter acota el listado de reportes de una vivienda.
@@ -38,6 +42,7 @@ type HomeWorkRequest struct {
 	ConvertedAt     *string                     `json:"converted_at"`
 	AttachmentCount int                         `json:"attachment_count"`
 	Attachments     []HomeWorkRequestAttachment `json:"attachments,omitempty"`
+	Deduplicated    bool                        `json:"deduplicated,omitempty"`
 	CreatedAt       time.Time                   `json:"created_at"`
 	UpdatedAt       time.Time                   `json:"updated_at"`
 }
@@ -50,7 +55,9 @@ type HomeWorkRequestAttachment struct {
 	FileName      string    `json:"file_name"`
 	MimeType      string    `json:"mime_type"`
 	SizeBytes     int64     `json:"size_bytes"`
+	SHA256        string    `json:"sha256"`
 	CreatedAt     time.Time `json:"created_at"`
+	Deduplicated  bool      `json:"deduplicated,omitempty"`
 }
 
 // HomeWorkRequestList es la respuesta de GET /api/homes/{id}/workrequests.
@@ -63,11 +70,39 @@ type HomeWorkRequestList struct {
 // HomeWorkRequestRequest es el cuerpo de POST y PUT. El PUT reemplaza los
 // campos editables completos: la tool envía el estado actual con el merge.
 type HomeWorkRequestRequest struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Category    string `json:"category"`
-	Priority    string `json:"priority"`
-	ReportedAt  string `json:"reported_at"`
+	Title           string  `json:"title"`
+	Description     string  `json:"description"`
+	Category        string  `json:"category"`
+	Priority        string  `json:"priority"`
+	ReportedAt      string  `json:"reported_at"`
+	ClientRequestID *string `json:"client_request_id,omitempty"`
+}
+
+// HomeWorkRequestUploadLinkRequest es el cuerpo de POST .../upload-link.
+type HomeWorkRequestUploadLinkRequest struct {
+	Count      int `json:"count,omitempty"`
+	TTLMinutes int `json:"ttl_minutes,omitempty"`
+}
+
+// HomeWorkRequestUploadLink es la respuesta del backend para emitir un link.
+type HomeWorkRequestUploadLink struct {
+	Token           string   `json:"token"`
+	Path            string   `json:"path"`
+	ExpiresAt       string   `json:"expires_at"`
+	MaxBytes        int64    `json:"max_bytes"`
+	MaxRequestBytes int64    `json:"max_request_bytes"`
+	MaxFiles        int      `json:"max_files"`
+	AcceptedMIME    []string `json:"accepted_mime"`
+	AttachmentCount int      `json:"attachment_count"`
+	RemainingSlots  int      `json:"remaining_slots"`
+	WorkRequestID   int64    `json:"work_request_id"`
+	HomeID          int64    `json:"home_id"`
+}
+
+// HomeWorkRequestEvidenceResult es la respuesta de la carga inline.
+type HomeWorkRequestEvidenceResult struct {
+	Attachment   HomeWorkRequestAttachment `json:"attachment"`
+	Deduplicated bool                      `json:"deduplicated"`
 }
 
 // HomeWorkRequestConvertRequest es el cuerpo de POST .../convert.
@@ -155,4 +190,30 @@ func (c *Client) SetHomeWorkRequestStatus(ctx context.Context, homeID, workReque
 		return nil, err
 	}
 	return &item, nil
+}
+
+// CreateHomeWorkRequestUploadLink emite un token de carga acotado al reporte.
+func (c *Client) CreateHomeWorkRequestUploadLink(ctx context.Context, homeID, workRequestID int64, req HomeWorkRequestUploadLinkRequest) (*HomeWorkRequestUploadLink, error) {
+	var link HomeWorkRequestUploadLink
+	path := fmt.Sprintf("/api/homes/%d/workrequests/%d/upload-link", homeID, workRequestID)
+	if err := c.doJSON(ctx, "POST", path, req, &link, sourceHeaders()); err != nil {
+		return nil, err
+	}
+	return &link, nil
+}
+
+// AddHomeWorkRequestEvidence sube un archivo pequeño por la vía autenticada.
+func (c *Client) AddHomeWorkRequestEvidence(ctx context.Context, homeID, workRequestID int64, fileName string, data []byte) (*HomeWorkRequestEvidenceResult, error) {
+	var result HomeWorkRequestEvidenceResult
+	path := fmt.Sprintf("/api/homes/%d/workrequests/%d/attachments/evidence", homeID, workRequestID)
+	if err := c.postMultipart(ctx, path, fileName, data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// DeleteHomeWorkRequestAttachment elimina la evidencia del reporte.
+func (c *Client) DeleteHomeWorkRequestAttachment(ctx context.Context, homeID, workRequestID, attachmentID int64) error {
+	path := fmt.Sprintf("/api/homes/%d/workrequests/%d/attachments/%d", homeID, workRequestID, attachmentID)
+	return c.doJSON(ctx, "DELETE", path, nil, nil, sourceHeaders())
 }

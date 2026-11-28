@@ -17,7 +17,7 @@ import (
 )
 
 // Register registra todos los módulos disponibles en el registry.
-func Register(registry *modules.Registry, db *sql.DB, email *services.EmailService, settings *services.SystemSettingsService, dataDir string) {
+func Register(registry *modules.Registry, db *sql.DB, email *services.EmailService, settings *services.SystemSettingsService, dataDir string, upload workrequest.UploadConfig) {
 	registry.Register(creditcard.New(db, registry))
 	registry.Register(bacimport.New())
 	registry.Register(banproimport.New())
@@ -26,5 +26,5 @@ func Register(registry *modules.Registry, db *sql.DB, email *services.EmailServi
 	registry.Register(portfolio.New(db, rentalModule))
 	maintenanceModule := homemaintenance.New(db)
 	registry.Register(maintenanceModule)
-	registry.Register(workrequest.New(db, maintenanceModule.Service(), dataDir))
+	registry.Register(workrequest.New(db, maintenanceModule.Service(), dataDir, upload))
 }

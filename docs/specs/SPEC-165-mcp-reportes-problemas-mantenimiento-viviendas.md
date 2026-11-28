@@ -1,7 +1,7 @@
 ---
 title: "MCP: reportes de problemas y mantenimiento en viviendas (ampliación: evidencia por MCP)"
 id: "SPEC-165"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-27"
 updated: "2026-11-27"
@@ -13,7 +13,7 @@ release: "2026-11-27; app v0.5.24 (workflow 46101201103); MCP mcp-v0.6.4 multi-a
 # MCP: reportes de problemas y mantenimiento en viviendas (ampliación: evidencia por MCP)
 
 **ID**: SPEC-165
-**Estado**: draft (ampliación de una spec released)
+**Estado**: in_progress (ampliación de una spec released)
 **Release original**: 2026-11-27 — app v0.5.24 (workflow `46101201103`); MCP `mcp-v0.6.4` multi-arch (workflow `46101203390`); merge `66885698`
 **Ampliación**: 2026-11-27 — carga y administración de evidencia desde MCP
 **Autor**: opencode
@@ -82,7 +82,7 @@ Reglas del proyecto aplicables a esta spec (índice: `docs/rules/00-index.md`). 
 | `TEST-TESTUSER` | La verificación manual usa `create-test-user.sh` y datos sintéticos. | `CA-MCP-WR-EV-TESTS` |
 | `UI-*` / `UX-*` | `N/A`: no se agregan pantallas ni componentes. El fallback reutiliza la página existente de reportes. | — |
 | `DELIV-WORKTREE` | Trabajo en `../p40la-ihost-spec-165`, rama `feature/SPEC-165`. | `CA-DELIV-WORKTREE` |
-| `DELIV-CONFIRM` | Merge, release y publicación de imágenes requieren orden explícita; esta entrega es solo spec draft. | `CA-DELIV-CONFIRM` |
+| `DELIV-CONFIRM` | Merge, release y publicación de imágenes requieren orden explícita; esta entrega no hace merge, push a `main` ni release. | `CA-DELIV-CONFIRM` |
 
 ---
 
@@ -637,6 +637,8 @@ Listado de tools existentes: `bills_list`, `bills_generate`, `bills_pay`, `homes
 
 **Validación subagente**: explore — sesión `ses_ddfc5e210ffeLyqICFJTkdMtZp` — veredicto: **ninguna tool existente se rompe**; el cambio compartido es `api.FullAPI`, `contractAPI` y el golden; el módulo ya tiene carga multipart y validación por magic bytes, pero no token temporal ni deduplicación; el body de `/mcp` (1 MiB) limita la vía inline; `TestModuleInfoAndRoutes` y `Info().Migrations` deben actualizarse con `0063`. general — sesión `ses_ddfc5e20dffeSGZ8w5l3vC1gHk` — veredicto: los argumentos de tool son JSON; el binario tipado de MCP es servidor→cliente; la extensión oficial exige Directory/host aprobado; el sandbox no alcanza `*.ts.net`; Funnel puede montar un prefijo pero expone todo lo que el backend sirva bajo él. La decisión de no exponer el backend queda confirmada por ambas investigaciones.
 
+**Validación subagente (documentación)**: general — sesión `ses_ddfadcc48ffebakdGHYUbUvUFc` — veredicto: la documentación de `docs/mcp/` se actualizó con las cuatro tools de evidencia, el token de carga, los límites, los errores y el flujo `create → upload_link → curl → attachment_list → delete`; el agente principal revisó que las tablas de conteo, `impact.md`, `security.md`, `configuration.md`, `architecture.md`, `docs/ihost.md` y `deploy/mcp/mcp.env.example` coincidan con el código.
+
 ---
 
 ## 7. Criterios de Aceptación
@@ -731,7 +733,7 @@ Listado de tools existentes: `bills_list`, `bills_generate`, `bills_pay`, `homes
 | 10 | Tests: unitarios, handlers, contrato backend, MCP y manual con `curl` | Fases 6-9 |
 | 11 | Manifiesto, `contracts.json`, documentación (subagente) y gates | Fase 10 |
 
-**No incluye**: tarea del Developer, merge, push a `main` ni release. La spec queda en `draft` para revisión según el modo «solo spec draft».
+**No incluye**: merge, push a `main` ni release. La implementación queda en el worktree de la spec para QA y Security; el release lo ejecuta DevOps con confirmación explícita.
 
 ### 8.3 Milestones
 
@@ -800,3 +802,4 @@ Listado de tools existentes: `bills_list`, `bills_generate`, `bills_pay`, `homes
 | 2026-11-27 | opencode | Verificación local: `go build ./...`, `go test ./...`, `check-mcp-docs` y `check-mcp-impact --staged --gate` verdes; preparada para release `mcp-v0.6.4` |
 | 2026-11-27 | opencode | Released: app `v0.5.24` y MCP `mcp-v0.6.4` multi-arch; workflows `46101201103` y `46101203390`; merge `66885698`; issue #167 cerrado |
 | 2026-11-27 | opencode | Ampliación (draft): evidencia por MCP con `attachment_list`, `upload_link`, `attachment_add` y `attachment_delete`; endpoint multipart con token HMAC de corta vida y cupo por token; idempotencia `client_request_id` y dedup `sha256`; migración `0063`; sin exposición pública nueva. Issue de ampliación #169. Investigación con subagentes `explore` y `general`; se corrigieron los supuestos sobre adjuntos del cliente MCP, sandbox y video |
+| 2026-11-27 | opencode | Implementación de la ampliación en `feature/SPEC-165`: migración `0063`, token HMAC y endpoint de carga, dedup `sha256`, idempotencia de alta, 4 tools MCP, contrato backend, manifiesto, `contracts.json` y documentación de `docs/mcp/`; verificación local con `go build`, `go test`, `check-server` y flujo E2E con `curl` |

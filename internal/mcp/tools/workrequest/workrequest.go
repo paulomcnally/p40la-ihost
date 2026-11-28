@@ -16,10 +16,20 @@ import (
 )
 
 const (
-	dateLayout        = "2006-01-02"
-	maxTitleLen       = 200
-	maxDescriptionLen = 2000
+	dateLayout          = "2006-01-02"
+	maxTitleLen         = 200
+	maxDescriptionLen   = 2000
+	maxAttachments      = 10
+	maxAttachmentBytes  = 25 << 20  // 25 MB
+	maxInlineBytes      = 256 << 10 // 256 KiB
+	maxUploadFiles      = 10
+	maxUploadTTLMinutes = 30
 )
+
+var acceptedMIME = []string{
+	"image/jpeg", "image/png", "image/webp", "image/heic",
+	"video/mp4", "video/quicktime", "video/webm",
+}
 
 var validStatuses = []string{"reported", "converted", "dismissed"}
 
@@ -62,6 +72,10 @@ func (t *Toolset) Register(server *mcp.Server) {
 	t.registerUpdate(server)
 	t.registerConvert(server)
 	t.registerStatus(server)
+	t.registerAttachmentList(server)
+	t.registerAttachmentUploadLink(server)
+	t.registerAttachmentAdd(server)
+	t.registerAttachmentDelete(server)
 }
 
 // SetClock permite fijar el reloj en tests.
@@ -154,6 +168,32 @@ func requestSnapshot(request api.HomeWorkRequestRequest) map[string]any {
 		"priority":    request.Priority,
 		"reported_at": request.ReportedAt,
 	}
+}
+
+func validClientRequestID(value string) bool {
+	if len(value) < 1 || len(value) > 64 {
+		return false
+	}
+	for _, r := range value {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case r == '.', r == '_', r == ':', r == '-':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func (t *Toolset) reportURL(homeID, workRequestID int64) string {
+	return strings.TrimRight(t.cfg.BaseURL, "/") +
+		fmt.Sprintf("/home/%d/workrequests/%d", homeID, workRequestID)
+}
+
+func (t *Toolset) uploadURL(path string) string {
+	return strings.TrimRight(t.cfg.UploadBaseURL(), "/") + "/" + strings.TrimLeft(path, "/")
 }
 
 // changedFields devuelve los campos editables que difieren, en orden estable.

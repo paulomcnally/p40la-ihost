@@ -54,6 +54,24 @@ func APIError(err error) (*mcp.CallToolResult, any, error) {
 			hint = "Indicá amount o configurá un monto sugerido en el servicio."
 		case "writes_disabled":
 			hint = "Definí P40LA_MCP_ALLOW_WRITES=true para ejecutar cambios."
+		case "attachment_limit":
+			hint = "El reporte ya tiene 10 adjuntos; borrá uno o usá otro reporte."
+		case "attachment_not_found":
+			hint = "Verificá el attachment_id con home_work_request_attachment_list."
+		case "request_too_large":
+			hint = "El archivo supera el máximo de 25 MB; comprimilo o usá la web."
+		case "invalid_file":
+			hint = "Solo se aceptan JPEG, PNG, WebP, HEIC, MP4, QuickTime y WebM con firma válida."
+		case "upload_link_disabled":
+			hint = "Configurá UPLOAD_TOKEN_SECRET (mínimo 32 caracteres) en el backend y reiniciá la app."
+		case "upload_token_exhausted":
+			hint = "El link ya usó su cupo; pedí un link nuevo con attachment_upload_link."
+		case "invalid_token", "expired_token":
+			hint = "El token no es válido o expiró; pedí un link nuevo con attachment_upload_link."
+		case "invalid_status":
+			hint = "Solo los reportes en estado reported aceptan evidencia nueva; reactivalo o usá la web."
+		case "invalid_client_request_id":
+			hint = "Usá entre 1 y 64 caracteres [A-Za-z0-9._:-]."
 		}
 		return ToolError(apiErr.Code, apiErr.Message, hint)
 	}

@@ -110,6 +110,7 @@ ihost.example.ts.net ──► 127.0.0.1:8088   (nodo actual, intacto)
 | Funnel | `deploy/mcp/tailscale/serve.json` | `serve.json` con Funnel 443 → `127.0.0.1:8090`, incluido en la imagen del nodo dedicado |
 | Backend masivo | `internal/services/bill_bulk.go` | Reglas de generación y pago por rango |
 | Handlers HTTP | `internal/api/bill_bulk_handlers.go` | Parseo, códigos de estado y respuesta |
+| Evidencia de reportes | `internal/modules/home/workrequest/` | Endpoint multipart, token HMAC, cuota por token, deduplicación por `sha256` y vía inline |
 | API key global | `internal/services/api_key.go` | Generación, hash, validación, rotación y revocación |
 | Middleware | `internal/api/middleware.go` | Sesión o API key global |
 | Provisión | `scripts/create-api-key.sh` | Crea/rota la key con una sesión |
@@ -155,7 +156,7 @@ El modo HTTP levanta dos servidores `net/http` en el mismo proceso:
 - **Público** (`P40LA_MCP_LISTEN`, default `127.0.0.1:8090`): expone `/mcp` y los endpoints OAuth. Se publica con Funnel y exige bearer token en `/mcp`.
 - **Administrativo** (`P40LA_MCP_ADMIN_LISTEN`, default `127.0.0.1:8091`): expone `GET /healthz` y `POST /admin/revoke`. Solo acepta peticiones cuyo `RemoteAddr` sea loopback y nunca se publica.
 
-`config.Load` rechaza direcciones que no sean loopback, puertos repetidos y una URL pública con path, query o fragment. El binario no arranca si la configuración no es segura.
+`config.Load` rechaza direcciones que no sean loopback, puertos repetidos y un `P40LA_MCP_PUBLIC_URL` con path, query o fragment. El binario no arranca si la configuración no es segura.
 
 ## Flujo OAuth
 
@@ -215,6 +216,40 @@ La expansión de rangos, la resolución de montos, la detección de duplicados y
 
 El MCP solo traduce la tool a una llamada HTTP y presenta el resumen.
 
+## Evidencia por MCP y endpoint de carga
+
+La ampliación de SPEC-165 mantiene el principio de que el MCP es un cliente HTTP: no abre SQLite ni el volumen de evidencia. La diferencia es que ahora puede **agregar** archivos, no solo consultarlos.
+
+```
+Agente MCP
+   │ 1. home_work_request_attachment_upload_link (API key)
+   ▼
+Backend p40la-ihost
+   │ POST /api/homes/{id}/workrequests/{wid}/upload-link
+   │   └─ valida estado/cupo y firma HMAC-SHA256
+   │   └─ persiste work_request_upload_tokens(jti, max_files, files_used, expires_at)
+   ▼
+Agente MCP
+   │ 2. curl -H "Authorization: Bearer <token>" -F file=@...
+   ▼
+Backend p40la-ihost
+   │ POST /api/work-request-uploads  (sin sesión ni API key)
+   │   └─ valida token, cupo, multipart, magic bytes y 25 MB por archivo
+   │   └─ guarda la evidencia y responde added/duplicate/rejected
+   ▼
+Agente MCP
+   │ 3. home_work_request_attachment_list (API key)
+   ▼
+Backend p40la-ihost
+```
+
+- **Token HMAC**: `v1.<payload_b64url>.<firma_b64url>` con `hid`, `wid`, `exp`, `jti` y `max_files`. La fila del `jti` en `work_request_upload_tokens` permite aplicar el cupo y revocar un link puntual. El token viaja en `Authorization: Bearer`, nunca en la URL.
+- **Endpoint en el backend**: `POST /api/work-request-uploads` se registra en el mismo `ServeMux` del módulo `home.workrequest`, con autenticación por token de carga. No acepta sesión ni API key global y no autoriza listar, descargar, borrar ni editar; solo agregar archivos al reporte acotado.
+- **Sin Funnel nuevo**: el endpoint queda en el origen actual del backend. No se agrega un proxy ni se publica el dashboard. `P40LA_UPLOAD_PUBLIC_URL` (variable del MCP) es solo una clasificación/configuración para componer `upload_url`; si se usa, el operador debe garantizar que ese origen enruta al backend.
+- **Límites**: 10 adjuntos por reporte, 25 MB por archivo, `25 MB × max_files + 1 MiB` por request, y 30 requests/min por hash de token. La carga multipart se procesa archivo por archivo, sin bufferear el lote completo; el pico es el tamaño máximo de un archivo más el overhead del multipart.
+- **Vía inline y body del MCP**: el servidor HTTP del MCP limita el body de `/mcp` a **1 MiB**. Por eso `home_work_request_attachment_add` acepta hasta **256 KiB reales** por llamada: base64 expande el contenido ~4/3 (≈341 KiB) y queda margen para el JSON y los demás campos. Para archivos más grandes o lotes, la vía es `attachment_upload_link` + `curl`, que no pasa los bytes por el modelo.
+- **Almacenamiento**: la evidencia se guarda en el volumen de datos del backend (`workrequests/{wid}/`), con nombre sanitizado y deduplicación por `sha256` en las vías MCP. En la vía por link el MCP no toca el binario; en la vía inline lo recibe en base64 y lo reenvía al backend. El video se almacena, pero el agente no lo analiza ni lo describe.
+
 ## Idempotencia
 
 - `bills` tiene `UNIQUE(service_id, year, month)`, incluido el borrado lógico.
@@ -248,3 +283,4 @@ En modo HTTP se agrega una segunda capa local: `audit.jsonl` registra cada `tool
 - Las llamadas al backend son secuenciales.
 - El binario MCP no se ejecuta dentro del proceso del servidor ni del contenedor por defecto.
 - En modo HTTP: body de 1 MiB, 60 req/min por token, access token de 1 h, refresh de 30 días, código de 5 minutos y auditoría con rotación.
+- Evidencia: 25 MB por archivo, 10 adjuntos por reporte, 1..10 archivos por link, 30 req/min por hash de token y 256 KiB reales por llamada inline.

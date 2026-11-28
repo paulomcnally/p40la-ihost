@@ -65,24 +65,46 @@ La administración de la key es **solo por sesión**: una key no puede crear ni 
 
 ## Compuerta de escritura
 
-`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que **cualquier** tool de escritura ejecute cambios: `bills_generate` y `bills_pay`, las `autos_*` que escriben, las siete tools de reparaciones del hogar (`home_maintenance_create`, `home_maintenance_update`, `home_maintenance_labor_register`, `home_maintenance_supplies_register`, `home_maintenance_item_update`, `home_maintenance_item_delete` y `home_maintenance_item_move`, con `dry_run=false`), las cuatro tools de reportes de vivienda (`home_work_request_create`, `home_work_request_update`, `home_work_request_convert` y `home_work_request_status`, con `dry_run=false`), `budget_transactions_create` (con `dry_run=false`), `homes_update`, `bank_accounts_create`/`bank_accounts_update`, `credit_cards_create`/`credit_cards_update` y las `*_create` de entidades (directas). En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
+`P40LA_MCP_ALLOW_WRITES` debe ser exactamente `true` para que **cualquier** tool de escritura ejecute cambios: `bills_generate` y `bills_pay`, las `autos_*` que escriben, las siete tools de reparaciones del hogar (`home_maintenance_create`, `home_maintenance_update`, `home_maintenance_labor_register`, `home_maintenance_supplies_register`, `home_maintenance_item_update`, `home_maintenance_item_delete` y `home_maintenance_item_move`, con `dry_run=false`), las siete tools de reportes de vivienda (`home_work_request_create`, `home_work_request_update`, `home_work_request_convert`, `home_work_request_status`, `home_work_request_attachment_upload_link`, `home_work_request_attachment_add` y `home_work_request_attachment_delete`, con `dry_run=false`), `budget_transactions_create` (con `dry_run=false`), `homes_update`, `bank_accounts_create`/`bank_accounts_update`, `credit_cards_create`/`credit_cards_update` y las `*_create` de entidades (directas). En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
 
 | Modo | Escritura con compuertas apagadas | Escritura con compuertas encendidas |
 |---|---|---|
 | stdio | `writes_disabled`; no llama a la API | Ejecuta con origen `mcp` |
 | HTTP | `writes_disabled` si falta cualquiera de las dos | Ejecuta con origen `mcp` y auditoría local |
 
-En facturas, autos, presupuesto, reparaciones del hogar y reportes de vivienda, “escritura” significa `dry_run=false`; `home_maintenance_list`, `home_maintenance_get`, `home_work_request_list` y `home_work_request_get` son de lectura y no dependen de la compuerta. En reparaciones, `home_maintenance_create` solo crea la cabecera; `home_maintenance_update` e `home_maintenance_item_update` reemplazan la cabecera o la línea completa (por eso declaran `destructiveHint=true`); `home_maintenance_item_delete` es **destructiva** porque borra una línea de forma permanente y puede dejar la reparación sin líneas, aunque nunca elimina la cabecera; y `home_maintenance_item_move` con `delete_source_if_empty=true` puede borrar la reparación de origen vacía, por eso también declara `destructiveHint=true`. En reportes de vivienda, `home_work_request_create` da de alta un reporte `reported` sin costos; `home_work_request_update` edita la cabecera y conserva el estado; `home_work_request_convert` crea una reparación vacía y enlaza `maintenance_id` (destructiva porque crea una entidad); y `home_work_request_status` descarta o reactiva el reporte, por eso declara `destructiveHint=true`. En banca no hay `dry_run`: si la compuerta está activa, la tool escribe directamente y verifica duplicados antes de llamar a la API; si está apagada, devuelve `writes_disabled` sin llamar a la API. Las lecturas (`bills_list`, `bank_accounts_search`, `credit_cards_search`, `home_maintenance_list`, `home_maintenance_get`, `home_work_request_list`, `home_work_request_get`) funcionan siempre, con o sin compuerta.
+En facturas, autos, presupuesto, reparaciones del hogar y reportes de vivienda, “escritura” significa `dry_run=false`; `home_maintenance_list`, `home_maintenance_get`, `home_work_request_list`, `home_work_request_get` y `home_work_request_attachment_list` son de lectura y no dependen de la compuerta. En reparaciones, `home_maintenance_create` solo crea la cabecera; `home_maintenance_update` e `home_maintenance_item_update` reemplazan la cabecera o la línea completa (por eso declaran `destructiveHint=true`); `home_maintenance_item_delete` es **destructiva** porque borra una línea de forma permanente y puede dejar la reparación sin líneas, aunque nunca elimina la cabecera; y `home_maintenance_item_move` con `delete_source_if_empty=true` puede borrar la reparación de origen vacía, por eso también declara `destructiveHint=true`. En reportes de vivienda, `home_work_request_create` da de alta un reporte `reported` sin costos y, con `client_request_id`, evita duplicados; `home_work_request_update` edita la cabecera y conserva el estado; `home_work_request_convert` crea una reparación vacía y enlaza `maintenance_id` (destructiva porque crea una entidad); `home_work_request_status` descarta o reactiva el reporte, por eso declara `destructiveHint=true`; `home_work_request_attachment_upload_link` emite un token de corta vida; `home_work_request_attachment_add` carga un archivo pequeño y deduplica por `sha256`; y `home_work_request_attachment_delete` borra un adjunto de forma permanente, por eso declara `destructiveHint=true`. En banca no hay `dry_run`: si la compuerta está activa, la tool escribe directamente y verifica duplicados antes de llamar a la API; si está apagada, devuelve `writes_disabled` sin llamar a la API. Las lecturas (`bills_list`, `bank_accounts_search`, `credit_cards_search`, `home_maintenance_list`, `home_maintenance_get`, `home_work_request_list`, `home_work_request_get` y `home_work_request_attachment_list`) funcionan siempre, con o sin compuerta.
 
 La compuerta se valida en el MCP **y** el backend valida el origen. No protege contra un usuario que ya tiene la API key: es una defensa contra escrituras accidentales del agente y contra un conector remoto mal configurado.
 
 Recomendación: dejar `P40LA_MCP_REMOTE_WRITES=false` de forma permanente si claude.ai solo necesita consultar. Para escribir, usar Claude Code local por stdio o habilitar el remoto de forma temporal y con aprobación explícita.
 
+## Evidencia y links de carga
+
+La carga de fotos y videos por MCP usa un **token de carga** separado de la API key y de OAuth:
+
+| Control | Implementación |
+|---|---|
+| Secreto | `UPLOAD_TOKEN_SECRET` en el backend, mínimo 32 caracteres; si está vacío, los links se deshabilitan (`upload_link_disabled`) |
+| Firma | HMAC-SHA256 sobre `v1.<payload>`; payload con `hid`, `wid`, `exp`, `jti` y `max_files` |
+| Alcance | Un `home_id` y un `work_request_id`; solo permite agregar archivos, no listar, descargar, borrar ni editar |
+| Vigencia | Default `10m`, máximo `30m` (`ttl_minutes` 1..30). Rotar el secreto invalida todos los links emitidos |
+| Cupo | `max_files` 1..10 por link; se persiste el `jti` y solo los archivos nuevos consumen cupo |
+| Transporte | `Authorization: Bearer <token>` en `POST /api/work-request-uploads`; **nunca** en la URL, logs, auditoría MCP ni mensajes de error |
+| Rate limit | 30 requests/min por hash de token; `429` con `Retry-After` |
+| Endpoint | `POST /api/work-request-uploads` no acepta sesión ni API key global; solo el token de carga |
+| Estado | Solo reportes `reported`; un `dismissed` devuelve `invalid_status` con hint para reactivar y un `converted` rechaza la carga |
+
+- **El token se devuelve al agente** como parte del resultado de `home_work_request_attachment_upload_link`, porque lo necesita para el `curl`; por eso es de corta vida, está acotado a un reporte y a `max_files`, y no sirve para otro reporte ni para listar, descargar o borrar.
+- **No se registran nombres de archivo ni contenido**: el endpoint no escribe el header `Authorization`, el token, el nombre del archivo ni los bytes en logs, auditoría MCP o mensajes de error.
+- **La vía inline expone los bytes al proveedor del modelo**: `home_work_request_attachment_add` envía el archivo en base64 como argumento de la tool, así que el contenido viaja a Anthropic. Para archivos grandes o sensibles, preferí `attachment_upload_link` + `curl`, que no pasa los bytes por el modelo.
+- **Sin Funnel ni proxy nuevo**: el endpoint queda en el mismo origen del backend. `P40LA_UPLOAD_PUBLIC_URL` solo clasifica `reachability=public` y compone `upload_url`; no publica el endpoint. Exponerlo a Internet requiere una decisión operativa separada con aprobación explícita y un proxy limitado al path de carga.
+- **Rotación**: cambiar `UPLOAD_TOKEN_SECRET` y reiniciar el backend invalida todos los links pendientes; no requiere migración. Para revocar un link puntual se puede borrar su fila `jti` de `work_request_upload_tokens`.
+
 ## Datos que viajan a Anthropic
 
 Cuando se usa un conector remoto, las llamadas a tools y sus resultados se procesan en la infraestructura de Anthropic:
 
-- Viajan el nombre de la tool, sus argumentos (IDs, períodos, referencias de banco y moneda, alias, montos, fechas y `dry_run` cuando aplica; en autos, marca, modelo, placa, VIN y póliza; en reparaciones, área, descripción y montos de mano de obra e insumos, los campos que cambian en una edición y sus valores propuestos, el `item_id` de una línea que se edita o se borra y, en un movimiento, los IDs de la reparación de origen, del destino y de las líneas) y el resultado (facturas, cuentas, tarjetas, estados, montos, registros de autos o líneas de reparaciones).
+- Viajan el nombre de la tool, sus argumentos (IDs, períodos, referencias de banco y moneda, alias, montos, fechas y `dry_run` cuando aplica; en autos, marca, modelo, placa, VIN y póliza; en reparaciones, área, descripción y montos de mano de obra e insumos, los campos que cambian en una edición y sus valores propuestos, el `item_id` de una línea que se edita o se borra y, en un movimiento, los IDs de la reparación de origen, del destino y de las líneas; en reportes de vivienda, título, descripción, categoría, prioridad, `client_request_id`, IDs de adjuntos y, en la vía inline, el contenido del archivo en base64) y el resultado (facturas, cuentas, tarjetas, estados, montos, registros de autos, líneas de reparaciones, reportes y metadatos de evidencia, incluidos `file_name` y `sha256`, además del token de carga cuando se emite un link).
 - El canal es HTTPS 443; el contenido lo procesa Anthropic para generar la respuesta del modelo.
 - El binario no envía datos a ningún otro destino: solo llama a `P40LA_BASE_URL`.
 - La auditoría local no guarda argumentos ni resultados; el proveedor del modelo sí los ve para razonar.
@@ -126,6 +148,7 @@ En docs, issues y ejemplos usá `demo-node.example.ts.net`, `192.0.2.10`, `demo@
 | `POST /authorize` por IP | 5/min | `429` |
 | `POST /register` por IP | 10/h | `429` |
 | `POST /token` por IP | 20/min | `429` |
+| `POST /api/work-request-uploads` por hash de token | 30/min | `429` + `Retry-After` |
 | Body de `/mcp` | 1 MiB | `413` |
 | Headers | 64 KiB en el listener público | `431`/cierre |
 | Lectura | 30 s | timeout |
@@ -139,6 +162,7 @@ Los contadores viven en memoria y se reinician con el proceso. No son una defens
 | API key | Script o `POST /api/api-key/regenerate` | `DELETE /api/api-key` | La key anterior deja de funcionar de inmediato |
 | Access/refresh OAuth | Automática (refresh rotativo) | `POST /admin/revoke` | Todos los tokens y códigos se invalidan; los clientes se conservan |
 | Contraseña OAuth | Nuevo hash + reinicio | — | Solo afecta autorizaciones nuevas; **revocar** después |
+| `UPLOAD_TOKEN_SECRET` | Nuevo secreto + reinicio del backend | Borrar la fila `jti` del link | Invalida todos los links de carga emitidos; no requiere migración |
 | Estado OAuth completo | Borrar `oauth.json` con el proceso detenido | — | Se pierden clientes y tokens |
 
 Al rotar la contraseña, los tokens ya emitidos siguen vigentes hasta su vencimiento o hasta `revoke`. Si se sospecha una filtración, rotar **y** revocar.
@@ -184,6 +208,14 @@ El MCP no devuelve stack traces ni SQL. Los errores tienen código estable y men
 | `amount_unresolved` | No se pudo determinar el monto |
 | `deleted_slot` | Período ocupado por una factura eliminada |
 | `upstream_error` | Falla de red o del servidor |
-| `invalid_token` | Bearer OAuth ausente, vencido o revocado (HTTP 401) |
+| `invalid_token` | Bearer OAuth ausente, vencido o revocado (HTTP 401); también token de carga inválido |
+| `expired_token` | Token de carga vencido (HTTP 401) |
 | `too_many_requests` | Rate limit alcanzado (HTTP 429) |
 | `payload_too_large` | Body mayor a 1 MiB (HTTP 413) |
+| `attachment_limit` | El reporte ya tiene 10 adjuntos (HTTP 409) |
+| `attachment_not_found` | El adjunto no existe (HTTP 404); `attachment_delete` lo trata como `unchanged` |
+| `upload_token_exhausted` | El token de carga agotó su cupo de archivos (HTTP 409) |
+| `invalid_file` | Archivo vacío, tipo no permitido o multipart inválido (HTTP 400) |
+| `unsupported_media` | El request de carga no es `multipart/form-data` (HTTP 415) |
+| `request_too_large` | Archivo o lote de carga supera el límite (HTTP 413) |
+| `upload_link_disabled` | Falta `UPLOAD_TOKEN_SECRET` en el backend (HTTP 503) |

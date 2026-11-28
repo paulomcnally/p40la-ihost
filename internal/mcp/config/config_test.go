@@ -92,6 +92,53 @@ func TestLoadCustom(t *testing.T) {
 	}
 }
 
+func TestUploadPublicURL(t *testing.T) {
+	base := map[string]string{"P40LA_API_KEY": "p40la_demo-demo-demo-demo-demo-demo-demo"}
+
+	cfg, err := Load(testEnv(base))
+	if err != nil {
+		t.Fatalf("cargar configuración: %v", err)
+	}
+	if cfg.UploadBaseURL() != cfg.BaseURL || cfg.UploadReachability() != "private" {
+		t.Fatalf("upload sin URL propia = %q/%q", cfg.UploadBaseURL(), cfg.UploadReachability())
+	}
+
+	values := map[string]string{
+		"P40LA_API_KEY":           "p40la_demo-demo-demo-demo-demo-demo-demo",
+		"P40LA_UPLOAD_PUBLIC_URL": "https://uploads.example.com/p40la/",
+	}
+	cfg, err = Load(testEnv(values))
+	if err != nil {
+		t.Fatalf("cargar upload URL: %v", err)
+	}
+	if cfg.UploadBaseURL() != "https://uploads.example.com/p40la" || cfg.UploadReachability() != "public" {
+		t.Fatalf("upload URL = %q/%q", cfg.UploadBaseURL(), cfg.UploadReachability())
+	}
+
+	for _, invalid := range []string{
+		"http://uploads.example.com",
+		"https://uploads.example.com?token=demo",
+		"https://uploads.example.com#demo",
+		"uploads.example.com",
+	} {
+		values := map[string]string{
+			"P40LA_API_KEY":           "p40la_demo-demo-demo-demo-demo-demo-demo",
+			"P40LA_UPLOAD_PUBLIC_URL": invalid,
+		}
+		if _, err := Load(testEnv(values)); err == nil {
+			t.Fatalf("quiero error para P40LA_UPLOAD_PUBLIC_URL=%q", invalid)
+		}
+	}
+
+	values = map[string]string{
+		"P40LA_API_KEY":           "p40la_demo-demo-demo-demo-demo-demo-demo",
+		"P40LA_UPLOAD_PUBLIC_URL": "http://127.0.0.1:8088",
+	}
+	if _, err := Load(testEnv(values)); err != nil {
+		t.Fatalf("loopback http debería permitirse: %v", err)
+	}
+}
+
 const demoHash = "$2a$10$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 func httpEnv(extra map[string]string) map[string]string {

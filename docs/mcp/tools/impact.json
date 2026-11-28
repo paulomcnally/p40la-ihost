@@ -1760,6 +1760,136 @@
         "internal/modules/home/workrequest/service_test.go",
         "internal/modules/home/workrequest/handlers_test.go"
       ]
+    },
+    {
+      "name": "home_work_request_attachment_list",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/attachment_list.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/workrequests/{work_request_id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go",
+        "internal/modules/home/workrequest/evidence_test.go"
+      ]
+    },
+    {
+      "name": "home_work_request_attachment_upload_link",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/attachment_upload_link.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go",
+        "internal/modules/home/workrequest/token.go",
+        "internal/mcp/config/config.go",
+        "internal/config/config.go",
+        "migrations/0063_work_request_evidence_idempotency.up.sql"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/workrequests/{work_request_id}",
+        "POST /api/homes/{id}/workrequests/{work_request_id}/upload-link",
+        "POST /api/work-request-uploads"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go",
+        "internal/modules/home/workrequest/evidence_test.go"
+      ]
+    },
+    {
+      "name": "home_work_request_attachment_add",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/attachment_add.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go",
+        "internal/modules/home/workrequest/token.go",
+        "migrations/0063_work_request_evidence_idempotency.up.sql"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/workrequests/{work_request_id}",
+        "POST /api/homes/{id}/workrequests/{work_request_id}/attachments/evidence"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go",
+        "internal/modules/home/workrequest/evidence_test.go"
+      ]
+    },
+    {
+      "name": "home_work_request_attachment_delete",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/attachment_delete.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/workrequests/{work_request_id}",
+        "DELETE /api/homes/{id}/workrequests/{work_request_id}/attachments/{attachment_id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go",
+        "internal/modules/home/workrequest/evidence_test.go"
+      ]
     }
   ],
   "shared": {
