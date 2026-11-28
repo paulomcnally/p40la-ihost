@@ -1,17 +1,19 @@
 ---
 title: "Reportes de problemas y mantenimiento en viviendas"
 id: "SPEC-164"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-27"
 updated: "2026-11-27"
 github_issue: 166
+release: "2026-11-27; app v0.5.23 (Docker Hub multi-arch); merge de0ac8b1; implementación 1478734f; bump a5d8bd54; workflow 46099107985; MCP sin cambios (mcp-v0.6.3); issue #166 cerrado"
 ---
 
 # Reportes de problemas y mantenimiento en viviendas
 
 **ID**: SPEC-164
-**Estado**: pending_release
+**Estado**: released
+**Release**: 2026-11-27 — app v0.5.23 (Docker Hub multi-arch); merge `de0ac8b1`; workflow `46099107985`; MCP sin cambios
 **Autor**: opencode
 **Creado**: 2026-11-27
 **Actualizado**: 2026-11-27
@@ -482,3 +484,4 @@ No tocar `internal/mcp/**`, `internal/api/routes.go`, `internal/api/handlers.go`
 | 2026-11-27 | opencode | Investigación con subagentes (`explore` mapeo de código e impacto MCP; `general` ciclo reporte→reparación y evidencia multimedia) integrada en §4/§6; issue #166 creado |
 | 2026-11-27 | opencode | Implementación P0/P1 en `feature/SPEC-164`: migración `0062`, módulo `home.workrequest` con evidencia y conversión, API de descarte/reactivación, UI del tab/formulario/detalle y i18n es/en |
 | 2026-11-27 | opencode | Verificación local: `go build ./...`, `go test ./...`, `npm run build`, gate MCP y prueba end-to-end con copia de la DB en `/tmp`; preparada para release |
+| 2026-11-27 | opencode | Released: app `v0.5.23` publicada (workflow `46099107985`); merge `de0ac8b1`; MCP sin cambios; issue #166 cerrado |
