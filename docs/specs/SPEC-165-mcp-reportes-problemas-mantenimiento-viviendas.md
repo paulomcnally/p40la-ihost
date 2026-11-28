@@ -1,7 +1,7 @@
 ---
 title: "MCP: reportes de problemas y mantenimiento en viviendas (ampliación: evidencia por MCP)"
 id: "SPEC-165"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-27"
 updated: "2026-11-27"
@@ -13,7 +13,7 @@ release: "2026-11-27; app v0.5.24 (workflow 46101201103); MCP mcp-v0.6.4 multi-a
 # MCP: reportes de problemas y mantenimiento en viviendas (ampliación: evidencia por MCP)
 
 **ID**: SPEC-165
-**Estado**: in_progress (ampliación de una spec released)
+**Estado**: pending_release (ampliación de una spec released)
 **Release original**: 2026-11-27 — app v0.5.24 (workflow `46101201103`); MCP `mcp-v0.6.4` multi-arch (workflow `46101203390`); merge `66885698`
 **Ampliación**: 2026-11-27 — carga y administración de evidencia desde MCP
 **Autor**: opencode
@@ -803,3 +803,4 @@ Listado de tools existentes: `bills_list`, `bills_generate`, `bills_pay`, `homes
 | 2026-11-27 | opencode | Released: app `v0.5.24` y MCP `mcp-v0.6.4` multi-arch; workflows `46101201103` y `46101203390`; merge `66885698`; issue #167 cerrado |
 | 2026-11-27 | opencode | Ampliación (draft): evidencia por MCP con `attachment_list`, `upload_link`, `attachment_add` y `attachment_delete`; endpoint multipart con token HMAC de corta vida y cupo por token; idempotencia `client_request_id` y dedup `sha256`; migración `0063`; sin exposición pública nueva. Issue de ampliación #169. Investigación con subagentes `explore` y `general`; se corrigieron los supuestos sobre adjuntos del cliente MCP, sandbox y video |
 | 2026-11-27 | opencode | Implementación de la ampliación en `feature/SPEC-165`: migración `0063`, token HMAC y endpoint de carga, dedup `sha256`, idempotencia de alta, 4 tools MCP, contrato backend, manifiesto, `contracts.json` y documentación de `docs/mcp/`; verificación local con `go build`, `go test`, `check-server` y flujo E2E con `curl` |
+| 2026-11-27 | opencode | Preparación de release ordenada por el usuario: app `v0.5.25` + MCP `mcp-v0.6.5`; Tailscale sin cambios; se publican las imágenes y se deja el iHost para actualización de contenedores |
