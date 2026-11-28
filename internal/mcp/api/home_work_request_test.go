@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -166,6 +167,77 @@ func TestHomeWorkRequestClientWrites(t *testing.T) {
 	}
 	if convertBody.Kind != "preventive" || convertBody.Area != "roof" || statusBody.Status != "dismissed" {
 		t.Fatalf("convert/status inesperados: %+v %+v", convertBody, statusBody)
+	}
+}
+
+func TestHomeWorkRequestClientEvidence(t *testing.T) {
+	var sources []string
+	var linkBody HomeWorkRequestUploadLinkRequest
+	var uploadedName string
+	var uploadedData []byte
+	deleted := false
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /api/homes/3/workrequests/10/upload-link", func(w http.ResponseWriter, r *http.Request) {
+		sources = append(sources, r.Header.Get("X-P40LA-Source"))
+		if err := json.NewDecoder(r.Body).Decode(&linkBody); err != nil {
+			t.Errorf("body link: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(HomeWorkRequestUploadLink{
+			Token: "demo-token", Path: "/api/work-request-uploads", ExpiresAt: "2026-11-27T12:10:00Z",
+			MaxBytes: 25 << 20, MaxFiles: 2, RemainingSlots: 8,
+		})
+	})
+	mux.HandleFunc("POST /api/homes/3/workrequests/10/attachments/evidence", func(w http.ResponseWriter, r *http.Request) {
+		sources = append(sources, r.Header.Get("X-P40LA-Source"))
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			t.Errorf("form file: %v", err)
+			return
+		}
+		defer file.Close()
+		uploadedName = header.Filename
+		uploadedData, _ = io.ReadAll(file)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(HomeWorkRequestEvidenceResult{
+			Attachment: HomeWorkRequestAttachment{ID: 21, WorkRequestID: 10, FileName: header.Filename, SHA256: "demo"},
+		})
+	})
+	mux.HandleFunc("DELETE /api/homes/3/workrequests/10/attachments/21", func(w http.ResponseWriter, r *http.Request) {
+		sources = append(sources, r.Header.Get("X-P40LA-Source"))
+		deleted = true
+		w.WriteHeader(http.StatusNoContent)
+	})
+	client := newWorkRequestClient(t, mux)
+
+	link, err := client.CreateHomeWorkRequestUploadLink(context.Background(), 3, 10, HomeWorkRequestUploadLinkRequest{Count: 2, TTLMinutes: 10})
+	if err != nil || link.Token != "demo-token" || link.Path != "/api/work-request-uploads" {
+		t.Fatalf("link: %v %+v", err, link)
+	}
+	if linkBody.Count != 2 || linkBody.TTLMinutes != 10 {
+		t.Fatalf("body del link = %+v", linkBody)
+	}
+
+	result, err := client.AddHomeWorkRequestEvidence(context.Background(), 3, 10, "foto-demo.jpg", []byte("demo"))
+	if err != nil || result.Attachment.ID != 21 || result.Attachment.SHA256 != "demo" {
+		t.Fatalf("evidencia: %v %+v", err, result)
+	}
+	if uploadedName != "foto-demo.jpg" || string(uploadedData) != "demo" {
+		t.Fatalf("archivo enviado = %q %q", uploadedName, string(uploadedData))
+	}
+
+	if err := client.DeleteHomeWorkRequestAttachment(context.Background(), 3, 10, 21); err != nil || !deleted {
+		t.Fatalf("borrar: %v deleted=%v", err, deleted)
+	}
+	if len(sources) != 3 {
+		t.Fatalf("llamadas = %d", len(sources))
+	}
+	for _, source := range sources {
+		if source != "mcp" {
+			t.Fatalf("source = %q", source)
+		}
 	}
 }
 

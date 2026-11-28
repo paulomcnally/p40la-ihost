@@ -12,14 +12,16 @@ import (
 
 // Config agrupa toda la configuración de la aplicación.
 type Config struct {
-	Port            string
-	DataDir         string
-	LogLevel        slog.Level
-	BcryptCost      int
-	SessionSecret   string
-	SessionDuration time.Duration
-	SecureCookie    bool
-	Version         string
+	Port              string
+	DataDir           string
+	LogLevel          slog.Level
+	BcryptCost        int
+	SessionSecret     string
+	SessionDuration   time.Duration
+	SecureCookie      bool
+	Version           string
+	UploadTokenSecret string
+	UploadLinkTTL     time.Duration
 }
 
 // Load lee la configuración desde variables de entorno con valores por defecto.
@@ -46,15 +48,26 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("SECURE_COOKIE debe ser true o false")
 	}
 
+	uploadSecret := strings.TrimSpace(getEnv("UPLOAD_TOKEN_SECRET", ""))
+	if uploadSecret != "" && len(uploadSecret) < 32 {
+		return nil, fmt.Errorf("UPLOAD_TOKEN_SECRET debe tener al menos 32 caracteres")
+	}
+	uploadLinkTTL, err := time.ParseDuration(getEnv("UPLOAD_LINK_TTL", "10m"))
+	if err != nil || uploadLinkTTL <= 0 || uploadLinkTTL > 30*time.Minute {
+		return nil, fmt.Errorf("UPLOAD_LINK_TTL debe ser una duración entre 1m y 30m")
+	}
+
 	return &Config{
-		Port:            port,
-		DataDir:         dataDir,
-		LogLevel:        logLevel,
-		BcryptCost:      bcryptCost,
-		SessionSecret:   getEnv("SESSION_SECRET", ""),
-		SessionDuration: sessionDuration,
-		SecureCookie:    secureCookie,
-		Version:         getEnv("VERSION", "dev"),
+		Port:              port,
+		DataDir:           dataDir,
+		LogLevel:          logLevel,
+		BcryptCost:        bcryptCost,
+		SessionSecret:     getEnv("SESSION_SECRET", ""),
+		SessionDuration:   sessionDuration,
+		SecureCookie:      secureCookie,
+		Version:           getEnv("VERSION", "dev"),
+		UploadTokenSecret: uploadSecret,
+		UploadLinkTTL:     uploadLinkTTL,
 	}, nil
 }
 

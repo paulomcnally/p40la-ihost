@@ -1,10 +1,16 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"mime/multipart"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -94,7 +100,7 @@ func TestMCPBackendContract(t *testing.T) {
 	moduleRegistry := modules.NewRegistry()
 	maintenanceModule := homemaintenance.New(database)
 	moduleRegistry.Register(maintenanceModule)
-	moduleRegistry.Register(homeworkrequest.New(database, maintenanceModule.Service(), t.TempDir()))
+	moduleRegistry.Register(homeworkrequest.New(database, maintenanceModule.Service(), t.TempDir(), homeworkrequest.UploadConfig{Secret: "demo-secret-demo-secret-demo-secret", TTL: homeworkrequest.DefaultUploadTTL}))
 
 	handler := &Handler{
 		service:        serviceHandlers,
@@ -105,7 +111,14 @@ func TestMCPBackendContract(t *testing.T) {
 		apiKeys:        apiKeyService,
 		moduleRegistry: moduleRegistry,
 	}
-	server := httptest.NewServer(BuildRouter(handler, nil, t.TempDir()))
+	var sourceSeen atomic.Bool
+	router := BuildRouter(handler, nil, t.TempDir())
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-P40LA-Source") == "mcp" {
+			sourceSeen.Store(true)
+		}
+		router.ServeHTTP(w, r)
+	}))
 	t.Cleanup(server.Close)
 
 	client, err := mcpapi.New(config.Config{
@@ -241,6 +254,140 @@ func TestMCPBackendContract(t *testing.T) {
 	}
 	if reactivated.Status != "reported" {
 		t.Fatalf("estado reactivado inesperado: %+v", reactivated)
+	}
+
+	// SPEC-165 ampliación: idempotencia de alta, link de carga, multipart,
+	// deduplicación, listado y borrado de evidencia por la cadena real.
+	clientRequestID := "demo-contract-evidence-1"
+	evidenceReport, err := client.CreateHomeWorkRequest(requestCtx, 1, mcpapi.HomeWorkRequestRequest{
+		Title:           "Filtración demo con evidencia",
+		Description:     "Gotea cuando llueve",
+		Category:        "repair",
+		Priority:        "high",
+		ReportedAt:      "2026-03-15",
+		ClientRequestID: &clientRequestID,
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeWorkRequest con client_request_id: %v", err)
+	}
+	duplicated, err := client.CreateHomeWorkRequest(requestCtx, 1, mcpapi.HomeWorkRequestRequest{
+		Title:           "Filtración demo con evidencia",
+		Description:     "Gotea cuando llueve",
+		Category:        "repair",
+		Priority:        "high",
+		ReportedAt:      "2026-03-15",
+		ClientRequestID: &clientRequestID,
+	})
+	if err != nil {
+		t.Fatalf("segunda alta idempotente: %v", err)
+	}
+	if duplicated.ID != evidenceReport.ID || !duplicated.Deduplicated {
+		t.Fatalf("alta idempotente = %+v / %+v", evidenceReport, duplicated)
+	}
+
+	uploadLink, err := client.CreateHomeWorkRequestUploadLink(requestCtx, 1, evidenceReport.ID,
+		mcpapi.HomeWorkRequestUploadLinkRequest{Count: 3, TTLMinutes: 10})
+	if err != nil {
+		t.Fatalf("CreateHomeWorkRequestUploadLink: %v", err)
+	}
+	if uploadLink.Token == "" || uploadLink.Path != "/api/work-request-uploads" || uploadLink.MaxFiles != 3 {
+		t.Fatalf("link inesperado: %+v", uploadLink)
+	}
+
+	var uploadBody bytes.Buffer
+	uploadWriter := multipart.NewWriter(&uploadBody)
+	for name, data := range map[string][]byte{
+		"foto-demo.jpg":  append([]byte{0xFF, 0xD8, 0xFF, 0xE0}, []byte("demo")...),
+		"video-demo.mp4": append([]byte("\x00\x00\x00\x18ftypmp42"), []byte("demo")...),
+	} {
+		part, err := uploadWriter.CreateFormFile("file", name)
+		if err != nil {
+			t.Fatalf("parte multipart: %v", err)
+		}
+		if _, err := part.Write(data); err != nil {
+			t.Fatalf("escribir parte: %v", err)
+		}
+	}
+	if err := uploadWriter.Close(); err != nil {
+		t.Fatalf("cerrar multipart: %v", err)
+	}
+	uploadRequest, err := http.NewRequestWithContext(requestCtx, http.MethodPost, server.URL+uploadLink.Path, &uploadBody)
+	if err != nil {
+		t.Fatalf("request de carga: %v", err)
+	}
+	uploadRequest.Header.Set("Content-Type", uploadWriter.FormDataContentType())
+	uploadRequest.Header.Set("Authorization", "Bearer "+uploadLink.Token)
+	uploadResponse, err := http.DefaultClient.Do(uploadRequest)
+	if err != nil {
+		t.Fatalf("carga multipart: %v", err)
+	}
+	defer uploadResponse.Body.Close()
+	var uploadResult struct {
+		Added           int `json:"added"`
+		Duplicates      int `json:"duplicates"`
+		Rejected        int `json:"rejected"`
+		AttachmentCount int `json:"attachment_count"`
+	}
+	if err := json.NewDecoder(uploadResponse.Body).Decode(&uploadResult); err != nil {
+		t.Fatalf("decodificar carga: %v", err)
+	}
+	if uploadResponse.StatusCode != http.StatusOK || uploadResult.Added != 2 ||
+		uploadResult.Rejected != 0 || uploadResult.AttachmentCount != 2 {
+		t.Fatalf("carga inesperada: status=%d %+v", uploadResponse.StatusCode, uploadResult)
+	}
+
+	evidenceDetail, err := client.GetHomeWorkRequest(requestCtx, 1, evidenceReport.ID)
+	if err != nil {
+		t.Fatalf("GetHomeWorkRequest con evidencia: %v", err)
+	}
+	if evidenceDetail.AttachmentCount != 2 || len(evidenceDetail.Attachments) != 2 {
+		t.Fatalf("evidencia listada = %+v", evidenceDetail)
+	}
+	for _, attachment := range evidenceDetail.Attachments {
+		if attachment.SHA256 == "" {
+			t.Fatalf("adjunto sin sha256: %+v", attachment)
+		}
+	}
+	detailJSON, _ := json.Marshal(evidenceDetail)
+	if strings.Contains(string(detailJSON), uploadLink.Token) {
+		t.Fatal("el token se filtró en el listado")
+	}
+
+	if err := client.DeleteHomeWorkRequestAttachment(requestCtx, 1, evidenceReport.ID, evidenceDetail.Attachments[0].ID); err != nil {
+		t.Fatalf("DeleteHomeWorkRequestAttachment: %v", err)
+	}
+	evidenceDetail, err = client.GetHomeWorkRequest(requestCtx, 1, evidenceReport.ID)
+	if err != nil || evidenceDetail.AttachmentCount != 1 {
+		t.Fatalf("evidencia tras borrar: %v %+v", err, evidenceDetail)
+	}
+
+	if _, err := client.ConvertHomeWorkRequest(requestCtx, 1, evidenceReport.ID, mcpapi.HomeWorkRequestConvertRequest{}); err != nil {
+		t.Fatalf("convertir reporte con evidencia: %v", err)
+	}
+	var evidenceAPIErr *mcpapi.APIError
+	if _, err := client.CreateHomeWorkRequestUploadLink(requestCtx, 1, evidenceReport.ID,
+		mcpapi.HomeWorkRequestUploadLinkRequest{Count: 1}); !errors.As(err, &evidenceAPIErr) || evidenceAPIErr.Code != "invalid_status" {
+		t.Fatalf("upload-link sobre convertido = %v", err)
+	}
+	if err := client.DeleteHomeWorkRequestAttachment(requestCtx, 1, evidenceReport.ID, evidenceDetail.Attachments[0].ID); !errors.As(err, &evidenceAPIErr) || evidenceAPIErr.Code != "invalid_status" {
+		t.Fatalf("borrado MCP sobre convertido = %v", err)
+	}
+
+	badTokenRequest, err := http.NewRequestWithContext(requestCtx, http.MethodPost, server.URL+"/api/work-request-uploads", nil)
+	if err != nil {
+		t.Fatalf("request token inválido: %v", err)
+	}
+	badTokenRequest.Header.Set("Authorization", "Bearer demo-token-invalido")
+	badTokenResponse, err := http.DefaultClient.Do(badTokenRequest)
+	if err != nil {
+		t.Fatalf("token inválido: %v", err)
+	}
+	defer badTokenResponse.Body.Close()
+	if badTokenResponse.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("token inválido status = %d", badTokenResponse.StatusCode)
+	}
+	if !sourceSeen.Load() {
+		t.Fatal("no se observó X-P40LA-Source: mcp en la cadena real")
 	}
 
 	initialBills, err := client.ListBills(requestCtx, 1)

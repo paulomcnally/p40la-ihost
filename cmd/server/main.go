@@ -20,6 +20,7 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/db"
 	"github.com/paulomcnally/p40la-ihost/internal/modules"
 	modulesall "github.com/paulomcnally/p40la-ihost/internal/modules/all"
+	"github.com/paulomcnally/p40la-ihost/internal/modules/home/workrequest"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
 )
@@ -169,7 +170,8 @@ func main() {
 	debtInformationService := services.NewDebtInformationService(debtInformationStorage, debtStorage)
 	bankService := services.NewBankService(bankStorage, currencyStorage)
 	moduleRegistry := modules.NewRegistry()
-	modulesall.Register(moduleRegistry, database, emailService, systemSettingsService, cfg.DataDir)
+	modulesall.Register(moduleRegistry, database, emailService, systemSettingsService, cfg.DataDir,
+		workrequest.UploadConfig{Secret: cfg.UploadTokenSecret, TTL: cfg.UploadLinkTTL})
 	documentRecognitionService := services.NewDocumentRecognitionService(documentRecognitionStorage, debtBillStorage, cfg.DataDir)
 
 	// SPEC-140: scheduler de alquileres (apartados vencidos y recordatorios).

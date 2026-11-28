@@ -32,12 +32,13 @@ const (
 // Config es la configuración efectiva del binario MCP. La API key nunca se
 // imprime ni se pasa por argumentos de línea de comandos.
 type Config struct {
-	BaseURL     string
-	APIKey      string
-	AllowWrites bool
-	Timeout     time.Duration
-	Timezone    string
-	Location    *time.Location
+	BaseURL         string
+	APIKey          string
+	AllowWrites     bool
+	Timeout         time.Duration
+	Timezone        string
+	Location        *time.Location
+	UploadPublicURL string
 
 	// SPEC-147: modo servidor HTTP.
 	Transport         string
@@ -75,6 +76,13 @@ func Load(getenv func(string) string) (Config, error) {
 		return Config{}, fmt.Errorf("P40LA_BASE_URL debe usar http o https")
 	}
 	cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/")
+
+	cfg.UploadPublicURL = strings.TrimRight(strings.TrimSpace(getenv("P40LA_UPLOAD_PUBLIC_URL")), "/")
+	if cfg.UploadPublicURL != "" {
+		if err := validateUploadPublicURL(cfg.UploadPublicURL); err != nil {
+			return Config{}, err
+		}
+	}
 
 	if cfg.APIKey == "" {
 		return Config{}, fmt.Errorf("P40LA_API_KEY es obligatoria; generá una con scripts/create-api-key.sh")
@@ -210,6 +218,36 @@ func (c Config) WritesEnabled() bool {
 // IsHTTP indica si el binario corre como servidor HTTP.
 func (c Config) IsHTTP() bool {
 	return c.Transport == TransportHTTP
+}
+
+// UploadBaseURL es el origen que el agente debe usar para el link de carga.
+func (c Config) UploadBaseURL() string {
+	if c.UploadPublicURL != "" {
+		return c.UploadPublicURL
+	}
+	return c.BaseURL
+}
+
+// UploadReachability distingue un host público dedicado de la URL privada.
+func (c Config) UploadReachability() string {
+	if c.UploadPublicURL != "" {
+		return "public"
+	}
+	return "private"
+}
+
+func validateUploadPublicURL(raw string) error {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return fmt.Errorf("P40LA_UPLOAD_PUBLIC_URL debe ser una URL absoluta")
+	}
+	if parsed.RawQuery != "" || parsed.Fragment != "" {
+		return fmt.Errorf("P40LA_UPLOAD_PUBLIC_URL no puede incluir query ni fragment")
+	}
+	if parsed.Scheme != "https" && !(parsed.Scheme == "http" && isLoopbackHost(parsed.Hostname())) {
+		return fmt.Errorf("P40LA_UPLOAD_PUBLIC_URL debe usar https (http solo para loopback en desarrollo)")
+	}
+	return nil
 }
 
 // validateLoopbackAddr exige una dirección host:puerto con host loopback.

@@ -42,7 +42,7 @@ func newTestServer(t *testing.T) (*httptest.Server, *sql.DB, int64) {
 
 	maintenanceModule := homemaintenance.New(database)
 	maintenanceModule.Service().SetClock(func() time.Time { return time.Date(2026, 11, 27, 12, 0, 0, 0, time.UTC) })
-	module := New(database, maintenanceModule.Service(), dir)
+	module := New(database, maintenanceModule.Service(), dir, UploadConfig{Secret: "demo-secret-demo-secret-demo-secret", TTL: DefaultUploadTTL})
 	module.Service().SetClock(func() time.Time { return time.Date(2026, 11, 27, 12, 0, 0, 0, time.UTC) })
 
 	mux := http.NewServeMux()
@@ -277,12 +277,12 @@ func TestHandlersUploadLimitAndSize(t *testing.T) {
 func TestModuleInfoAndRoutes(t *testing.T) {
 	_, database, _ := newTestServer(t)
 	maintenance := homemaintenance.NewService(homemaintenance.NewStorage(database))
-	module := New(database, maintenance, t.TempDir())
+	module := New(database, maintenance, t.TempDir(), UploadConfig{})
 	info := module.Info()
 	if info.ID != ModuleID || info.Version != ModuleVersion {
 		t.Fatalf("info = %+v", info)
 	}
-	if len(info.Migrations) != 1 || info.Migrations[0] != "0062_home_work_requests" {
+	if len(info.Migrations) != 2 || info.Migrations[0] != "0062_home_work_requests" || info.Migrations[1] != "0063_work_request_evidence_idempotency" {
 		t.Fatalf("migraciones = %v", info.Migrations)
 	}
 	if !strings.HasPrefix(info.Version, "1.") {

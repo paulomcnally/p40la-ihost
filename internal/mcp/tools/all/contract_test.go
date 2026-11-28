@@ -224,6 +224,18 @@ func (contractAPI) SetHomeWorkRequestStatus(context.Context, int64, int64, api.H
 	return &api.HomeWorkRequest{}, nil
 }
 
+func (contractAPI) CreateHomeWorkRequestUploadLink(context.Context, int64, int64, api.HomeWorkRequestUploadLinkRequest) (*api.HomeWorkRequestUploadLink, error) {
+	return &api.HomeWorkRequestUploadLink{}, nil
+}
+
+func (contractAPI) AddHomeWorkRequestEvidence(context.Context, int64, int64, string, []byte) (*api.HomeWorkRequestEvidenceResult, error) {
+	return &api.HomeWorkRequestEvidenceResult{}, nil
+}
+
+func (contractAPI) DeleteHomeWorkRequestAttachment(context.Context, int64, int64, int64) error {
+	return nil
+}
+
 func (contractAPI) ListCategoryGroups(context.Context) ([]api.CategoryGroup, error) {
 	return nil, nil
 }

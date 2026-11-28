@@ -15,7 +15,8 @@ description: "Variables de entorno y configuración de clientes MCP"
 | `P40LA_BASE_URL` | No | `http://ihost.local:8088` | URL base del servidor; admite un path (ej. detrás de proxy) |
 | `P40LA_API_KEY` | Sí | — | API key global `p40la_...` (ver [api-key.md](api-key.md)) |
 | `P40LA_MCP_TRANSPORT` | No | `stdio` | `stdio` o `http` |
-| `P40LA_MCP_ALLOW_WRITES` | No | `false` | Compuerta principal de escritura: aplica a toda tool que escribe (`bills_*`, `autos_*`, `bank_accounts_*`, `credit_cards_*`, `homes_update` y las `*_create` de entidades) |
+| `P40LA_MCP_ALLOW_WRITES` | No | `false` | Compuerta principal de escritura: aplica a toda tool que escribe (`bills_*`, `autos_*`, `bank_accounts_*`, `credit_cards_*`, `home_maintenance_*`, `home_work_request_*`, `homes_update` y las `*_create` de entidades) |
+| `P40LA_UPLOAD_PUBLIC_URL` | No | — | Origen público opcional del backend para los links de carga de evidencia. Si se define, `upload_url` lo usa y la tool clasifica `reachability=public`; si se omite, usa `P40LA_BASE_URL` y clasifica `private`. Debe ser `https` (http solo loopback), sin query ni fragment, y admite un prefijo de proxy |
 | `P40LA_TIMEOUT` | No | `15s` | Timeout HTTP por llamada (1s a 60s) |
 | `P40LA_TIMEZONE` | No | `America/Managua` | Zona para “mes actual” y “hoy” |
 
@@ -41,12 +42,13 @@ El binario **no arranca** si:
 
 - `P40LA_MCP_LISTEN` o `P40LA_MCP_ADMIN_LISTEN` no son loopback (`127.0.0.1` o `::1`) o son iguales.
 - `P40LA_MCP_PUBLIC_URL` está vacía, tiene path/query/fragment o usa `http://` con un host que no es loopback.
+- `P40LA_UPLOAD_PUBLIC_URL`, si está definida, no es una URL absoluta, incluye query/fragment o usa `http://` con un host que no es loopback.
 - `P40LA_MCP_OAUTH_PASSWORD_HASH` está vacía o no empieza con `$2a$`, `$2b$` o `$2y$`.
 - `P40LA_MCP_RATE_LIMIT` está fuera de 1–600 o `P40LA_MCP_AUDIT_MAX_MB` fuera de 1–100.
 - `P40LA_BASE_URL` no es una URL absoluta `http`/`https`.
 - `P40LA_API_KEY` no empieza con `p40la_`.
 
-La URL pública es el **origen**, no el endpoint: `https://demo-node.example.ts.net` es correcto; `https://demo-node.example.ts.net/mcp` se rechaza.
+La URL pública es el **origen**, no el endpoint: `https://demo-node.example.ts.net` es correcto; `https://demo-node.example.ts.net/mcp` se rechaza. `P40LA_UPLOAD_PUBLIC_URL` puede incluir un prefijo (`https://uploads.example.com/p40la`) y no crea ningún túnel ni proxy: solo compone `upload_url` y clasifica `reachability`. Si no se define, los links de carga usan `P40LA_BASE_URL` y quedan como `reachability=private`. Para emitir links, el backend necesita `UPLOAD_TOKEN_SECRET` (mínimo 32 caracteres); si falta, la tool devuelve `upload_link_disabled`. Ver [variables de entorno del backend](../ihost.md#variables-de-entorno).
 
 El MCP **no** usa `P40LA_EMAIL`, `P40LA_PASSWORD` ni cookies. La contraseña del dashboard solo se usa una vez para crear o rotar la key.
 
@@ -68,6 +70,8 @@ Archivo sintético; reemplazá los valores por los de tu instalación y dejalo c
 P40LA_BASE_URL=http://ihost.local:8088
 # Placeholder: la key real empieza con p40la_
 P40LA_API_KEY=demo-api-key
+# Opcional: origen público para los links de carga de evidencia
+# P40LA_UPLOAD_PUBLIC_URL=https://uploads.example.ts.net
 P40LA_TIMEOUT=15s
 P40LA_TIMEZONE=America/Managua
 
@@ -178,9 +182,9 @@ Reemplazá el valor por tu key real solo en tu configuración local (nunca en el
 
 ## dry_run y compuerta de escritura
 
-`P40LA_MCP_ALLOW_WRITES` es la compuerta principal y aplica a **toda** tool de escritura: `bills_*`, `autos_*`, `bank_accounts_*`, `credit_cards_*`, `homes_update` y las `*_create` de entidades. En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
+`P40LA_MCP_ALLOW_WRITES` es la compuerta principal y aplica a **toda** tool de escritura: `bills_*`, `autos_*`, `bank_accounts_*`, `credit_cards_*`, `home_maintenance_*`, `home_work_request_*`, `homes_update` y las `*_create` de entidades. En modo HTTP se suma `P40LA_MCP_REMOTE_WRITES=true`; **ambas** deben estar encendidas.
 
-`dry_run` es propio de facturas y autos: `bills_generate`, `bills_pay`, `autos_create`, `autos_update`, `autos_maintenance_register`, `autos_inspection_register` y `autos_insurance_register`.
+`dry_run` aplica a facturas, autos, presupuesto, reparaciones del hogar y reportes de vivienda: `bills_generate`, `bills_pay`, `autos_create`, `autos_update`, `autos_maintenance_register`, `autos_inspection_register`, `autos_insurance_register`, `home_maintenance_create`, `home_maintenance_update`, `home_maintenance_labor_register`, `home_maintenance_supplies_register`, `home_maintenance_item_update`, `home_maintenance_item_delete`, `home_maintenance_item_move`, `budget_transactions_create`, `home_work_request_create`, `home_work_request_update`, `home_work_request_convert`, `home_work_request_status`, `home_work_request_attachment_upload_link`, `home_work_request_attachment_add` y `home_work_request_attachment_delete`.
 
 - Vienen con `dry_run=true` por defecto en el MCP.
 - Un `dry_run=true` funciona aunque las escrituras estén deshabilitadas.

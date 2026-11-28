@@ -81,7 +81,7 @@ El analizador descubre las tools registradas con `go/parser`: solo reconoce `mcp
 }
 ```
 
-Es un extracto: el manifiesto real declara las **59 tools** del catálogo (31 de lectura y 28 de escritura) y todas las rutas compartidas. `--check-map` falla si una tool registrada falta en el manifiesto, si el manifiesto declara una tool que el código no registra o si un archivo o patrón declarado no existe.
+Es un extracto: el manifiesto real declara las **63 tools** del catálogo (32 de lectura y 31 de escritura) y todas las rutas compartidas. La ampliación de SPEC-165 suma `home_work_request_attachment_list`, `home_work_request_attachment_upload_link`, `home_work_request_attachment_add` y `home_work_request_attachment_delete`, y amplía el contrato de `home_work_request_create` con `client_request_id`. `attachment_upload_link` declara además `POST /api/homes/{id}/workrequests/{work_request_id}/upload-link` y el endpoint de carga `POST /api/work-request-uploads`; `attachment_add` declara `POST /api/homes/{id}/workrequests/{work_request_id}/attachments/evidence`; `attachment_delete` declara `DELETE /api/homes/{id}/workrequests/{work_request_id}/attachments/{attachment_id}`. `--check-map` falla si una tool registrada falta en el manifiesto, si el manifiesto declara una tool que el código no registra o si un archivo o patrón declarado no existe.
 
 ### Cómo se calcula el impacto
 
@@ -142,7 +142,7 @@ El entrypoint es `./scripts/check-mcp-impact.sh`, que ejecuta `go run ./scripts/
 ```
 
 ```text
-[mcp-impact] ✓ manifiesto válido: 59 tools registradas y todas sus rutas existen
+[mcp-impact] ✓ manifiesto válido: 63 tools registradas y todas sus rutas existen
 ```
 
 ### Consultar archivos antes de escribir código

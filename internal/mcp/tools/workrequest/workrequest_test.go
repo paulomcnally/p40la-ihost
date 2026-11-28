@@ -1,7 +1,9 @@
 package workrequest
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -19,27 +21,39 @@ type fakeAPI struct {
 	items      map[int64]*api.HomeWorkRequest
 	getErr     error
 
-	createResult  *api.HomeWorkRequest
-	createErr     error
-	updateResult  *api.HomeWorkRequest
-	updateErr     error
-	convertResult *api.HomeWorkRequestConvertResult
-	convertErr    error
-	statusResult  *api.HomeWorkRequest
-	statusErr     error
+	createResult     *api.HomeWorkRequest
+	createErr        error
+	updateResult     *api.HomeWorkRequest
+	updateErr        error
+	convertResult    *api.HomeWorkRequestConvertResult
+	convertErr       error
+	statusResult     *api.HomeWorkRequest
+	statusErr        error
+	uploadLinkResult *api.HomeWorkRequestUploadLink
+	uploadLinkErr    error
+	evidenceResult   *api.HomeWorkRequestEvidenceResult
+	evidenceErr      error
+	deleteErr        error
 
-	listCalls    int
-	getCalls     int
-	createCalls  int
-	updateCalls  int
-	convertCalls int
-	statusCalls  int
+	listCalls       int
+	getCalls        int
+	createCalls     int
+	updateCalls     int
+	convertCalls    int
+	statusCalls     int
+	uploadLinkCalls int
+	evidenceCalls   int
+	deleteCalls     int
 
-	lastFilter  api.HomeWorkRequestFilter
-	lastCreate  api.HomeWorkRequestRequest
-	lastUpdate  api.HomeWorkRequestRequest
-	lastConvert api.HomeWorkRequestConvertRequest
-	lastStatus  api.HomeWorkRequestStatusRequest
+	lastFilter       api.HomeWorkRequestFilter
+	lastCreate       api.HomeWorkRequestRequest
+	lastUpdate       api.HomeWorkRequestRequest
+	lastConvert      api.HomeWorkRequestConvertRequest
+	lastStatus       api.HomeWorkRequestStatusRequest
+	lastUploadLink   api.HomeWorkRequestUploadLinkRequest
+	lastEvidenceName string
+	lastEvidenceData []byte
+	lastDeletedID    int64
 }
 
 func (f *fakeAPI) ListHomeWorkRequests(_ context.Context, _ int64, filter api.HomeWorkRequestFilter) (*api.HomeWorkRequestList, error) {
@@ -107,6 +121,31 @@ func (f *fakeAPI) SetHomeWorkRequestStatus(_ context.Context, _, _ int64, req ap
 	return f.statusResult, nil
 }
 
+func (f *fakeAPI) CreateHomeWorkRequestUploadLink(_ context.Context, _, _ int64, req api.HomeWorkRequestUploadLinkRequest) (*api.HomeWorkRequestUploadLink, error) {
+	f.uploadLinkCalls++
+	f.lastUploadLink = req
+	if f.uploadLinkErr != nil {
+		return nil, f.uploadLinkErr
+	}
+	return f.uploadLinkResult, nil
+}
+
+func (f *fakeAPI) AddHomeWorkRequestEvidence(_ context.Context, _, _ int64, fileName string, data []byte) (*api.HomeWorkRequestEvidenceResult, error) {
+	f.evidenceCalls++
+	f.lastEvidenceName = fileName
+	f.lastEvidenceData = data
+	if f.evidenceErr != nil {
+		return nil, f.evidenceErr
+	}
+	return f.evidenceResult, nil
+}
+
+func (f *fakeAPI) DeleteHomeWorkRequestAttachment(_ context.Context, _, _, attachmentID int64) error {
+	f.deleteCalls++
+	f.lastDeletedID = attachmentID
+	return f.deleteErr
+}
+
 func newServer(t *testing.T, fake *fakeAPI, cfg config.Config) *mcp.ClientSession {
 	t.Helper()
 	if cfg.Location == nil {
@@ -144,6 +183,10 @@ func TestWorkRequestToolsRegistered(t *testing.T) {
 		"home_work_request_update",
 		"home_work_request_convert",
 		"home_work_request_status",
+		"home_work_request_attachment_list",
+		"home_work_request_attachment_upload_link",
+		"home_work_request_attachment_add",
+		"home_work_request_attachment_delete",
 	} {
 		if !names[name] {
 			t.Fatalf("falta la tool %s", name)
@@ -434,5 +477,223 @@ func TestAPIErrorPropagation(t *testing.T) {
 	out := callJSON(t, session, "home_work_request_list", map[string]any{"home_id": 99})
 	if out["error"] != "home_not_found" || !strings.Contains(out["message"].(string), "Vivienda") {
 		t.Fatalf("error inesperado: %v", out)
+	}
+}
+
+func demoJPEG() []byte {
+	return append([]byte{0xFF, 0xD8, 0xFF, 0xE0}, bytes.Repeat([]byte("demo"), 16)...)
+}
+
+func TestCreateClientRequestIDIdempotency(t *testing.T) {
+	existing := demoWorkRequest(10, "reported")
+	existing.Deduplicated = true
+	fake := &fakeAPI{createResult: existing}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+
+	out := callJSON(t, session, "home_work_request_create", map[string]any{
+		"home_id": 3, "title": "Filtración demo", "client_request_id": "msg-123.demo:1", "dry_run": false,
+	})
+	if out["status"] != "existing" || out["deduplicated"] != true || fake.createCalls != 1 {
+		t.Fatalf("idempotencia inesperada: %v calls=%d", out, fake.createCalls)
+	}
+	if fake.lastCreate.ClientRequestID == nil || *fake.lastCreate.ClientRequestID != "msg-123.demo:1" {
+		t.Fatalf("client_request_id no enviado: %+v", fake.lastCreate)
+	}
+
+	out = callJSON(t, session, "home_work_request_create", map[string]any{
+		"home_id": 3, "title": "Filtración demo", "client_request_id": "espacio inválido",
+	})
+	if out["error"] != "invalid_client_request_id" || fake.createCalls != 1 {
+		t.Fatalf("validación inesperada: %v calls=%d", out, fake.createCalls)
+	}
+}
+
+func TestAttachmentListOutput(t *testing.T) {
+	item := demoWorkRequest(10, "reported")
+	item.AttachmentCount = 2
+	item.Attachments = []api.HomeWorkRequestAttachment{
+		{ID: 1, WorkRequestID: 10, MediaType: "image", FileName: "foto-demo.jpg", MimeType: "image/jpeg", SizeBytes: 1024, SHA256: "aaaa"},
+		{ID: 2, WorkRequestID: 10, MediaType: "video", FileName: "video-demo.mp4", MimeType: "video/mp4", SizeBytes: 2048, SHA256: "bbbb"},
+	}
+	session := newServer(t, &fakeAPI{items: map[int64]*api.HomeWorkRequest{10: item}}, config.Config{})
+	out := callJSON(t, session, "home_work_request_attachment_list", map[string]any{"home_id": 3, "work_request_id": 10})
+	if out["attachment_count"] != float64(2) || out["max_attachments"] != float64(10) ||
+		out["max_bytes"] != float64(25<<20) || out["remaining_slots"] != float64(8) {
+		t.Fatalf("salida inesperada: %v", out)
+	}
+	attachments, _ := out["attachments"].([]any)
+	if len(attachments) != 2 || attachments[1].(map[string]any)["sha256"] != "bbbb" {
+		t.Fatalf("adjuntos inesperados: %v", attachments)
+	}
+}
+
+func TestAttachmentUploadLinkDryRunAndCreated(t *testing.T) {
+	item := demoWorkRequest(10, "reported")
+	item.AttachmentCount = 2
+	fake := &fakeAPI{
+		items: map[int64]*api.HomeWorkRequest{10: item},
+		uploadLinkResult: &api.HomeWorkRequestUploadLink{
+			Token: "demo-token.v1.demo.signature", Path: "/api/work-request-uploads",
+			ExpiresAt: "2026-11-27T12:15:00Z", MaxBytes: 25 << 20, MaxRequestBytes: 25<<20 + 1<<20,
+			MaxFiles: 5, AcceptedMIME: acceptedMIME, AttachmentCount: 2, RemainingSlots: 8,
+		},
+	}
+	session := newServer(t, fake, config.Config{AllowWrites: true, UploadPublicURL: "https://uploads.example.ts.net"})
+
+	out := callJSON(t, session, "home_work_request_attachment_upload_link", map[string]any{
+		"home_id": 3, "work_request_id": 10, "count": 5,
+	})
+	if out["status"] != "planned" || out["token"] != nil || fake.uploadLinkCalls != 0 {
+		t.Fatalf("dry_run inesperado: %v calls=%d", out, fake.uploadLinkCalls)
+	}
+	if out["reachability"] != "public" || out["max_files"] != float64(5) {
+		t.Fatalf("salida dry_run inesperada: %v", out)
+	}
+	if !strings.Contains(out["report_url"].(string), "/home/3/workrequests/10") {
+		t.Fatalf("report_url = %v", out["report_url"])
+	}
+
+	out = callJSON(t, session, "home_work_request_attachment_upload_link", map[string]any{
+		"home_id": 3, "work_request_id": 10, "count": 5, "ttl_minutes": 15, "dry_run": false,
+	})
+	if out["status"] != "created" || out["token"] == "" || fake.uploadLinkCalls != 1 {
+		t.Fatalf("link inesperado: %v calls=%d", out, fake.uploadLinkCalls)
+	}
+	if out["upload_url"] != "https://uploads.example.ts.net/api/work-request-uploads" {
+		t.Fatalf("upload_url = %v", out["upload_url"])
+	}
+	if fake.lastUploadLink.Count != 5 || fake.lastUploadLink.TTLMinutes != 15 {
+		t.Fatalf("request de link inesperado: %+v", fake.lastUploadLink)
+	}
+
+	dismissed := demoWorkRequest(11, "dismissed")
+	session = newServer(t, &fakeAPI{items: map[int64]*api.HomeWorkRequest{11: dismissed}}, config.Config{AllowWrites: true})
+	out = callJSON(t, session, "home_work_request_attachment_upload_link", map[string]any{
+		"home_id": 3, "work_request_id": 11, "dry_run": false,
+	})
+	if out["error"] != "invalid_status" {
+		t.Fatalf("esperaba invalid_status, obtuve %v", out)
+	}
+}
+
+func TestAttachmentAddDryRunWriteAndDuplicate(t *testing.T) {
+	item := demoWorkRequest(10, "reported")
+	item.AttachmentCount = 1
+	data := demoJPEG()
+	encoded := base64.StdEncoding.EncodeToString(data)
+	fake := &fakeAPI{
+		items: map[int64]*api.HomeWorkRequest{10: item},
+		evidenceResult: &api.HomeWorkRequestEvidenceResult{
+			Attachment: api.HomeWorkRequestAttachment{
+				ID: 21, WorkRequestID: 10, MediaType: "image", FileName: "foto-demo.jpg",
+				MimeType: "image/jpeg", SizeBytes: int64(len(data)), SHA256: "demo",
+			},
+		},
+	}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+
+	out := callJSON(t, session, "home_work_request_attachment_add", map[string]any{
+		"home_id": 3, "work_request_id": 10, "filename": "foto-demo.jpg", "data_base64": encoded,
+	})
+	if out["status"] != "planned" || fake.evidenceCalls != 0 {
+		t.Fatalf("dry_run inesperado: %v calls=%d", out, fake.evidenceCalls)
+	}
+
+	out = callJSON(t, session, "home_work_request_attachment_add", map[string]any{
+		"home_id": 3, "work_request_id": 10, "filename": "foto-demo.jpg", "data_base64": encoded, "dry_run": false,
+	})
+	if out["status"] != "added" || out["attachment_count"] != float64(2) || fake.evidenceCalls != 1 {
+		t.Fatalf("alta inesperada: %v calls=%d", out, fake.evidenceCalls)
+	}
+	if fake.lastEvidenceName != "foto-demo.jpg" || !bytes.Equal(fake.lastEvidenceData, data) {
+		t.Fatalf("evidencia enviada inesperada: name=%q bytes=%d", fake.lastEvidenceName, len(fake.lastEvidenceData))
+	}
+
+	fake.evidenceResult.Deduplicated = true
+	out = callJSON(t, session, "home_work_request_attachment_add", map[string]any{
+		"home_id": 3, "work_request_id": 10, "filename": "foto-demo.jpg", "data_base64": encoded, "dry_run": false,
+	})
+	if out["status"] != "duplicate" || out["attachment_count"] != float64(1) {
+		t.Fatalf("duplicado inesperado: %v", out)
+	}
+
+	out = callJSON(t, session, "home_work_request_attachment_add", map[string]any{
+		"home_id": 3, "work_request_id": 10, "filename": "foto-demo.jpg", "data_base64": encoded,
+		"media_type": "video", "dry_run": false,
+	})
+	if out["error"] != "invalid_file" || fake.evidenceCalls != 2 {
+		t.Fatalf("media_type incoherente inesperado: %v calls=%d", out, fake.evidenceCalls)
+	}
+
+	big := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte("x"), maxInlineBytes+1))
+	out = callJSON(t, session, "home_work_request_attachment_add", map[string]any{
+		"home_id": 3, "work_request_id": 10, "filename": "grande.jpg", "data_base64": big, "dry_run": false,
+	})
+	if out["error"] != "invalid_request" || fake.evidenceCalls != 2 {
+		t.Fatalf("límite inline inesperado: %v calls=%d", out, fake.evidenceCalls)
+	}
+}
+
+func TestAttachmentDeleteDryRunWriteAndUnchanged(t *testing.T) {
+	item := demoWorkRequest(10, "reported")
+	item.AttachmentCount = 1
+	item.Attachments = []api.HomeWorkRequestAttachment{{ID: 21, WorkRequestID: 10, FileName: "foto-demo.jpg"}}
+	fake := &fakeAPI{items: map[int64]*api.HomeWorkRequest{10: item}}
+	session := newServer(t, fake, config.Config{AllowWrites: true})
+
+	out := callJSON(t, session, "home_work_request_attachment_delete", map[string]any{
+		"home_id": 3, "work_request_id": 10, "attachment_id": 21,
+	})
+	if out["status"] != "planned" || out["deleted"] != false || fake.deleteCalls != 0 {
+		t.Fatalf("dry_run inesperado: %v calls=%d", out, fake.deleteCalls)
+	}
+
+	out = callJSON(t, session, "home_work_request_attachment_delete", map[string]any{
+		"home_id": 3, "work_request_id": 10, "attachment_id": 21, "dry_run": false,
+	})
+	if out["status"] != "deleted" || out["deleted"] != true || out["attachment_count"] != float64(0) || fake.deleteCalls != 1 {
+		t.Fatalf("borrado inesperado: %v calls=%d", out, fake.deleteCalls)
+	}
+	if fake.lastDeletedID != 21 {
+		t.Fatalf("attachment_id borrado = %d", fake.lastDeletedID)
+	}
+
+	out = callJSON(t, session, "home_work_request_attachment_delete", map[string]any{
+		"home_id": 3, "work_request_id": 10, "attachment_id": 99, "dry_run": false,
+	})
+	if out["status"] != "unchanged" || out["deleted"] != false || fake.deleteCalls != 1 {
+		t.Fatalf("idempotencia inesperada: %v calls=%d", out, fake.deleteCalls)
+	}
+
+	converted := demoWorkRequest(11, "converted")
+	converted.Attachments = item.Attachments
+	session = newServer(t, &fakeAPI{items: map[int64]*api.HomeWorkRequest{11: converted}}, config.Config{AllowWrites: true})
+	out = callJSON(t, session, "home_work_request_attachment_delete", map[string]any{
+		"home_id": 3, "work_request_id": 11, "attachment_id": 21, "dry_run": false,
+	})
+	if out["error"] != "invalid_status" {
+		t.Fatalf("esperaba invalid_status, obtuve %v", out)
+	}
+}
+
+func TestAttachmentWritesDisabled(t *testing.T) {
+	fake := &fakeAPI{items: map[int64]*api.HomeWorkRequest{10: demoWorkRequest(10, "reported")}}
+	session := newServer(t, fake, config.Config{AllowWrites: false})
+	for _, call := range []struct {
+		name string
+		args map[string]any
+	}{
+		{"home_work_request_attachment_upload_link", map[string]any{"home_id": 3, "work_request_id": 10, "dry_run": false}},
+		{"home_work_request_attachment_add", map[string]any{"home_id": 3, "work_request_id": 10, "filename": "foto-demo.jpg", "data_base64": base64.StdEncoding.EncodeToString(demoJPEG()), "dry_run": false}},
+		{"home_work_request_attachment_delete", map[string]any{"home_id": 3, "work_request_id": 10, "attachment_id": 21, "dry_run": false}},
+	} {
+		out := callJSON(t, session, call.name, call.args)
+		if out["error"] != "writes_disabled" {
+			t.Fatalf("%s: esperaba writes_disabled, obtuve %v", call.name, out)
+		}
+	}
+	if fake.uploadLinkCalls != 0 || fake.evidenceCalls != 0 || fake.deleteCalls != 0 {
+		t.Fatalf("escrituras con compuerta cerrada: link=%d add=%d delete=%d",
+			fake.uploadLinkCalls, fake.evidenceCalls, fake.deleteCalls)
 	}
 }

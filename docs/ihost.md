@@ -45,6 +45,8 @@ La primera vez que el contenedor arranca sin usuarios registrados, mostrará un 
 | `BCRYPT_COST` | `10` | Coste de bcrypt para hash de contraseñas |
 | `SESSION_DURATION` | `24h` | Duración de la sesión |
 | `SECURE_COOKIE` | `false` | `true` fuerza `Secure` en todos los orígenes (rompe el login por HTTP LAN). Con `false`, la app marca `Secure` solo cuando la request llega por HTTPS/Tailscale. |
+| `UPLOAD_TOKEN_SECRET` | — (vacío) | Secreto para firmar los links de carga de evidencia por MCP. Mínimo 32 caracteres; vacío deshabilita la emisión de links (`upload_link_disabled`). Si se define con menos de 32, la app no arranca. Rotarlo invalida todos los links pendientes. |
+| `UPLOAD_LINK_TTL` | `10m` | Vigencia de los links de carga de evidencia; debe ser una duración positiva y no superar `30m`. Aplica cuando el cliente no envía `ttl_minutes`; la tool MCP envía `10` por defecto. |
 
 ## Instalación como PWA (Android e iOS)
 
