@@ -1,7 +1,7 @@
 ---
 title: "Reportes de problemas y mantenimiento en viviendas"
 id: "SPEC-164"
-status: "draft"
+status: "in_progress"
 author: "opencode"
 created: "2026-11-27"
 updated: "2026-11-27"
@@ -11,7 +11,7 @@ github_issue: 166
 # Reportes de problemas y mantenimiento en viviendas
 
 **ID**: SPEC-164
-**Estado**: draft
+**Estado**: in_progress
 **Autor**: opencode
 **Creado**: 2026-11-27
 **Actualizado**: 2026-11-27
@@ -274,6 +274,7 @@ CREATE INDEX idx_home_work_request_attachments_owner
 - `reported_at` y `converted_at` en `TEXT` ISO `YYYY-MM-DD` (convención del proyecto).
 - El `down` de `0062` elimina las dos tablas y sus índices (reversible).
 - Al convertir, `maintenance_id` usa `ON DELETE SET NULL`: borrar una reparación no borra el reporte ni su evidencia.
+- Los archivos de evidencia viven en `DATA_DIR/workrequests/{work_request_id}/{attachment_id}-{file_name}`; la base solo guarda metadatos y `file_name` se sanitiza (basename, sin caracteres de control). El tipo real se valida por firma (magic bytes) contra la allowlist de §3.4; el `media_type` declarado debe coincidir.
 
 ### 5.4 APIs / Contratos
 
@@ -312,6 +313,12 @@ Base: `/api/homes/{homeID}/workrequests`, autenticadas.
 
 #### `GET|PUT|DELETE /api/homes/{homeID}/workrequests/{work_request_id}`
 `PUT` acepta `title`, `description`, `category`, `priority`, `reported_at` (no edita `status`). `DELETE` responde `204` y elimina adjuntos en cascada (metadatos + archivos).
+
+#### `POST /api/homes/{homeID}/workrequests/{work_request_id}/status` (REQ-012)
+```json
+{ "status": "dismissed" }
+```
+Pasa un reporte `reported` a `dismissed` o reactiva un `dismissed` a `reported` (no admite `converted`). Responde `200` con el reporte actualizado; `400 invalid_status` si la transición no es válida y `404` si la vivienda o el reporte no existen.
 
 #### `POST /api/homes/{homeID}/workrequests/{work_request_id}/convert` (P1)
 ```json
@@ -473,3 +480,4 @@ No tocar `internal/mcp/**`, `internal/api/routes.go`, `internal/api/handlers.go`
 |-------|-------|-------------|
 | 2026-11-27 | opencode | Creación inicial de la especificación (draft) |
 | 2026-11-27 | opencode | Investigación con subagentes (`explore` mapeo de código e impacto MCP; `general` ciclo reporte→reparación y evidencia multimedia) integrada en §4/§6; issue #166 creado |
+| 2026-11-27 | opencode | Implementación P0/P1 en `feature/SPEC-164`: migración `0062`, módulo `home.workrequest` con evidencia y conversión, API de descarte/reactivación, UI del tab/formulario/detalle y i18n es/en |

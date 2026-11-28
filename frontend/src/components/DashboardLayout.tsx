@@ -91,6 +91,20 @@ const BACK_ROUTES: { pattern: RegExp; to: string | ((pathname: string) => string
     desktopBack: true,
     to: (pathname) => `/home/${pathname.split('/')[2]}?tab=maintenance`,
   },
+  {
+    pattern: /^\/home\/\d+\/workrequests\/new$/,
+    to: (pathname) => `/home/${pathname.split('/')[2]}?tab=reports`,
+  },
+  {
+    pattern: /^\/home\/\d+\/workrequests\/\d+\/edit$/,
+    desktopBack: true,
+    to: (pathname) => `/home/${pathname.split('/')[2]}?tab=reports`,
+  },
+  {
+    pattern: /^\/home\/\d+\/workrequests\/\d+$/,
+    desktopBack: true,
+    to: (pathname) => `/home/${pathname.split('/')[2]}?tab=reports`,
+  },
   { pattern: /^\/home\/\d+$/, to: '/home' },
   { pattern: /^\/leases\/new$/, to: '/home' },
   { pattern: /^\/leases\/\d+\/edit$/, to: (pathname) => `/leases/${pathname.split('/')[2]}` },

@@ -11,6 +11,8 @@ import HomeFormPage from './pages/HomeFormPage'
 import HomeShowPage from './pages/HomeShowPage'
 import HomeMaintenanceFormPage from './pages/HomeMaintenanceFormPage'
 import HomeMaintenanceShowPage from './pages/HomeMaintenanceShowPage'
+import HomeWorkRequestFormPage from './pages/HomeWorkRequestFormPage'
+import HomeWorkRequestShowPage from './pages/HomeWorkRequestShowPage'
 import LeaseFormPage from './pages/LeaseFormPage'
 import LeaseShowPage from './pages/LeaseShowPage'
 import ReservationFormPage from './pages/ReservationFormPage'
@@ -127,6 +129,9 @@ function App() {
                   <Route path="home/:id/maintenances/new" element={<HomeMaintenanceFormPage />} />
                   <Route path="home/:id/maintenances/:maintenanceId/edit" element={<HomeMaintenanceFormPage />} />
                   <Route path="home/:id/maintenances/:maintenanceId" element={<HomeMaintenanceShowPage />} />
+                  <Route path="home/:id/workrequests/new" element={<HomeWorkRequestFormPage />} />
+                  <Route path="home/:id/workrequests/:workRequestId/edit" element={<HomeWorkRequestFormPage />} />
+                  <Route path="home/:id/workrequests/:workRequestId" element={<HomeWorkRequestShowPage />} />
                   <Route path="home/:id" element={<HomeShowPage />} />
                   <Route path="leases/new" element={<LeaseFormPage />} />
                   <Route path="leases/:id" element={<LeaseShowPage />} />

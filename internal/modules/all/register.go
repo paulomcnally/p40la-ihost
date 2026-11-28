@@ -10,6 +10,7 @@ import (
 	banproimport "github.com/paulomcnally/p40la-ihost/internal/modules/bank/banpro/ni/creditcard/statement/import"
 	"github.com/paulomcnally/p40la-ihost/internal/modules/bank/creditcard"
 	homemaintenance "github.com/paulomcnally/p40la-ihost/internal/modules/home/maintenance"
+	"github.com/paulomcnally/p40la-ihost/internal/modules/home/workrequest"
 	"github.com/paulomcnally/p40la-ihost/internal/modules/realestate/portfolio"
 	"github.com/paulomcnally/p40la-ihost/internal/modules/realestate/rental"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
@@ -23,5 +24,7 @@ func Register(registry *modules.Registry, db *sql.DB, email *services.EmailServi
 	rentalModule := rental.New(db, email, settings, dataDir)
 	registry.Register(rentalModule)
 	registry.Register(portfolio.New(db, rentalModule))
-	registry.Register(homemaintenance.New(db))
+	maintenanceModule := homemaintenance.New(db)
+	registry.Register(maintenanceModule)
+	registry.Register(workrequest.New(db, maintenanceModule.Service(), dataDir))
 }

@@ -2,6 +2,7 @@ import type { Home, Currency, Service, ServiceCycle, Bill, BillHistoryEntry, Set
 
 import { rentalApi } from './rental'
 import { homeMaintenanceApi } from './homeMaintenance'
+import { homeWorkRequestApi } from './homeWorkRequest'
 
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T | null> {
   const res = await fetch(path, {
@@ -73,6 +74,7 @@ function periodParams(filters?: { year?: number; month?: number; id?: number }):
 export const api = {
   rental: rentalApi,
   homeMaintenance: homeMaintenanceApi,
+  homeWorkRequest: homeWorkRequestApi,
   settings: {
     get: () => get<Settings>('/api/settings'),
     setLanguage: (language: string) => post('/api/settings/language', { language }),
