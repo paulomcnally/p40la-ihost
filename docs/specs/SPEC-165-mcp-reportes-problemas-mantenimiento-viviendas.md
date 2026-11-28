@@ -1,17 +1,19 @@
 ---
 title: "MCP: reportes de problemas y mantenimiento en viviendas"
 id: "SPEC-165"
-status: "pending_release"
+status: "released"
 author: "opencode"
 created: "2026-11-27"
 updated: "2026-11-27"
 github_issue: 167
+release: "2026-11-27; app v0.5.24 (workflow 46101201103); MCP mcp-v0.6.4 multi-arch (workflow 46101203390); merge 66885698; implementación 6c4a1625; bump 336a8324; issue #167 cerrado"
 ---
 
 # MCP: reportes de problemas y mantenimiento en viviendas
 
 **ID**: SPEC-165
-**Estado**: pending_release
+**Estado**: released
+**Release**: 2026-11-27 — app v0.5.24 (workflow `46101201103`); MCP `mcp-v0.6.4` multi-arch (workflow `46101203390`); merge `66885698`
 **Autor**: opencode
 **Creado**: 2026-11-27
 **Actualizado**: 2026-11-27
@@ -258,3 +260,4 @@ Ninguna con cambio funcional, de contrato o de esquema. El guardrail marca las *
 | 2026-11-27 | opencode | Creación inicial para agregar tools MCP de reportes de vivienda |
 | 2026-11-27 | opencode | Implementación: cliente `HomeWorkRequestAPI`, toolset `workrequest` con 6 tools, registro, tests, manifiesto y `contracts.json`; documentación delegada a subagente |
 | 2026-11-27 | opencode | Verificación local: `go build ./...`, `go test ./...`, `check-mcp-docs` y `check-mcp-impact --staged --gate` verdes; preparada para release `mcp-v0.6.4` |
+| 2026-11-27 | opencode | Released: app `v0.5.24` y MCP `mcp-v0.6.4` multi-arch; workflows `46101201103` y `46101203390`; merge `66885698`; issue #167 cerrado |
