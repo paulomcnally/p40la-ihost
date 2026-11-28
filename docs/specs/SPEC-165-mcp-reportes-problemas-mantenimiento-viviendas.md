@@ -1,7 +1,7 @@
 ---
 title: "MCP: reportes de problemas y mantenimiento en viviendas"
 id: "SPEC-165"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-27"
 updated: "2026-11-27"
@@ -11,7 +11,7 @@ github_issue: 167
 # MCP: reportes de problemas y mantenimiento en viviendas
 
 **ID**: SPEC-165
-**Estado**: in_progress
+**Estado**: pending_release
 **Autor**: opencode
 **Creado**: 2026-11-27
 **Actualizado**: 2026-11-27
@@ -257,3 +257,4 @@ Ninguna con cambio funcional, de contrato o de esquema. El guardrail marca las *
 |-------|-------|-------------|
 | 2026-11-27 | opencode | Creación inicial para agregar tools MCP de reportes de vivienda |
 | 2026-11-27 | opencode | Implementación: cliente `HomeWorkRequestAPI`, toolset `workrequest` con 6 tools, registro, tests, manifiesto y `contracts.json`; documentación delegada a subagente |
+| 2026-11-27 | opencode | Verificación local: `go build ./...`, `go test ./...`, `check-mcp-docs` y `check-mcp-impact --staged --gate` verdes; preparada para release `mcp-v0.6.4` |
