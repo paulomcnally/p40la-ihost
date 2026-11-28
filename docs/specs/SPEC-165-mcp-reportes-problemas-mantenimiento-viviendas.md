@@ -185,7 +185,11 @@ Salida: `status` (`planned`/`updated`), `work_request`.
 
 ### 6.3 Tools existentes afectadas
 
-Ninguna con cambio funcional, de contrato o de esquema.
+Ninguna con cambio funcional, de contrato o de esquema. El guardrail marca las **53 tools existentes** solo por recompilación compartida (`internal/mcp/api/` y `internal/mcp/tools/all/` están en `shared.affects_all`); el impacto real es nulo. Se listan para que la declaración sea explícita:
+
+`bills_list`, `bills_generate`, `bills_pay`, `homes_create`, `homes_update`, `institutions_create`, `banks_create`, `services_create`, `entities_search`, `autos_list`, `autos_create`, `autos_update`, `autos_maintenance_register`, `autos_inspection_register`, `autos_insurance_register`, `bank_accounts_search`, `bank_accounts_create`, `bank_accounts_update`, `credit_cards_search`, `credit_cards_create`, `credit_cards_update`, `pension_month_summary`, `pension_catalogs_list`, `rental_leases_list`, `rental_lease_get`, `rental_home_status`, `rental_portfolio_summary`, `debt_bills_list`, `credit_card_statements_list`, `credit_card_statements_get`, `home_maintenance_list`, `home_maintenance_labor_register`, `home_maintenance_supplies_register`, `home_maintenance_create`, `home_maintenance_item_move`, `home_maintenance_get`, `home_maintenance_update`, `home_maintenance_item_update`, `home_maintenance_item_delete`, `autos_inspection_alerts`, `bills_by_month`, `bills_summary`, `bills_projection`, `services_get`, `automation_accounts_list`, `automation_runs_list`, `alerts_list`, `settings_status`, `budget_categories_list`, `budget_accounts_list`, `budget_transactions_create`, `budget_transactions_list`, `budget_month_view`.
+
+`home_work_request_convert` crea filas en `home_maintenances`; las tools `home_maintenance_*` verán esa reparación nueva, pero es un efecto de datos esperado, no un cambio de contrato ni de comportamiento.
 
 ### 6.4 Manifiesto y contrato
 
@@ -193,7 +197,7 @@ Ninguna con cambio funcional, de contrato o de esquema.
 - `docs/mcp/tools/contracts.json`: regenerado con `TestToolContracts -update-contracts`.
 - `TestMCPBackendContract`: cubre el módulo `home.workrequest` real (crear, listar, obtener, editar, convertir, estado).
 
-**Validación subagente:** explore — sesión `ses_ddfeb1507ffewd7G8cAXhjBZyc` — veredicto: pendiente de completar en la implementación.
+**Validación subagente:** explore — sesión `ses_ddfeb1507ffewd7G8cAXhjBZyc` — veredicto: **ninguna tool existente afectada funcionalmente**; las 53 aparecen solo por recompilación compartida. El fake `contractAPI` de `internal/mcp/tools/all/contract_test.go` es el único que implementa `FullAPI` y recibió los 6 stubs nuevos; no hay que tocar `api.API` para no romper los fakes de facturas, entidades y banca. Se debe registrar el módulo `home.workrequest` en el test backend y regenerar `contracts.json`.
 
 ---
 
@@ -252,3 +256,4 @@ Ninguna con cambio funcional, de contrato o de esquema.
 | Fecha | Autor | Descripción |
 |-------|-------|-------------|
 | 2026-11-27 | opencode | Creación inicial para agregar tools MCP de reportes de vivienda |
+| 2026-11-27 | opencode | Implementación: cliente `HomeWorkRequestAPI`, toolset `workrequest` con 6 tools, registro, tests, manifiesto y `contracts.json`; documentación delegada a subagente |

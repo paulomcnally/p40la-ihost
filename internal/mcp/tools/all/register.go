@@ -23,6 +23,7 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/pension"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/rental"
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/settings"
+	"github.com/paulomcnally/p40la-ihost/internal/mcp/tools/workrequest"
 )
 
 // Register agrega los conjuntos de tools al registry.
@@ -78,5 +79,10 @@ func Register(r *registry.Registry, client api.FullAPI, cfg config.Config) {
 	// SPEC-163 — presupuesto: categorías, cuentas y registro de gastos.
 	r.Add(func(server *mcp.Server) {
 		budget.Register(server, client, cfg)
+	})
+
+	// SPEC-165 — reportes de problemas y mantenimiento por vivienda.
+	r.Add(func(server *mcp.Server) {
+		workrequest.Register(server, client, cfg)
 	})
 }

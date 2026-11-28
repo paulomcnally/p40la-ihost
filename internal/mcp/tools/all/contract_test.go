@@ -200,6 +200,30 @@ func (contractAPI) MoveHomeMaintenanceItems(context.Context, int64, int64, api.H
 	return &api.HomeMaintenanceMoveResult{}, nil
 }
 
+func (contractAPI) ListHomeWorkRequests(context.Context, int64, api.HomeWorkRequestFilter) (*api.HomeWorkRequestList, error) {
+	return &api.HomeWorkRequestList{}, nil
+}
+
+func (contractAPI) GetHomeWorkRequest(context.Context, int64, int64) (*api.HomeWorkRequest, error) {
+	return &api.HomeWorkRequest{}, nil
+}
+
+func (contractAPI) CreateHomeWorkRequest(context.Context, int64, api.HomeWorkRequestRequest) (*api.HomeWorkRequest, error) {
+	return &api.HomeWorkRequest{}, nil
+}
+
+func (contractAPI) UpdateHomeWorkRequest(context.Context, int64, int64, api.HomeWorkRequestRequest) (*api.HomeWorkRequest, error) {
+	return &api.HomeWorkRequest{}, nil
+}
+
+func (contractAPI) ConvertHomeWorkRequest(context.Context, int64, int64, api.HomeWorkRequestConvertRequest) (*api.HomeWorkRequestConvertResult, error) {
+	return &api.HomeWorkRequestConvertResult{}, nil
+}
+
+func (contractAPI) SetHomeWorkRequestStatus(context.Context, int64, int64, api.HomeWorkRequestStatusRequest) (*api.HomeWorkRequest, error) {
+	return &api.HomeWorkRequest{}, nil
+}
+
 func (contractAPI) ListCategoryGroups(context.Context) ([]api.CategoryGroup, error) {
 	return nil, nil
 }

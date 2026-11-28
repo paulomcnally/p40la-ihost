@@ -13,6 +13,7 @@ import (
 	"github.com/paulomcnally/p40la-ihost/internal/mcp/config"
 	"github.com/paulomcnally/p40la-ihost/internal/modules"
 	homemaintenance "github.com/paulomcnally/p40la-ihost/internal/modules/home/maintenance"
+	homeworkrequest "github.com/paulomcnally/p40la-ihost/internal/modules/home/workrequest"
 	"github.com/paulomcnally/p40la-ihost/internal/services"
 	"github.com/paulomcnally/p40la-ihost/internal/storage"
 )
@@ -91,7 +92,9 @@ func TestMCPBackendContract(t *testing.T) {
 	}
 
 	moduleRegistry := modules.NewRegistry()
-	moduleRegistry.Register(homemaintenance.New(database))
+	maintenanceModule := homemaintenance.New(database)
+	moduleRegistry.Register(maintenanceModule)
+	moduleRegistry.Register(homeworkrequest.New(database, maintenanceModule.Service(), t.TempDir()))
 
 	handler := &Handler{
 		service:        serviceHandlers,
@@ -134,6 +137,110 @@ func TestMCPBackendContract(t *testing.T) {
 	}
 	if home.ID != 1 || home.Name != "Casa Demo" || home.Address != "Calle Demo 123" || home.Usage != "inhabited" {
 		t.Fatalf("hogar inesperado: %+v", home)
+	}
+
+	// Reportes de vivienda (SPEC-164/165): cadena real de las tools MCP.
+	workRequest, err := client.CreateHomeWorkRequest(requestCtx, 1, mcpapi.HomeWorkRequestRequest{
+		Title:       "Filtración demo",
+		Description: "Gotea cuando llueve",
+		Category:    "repair",
+		Priority:    "high",
+		ReportedAt:  "2026-03-10",
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeWorkRequest: %v", err)
+	}
+	if workRequest.Status != "reported" || workRequest.Title != "Filtración demo" || workRequest.AttachmentCount != 0 {
+		t.Fatalf("reporte inesperado: %+v", workRequest)
+	}
+
+	workRequests, err := client.ListHomeWorkRequests(requestCtx, 1, mcpapi.HomeWorkRequestFilter{Status: "reported", Category: "repair"})
+	if err != nil {
+		t.Fatalf("ListHomeWorkRequests: %v", err)
+	}
+	if len(workRequests.Items) != 1 || workRequests.PendingCount != 1 || workRequests.Items[0].ID != workRequest.ID {
+		t.Fatalf("listado de reportes inesperado: %+v", workRequests)
+	}
+
+	workRequestDetail, err := client.GetHomeWorkRequest(requestCtx, 1, workRequest.ID)
+	if err != nil {
+		t.Fatalf("GetHomeWorkRequest: %v", err)
+	}
+	if workRequestDetail.ID != workRequest.ID || workRequestDetail.Status != "reported" {
+		t.Fatalf("detalle de reporte inesperado: %+v", workRequestDetail)
+	}
+
+	updatedWorkRequest, err := client.UpdateHomeWorkRequest(requestCtx, 1, workRequest.ID, mcpapi.HomeWorkRequestRequest{
+		Title:       "Filtración revisada demo",
+		Description: "Gotea cuando llueve",
+		Category:    "other",
+		Priority:    "low",
+		ReportedAt:  "2026-03-10",
+	})
+	if err != nil {
+		t.Fatalf("UpdateHomeWorkRequest: %v", err)
+	}
+	if updatedWorkRequest.Title != "Filtración revisada demo" || updatedWorkRequest.Category != "other" || updatedWorkRequest.Status != "reported" {
+		t.Fatalf("edición de reporte inesperada: %+v", updatedWorkRequest)
+	}
+
+	convertedWorkRequest, err := client.ConvertHomeWorkRequest(requestCtx, 1, workRequest.ID, mcpapi.HomeWorkRequestConvertRequest{
+		Kind: "preventive",
+		Area: "roof",
+	})
+	if err != nil {
+		t.Fatalf("ConvertHomeWorkRequest: %v", err)
+	}
+	if convertedWorkRequest.MaintenanceID == 0 || convertedWorkRequest.WorkRequest == nil || convertedWorkRequest.WorkRequest.Status != "converted" {
+		t.Fatalf("conversión inesperada: %+v", convertedWorkRequest)
+	}
+	if convertedWorkRequest.WorkRequest.MaintenanceID == nil || *convertedWorkRequest.WorkRequest.MaintenanceID != convertedWorkRequest.MaintenanceID {
+		t.Fatalf("maintenance_id no enlazado: %+v", convertedWorkRequest.WorkRequest)
+	}
+
+	convertedMaintenance, err := client.GetHomeMaintenance(requestCtx, 1, convertedWorkRequest.MaintenanceID)
+	if err != nil {
+		t.Fatalf("GetHomeMaintenance convertida: %v", err)
+	}
+	if convertedMaintenance.Kind != "preventive" || convertedMaintenance.Area != "roof" || convertedMaintenance.Description == "" {
+		t.Fatalf("reparación convertida inesperada: %+v", convertedMaintenance)
+	}
+	if len(convertedMaintenance.Items) != 0 {
+		t.Fatalf("la reparación convertida debería estar vacía: %+v", convertedMaintenance.Items)
+	}
+
+	if _, err := client.ConvertHomeWorkRequest(requestCtx, 1, workRequest.ID, mcpapi.HomeWorkRequestConvertRequest{}); err == nil {
+		t.Fatal("la segunda conversión debería fallar")
+	} else {
+		var apiErr *mcpapi.APIError
+		if !errors.As(err, &apiErr) || apiErr.Code != "already_converted" {
+			t.Fatalf("segunda conversión = %v, want already_converted", err)
+		}
+	}
+
+	secondWorkRequest, err := client.CreateHomeWorkRequest(requestCtx, 1, mcpapi.HomeWorkRequestRequest{
+		Title:       "Agregar canaleta demo",
+		Description: "Para el agua de lluvia",
+		Category:    "improvement",
+		Priority:    "normal",
+		ReportedAt:  "2026-03-11",
+	})
+	if err != nil {
+		t.Fatalf("CreateHomeWorkRequest segunda: %v", err)
+	}
+	dismissed, err := client.SetHomeWorkRequestStatus(requestCtx, 1, secondWorkRequest.ID, mcpapi.HomeWorkRequestStatusRequest{Status: "dismissed"})
+	if err != nil {
+		t.Fatalf("SetHomeWorkRequestStatus dismissed: %v", err)
+	}
+	if dismissed.Status != "dismissed" {
+		t.Fatalf("estado descartado inesperado: %+v", dismissed)
+	}
+	reactivated, err := client.SetHomeWorkRequestStatus(requestCtx, 1, secondWorkRequest.ID, mcpapi.HomeWorkRequestStatusRequest{Status: "reported"})
+	if err != nil {
+		t.Fatalf("SetHomeWorkRequestStatus reported: %v", err)
+	}
+	if reactivated.Status != "reported" {
+		t.Fatalf("estado reactivado inesperado: %+v", reactivated)
 	}
 
 	initialBills, err := client.ListBills(requestCtx, 1)

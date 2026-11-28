@@ -28,6 +28,7 @@ type FullAPI interface {
 	AutosAPI
 	ReadAPI
 	HomeMaintenanceAPI
+	HomeWorkRequestAPI
 	BudgetAPI
 }
 

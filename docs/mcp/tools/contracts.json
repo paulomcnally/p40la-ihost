@@ -2405,6 +2405,291 @@
       }
     },
     {
+      "name": "home_work_request_convert",
+      "description": "Convierte un reporte pendiente (status=reported) en una reparación vacía de home.maintenance, copia su título/descripción, enlaza maintenance_id y deja el reporte en status=converted. La evidencia permanece en el reporte. Una segunda conversión devuelve already_converted. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "area": {
+            "description": "Área: plumbing, electrical, roof, paint, carpentry, appliances, garden, cleaning u other; por defecto other",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "kind": {
+            "description": "Tipo de reparación: corrective o preventive; por defecto corrective",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "work_request_id": {
+            "description": "ID del reporte (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "work_request_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "home_work_request_create",
+      "description": "Crea un reporte de problema o trabajo deseado en una vivienda. Nace en estado reported, sin insumos ni mano de obra, y la evidencia se adjunta después desde la web. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "description": "Categoría: repair, improvement, maintenance u other; por defecto repair",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "description": {
+            "description": "Detalle del problema o trabajo; máximo 2000 caracteres",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "priority": {
+            "description": "Prioridad: low, normal o high; por defecto normal",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reported_at": {
+            "description": "Fecha YYYY-MM-DD, no futura; por defecto hoy",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "description": "Título del reporte; obligatorio, máximo 200 caracteres",
+            "type": "string"
+          }
+        },
+        "required": [
+          "home_id",
+          "title"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "home_work_request_get",
+      "description": "Devuelve el detalle de un reporte de vivienda: título, descripción, categoría, prioridad, estado, fecha, vínculo a la reparación cuando fue convertido y metadatos de su evidencia (fotos/videos, sin binarios). Solo lectura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "work_request_id": {
+            "description": "ID del reporte (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "work_request_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "home_work_request_list",
+      "description": "Lista los reportes de problemas y trabajos deseados de una vivienda, con filtros opcionales de estado y categoría. Devuelve el conteo de pendientes (status=reported) y la cantidad de adjuntos de cada reporte. Solo lectura; no aplica la compuerta de escritura.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "description": "Filtra por categoría: repair, improvement, maintenance u other",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "status": {
+            "description": "Filtra por estado: reported, converted o dismissed",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "home_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "home_work_request_status",
+      "description": "Descarta un reporte pendiente (status=dismissed) o lo reactiva (status=reported). No admite converted ni otros estados y no crea ni borra reparaciones. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "status": {
+            "description": "Estado destino: dismissed para descartar o reported para reactivar",
+            "type": "string"
+          },
+          "work_request_id": {
+            "description": "ID del reporte (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "work_request_id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "home_work_request_update",
+      "description": "Edita un reporte existente. Solo cambia los campos enviados; los omitidos conservan su valor y el estado no se modifica. description vacía limpia la descripción. Si no hay cambios efectivos devuelve status=unchanged. dry_run viene activado por defecto; para escribir se requiere P40LA_MCP_ALLOW_WRITES=true.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "description": "Categoría: repair, improvement, maintenance u other; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "description": {
+            "description": "Descripción; vacío limpia; máximo 2000; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dry_run": {
+            "description": "Si es true solo previsualiza; por defecto true",
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "home_id": {
+            "description": "ID de la vivienda (obligatorio)",
+            "type": "integer"
+          },
+          "priority": {
+            "description": "Prioridad: low, normal o high; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reported_at": {
+            "description": "Fecha YYYY-MM-DD, no futura; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "description": "Título; máximo 200; omitir conserva",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "work_request_id": {
+            "description": "ID del reporte (obligatorio)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "home_id",
+          "work_request_id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      }
+    },
+    {
       "name": "homes_create",
       "description": "Crea un hogar. Requiere name; address y usage son opcionales. usage: rental (default), inhabited o unused. Si ya existe un hogar con el mismo nombre devuelve already_exists con el id existente.",
       "input_schema": {
