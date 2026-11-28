@@ -8,12 +8,13 @@ import CardMenu from '../components/CardMenu'
 import { Icon } from '../components/Icons'
 import { Badge, Money, PrimaryButton, SectionCard } from '../components/rental/RentalUI'
 import HomeMaintenanceTab from '../components/home/HomeMaintenanceTab'
+import HomeWorkRequestTab from '../components/home/HomeWorkRequestTab'
 import HomeFinancesTab from '../components/home/HomeFinancesTab'
 import HomeStateBadge from '../components/home/HomeStateBadge'
 import type { Home } from '../types'
 import type { HomeRentalStatus } from '../types/rental'
 
-type Tab = 'summary' | 'maintenance' | 'rental' | 'finances'
+type Tab = 'summary' | 'maintenance' | 'rental' | 'finances' | 'reports'
 
 export default function HomeShowPage() {
   const navigate = useNavigate()
@@ -25,7 +26,8 @@ export default function HomeShowPage() {
   const tab: Tab = rawTab === 'rental' ? 'rental'
     : rawTab === 'maintenance' ? 'maintenance'
       : rawTab === 'finances' ? 'finances'
-        : 'summary'
+        : rawTab === 'reports' ? 'reports'
+          : 'summary'
   const [home, setHome] = useState<Home | null>(null)
   const [status, setStatus] = useState<HomeRentalStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -92,12 +94,13 @@ export default function HomeShowPage() {
         </div>
       </div>
 
-      <div className="flex gap-1 p-1 bg-bg rounded-ios-sm" role="tablist">
+      <div className="flex gap-1 p-1 bg-bg rounded-ios-sm overflow-x-auto" role="tablist">
         {([
           { key: 'summary' as Tab, label: t('rental.tab_summary') },
           { key: 'rental' as Tab, label: t('rental.tab_rental') },
           { key: 'finances' as Tab, label: t('home.finances.tab') },
           { key: 'maintenance' as Tab, label: t('homeMaintenance.tab') },
+          { key: 'reports' as Tab, label: t('homeWorkRequest.tab') },
         ]).map((item) => (
           <button
             key={item.key}
@@ -105,7 +108,7 @@ export default function HomeShowPage() {
             role="tab"
             aria-selected={tab === item.key}
             onClick={() => setTab(item.key)}
-            className={`flex-1 px-2 py-2 rounded-ios-sm text-sm font-medium min-h-[40px] transition-colors ${
+            className={`flex-1 min-w-[88px] px-2 py-2 rounded-ios-sm text-xs sm:text-sm font-medium whitespace-nowrap min-h-[40px] transition-colors ${
               tab === item.key ? 'bg-card text-primary shadow-ios' : 'text-text-secondary hover:text-text'
             }`}
           >
@@ -129,6 +132,8 @@ export default function HomeShowPage() {
         </SectionCard>
       ) : tab === 'maintenance' ? (
         <HomeMaintenanceTab homeId={homeId} />
+      ) : tab === 'reports' ? (
+        <HomeWorkRequestTab homeId={homeId} />
       ) : tab === 'finances' ? (
         <HomeFinancesTab homeId={homeId} />
       ) : (

@@ -39,7 +39,7 @@ export default function DeleteModal({ title, subtitle, onConfirm, onCancel }: {
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] p-4"
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-[80] p-4"
     >
       <div
         className="bg-card rounded-ios shadow-ios-lg w-full max-w-sm overflow-hidden"
