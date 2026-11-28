@@ -1581,6 +1581,185 @@
         "internal/mcp/tools/all/contract_test.go",
         "internal/api/mcp_backend_contract_test.go"
       ]
+    },
+    {
+      "name": "home_work_request_list",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/list.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/workrequests"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go"
+      ]
+    },
+    {
+      "name": "home_work_request_get",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/get.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/workrequests/{work_request_id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go"
+      ]
+    },
+    {
+      "name": "home_work_request_create",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/create.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go"
+      ],
+      "endpoints": [
+        "POST /api/homes/{id}/workrequests"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go"
+      ]
+    },
+    {
+      "name": "home_work_request_update",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/update.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/workrequests/{work_request_id}",
+        "PUT /api/homes/{id}/workrequests/{work_request_id}"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go"
+      ]
+    },
+    {
+      "name": "home_work_request_convert",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/convert.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go",
+        "internal/modules/home/maintenance/handlers.go",
+        "internal/modules/home/maintenance/service.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/workrequests/{work_request_id}",
+        "POST /api/homes/{id}/workrequests/{work_request_id}/convert"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go"
+      ]
+    },
+    {
+      "name": "home_work_request_status",
+      "docs": [
+        "docs/mcp/tools/home-work-requests.md"
+      ],
+      "entrypoints": [
+        "internal/mcp/tools/workrequest/status.go"
+      ],
+      "dependencies": [
+        "internal/mcp/api/home_work_request.go",
+        "internal/mcp/tools/workrequest/",
+        "internal/modules/home/workrequest/handlers.go",
+        "internal/modules/home/workrequest/service.go",
+        "internal/modules/home/workrequest/storage.go",
+        "internal/modules/home/workrequest/model.go",
+        "internal/modules/home/workrequest/module.go"
+      ],
+      "endpoints": [
+        "GET /api/homes/{id}/workrequests/{work_request_id}",
+        "POST /api/homes/{id}/workrequests/{work_request_id}/status"
+      ],
+      "tests": [
+        "internal/mcp/tools/workrequest/workrequest_test.go",
+        "internal/mcp/api/home_work_request_test.go",
+        "internal/mcp/tools/all/contract_test.go",
+        "internal/api/mcp_backend_contract_test.go",
+        "internal/modules/home/workrequest/service_test.go",
+        "internal/modules/home/workrequest/handlers_test.go"
+      ]
     }
   ],
   "shared": {
