@@ -1,7 +1,7 @@
 ---
 title: "Reportes de problemas y mantenimiento en viviendas"
 id: "SPEC-164"
-status: "in_progress"
+status: "pending_release"
 author: "opencode"
 created: "2026-11-27"
 updated: "2026-11-27"
@@ -11,7 +11,7 @@ github_issue: 166
 # Reportes de problemas y mantenimiento en viviendas
 
 **ID**: SPEC-164
-**Estado**: in_progress
+**Estado**: pending_release
 **Autor**: opencode
 **Creado**: 2026-11-27
 **Actualizado**: 2026-11-27
@@ -481,3 +481,4 @@ No tocar `internal/mcp/**`, `internal/api/routes.go`, `internal/api/handlers.go`
 | 2026-11-27 | opencode | Creación inicial de la especificación (draft) |
 | 2026-11-27 | opencode | Investigación con subagentes (`explore` mapeo de código e impacto MCP; `general` ciclo reporte→reparación y evidencia multimedia) integrada en §4/§6; issue #166 creado |
 | 2026-11-27 | opencode | Implementación P0/P1 en `feature/SPEC-164`: migración `0062`, módulo `home.workrequest` con evidencia y conversión, API de descarte/reactivación, UI del tab/formulario/detalle y i18n es/en |
+| 2026-11-27 | opencode | Verificación local: `go build ./...`, `go test ./...`, `npm run build`, gate MCP y prueba end-to-end con copia de la DB en `/tmp`; preparada para release |
